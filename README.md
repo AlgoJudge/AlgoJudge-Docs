@@ -143,7 +143,7 @@ carry `noindex` and stay out of `sitemap.xml`.
 Page titles append the product: *Backup | AlgoJudge*. The two landing pages opt
 out, or they would say it twice.
 
-The theme is Fumadocs' **catppuccin**. The favicon is the square mark
+The theme is Fumadocs' **ocean**. The favicon is the square mark
 `algojudge.pl` already uses, and `public/og.png` is generated from the wordmark
 — see `BRANDING.md` for where both came from and how to check the copies.
 
