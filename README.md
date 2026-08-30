@@ -108,6 +108,7 @@ output is not source.
 | `npm run check:translations` | No Polish page has drifted from its English source |
 | `npm run check:glossary` | Polish uses the interface's own words, and every interface string has one |
 | `npm run check:no-playground` | The built site contacts no installation |
+| `npm run og` | Regenerate the Open Graph card from the wordmark |
 | `npm run snapshot` | The release-day version snapshot |
 
 ### Two dependencies are deliberately not the newest
@@ -124,6 +125,27 @@ both were measured on 2026-08-30 rather than assumed:
 
 Raise either only after checking that the other half of the toolchain has caught
 up. Everything else here is the current release.
+
+## How it presents itself
+
+`https://docs.algojudge.pl` is written into `lib/site.ts` as a constant, not read
+from the environment: a static export bakes `canonical`, `og:url` and the
+sitemap in at build time, and a build that guessed the wrong host would publish
+links to a site nobody serves. There is one deployment, so a variable would
+suggest a choice it does not have.
+
+Every page carries a description, a canonical address, Open Graph and Twitter
+card tags, and `hreflang` alternates **only for languages that really have the
+page** — a fallback is the English text at a Polish address, so advertising it
+as a translation would be a lie to a crawler. Those, and archived versions,
+carry `noindex` and stay out of `sitemap.xml`.
+
+Page titles append the product: *Backup | AlgoJudge*. The two landing pages opt
+out, or they would say it twice.
+
+The theme is Fumadocs' **catppuccin**. The favicon is the square mark
+`algojudge.pl` already uses, and `public/og.png` is generated from the wordmark
+— see `BRANDING.md` for where both came from and how to check the copies.
 
 ## Deploying it
 

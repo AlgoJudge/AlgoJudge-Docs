@@ -32,6 +32,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { SITE_URL } from "../lib/site.ts";
+
 const OUT = "out";
 
 /**
@@ -54,10 +56,14 @@ const LINKED = /<link\b[^>]*?\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi;
 /** What a rendered playground puts on the page. */
 const PLAYGROUND = [/data-playground/i, /\bSend Request\b/];
 
-// Hosts a documentation page may legitimately fetch from. There are none: the
-// site is self-contained on purpose, so that it works from a laptop with no
-// network and leaks no reader to a third party.
-const ALLOWED_HOSTS = [];
+// Hosts a page may legitimately reference. **Only this site's own**, which is
+// not an exception to the rule but the rule stated exactly: `canonical`,
+// `hreflang` and `og:url` are absolute by specification, and they point here.
+// Taken from `lib/site.ts` so the two cannot drift apart.
+//
+// Nothing else is allowed. The site is self-contained on purpose, so that it
+// works from a laptop with no network and leaks no reader to a third party.
+const ALLOWED_HOSTS = [new URL(SITE_URL).host];
 
 async function files(directory, extension) {
     const found = [];

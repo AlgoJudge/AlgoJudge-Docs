@@ -14,7 +14,8 @@
     "check:translations": "node scripts/check-translations.mjs",
     "check:glossary": "node scripts/check-glossary.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "check:no-playground": "node scripts/check-no-playground.mjs"
+    "check:no-playground": "node scripts/check-no-playground.mjs",
+    "og": "node scripts/generate-og.mjs"
   },
   "dependencies": {
     "fumadocs-core": "16.15.4",
@@ -35,7 +36,8 @@
     "eslint-config-next": "16.3.3",
     "postcss": "8.5.26",
     "tailwindcss": "4.3.3",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "sharp": "0.35.4"
   },
   "overrides": {
     "postcss": "8.5.26"

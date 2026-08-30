@@ -9,7 +9,8 @@ import { ArchiveBanner } from "@/components/archive-banner";
 import { FallbackNotice } from "@/components/fallback-notice";
 import { getMDXComponents } from "@/components/mdx";
 import { OpenAPIPage } from "@/components/api-page";
-import { i18nConfig } from "@/lib/i18n";
+import { i18nConfig, type Locale } from "@/lib/i18n";
+import { hreflang, ogLocale, OG_IMAGE, site, SITE_NAME } from "@/lib/site";
 import { loadSchemas, narrow, type OperationRef } from "@/lib/openapi-preload";
 import { archiveState } from "@/lib/versions";
 import { source } from "@/lib/source";
@@ -100,11 +101,57 @@ export async function generateMetadata(props: { params: Promise<Params> }): Prom
     // No `canonical` on either: for the fallback there is a real page at the
     // English address, and for an archive there is not — an older page is not
     // the newest page somewhere else.
-    const duplicate = !page.path.startsWith(`${lang}/`) || (await archiveState(slug)) !== null;
+    const translated = page.path.startsWith(`${lang}/`);
+    const duplicate = !translated || (await archiveState(slug)) !== null;
+
+    const locale = (i18nConfig.languages as readonly string[]).includes(lang)
+        ? (lang as Locale)
+        : i18nConfig.defaultLanguage;
+    const description = page.data.description ?? site[locale].description;
+    const path = `/${lang}${slug?.length ? `/${slug.join("/")}` : ""}`;
+
+    // **A language alternate is only offered where the page really exists.**
+    // Every English page resolves under `/pl/` through the fallback, so
+    // advertising those as translations would tell a search engine there is a
+    // Polish version of something written only in English.
+    const alternates = i18nConfig.languages.filter(
+        (other) => source.getPage(slug, other)?.path.startsWith(`${other}/`) ?? false,
+    );
 
     return {
-        title: page.data.title,
-        description: page.data.description,
+        // The landing pages are the site's own name; the template would make
+        // them say it twice.
+        title: slug?.length ? page.data.title : { absolute: page.data.title },
+        description,
+        openGraph: {
+            type: "article",
+            title: page.data.title,
+            description,
+            url: path,
+            siteName: site[locale].name,
+            locale: ogLocale[locale],
+            images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: SITE_NAME }],
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: page.data.title,
+            description,
+            images: [OG_IMAGE],
+        },
+        alternates: duplicate
+            ? undefined
+            : {
+                  canonical: path,
+                  languages: {
+                      ...Object.fromEntries(
+                          alternates.map((other) => [
+                              hreflang[other],
+                              `/${other}${slug?.length ? `/${slug.join("/")}` : ""}`,
+                          ]),
+                      ),
+                      "x-default": `/${i18nConfig.defaultLanguage}${slug?.length ? `/${slug.join("/")}` : ""}`,
+                  },
+              },
         ...(duplicate ? { robots: { index: false, follow: true } } : {}),
     };
 }
