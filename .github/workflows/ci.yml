@@ -22,7 +22,7 @@ jobs:
 
       # Read from `.nvmrc`, never written here: a literal `node-version` beside
       # a file that also states one is a pair that drifts.
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
