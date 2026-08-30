@@ -1,0 +1,58 @@
+---
+title: Your account
+description: Your profile, your password, a copy of your data, and leaving.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**My account** is in the menu under your name, top right. Three tabs: **Profile**,
+**Password** and **My data**.
+
+An account that came from an identity provider carries an **SSO** badge beside
+the title and the notice *This account is managed by the identity provider. Your
+name, login, address and password are changed there.* Both the profile fields and
+the password tab are disabled for it. The provider owns the identity.
+
+## Profile
+
+**First name** and **Last name** are optional. **Username** is required — it is
+what you sign in as, and **it is what other people see when you have given no
+name**, the ranking included.
+
+Changing your **Email** makes the address unconfirmed again.
+
+## Password
+
+Your current password, then the new one twice. **At least 12 characters.**
+
+There is no self-service reset anywhere in the product. A forgotten password is
+reissued by an administrator.
+
+## My data
+
+### Export
+
+**Download my data** saves everything held about you as a file you keep.
+
+### Deleting the account
+
+<Callout type="warn" title="Immediate and irreversible">
+Your submissions and results **stay**, under an identifier that no longer names
+you.
+</Callout>
+
+What the screen offers depends on where your account lives.
+
+**A local account.** Type `DELETE` in the confirmation box, give your password,
+and press **Delete the account**. The button stays disabled until both are
+right.
+
+**An account from a provider.** The act is a different one and is named
+differently: **Delete my account** removes your link to the identity provider,
+and a dialog asks once before it happens. If that link is the only way you sign
+in, the account is emptied — immediately, on the same terms as above.
+
+**Your account at the provider stays.** Where the provider publishes a way to
+delete it, the screen offers that as a second, separate link. Doing only the
+first leaves you still signed in at the provider and able to walk straight back
+in.

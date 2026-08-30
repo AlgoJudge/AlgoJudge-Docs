@@ -1,0 +1,100 @@
+---
+title: What is not specified
+description: The four things the contract deliberately leaves out, one thing the implementation has that the contract does not, and two documents that are history.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**The accepted specification prevails.**
+`AlgoJudge-Design/specifications/server-runner/SERVER_RUNNER_API.md` v1.1 is the
+contract; on any divergence from this page, it is right and this page is wrong.
+
+An absence in a contract is a decision, and each of these is written down so that
+nobody reads it as an oversight.
+
+## A WebSocket for Runners
+
+The original proposal had one, carrying a new-submission event. **This Server has
+none.**
+
+A Runner polls the claim endpoint, which is simpler, survives a dropped
+connection with no reconnection logic, and **cannot deliver a job twice**.
+
+Reintroducing a socket would be an optimisation of *when* a Runner learns there
+is work, never of *how* it takes it. The Client has a socket; a Runner does not.
+
+## Key rotation
+
+There is none, by decision. **Revocation is permanent and a new key is a new
+registration** — with a new approval by a person.
+
+An implementation should not build a rotation path against this contract. A
+leaked key is handled by revoking it and letting the machine come back as a new
+identity.
+
+## Token scopes beyond the Runner itself
+
+A token authorizes this Runner's own surface and nothing else. It is not a
+session, it does not carry roles, and it cannot reach anything a manager may do —
+including the approval endpoint that admitted it.
+
+## The package format
+
+The contract carries the bytes without reading them. `standard-io@1` has its own
+package format specification; another problem type may define its own.
+
+**This is the same rule as `problemType` being matched by string equality**: the
+Server does not know what a package contains, so a new problem type needs no
+Server release. A Runner implementing a type of its own defines the format that
+type reads.
+
+## One thing the implementation has that the contract does not
+
+**Trials.** A trial is a package to time — *run this package's own model
+solutions and say what they cost* — on its own table and its own claim path,
+with no submission, no attempt, no problem version, no verdict and no score.
+
+The reference implementation speaks three trial calls:
+
+```http
+POST /api/v1/runner/trials/claim
+POST /api/v1/runner/trials/{trialId}/lease
+POST /api/v1/runner/trials/{trialId}/report
+```
+
+The accepted contract v1.1 **does not describe them**. It mentions a trial only in
+passing, in §9.3, where a Server may not reach `closed` while one is running.
+Routing across both claim paths is stated in a separate accepted document,
+`docs/specs/RUNNER_ROUTING.md`.
+
+<Callout type="warn" title="Trials are optional, and a Runner that ignores them is a conforming Runner">
+Nothing in the contract obliges an implementation to claim a trial, and a Runner
+that never calls those paths simply never measures a package.
+
+Because they are outside v1.1, treat their shapes as the implementation's rather
+than as a standard: they may move in a way the specified surface may not.
+</Callout>
+
+## Two documents that are history, not standards
+
+Both describe paths **this Server has never served**, and both are kept because
+they are where the questions were asked.
+
+| Document | What it is |
+|---|---|
+| `AlgoJudge-Design/proposals/Server-Runner-api.md` | the original proposal, 2025-03-27. **`Superseded`** on 2026-08-08 by the specification, and unchanged since it was written |
+| `docs/protocols/SERVER_RUNNER_API.md` in the workspace | the same proposal, one decision taken against it, and the list of twenty-one questions it left open |
+
+<Callout type="warn" title="Do not implement against either">
+They name `/runner/auth/init`, `/files/create`, `/runner/submission` and
+`/runner/result`. **None of those is a path this Server serves, and none ever
+was.**
+
+They also describe a Runner WebSocket carrying submissions, which is the first
+entry on this page.
+
+Their value is the twenty-one open questions — atomic reservation, leasing,
+idempotency, approval, replay protection, cancellation among them. Every one of
+those is answered by the accepted specification, and each answer is a page in
+this section.
+</Callout>

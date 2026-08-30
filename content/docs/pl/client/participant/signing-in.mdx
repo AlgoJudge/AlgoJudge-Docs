@@ -1,0 +1,78 @@
+---
+title: Logowanie
+description: Konto lokalne albo dostawca tożsamości uczelni, i co się zmienia w zależności od tego, które z nich.
+source: en/client/participant/signing-in.mdx
+sourceSha256: 4b9fb7993183f713c1c75e8df8032b0a611f3ad2e769dd138fd56b76b4990d5b
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Do instalacji AlgoJudge prowadzą dwie drogi, a to, które z nich widzisz na
+ekranie **Logowanie**, jest decyzją operatora.
+
+## Konto lokalne
+
+Wpisz **Login lub e-mail** oraz **Hasło** i naciśnij **Zaloguj**.
+
+Złe hasło i nieznany login dają ten sam komunikat: *Nieprawidłowy login lub
+hasło*. Wszystko inne — na przykład zablokowane konto — wraca z własnym
+komunikatem Servera.
+
+<Callout type="warn" title="Nie ma resetu hasła">
+Ekran logowania mówi to wprost: *Nie pamiętasz hasła? Nowe wyda administrator.*
+Ta wersja nie wysyła poczty, więc samoobsługowego resetu nie ma. Poproś osobę,
+która prowadzi instalację.
+</Callout>
+
+**Jeżeli pola na hasło w ogóle nie ma**, instalacja zakłada, że wszyscy
+przychodzą od dostawcy tożsamości. Formularz nadal jest pod adresem
+`/login?admin=true` — tam logują się administratorzy oraz konta lokalne i
+tymczasowe. Ukrycie formularza nie wyłącza logowania hasłem.
+
+## Przez uczelnię
+
+Tam, gdzie operator zarejestrował dostawców tożsamości, ekran logowania ma
+przycisk **Zaloguj przez …** dla każdego z nich. Prowadzi on do uczelni, a
+uczelnia odsyła Cię z powrotem.
+
+Trzy odmowy wracają na ekran logowania pod nagłówkiem *Logowanie odrzucone*:
+
+| Co widzisz | Co to znaczy |
+|---|---|
+| *Ten dostawca nie daje Ci dostępu do tej instalacji. Zapytaj osoby, która ją prowadzi.* | Twoje konto u dostawcy jest w porządku, ale nie odwzorowuje się tutaj na nic. |
+| *Ta metoda logowania jest tu wyłączona.* | Operator wyłączył tego dostawcę. |
+| *Logowanie nie doszło do skutku. Spróbuj ponownie albo użyj hasła.* | Coś poszło nie tak po drodze. |
+
+## Zakładanie konta samodzielnie
+
+Większość instalacji na to nie pozwala. Konta zakłada organizator albo
+przychodzą od dostawcy tożsamości, a ekran rejestracji mówi to wprost, zamiast
+pokazywać formularz, którego odpowiedź zawsze brzmi „nie”.
+
+Tam, gdzie jest to dozwolone, **Stwórz konto** na ekranie logowania prowadzi do
+formularza:
+
+- **Login** to jedyne zawsze wymagane pole — to pod nim się logujesz.
+- **Imię** i **Nazwisko** są opcjonalne. Jeżeli nie podasz żadnego, inni widzą
+  Twój login, także w rankingu.
+- **Email** może być wymagany; decyduje instalacja.
+- **Hasło musi mieć co najmniej 12 znaków** i wpisuje się je dwa razy.
+- **Zgoda na regulamin jest wymagana.** Akceptujesz regulamin instalacji
+  niezależnie od tego, czy opublikowała jego treść; jeżeli opublikowała, odnośnik
+  otwiera dokument nad formularzem, żeby nie stracić tego, co już wpisałeś.
+
+Potem albo logujesz się od razu, albo najpierw potwierdzasz adres — zależnie od
+instalacji.
+
+## Co się zmienia, gdy konto pochodzi od dostawcy
+
+**W AlgoJudge Twoje dane są tylko do odczytu**, a ekran konta mówi to wprost: *To
+konto prowadzi dostawca tożsamości. Imię, nazwisko, login, adres i hasło zmienia
+się tam.* Pola są widoczne, ale zablokowane, a zakładka **Hasło** jest nieczynna.
+
+Tożsamość należy do dostawcy; AlgoJudge tylko ją rozpoznaje. Edytowanie kopii
+tutaj albo nie przetrwałoby następnego logowania, albo po cichu rozeszłoby się z
+tym, co ma dostawca.
+
+Zobacz [Twoje konto](/pl/client/participant/account) — tam jest to, co nadal
+możesz zrobić: pobrać swoje dane i odejść.

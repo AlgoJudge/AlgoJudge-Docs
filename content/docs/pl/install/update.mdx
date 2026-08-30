@@ -1,0 +1,110 @@
+---
+title: Aktualizacja i wycofanie
+description: Najpierw pobierz, zamykaj późno, i jedna rzecz, której wycofanie nie cofa.
+source: en/install/update.mdx
+sourceSha256: beeed005d42a27e7b5926b9464a476da91919b445ed558f601246400ade6b3e8
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+```bash
+./scripts/update.sh
+./scripts/update.sh --dry-run
+./scripts/update.sh --no-git
+```
+
+## Kolejność jest sednem
+
+1. **`git pull`** — nowe pliki Compose i skrypty, nigdy nowe wersje obrazów.
+2. **`docker compose pull`** — najdłuższy krok, i **nie kosztuje przerwy**.
+3. **Nic nowego? Koniec.** Nic nie zostaje zamknięte.
+4. **Kopia zapasowa.**
+5. **Zamknięcie i czekanie na drenowanie.**
+6. **`up -d`, czekanie na zdrowie.**
+7. Zdrowe: zapis digestów. Niezdrowe: wycofanie.
+8. **Otwarcie** i usunięcie tylko tych obrazów, które należą do tego projektu.
+
+Przerwa to kroki od 5 do 7 — zmierzone na około **osiemnaście sekund** na małej
+instalacji, w większości drenowanie.
+
+Krok 4 nie jest opcjonalny i skrypt go nie pominie: aktualizacja bez kopii przed
+nią nie jest aktualizacją, którą ten skrypt zrobi. Jeśli kopia przed aktualizacją
+zawiedzie, nic nie zostaje zaktualizowane.
+
+## Co znaczy „coś nowego”
+
+Nie tag. `SERVER_TAG=1` wskazuje po każdym wydaniu inny obraz, więc „czy tag jest
+ten sam” odpowiadałoby „tak” w nieskończoność. Każdy działający kontener zna
+referencję, z której powstał, oraz identyfikator obrazu, na jaki ta referencja
+się wtedy rozwiązała; po pobraniu ta sama referencja rozwiązuje się na to, co
+przyszło. Różnica między tymi identyfikatorami to dokładnie „coś nowego”.
+
+## Wersje to tagi; to, co działa, to digest
+
+**Tagi leżą w `.env`. Digesty leżą w `state/current.lock`.** Tag mówi, o co
+poproszono; digest mówi, co działa, i to jego przywraca wycofanie.
+
+Digesty nie mogą leżeć w repozytorium. To produkt, który wiele organizacji
+wdraża niezależnie, i żadna z nich nie może do niego commitować.
+
+Domyślny `SERVER_TAG=1` to **ruchoma wersja główna** i nie niesie `v`: wydanie
+otagowane `v1.4.2` publikuje tagi obrazów `1.4.2`, `1.4`, `1` i `latest`.
+Pozostanie na `1` bierze przy następnej aktualizacji łatki i wersje minor,
+a nigdy główną. Instalacja, która chce decydować o każdej wersji, wpisuje
+`1.4.2`. `latest` nie jest oferowany — instalacja, która zmieniła wersję, bo ktoś
+zrobił pull, nie jest wdrożeniem.
+
+## Wycofanie
+
+```bash
+./scripts/rollback.sh
+```
+
+Przywraca dokładnie te obrazy, które są w `state/current.lock`, niezależnie od
+tego, na co wskazują dziś tagi, przez nakładkę zapisaną do
+`state/rollback.compose.yaml`.
+
+<Callout type="warn" title="Do czasu usunięcia przyczyny podnoś stos z obu plików">
+Nakładka nie jest czytana przez zwykłe `docker compose up`, więc zwykłe `up`
+wstawia nowe obrazy z powrotem.
+
+```bash
+docker compose -f compose.yaml -f state/rollback.compose.yaml up -d
+```
+</Callout>
+
+Instalacja, która nigdy się nie aktualizowała, nie ma dokąd wracać:
+`state/current.lock` zapisuje **udana** aktualizacja.
+
+### Wycofanie nie cofa migracji
+
+Jeśli aktualizacja przesunęła schemat, `state/last-migration` to zapisuje,
+a `rollback.sh` odmawia przemilczenia tego. Starszy Server wobec nowszego
+schematu nie wystartuje, a jedyną drogą powrotu jest odtworzenie zrzutu zrobionego
+bezpośrednio przed — **co traci wszystko zapisane od tamtej pory**. Skrypt nazywa
+ten zrzut.
+
+## Runner w trakcie aktualizacji
+
+Runner nie obsługuje `SIGTERM`. Zostaje zabity, a jego zlecenie wraca do kolejki,
+gdy wygaśnie dzierżawa. `stop_grace_period` jest ustawione hojnie i samo w sobie
+nic nie kupuje.
+
+Czyste drenowanie to `maintenance.sh on --wait-closed` na **Serverze** najpierw
+i tak robi to `update.sh`. Nigdy `docker stop` na Runnerze jako sposób bycia
+ostrożnym.
+
+## Gdy zawiodą obie połowy
+
+Jeśli nowe obrazy nie wstaną zdrowe w 120 sekund, skrypt sam się wycofuje
+i zapisuje ostatnie pięćdziesiąt linii logu Servera do
+`state/failed-update.log`. Jeśli wycofanie też zawiedzie, skrypt przestaje
+próbować: instalacja zostaje zamknięta, a log i zrzut sprzed aktualizacji są
+nazwane. To nie jest coś, co skrypt powinien powtarzać.
+
+## Aktualizacja nie jest za Ciebie zaplanowana
+
+`cron/algojudge.cron` dostarcza wpis aktualizacji **zakomentowany**. Odkomentuj
+go dopiero wtedy, gdy raz odtworzyłeś kopię i wiesz, że działa — automatyczna
+aktualizacja z nieprzetestowaną kopią za plecami to nocna okazja do utraty
+instalacji.

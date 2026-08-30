@@ -1,0 +1,157 @@
+---
+title: Uprawnienia i nadania
+description: Jak zapisuje się prawa, jak się rozstrzygają i dwie reguły, które czynią model bezpiecznym.
+source: en/client/manager/permissions.mdx
+sourceSha256: f91eefb604e2118864f70e7d67d6b61e5d1d7d925a0b517cbefadab9cec804c6
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Postać
+
+Uprawnienie jest napisem:
+
+```
+resource:operation[:qualifier]
+```
+
+`submission:read:all`, `activity:enroll`, `problem:read:own`. Kwalifikator jest
+częścią operacji, a nie osobnym sprawdzeniem własności — *own* i *all* to dwa
+różne uprawnienia, a nie jedno uprawnienie liczone względem predykatu.
+
+**Nadanie** trzyma ich zestaw i jest zawężone dokładnie do jednego z dwojga:
+
+- do **całej instalacji**, gdzie obowiązuje w każdej aktywności;
+- do **jednej aktywności**, gdzie jest zarazem członkostwem. Zobacz
+  [Zapisy](/pl/client/manager/enrolment).
+
+Ten sam napis znaczy w obu zakresach to samo. Zmienia się jego zasięg.
+
+## Jak się rozstrzygają
+
+W tej kolejności:
+
+1. **Nadanie w aktywności z flagą nadpisania jest całą odpowiedzią wewnątrz tej
+   aktywności.** Nic innego tam nie obowiązuje — nawet `system:administrator`.
+2. W przeciwnym razie `system:administrator`, trzymany w dowolnym wkładzie
+   systemowym, omija każde sprawdzenie.
+3. W przeciwnym razie zestaw efektywny jest **sumą**: wszystkich wkładów
+   systemowych plus nadania w aktywności, gdy pytanie dotyczy jednej aktywności.
+
+<Callout type="warn" title="W tym modelu nigdzie nie ma odejmowania">
+Zakres systemowy jest sumą wkładów i jest czysto addytywny. Nadanie w aktywności
+albo nadpisuje go w całości, albo się do niego dokłada. Nie da się zapisać
+*menedżer minus ta jedna rzecz* jako odjęcia — mówi się to mniejszym zestawem
+albo nadpisaniem.
+</Callout>
+
+### Zakres systemowy to kilka wierszy
+
+W zakresie systemowym osoba ma po jednym wkładzie na źródło: **jeden nadany
+ręcznie plus po jednym na każdego powiązanego dostawcę tożsamości**. Lista
+oznacza wkład zarządzany dostawcą, od którego przyszedł.
+
+Wkład zarządzany jest **przepisywany z mapowania dostawcy przy każdym logowaniu i
+nie da się go edytować ręcznie**. Edycja trwałaby do następnego logowania tej
+osoby, a zmiana, która po cichu się cofa, jest gorsza niż odmowa. Zmień zamiast
+tego mapowanie dostawcy — zobacz [Logowania
+zewnętrzne](/pl/client/manager/logins).
+
+### Flaga nadpisania
+
+Na nadaniu w aktywności: *to nadanie jest całą odpowiedzią wewnątrz aktywności*.
+Tak mówi się „menedżer wszędzie, poza tymi zawodami, w których startuję”.
+
+Dwie rzeczy warto wiedzieć, zanim się ją ustawi:
+
+- **Ustawienie jej komuś, kto ma uprawnienia systemowe, degraduje go tam.** Okno
+  ostrzega w chwili czynności, bo pierwszym objawem jest inaczej menedżer, któremu
+  po cichu zniknął ekran.
+- **Może uwięzić swojego właściciela.** Wewnątrz tej aktywności jest on tym, co
+  mówi nadanie — zwykle uczestnikiem bez `grant:update` — więc do wyczyszczenia
+  flagi potrzeba innego prowadzącego tej aktywności albo administratora.
+
+Praw administratora nadal nie da się przyciąć od dołu: flagę na nadaniu
+administratora mógł ustawić tylko administrator.
+
+## Dwie reguły, których pilnuje Server i których nie da się wyłączyć
+
+**Nikt nie nada uprawnienia, którego sam nie ma.** Bez tego model jest ozdobą —
+każdy, kto mógłby edytować nadanie, wpisałby do niego `system:administrator`.
+Edytor oferuje tylko to, co masz, a Server odmawia reszty niezależnie od tego, co
+zrobił ekran.
+
+Wewnątrz aktywności „to, co masz” znaczy **to, co masz w tej aktywności**, a to
+nie jest ten sam zestaw co twoje prawa w całej instalacji.
+
+**`system:administrator` jest nieosiągalny przez mapowanie claimów.** Mapowanie
+decyduje, ile warta jest tu grupa z zewnętrznego katalogu, a katalog nigdy nie
+może wykreować administratora. Pilnowane są obie połowy: reguła mapowania nie może
+wskazać szablonu, który go niesie, a do szablonu już zmapowanego nie da się go
+dopisać.
+
+Ta sama reguła dotyczy mapowania co nadawania: nikt nie zmapuje na uprawnienie,
+którego sam nie ma.
+
+## Szablony
+
+Szablon to nazwany zestaw uprawnień. **Wypełnia nowe nadanie i zostaje
+zapomniany** — nadanie trzyma kopię, a nazwa szablonu zostaje obok wyłącznie jako
+etykieta mówiąca, od czego zestaw się zaczął.
+
+<Callout type="warn" title="Zmiana szablonu nie dotyka nikogo, kto już go użył">
+To jest to rozsądne, ale błędne założenie, i ekran mówi o tym na samej górze.
+Jeśli musisz zmienić to, co ma sto osób, zmieniasz ich nadania, a nie szablon, z
+którego przyszły.
+</Callout>
+
+Obszar **Szablony uprawnień** je wypisuje i oznacza te dostarczone z produktem
+jako wbudowane; tych nie da się usunąć, bo usunięcie jednego zostawiłoby świeżą
+instalację bez czegokolwiek, od czego zacząć nadanie.
+
+### Trzy dostarczane
+
+**`participant`** — siedem uprawnień, i dokładnie tyle ma zwykły uczestnik:
+
+```
+activity:read
+submission:read:own
+submission:create
+result:read:own
+question:read:own
+question:create
+ranking:read
+```
+
+**`manager`** — wszystko, co ma uczestnik, plus to, czego trzeba do prowadzenia
+aktywności: aktualizacja i archiwizacja, zapisywanie ludzi, biblioteka zadań —
+czytanie własnych, tworzenie zadania, edycja, udostępnianie, archiwizacja i
+podpinanie do serii (`read:own`, `create`, `update`, `share`, `archive`,
+`attach`) — cudze zgłoszenia i ich kod, ponowna ocena, anulowanie i wyłączanie z
+klasyfikacji, cudze wyniki i logi, wszystkie pytania wraz z odpowiadaniem i
+publikowaniem, ogłoszenia,
+czytanie i zdejmowanie zamrożenia rankingu, konta tymczasowe oraz czytanie i
+zmienianie nadań.
+
+Celowo **nie ma w nim**: `activity:create`, `activity:delete`,
+`problem:read:all`, `problem:delete`, `user:*` poza kontami tymczasowymi,
+`template:*`, `runner:*`, `instance:update`, `provider:manage` i `trial:run`.
+Menedżer prowadzi aktywność; nie prowadzi instalacji.
+
+**`admin`** — jeden wpis, `system:administrator`. Jeden, bo omija resztę:
+administrator z listą pojedynczych uprawnień to administrator, którego da się po
+cichu przyciąć, a właśnie tej niespodzianki model ma unikać.
+
+## Gdzie edytuje się nadania
+
+Dwa ekrany, jedna tabela pod spodem.
+
+- Obszar **Nadania** wypisuje wszystkie nadania w instalacji, z filtrem po
+  zakresie i po aktywności, i tam robi się nadanie systemowe.
+- Zakładka **Uczestnicy** w aktywności to te same wiersze zawężone do tej
+  aktywności i tam odbywają się zapisy.
+
+Nadanie decyduje też o tym, czy ktoś jest **prowadzącym**: Server wylicza to przy
+każdym zapisie z uprawnień w zestawie — cokolwiek ponad siedem uczestnika, z
+wyjątkiem `trial:run` — a prowadzący są nieobecni w liczbie uczestników i w
+rankingu.

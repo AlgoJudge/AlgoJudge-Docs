@@ -1,3 +1,4 @@
+import type { OpenAPIPageProps_Preloaded } from "fumadocs-openapi/ui";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 import type { Metadata } from "next";
@@ -5,9 +6,23 @@ import { notFound } from "next/navigation";
 
 import { FallbackNotice } from "@/components/fallback-notice";
 import { getMDXComponents } from "@/components/mdx";
+import { OpenAPIPage } from "@/components/api-page";
+import { preloadedSchemas, type PreloadedSchemas } from "@/lib/openapi-preload";
 import { source } from "@/lib/source";
 
 type Params = { lang: string; slug?: string[] };
+
+type OpenAPIPageProps = Omit<OpenAPIPageProps_Preloaded, "preloaded">;
+
+/**
+ * The generated file renders `<OpenAPIPage document="…" operations={…} />` and
+ * knows nothing about where the schema comes from. This binds the loaded one to
+ * it without the generated file having to change.
+ */
+const withSchemas = (preloaded: PreloadedSchemas) =>
+    function BoundOpenAPIPage(props: OpenAPIPageProps) {
+        return <OpenAPIPage {...props} preloaded={preloaded} />;
+    };
 
 export default async function Page(props: { params: Promise<Params> }) {
     const { lang, slug } = await props.params;
@@ -27,13 +42,22 @@ export default async function Page(props: { params: Promise<Params> }) {
     // comes back as `en/protocol/index.mdx`. Measured 2026-08-30.
     const fellBack = !page.path.startsWith(`${lang}/`);
 
+    // Only the generated REST pages carry one; everything else gets nothing
+    // and never renders the component.
+    const preloaded = await preloadedSchemas(page.data);
+
     return (
         <DocsPage toc={page.data.toc} full={page.data.full}>
             <DocsTitle>{page.data.title}</DocsTitle>
             <DocsDescription>{page.data.description}</DocsDescription>
             <DocsBody>
                 {fellBack ? <FallbackNotice locale={lang} /> : null}
-                <MDX components={getMDXComponents({ a: createRelativeLink(source, page) })} />
+                <MDX
+                    components={getMDXComponents({
+                        a: createRelativeLink(source, page),
+                        ...(preloaded ? { OpenAPIPage: withSchemas(preloaded) } : {}),
+                    })}
+                />
             </DocsBody>
         </DocsPage>
     );

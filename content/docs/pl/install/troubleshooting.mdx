@@ -1,0 +1,182 @@
+---
+title: Kiedy coś nie działa
+description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
+source: en/install/troubleshooting.mdx
+sourceSha256: 9d92373a02e2d4eb52109fc4bc13aa430a4916e383c9ec24cad9a85386b6e92f
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Server nie startuje
+
+### `The database has N pending migration(s)`
+
+Schemat jest za obrazem, a temu Serverowi nie powiedziano, że wolno mu to
+naprawić. Ustaw `MIGRATE_ON_START=true` w `.env` — **po zrobieniu kopii** — albo
+zastosuj migracje samodzielnie przed startem.
+
+To mówi też **świeża** instalacja, jeśli przełącznik jest wyłączony: pusta baza
+ma wszystkie migracje oczekujące.
+
+### Kończy pracę, narzekając na `Forwarded`
+
+`TRUSTED_PROXY_NETWORKS` jest nieustawione. Server odmawia startu, dopóki nie
+powiesz mu, czyjemu słowu wierzyć w sprawie adresu odwiedzającego. `none` to
+pełna odpowiedź dla Servera osiąganego bezpośrednio.
+
+### Nazywa sieć, której nie napisałeś
+
+Napisałeś CIDR z ustawionymi bitami hosta — `172.28.0.5/24`. .NET normalizuje to
+do `172.28.0.0/24` bez słowa, co zamienia „jedną maszynę” w „całą pracownię”,
+więc Server odmawia i nazywa adres, który powinieneś był napisać.
+`preflight.sh` łapie to wcześniej.
+
+### `No storage is configured`
+
+`STORAGE_KIND` jest puste albo z literówką. Wartości to `postgres`, `filesystem`
+albo `s3`.
+
+## API odpowiada 404, a jesteś pewien ścieżki
+
+**`/health` nie jest endpointem zdrowia. Jest nim `/api/v1/health`.**
+
+Każda instalacja serwuje API pod `/api/v1`, a Server odpowiada **404 w gołym
+korzeniu celowo** — żeby Client wskazany na złą ścieżkę został poprawiony,
+a nie obsłużony. Monitor napisany przeciw `/health` zgłasza instalację jako
+niedostępną, gdy ta serwuje bez zarzutu.
+
+<Callout type="warn" title="Przez dołączony nginx jest gorzej">
+`/health` nie jest tam nawet 404. `location /` kieruje na Client, który dla
+każdej nieznanej ścieżki serwuje `index.html`, więc `curl
+https://twoja.domena/health` zwraca **200 i stronę HTML**. To router aplikacji,
+nie API.
+</Callout>
+
+## `/admin` odpowiada 404 mimo poprawnego tokenu
+
+I tak ma być. `/api/v1/admin/**` wymaga, żeby żądanie dotarło na **własny
+interfejs pętli zwrotnej** Servera, a:
+
+- przez nginx dociera jako brama mostka — 404;
+- przez opublikowane `127.0.0.1:8080` **też** dociera jako brama mostka, bo tak
+  działa opublikowany port — 404.
+
+Każda odmowa to celowo to samo 404, więc nic nie odróżnia złego tokenu od złej
+trasy. Nie 403: 403 potwierdziłoby, że endpoint tam jest i że dzwoniący trafił
+jedną z dwóch połówek.
+
+Droga wejścia:
+
+```bash
+docker compose exec -T server aj-admin status
+```
+
+Jeśli odpowie `AJ_Admin__Token is not set in this container`, token był pusty,
+gdy kontener startował. Ustaw go w `.env` i odtwórz Server.
+
+## Nic nie jest oceniane
+
+W kolejności częstości:
+
+1. **Runner nie został zatwierdzony.** Jego log mówi `waiting: this Runner has
+   not been approved yet` i będzie to mówił zawsze. Zatwierdź go w panelu pod
+   **Runnery**.
+2. **Obrazy sandboxa nie istnieją.** Wkompilowany Runner szuka
+   `algojudge/lang-*:local`, które ma tylko host deweloperski. `compose.yaml`
+   ustawia wszystkie cztery zmienne `AJ_Sandbox__Image__*` z `REGISTRY`
+   i `RUNNER_TAG`; jeśli je nadpisałeś, sprawdź `docker images`.
+3. **`RUNNER_WORK_DIR` jest zły.** To najpaskudniejszy przypadek, bo zawodzi
+   *po cichu*: demon Dockera dostaje tę ścieżkę wprost, a ścieżka, której nie
+   potrafi otworzyć, daje **pusty katalog**, a nie błąd. Każde zlecenie działa
+   wtedy na niczym. Musi być **bezwzględna** i musi być ścieżką, którą potrafi
+   otworzyć demon, a nie tylko Twoja powłoka.
+4. **Tagi.** Runner z ustawionym `RUNNER_TAGS` wypada z puli ogólnej, a praca bez
+   tagów idzie do puli ogólnej. Puste znaczy pulę ogólną po obu stronach. **Tagi
+   są czytane raz, przy pierwszej rejestracji** — późniejsza zmiana zmiennej nie
+   robi nic, a zmienia je ponowna rejestracja.
+
+## `Permission denied (os error 13)` w Runnerze
+
+`DOCKER_GID` nie zgadza się z grupą właściciela gniazda demona. Komunikat
+przychodzi z głębi klienta HTTP i nie nazywa ani jednego, ani drugiego.
+
+```bash
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g' /var/run/docker.sock
+```
+
+Na Docker Desktop to `0`; na hoście linuksowym to grupa `docker`. `preflight.sh`
+uruchamia dokładnie to i odmawia przy niezgodności — pytając kontener, a nie
+Twoją powłokę, bo pod Docker Desktop i WSL gniazdo widziane przez tę powłokę nie
+jest tym, które obsługuje demon.
+
+## nginx nie startuje
+
+Uruchom ten sam test co CI:
+
+```bash
+docker run --rm --add-host server:127.0.0.1 --add-host client:127.0.0.1 \
+  -v "$PWD/nginx/algojudge.conf:/etc/nginx/conf.d/default.conf:ro" \
+  -v "$PWD/nginx/snippets:/etc/nginx/snippets:ro" \
+  -v "$PWD/certs:/etc/nginx/certs:ro" \
+  nginx:1.27-alpine nginx -t
+```
+
+`--add-host` jest potrzebne, bo **nginx rozwiązuje każdy upstream przy parsowaniu
+konfiguracji**, więc poza siecią Compose zawodzi z `host not found in upstream
+"server:8080"` na konfiguracji, która jest zupełnie poprawna.
+
+Dwa prawdziwe przypadki stąd: **zduplikowany `proxy_read_timeout`**, bo `include`
+wstawia dyrektywę do bloku włączającego, a nginx odrzuca duplikaty wprost,
+zamiast nadpisywać; oraz brakujący certyfikat, bo `certs/` było puste.
+
+## PostgreSQL nie startuje po aktualizacji
+
+**Wersja 18 przeniosła miejsce danych.** `PGDATA` to
+`/var/lib/postgresql/18/docker`, a wolumen należy o poziom wyżej, do
+`/var/lib/postgresql`. Każdy poradnik napisany przed 18 mówi
+`/var/lib/postgresql/data`, a zamontowanie tego sprawia, że kontener odmawia
+startu.
+
+`compose.yaml` robi to poprawnie. Wersja główna jest przypięta celowo —
+nieprzypięty `postgres:latest` przechodzący na 18 to sposób, w jaki to
+znaleziono.
+
+## Stos stoi, a przeglądarka nic nie pokazuje
+
+- **Ostrzeżenie o certyfikacie** jest oczekiwane, jeśli uruchomiłeś
+  `render-tls.sh`: jest samopodpisany.
+- **Pusta strona i 404 na `/assets/…`**: obraz Client wymieniono bez Servera albo
+  proxy cache'uje `index.html`. Jest serwowany z `no-store` dokładnie dlatego.
+- **Strona przerwy technicznej**: Server jest w oknie. Uruchom
+  `./scripts/maintenance.sh status`, a jeśli tak być nie powinno — `off`.
+
+## Skrypt mówi, że działa inny
+
+```
+another AlgoJudge maintenance script is running (pid 1234, lock: …/state/algojudge.lock.d)
+```
+
+Jeśli pid 1234 naprawdę działa, poczekaj. Jeśli nie, następne uruchomienie samo
+przejmie blokadę i to powie — blokada nigdy nie zostaje zakleszczona na stałe.
+Żeby wyczyścić ją ręcznie, usuń `state/algojudge.lock.d`.
+
+## Kopia nie jest kompletną kopią
+
+`backup.sh` ostrzega przy każdym uruchomieniu, gdy `STORAGE_KIND` nie jest
+`postgres`, a `.meta` obok każdego zrzutu zapisuje to jako
+`coverage=INCOMPLETE`. Odtworzenie samego takiego zrzutu daje instalację, której
+wiersze wskazują na bajty, których nie ma — co objawia się jako **503 przy każdym
+pobraniu, bez niczego, co nazwałoby przyczynę**.
+
+## Odtwarzanie wyglądało na udane i nic nie zmieniło
+
+Przeczytaj `state/restore.log`.
+
+Ta awaria zdarzyła się naprawdę, przy pisaniu repozytorium wdrożeniowego:
+wywołanie Compose zawiodło, jego jednolinijkowy błąd zaraportowano jako
+ostrzeżenie `pg_restore`, a odtwarzanie **nie zrobiło zupełnie nic**, podczas gdy
+każda kontrola po nim przechodziła na danych, których po prostu nikt nie tknął.
+
+`restore.sh` liczy teraz tabele po fakcie i odmawia zgłoszenia sukcesu na pustej
+bazie. Ale prawdziwym testem jest ten, który to wyłapał: **najpierw coś zmień**,
+potem odtwórz, potem sprawdź, że zmiana zniknęła.

@@ -5,6 +5,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import type { ReactNode } from "react";
 
 import { i18n, i18nConfig } from "@/lib/i18n";
+import { polishInterface } from "@/lib/ui-translations";
 import SearchDialog from "@/components/search";
 
 const translations = i18n
@@ -12,7 +13,7 @@ const translations = i18n
     .extend(uiTranslations())
     .add({
         en: { displayName: "English" },
-        pl: { displayName: "Polski" },
+        pl: polishInterface,
     });
 
 export default async function Layout({

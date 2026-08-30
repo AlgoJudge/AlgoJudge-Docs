@@ -1,0 +1,111 @@
+---
+title: Grant
+description: What a user may do within a scope — and, in an activity, the membership itself.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A grant says what a [user](/en/server/concepts/user) may do within a scope. In
+an [activity](/en/server/concepts/activity), it **is** the membership.
+
+Adding someone to an activity and giving them rights in it are one act, so there
+is no membership table beside this one. Two tables that both answer *is this
+person in this activity* can disagree; one cannot.
+
+<Callout type="warn" title="A grant is not an access control list">
+An ACL hangs off a resource and lists who may touch that one thing. A grant
+hangs off a **user** and says what they may do within a scope. Nothing here is
+attached to a problem or a submission.
+</Callout>
+
+## Scope
+
+| `ActivityId` | Meaning |
+|---|---|
+| null | a **system** grant. It applies in every activity |
+| set | an **activity** grant. It applies in that activity only |
+
+## Fields
+
+| Field | Meaning |
+|---|---|
+| `UserId` | who holds it. Stays resolvable after the account is emptied, so a past participant keeps their place in an activity's history |
+| `Permissions` | this user's own permissions, as a `jsonb` array of strings |
+| `SourceProviderId` | where this contribution came from. **Null is the manual one**; anything else names the identity provider that asserted it |
+| `OverrideSystem` | this activity grant is authoritative inside its activity |
+| `IsSystem` | a membership that runs the activity rather than takes part in it |
+| `CreatedFromTemplate` | which template it was created from. Informational, not a reference |
+| `GroupId` | the [group](/en/server/concepts/group) this person competes as, or null |
+| `State` | `Invited` or `Active` |
+| `GrantedByUserId` | who issued it |
+
+`Permissions` is filled in from a [template](/en/server/permissions) and then
+editable: "a manager with the right to update something taken away" is this set
+with that entry removed, not a second role layered over a first.
+
+An `Invited` grant confers nothing. It is an offer, and the user is not in the
+activity until they accept — filtered out once, when grants are loaded, rather
+than at each call site.
+
+## One contribution per source
+
+At system scope a user holds **one contribution per source**: the manual one,
+plus one per linked identity provider. Their permissions there are the **union**
+of all of them. This is the one place the model is additive, and it is why the
+row is not unique on the user alone.
+
+A managed contribution is **rewritten from its provider's mapping at every
+sign-in and is not editable by hand**. Editing one would last until that person
+next signed in, which is worse than refusing: a change that silently reverts is
+a change nobody can trust.
+
+`SourceProviderId` is null at activity scope, always. Mapping into an activity
+belongs to the LTI work, whose purpose is to mirror a course binding.
+
+## `OverrideSystem`: standing down
+
+An activity grant carrying the flag is **authoritative inside its activity**,
+and system contributions do not reach it.
+
+It is a flag rather than the mere presence of an activity grant: a system
+manager added to a course so that they can see it should not be demoted by the
+act of being added. A demotion has to be somebody's decision, and a decision
+needs a field.
+
+<Callout type="warn" title="Not even `system:administrator` bypasses it">
+But only its holder may have set it on an administrator's grant, so an
+administrator's rights cannot be trimmed from below.
+
+It can strand its holder: inside that activity they are whatever the grant says
+— typically a participant, holding no `grant:update` — so clearing it needs
+another manager of that activity or a system administrator.
+</Callout>
+
+This is how "a manager everywhere, except in this contest where I compete" is
+expressed, and it replaced the `deny` list that used to say it. The override
+also applies to [event fan-out](/en/server/events): somebody who stood down
+stops being told what the staff are told.
+
+## `IsSystem`: who is not in the ranking
+
+**Computed by the Server on every write, never accepted from the caller.** A
+grant carrying any permission an ordinary participant does not hold is systemic,
+always.
+
+A jury member counted among the competitors is a bug, not a preference — so this
+is what excludes them from the participant count and from the results feed.
+
+One permission is deliberately outside that rule: `trial:run` may be held
+without becoming staff. Spending your own time on your own package is not seeing
+or changing other people's work.
+
+## Group membership lives here
+
+`GroupId` is on the grant because a grant is the assignment to an activity:
+being in a group is a fact about taking part in this contest, not a property of
+the account. And because the table already holds one grant per user per
+activity, this field *is* the rule "at most one group" — there is no second
+constraint to keep in step with it.
+
+A manager may change it at any time. What that does **not** do is move work
+already sent: a submission stamps its group when it is made and keeps it.

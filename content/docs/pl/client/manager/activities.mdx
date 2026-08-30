@@ -1,0 +1,113 @@
+---
+title: Aktywności
+description: Zawody, kurs albo zbiór treningowy i cztery zakładki, w których się je buduje.
+source: en/client/manager/activities.mdx
+sourceSha256: 99e7d2aa9fea4078e1a55f73213d15c592b7058247514be803d596f0a432443b
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Aktywność to jedno miejsce, w którym zadania trafiają do ludzi: zawody, kurs,
+zbiór treningowy. Wszystko inne w tym panelu albo ją zasila, albo z niej czyta.
+
+## Tworzenie
+
+**Nowa aktywność** pyta o trzy rzeczy i o nic więcej:
+
+- **Nazwę**;
+- **Slug**, używany w adresach — `AMMPZ-2019`;
+- **Typ**, wybierany z listy, a nie wpisywany.
+
+Resztę ustawisz już w samej aktywności — na start dostanie rozsądne wartości.
+Pytanie o cały formularz ustawień, zanim aktywność w ogóle istnieje, byłoby
+gorszym pierwszym krokiem.
+
+<Callout type="warn" title="Slug jest niezmienny po utworzeniu">
+Wskazują na niego linki uczestników. Formularz tworzenia mówi to wprost, a pole
+w zakładce **Ustawienia** jest od tej chwili zablokowane. Wybieraj go tak, jak
+wybiera się adres URL, bo tym właśnie jest.
+</Callout>
+
+**Typ** jest wyborem, bo to on decyduje, jak aktywność przedstawia swoje serie —
+napis, pod który nic nie jest zarejestrowane, dostaje to, co akurat robi
+domyślna obsługa. **Typ rankingu** (`points` albo `icpc`) to osobne ustawienie i
+jest od typu niezależne: wybiera, który ranking zostanie narysowany.
+
+Nowa aktywność powstaje **nieopublikowana** i lista pokazuje ją jako *w
+przygotowaniu*, zamiast wyliczać jej stan z dat. Nic się nie otwiera i nikt poza
+tobą jej nie osiągnie, dopóki nie klikniesz **Opublikuj**; **Wycofaj** cofa to.
+
+## Czas jest zapisywany w UTC, a pokazywany w strefie aktywności
+
+Aktywność ma **strefę czasową** i każdy należący do niej moment jest w tej
+strefie wyświetlany i wpisywany, z nazwą strefy przy polu. Zapisywany jest UTC.
+
+Ma to znaczenie, gdy nie siedzisz na sali: menedżer z innej strefy może ustawić
+zawody otwierające się o 18:00 **czasu zawodów**, bez przeliczania, a godziny,
+które widzi uczestnik, nie zależą od tego, gdzie siedzi ktokolwiek z was.
+
+## Cztery zakładki
+
+Otwarta zakładka jest w adresie, więc przeładowanie, zakładka w przeglądarce i
+link, który wyślesz, trafiają tam, gdzie byłeś.
+
+### Serie i zadania
+
+Rundy i to, co jest do nich podpięte. Edytuje się je razem, bo seria bez zadań
+nie jest jeszcze rundą. Zobacz [Serie](/pl/client/manager/series) i [Bibliotekę
+zadań](/pl/client/manager/problems).
+
+### Ustawienia
+
+Wszystko, czym aktywność jest skonfigurowana:
+
+| Grupa | Co w niej jest |
+|---|---|
+| Tożsamość | nazwa, slug (zablokowany), typ, typ rankingu, strefa czasowa |
+| | kto widzi to, co niesie zgłoszenie — jeden wiersz na każdy plik dokładany przez Runnera, każdy *tylko prowadzący* albo *uczestnik* |
+| Terminy | początek i koniec. Zostaw oba puste, a aktywność obejmuje swoje serie: najwcześniejszy start i najpóźniejszy koniec |
+| Moduły | pytania i ogłoszenia. Wyłączony moduł znika z paska uczestnika w całości |
+| | czy zadania zakończonej serii pozostają do czytania — wyłączone znaczy, że runda jest skończona, a nie tajna |
+| Widoczność i zapisy | kto widzi punkty i ranking, kto może dołączyć, czy aktywność jest ukryta na liście, czy wiersz grupy wymienia jej skład, hasło zapisu i link do rozdania |
+| Runnery | tagi decydujące, które maszyny to oceniają — zobacz [Runnery](/pl/client/manager/runners) |
+| Limity | maksymalny rozmiar, plików na zgłoszenie, zgłoszeń na zadanie |
+
+Trzy limity na dole to te, których pilnuje **Server**. Czas i pamięć należą do
+zadania: stają się poznawalne dopiero, gdy rozwiązanie działa, i ustawia się je
+w [paczce](/pl/client/manager/packages).
+
+### Dokumenty
+
+Trzy dokumenty, które aktywność może publikować, każdy w tylu językach, ile
+napiszesz:
+
+| Rodzaj | Kto to czyta |
+|---|---|
+| strona dla niezapisanych | ktoś spoza aktywności, kto ogląda ją z zewnątrz |
+| strona dla uczestników | ktoś, kto jest w środku |
+| regulamin | strona z regulaminem |
+
+To ten sam edytor, w którym instalacja publikuje własne dokumenty, i zachowuje
+się tak samo: publikacja, wycofanie i historia dla każdego rodzaju. Język bez
+własnego tekstu wraca do domyślnego. To, czy aktywność ma regulamin, jest tym,
+czy regulamin jest opublikowany — nie ma osobnego przełącznika.
+
+Wejście w aktywność jako uczestnik trafia na dokument *strona dla uczestników*,
+jeśli jest opublikowany, a w przeciwnym razie na listę zadań.
+
+### Uczestnicy
+
+Kto jest w środku i co może — jedna czynność, nie dwie. Zobacz
+[Zapisy](/pl/client/manager/enrolment) i [Grupy](/pl/client/manager/groups).
+
+## Archiwizacja i usuwanie
+
+**Archiwizacja jest czynnością zwyczajną.** Zarchiwizowana aktywność pozostaje
+do czytania i nie przyjmuje nic nowego — żadnych zgłoszeń, pytań ani zmian — a
+zachowuje ranking i historię, po które ludzie wracają. Przywróć ją, aby dalej
+edytować.
+
+**Usunięcie niszczy wszystko, co jest w środku** i jest wprost odmawiane dla
+aktywności, która ma uczestników; przycisk mówi to zamiast zawieść po
+kliknięciu. Wymaga też uprawnienia `activity:delete`, którego celowo nie ma w
+dostarczanym szablonie `manager`.

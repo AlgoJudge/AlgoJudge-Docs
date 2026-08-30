@@ -56,9 +56,12 @@ is `sha256`, never `hash`; in prose, SHA-256.
 
 - One section per top-level content directory, each with `"root": true` in its
   `meta.json`. That is what gives a section its own sidebar.
-- **Internal links are relative to the section.** An absolute link from the site
-  root breaks the moment the page is snapshotted into a version directory.
-  `npm run check:links` refuses them.
+- **Every internal link is absolute and carries its locale** — `/en/install/backup`,
+  never `/install/backup`. The locale is always in the URL (`hideLocale: "never"`),
+  so a link without one is an address nobody serves. `npm run check:links`
+  refuses both that and a link to a page that does not exist.
+  `scripts/snapshot.mjs` rewrites these when it cuts a version, so a snapshot's
+  links stay inside the snapshot.
 - **No page directly under a section may be named to match `^v\d`.** That is the
   only thing separating a version segment from a page segment.
   `npm run check:versions` refuses it.

@@ -1,5 +1,6 @@
 import { loader } from "fumadocs-core/source";
 import { defineDocs } from "fumadocs-mdx/macro";
+import { openapiPlugin } from "fumadocs-openapi/server";
 
 import { i18n } from "@/lib/i18n";
 
@@ -19,4 +20,7 @@ export const source = loader({
     i18n,
     baseUrl: "/",
     source: docs.toFumadocsSource(),
+    // The generated REST pages name a schema file rather than carrying it.
+    // This is what resolves the name into the parsed document at build time.
+    plugins: [openapiPlugin()],
 });

@@ -1,0 +1,102 @@
+---
+title: Series
+description: A round, a week or a class - scheduling it, moving it, and stopping it.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A series is a round, a week or a class. What it is called on the participant's
+screen comes from the activity type; what it does is the same either way. An
+activity holds its problems in series, so a new activity needs one before it
+holds anything.
+
+## Creating and scheduling one
+
+**New series** asks for a name, a slug unique within the activity, and
+optionally when it opens and closes. Everything else is edited on the series
+itself.
+
+| Field | What it decides |
+|---|---|
+| Opens, Closes | the schedule the countdown is drawn against |
+| Ranking visible from, until | whether there is a board at all. Empty *from* means this series' own start; empty *until* means for ever |
+| Ranking freezes at, revealed at | a freeze inside the board: late results are withheld between the two. Clear both to unfreeze now |
+| Importance | while this round runs, anything of a lower importance is locked for whoever takes part in it |
+| Importance reaches | whether that lock reaches the other activities a participant is in, or stays inside this one |
+| Reachable only from | address ranges, comma-separated, `10.0.5.0/24`. Empty means anywhere; elsewhere the round is not shown at all |
+| Restrictions in force | one switch that lifts the rank and the ranges together, for the day the list turns out to be wrong |
+| Judged by its own Runners | whether this round overrides the activity's [Runner tags](/en/client/manager/runners) |
+| Reveal the problem count while closed | the count only. The problems themselves are never sent while it is closed |
+
+The four instants are four different questions: the **freeze** hides late
+results inside a board, the **window** decides whether there is a board.
+
+Series are ordered with the up and down buttons, not by dragging — a keyboard
+reaches a button, and a round order is set once and left alone.
+
+## Moving a round, in minutes
+
+A projector that would not work, a network that came back at 10:07. The **Move
+the series** card takes a round, a number of **minutes** and shows you the new
+times before you commit them. Negative moves it earlier, which is an ordinary
+thing to want.
+
+The ranking freeze, the reveal and the visibility window move with it. A round
+delayed by an hour that froze at the old wall clock would freeze before it
+finished.
+
+<Callout type="warn" title="It sends the delta, never the two new times">
+Two managers reacting to the same delayed round would each read the old start,
+add ten minutes, and write the same new time — and one of the two shifts would
+be silently lost. Sending "+10 minutes" makes both of them count. It is also why
+the field asks for minutes rather than offering you two date pickers.
+</Callout>
+
+A series with no dates has nothing to move, and the card says so rather than
+showing a dash that looks like a time.
+
+## Pausing, and starting again
+
+**Pause** is one click from the list; it does not need the series opened first.
+While a series is paused nothing is accepted for it and its countdown stands
+still.
+
+Pausing asks one question:
+
+- **Take the statements away as well.** Off by default. Taking a problem off the
+  screen of somebody in the middle of it is violent, and they have read it
+  already. Turn it on for a leak, or a mistake in a statement.
+
+Resuming asks a different one, and tells you how long the pause has lasted:
+
+- **Give the time back: move the end by the length of the pause.** On by
+  default — an outage taking ten minutes off a contest is the thing pausing
+  exists to prevent. The end, the freeze, the reveal and the end of the
+  visibility window all move by the length of the pause. Unticked, every date is
+  left exactly as it is.
+
+## Whether a series is open is stored, not worked out
+
+The Server keeps *is this running* as a fact of its own rather than comparing
+the dates every time it is asked. A scheduler owns the ordinary transitions — it
+opens the round when the start passes and closes it when the end does — and
+pausing or resuming writes it directly.
+
+You will notice this in two places. A paused round is shut even though its dates
+say it should be running; and a round whose dates you have just moved is
+reconciled in the same act, so the badge and the clock never disagree. What you
+will not see is a screen that says *running* while the Server refuses
+submissions.
+
+## Attaching problems
+
+Each series holds an ordered list of assignments. An assignment is where the
+per-use configuration lives — the letter the participant sees, the version
+pinned, what it is worth, the limits — and none of it is on the problem itself.
+That is [The problem library](/en/client/manager/problems).
+
+## Deleting one
+
+A series can be deleted only while nothing has been submitted to any of its
+problems. Once something has, the button is refused: those submissions are what
+somebody may come back for.

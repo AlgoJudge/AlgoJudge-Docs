@@ -1,0 +1,102 @@
+---
+title: Serie
+description: Runda, tydzień albo zajęcia - jak je zaplanować, przesunąć i wstrzymać.
+source: en/client/manager/series.mdx
+sourceSha256: 1e3853de0ad8a8b3ed7001bbad4dd17608e0e5c8a517d2b4fdaf684be09a2074
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Seria to runda, tydzień albo zajęcia. Jak nazywa się na ekranie uczestnika,
+decyduje typ aktywności; co robi, jest w obu przypadkach takie samo. Aktywność
+trzyma swoje zadania w seriach, więc nowa aktywność potrzebuje serii, zanim
+cokolwiek pomieści.
+
+## Tworzenie i planowanie
+
+**Nowa seria** pyta o nazwę, o slug unikalny w tej aktywności oraz — opcjonalnie
+— o otwarcie i zamknięcie. Resztę ustawia się już na samej serii.
+
+| Pole | O czym decyduje |
+|---|---|
+| Otwarcie, Zamknięcie | harmonogram, względem którego liczy się odliczanie |
+| Ranking widoczny od, do | czy w ogóle jest tablica. Puste *od* oznacza start tej serii; puste *do* oznacza na zawsze |
+| Zamrożenie, Odmrożenie rankingu | zamrożenie wewnątrz tablicy: między tymi chwilami późne wyniki nie są ujawniane. Wyczyść oba, aby odmrozić od razu |
+| Ważność | dopóki ta runda trwa, wszystko o niższej ważności jest zablokowane dla tego, kto w niej startuje |
+| Zasięg ważności | czy ta blokada sięga innych aktywności uczestnika, czy zostaje w tej jednej |
+| Dostępna tylko z | zakresy adresów po przecinku, `10.0.5.0/24`. Puste oznacza zewsząd; poza zakresem runda nie jest w ogóle pokazywana |
+| Ograniczenia włączone | jeden przełącznik zdejmujący naraz ważność i zakresy — na dzień, w którym lista okazuje się zła |
+| Oceniana przez własne Runnery | czy ta runda nadpisuje [tagi Runnerów](/pl/client/manager/runners) aktywności |
+| Pokaż liczbę zadań przed otwarciem | tylko liczbę. Same zadania nigdy nie są wysyłane, dopóki seria jest zamknięta |
+
+Cztery chwile to cztery różne pytania: **zamrożenie** ukrywa późne wyniki
+wewnątrz tablicy, **okno widoczności** decyduje, czy tablica w ogóle jest.
+
+Serie porządkuje się przyciskami w górę i w dół, a nie przeciąganiem — do
+przycisku sięga klawiatura, a kolejność rund ustawia się raz i zostawia.
+
+## Przesuwanie rundy, w minutach
+
+Rzutnik, który nie chciał działać, sieć, która wróciła o 10:07. Karta **Przesuń
+trwanie serii** bierze rundę i liczbę **minut**, i pokazuje nowe godziny, zanim
+je zatwierdzisz. Wartość ujemna przesuwa wcześniej, co jest zupełnie zwyczajną
+potrzebą.
+
+Zamrożenie, odmrożenie i okno widoczności rankingu przesuwają się razem z nią.
+Runda opóźniona o godzinę, która zamarzałaby o starym czasie zegarowym,
+zamarzłaby przed swoim końcem.
+
+<Callout type="warn" title="Wysyłana jest różnica, nigdy dwie nowe godziny">
+Dwoje menedżerów reagujących na to samo opóźnienie odczytałoby stary start,
+dodało dziesięć minut i zapisało tę samą nową godzinę — a jedno z dwóch
+przesunięć zniknęłoby bez śladu. Wysłanie „+10 minut” sprawia, że liczą się oba.
+To także powód, dla którego pole pyta o minuty zamiast dawać ci dwa wybieraki
+daty.
+</Callout>
+
+Seria bez dat nie ma czego przesuwać i karta mówi to wprost, zamiast pokazywać
+myślnik udający godzinę.
+
+## Wstrzymywanie i wznawianie
+
+**Wstrzymaj** jest jednym kliknięciem z listy; nie trzeba wcześniej rozwijać
+serii. Wstrzymana seria nie przyjmuje zgłoszeń, a jej licznik stoi.
+
+Wstrzymanie zadaje jedno pytanie:
+
+- **Zabierz również treści zadań.** Domyślnie wyłączone. Zabranie treści z
+  ekranu komuś, kto jest w jej środku, jest brutalne, a i tak ją już przeczytał.
+  Włącz to przy wycieku albo przy błędzie w treści.
+
+Wznowienie zadaje inne pytanie i mówi, ile trwała przerwa:
+
+- **Oddaj czas: przesuń koniec o długość przerwy.** Domyślnie włączone — awaria
+  zabierająca zawodom dziesięć minut jest dokładnie tym, czemu wstrzymanie ma
+  zapobiegać. Koniec, zamrożenie, odmrożenie i koniec okna widoczności
+  przesuwają się o długość przerwy. Odznaczone — każda data zostaje dokładnie
+  taka, jaka jest.
+
+## To, czy seria jest otwarta, jest zapisane, a nie wyliczane
+
+Server trzyma fakt *czy to trwa* jako osobną wartość, zamiast za każdym razem
+porównywać daty. Zwykłymi przejściami zarządza harmonogram — otwiera rundę, gdy
+minie start, i zamyka, gdy minie koniec — a wstrzymanie i wznowienie zapisują to
+wprost.
+
+Zauważysz to w dwóch miejscach. Wstrzymana runda jest zamknięta, choć jej daty
+mówią, że powinna trwać; a runda, której daty właśnie przesunąłeś, jest
+uzgadniana w tej samej czynności, więc plakietka i zegar nigdy się nie różnią.
+Czego nie zobaczysz, to ekranu mówiącego *trwa* nad Serverem odmawiającym
+przyjęcia zgłoszeń.
+
+## Podpinanie zadań
+
+Każda seria trzyma uporządkowaną listę podpięć. Podpięcie jest tym miejscem, w
+którym mieszka konfiguracja *na ten jeden użytek* — litera widziana przez
+uczestnika, przypięta wersja, ile to jest warte, limity — i nic z tego nie
+siedzi na samym zadaniu. To [Biblioteka zadań](/pl/client/manager/problems).
+
+## Usuwanie
+
+Serię można usunąć tylko dopóki do żadnego z jej zadań nic nie zostało wysłane.
+Gdy już jest, przycisk odmawia: te zgłoszenia są tym, po co ktoś może wrócić.

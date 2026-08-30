@@ -1,0 +1,109 @@
+---
+title: Files
+description: Reading a package, verifying it, uploading what an evaluation produced, and attaching it.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**The accepted specification prevails.**
+`AlgoJudge-Design/specifications/server-runner/SERVER_RUNNER_API.md` v1.1 is the
+contract; on any divergence from this page, it is right and this page is wrong.
+
+## Reading
+
+```http
+GET /api/v1/runner/files/{id}
+```
+
+The package and the submission's files, by the ids the claimed job carried.
+
+<Callout type="warn" title="A Runner is authorized against the job it holds, not against being a Runner">
+Without that, any approved Runner could download every test package in the
+installation.
+
+A file belonging to another problem answers **404, not 403**. A file id is
+opaque, and a 403 would confirm the bytes exist.
+</Callout>
+
+## `sha256`, and where it is checked
+
+The integrity field is called `sha256` — never `hash` — and it is a lowercase
+hexadecimal SHA-256 of the bytes.
+
+It is computed and checked three times over the life of one file, by three
+different parties, and each check exists because the previous one is a claim
+rather than evidence:
+
+| Who | When |
+|---|---|
+| the Client | before uploading |
+| the Server | over the bytes it actually received, refusing a mismatch |
+| **the Runner** | over the bytes it actually received, before evaluating |
+
+**A Runner verifies `packageSha256` before evaluating.** A mismatch is an
+[infrastructure failure, not a verdict](/en/protocol/reporting): the submission
+was never judged, and a truncated download is not somebody's program being wrong.
+
+Hash while streaming rather than by re-reading the file afterwards. The bytes are
+in hand once, and a second pass hashes whatever is on disk now rather than what
+came off the wire.
+
+## Uploading what an evaluation produced
+
+```http
+POST /api/v1/runner/files
+```
+
+Multipart: the bytes as `file`, with a `sha256` text field. The Server recomputes
+the checksum and refuses to store on a mismatch, exactly as it does for anybody
+else. It answers the stored file's id, name, media type, size, checksum and
+creation time.
+
+## Attaching
+
+Uploading stores bytes. Attaching says what they are *of*.
+
+```http
+POST /api/v1/runner/jobs/{jobId}/files      { "leaseToken": "…", "fileId": "…", "name": "log" }
+POST /api/v1/runner/files/attach            { "fileId": "…", "name": "runner.log" }
+```
+
+The first attaches to the **attempt** this Runner holds, and needs the lease
+token. The second attaches to the **Runner itself** — a start-up log, a `lscpu`
+dump — and **replaces** the file under that name rather than adding another, so a
+chatty Runner costs a fixed amount.
+
+`name` is a **role**, not a file name. Two are conventional on an attempt:
+
+| Name | |
+|---|---|
+| `log` | the compiler and sandbox output |
+| `details` | the per-test table |
+
+Who may read either is the **activity's** attachment visibility, one row per
+name. **An unlisted name is managers-only**, which is the safe direction: a
+problem type inventing a third attachment does not accidentally publish it.
+
+### Why the per-test table is an attachment
+
+Because a problem may have two thousand tests **per attempt**. A contest's
+submissions came to hundreds of megabytes in a database column before it moved
+out of one.
+
+That is also why [`extra` is bounded at 2 kB](/en/protocol/reporting): the small
+document rides a feed many people read, and the large one is a file fetched by
+whoever is entitled to it.
+
+<Callout type="warn" title="Upload, attach, then report — the order cannot be worked around">
+The Server requires the job to be `Running` to accept an attachment, and
+reporting ends that.
+
+Report first and the attachment is refused, which means the log explaining a
+failure is the one thing that goes missing.
+</Callout>
+
+## What the contract does not carry
+
+**The package format.** This contract carries the bytes without reading them.
+`standard-io@1` has its own package format specification; another problem type
+may define its own, and neither is part of the Server–Runner contract.

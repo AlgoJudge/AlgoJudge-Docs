@@ -1,0 +1,116 @@
+---
+title: Instancja
+description: Jak nazywa się instalacja, jaki nosi znak, jakie publikuje dokumenty i w jakich kolorach.
+source: en/client/manager/instance.mdx
+sourceSha256: 7b1bc2c17b21beb5af4d8a49f47b52c2f98b1a1cc281ef5eaa2e7f3b185c0574
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Obszar **Instancja** to to, co ta instalacja mówi o sobie. Stoi za nim jedno
+uprawnienie, `instance:update`, trzymane w zakresie całej instalacji i celowo
+nieobecne w dostarczanym szablonie `manager`: prowadzenie aktywności to nie to
+samo co prowadzenie instalacji, w której ona żyje.
+
+Cztery zakładki.
+
+## Ustawienia
+
+| Ustawienie | Co robi |
+|---|---|
+| Nazwa | pokazywana obok znaku produktu i w tytule okna. Pusta pokazuje samo AlgoJudge |
+| Przyjmuj rejestracje lokalne | domyślnie wyłączone: konta zakłada organizator albo przychodzą przez SSO |
+| Wymagaj adresu e-mail | czy konto musi nieść adres |
+| Wymagaj potwierdzonego adresu do logowania | |
+| Pokazuj znak w aplikacji | |
+| Pokazuj formularz hasła na ekranie logowania | |
+| Pozwól usuwać własne konto | domyślnie włączone |
+| Zezwól na ocenianie przez usługi, których ta instalacja nie prowadzi | domyślnie wyłączone |
+
+<Callout type="warn" title="Ukrycie formularza hasła nie zamyka drzwi">
+Ukrywa formularz i nic więcej. Endpoint hasła pozostaje otwarty, administratorzy
+i konta tymczasowe nadal go potrzebują, a `?admin=true` przywraca im formularz.
+</Callout>
+
+Dwa z tych ustawień są decyzjami, a nie preferencjami, i ekran mówi to wprost.
+**Pozwolenie na usunięcie własnego konta** jest prawem z zakresu ochrony danych,
+zanim jest funkcją; jego zamknięcie powinno być decyzją. **Ocenianie przez
+usługi, których ta instalacja nie prowadzi**, oznacza wysyłanie czyjegoś
+zgłoszenia do strony trzeciej — dopóki jest wyłączone, żadne takie zadanie nie
+jest wydawane, a praca po prostu czeka, więc włączenie tego później niczego nie
+traci; włączenie jest tym, co musi uwzględnić polityka prywatności. Dokąd te
+usługi mogą sięgać, opisują [Zasoby
+zewnętrzne](/pl/client/manager/external-content).
+
+Pod ustawieniami są **klucze dostępu**: nazwane sekrety, które ta instalacja
+przechowuje dla usług, z którymi rozmawia. Są **tylko do zapisu**. Nic na tej
+stronie nie odczyta klucza z powrotem, więc ekran mówi, które są ustawione i
+kiedy, i proponuje ich podmianę; zapisanie pustej wartości usuwa klucz.
+
+## Znak
+
+Własne logo instalacji, a dla instytucji, której znak słowny różni się między
+językami — po jednym na język. Język bez własnego znaku używa domyślnego;
+instalacja bez żadnego pokazuje zastępczy znak dostarczany z oprogramowaniem,
+który wygląda na zastępczy.
+
+## Wygląd
+
+Zamknięty zestaw kolorów i krój pisma — nie dowolny CSS. Tylko zamknięty zestaw
+da się utrzymać czytelnym na wszystkich ekranach i tylko taki da się walidować.
+
+Piętnaście kluczy koloru, każdy podawany dla **obu** schematów, jasnego i
+ciemnego, w trzech grupach:
+
+- **Marka** — kolor główny, uzupełniający, akcent i linki. Po jednym heksie; z
+  niego wyliczane jest dziesięć odcieni, których potrzebuje ekran, więc jedna
+  wartość dosięga bladego panelu, kreski i ciemnego tekstu na nim. `link` jest
+  osobnym kluczem, bo w systemie identyfikacji wizualnej link ma zwykle inny
+  odcień, a nie jaśniejszy kolor marki.
+- **Powierzchnie i tekst** — tło strony, panele i karty, tekst, tekst
+  drugorzędny, obramowania.
+- **Powłoka** — nawigacja i pasek nad stroną dla niezalogowanych. Ich stany
+  najechania i wyciszenia są z tego wyliczane.
+
+<Callout type="warn" title="Puste pole to wartość domyślna, a wyczyszczenie jest sposobem cofnięcia">
+Nic tutaj nie ma wartości, dopóki ktoś jej nie wpisze. Nietknięte pole jest
+wysyłane jako nieobecne, a ekran rysuje to, co dostarcza AlgoJudge — nigdy
+czerń i nigdy pustkę.
+</Callout>
+
+Rozmiary, odstępy, zaokrąglenia i **kolory statusów** zostają produktu. Zielona
+*zła odpowiedź* jest defektem, a nie preferencją, i żadna walidacja by tego nie
+złapała, bo każdy heks jest formalnie poprawny.
+
+**Krój** to `fontFamily` i `fontFamilyHeadings`, takie same w obu schematach.
+Rodzina jest albo jedną z czterech nazw rodzajowych — `system-ui`,
+`sans-serif`, `serif`, `monospace` — albo taką, dla której ta instalacja
+przechowuje plik. Cokolwiek innego rozwinęłoby się do tego, co akurat ma maszyna
+czytelnika, a to nie jest motyw.
+
+Pliki kroju wgrywa się jako **WOFF2** i serwuje je ta instalacja; nic nie jest
+pobierane z cudzego serwera. Wgranie i zadeklarowanie to dwa kroki, bo to dwa
+fakty: plik jest przechowany, a motyw mówi, czym rysować. Grubość i odmiana są
+odczytywane z nazwy pliku tam, gdzie ta je podaje — `example-700-italic.woff2`.
+
+Zapis serializuje to, co jest w formularzu, do **pliku motywu** i publikuje go.
+To ten sam dokument, który operator może napisać ręcznie i położyć w katalogu
+prekonfiguracji — dlatego zakładka oferuje **wczytaj plik motywu**, **pobierz
+go** i **wycofaj motyw**. Obowiązuje jedna rzecz i tę jedną można pobrać.
+
+## Dokumenty
+
+Sześć dokumentów publikowanych przez instalację, każdy w tylu językach, ile
+napiszesz: strona powitalna, strona główna po zalogowaniu, regulamin, polityka
+prywatności, informacja o ciasteczkach i deklaracja dostępności.
+
+To, czy dokument istnieje, jest tym, czy jest opublikowany — nie ma osobnej
+flagi. Każdy rodzaj ma historię, a język bez własnego tekstu wraca do
+domyślnego. Jedynym załącznikiem, na który taki dokument może wskazać, jest
+własny znak instalacji, pod ustaloną nazwą.
+
+## Gdzie jest połowa administratora
+
+Wszystko powyżej to konfiguracja robiona z wnętrza aplikacji. Postawienie
+instalacji, kopie zapasowe, aktualizacja i prekonfiguracja czegokolwiek z tego,
+zanim ktoś kliknie na ekranie, to [Instalacja i utrzymanie](/pl/install).

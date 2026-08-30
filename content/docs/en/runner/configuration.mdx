@@ -1,0 +1,137 @@
+---
+title: Configuration
+description: Every environment variable a Runner reads, with its default, and the two that fail in ways nothing else warns about.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A Runner is configured entirely by environment variables. There is no
+configuration file and no command line.
+
+Every variable is prefixed `AJ_`, with `__` between sections — the same
+convention the Server reads, so one Compose file does not have to spell the two
+services differently.
+
+## The Server
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Server__BaseUrl` | **required** | The Server's API root, **including `/api/v1`** |
+
+The prefix is checked at start: a base URL with no `/api/` is refused by name
+rather than discovered as a wall of `404`s. The Server's path guard answers those
+with an empty body, so there would be nothing to read.
+
+## Identity and capabilities
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Runner__Name` | `$HOSTNAME`, else `algojudge-runner` | The name shown in the manager panel |
+| `AJ_Runner__KeyPath` | `/var/lib/algojudge-runner/identity.key` | The Ed25519 key. Generated on first start; put it on a volume |
+| `AJ_Runner__ProblemTypes` | `standard-io@1` | Comma-separated. What this Runner offers to evaluate |
+| `AJ_Runner__Tags` | empty | Comma-separated pools. **A seed, honoured at the first registration only** — see [Tags and routing](/en/runner/routing) |
+
+`AJ_Runner__ProblemTypes` is how a Runner that should also take `output-only@1`
+work is told to: `standard-io@1,output-only@1`. Which types a Runner advertises
+is configuration, not code.
+
+## Polling and the lease
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Poll__MinSeconds` | `1` | Shortest wait after an empty queue |
+| `AJ_Poll__MaxSeconds` | `30` | Longest wait. The backoff is jittered |
+| `AJ_Heartbeat__Seconds` | `60` | How often an **idle** Runner says it is alive |
+| `AJ_Lease__RequestSeconds` | `600` | How long a claim asks to hold a job for |
+
+`AJ_Lease__RequestSeconds` is a **request**. The Server clamps it to
+`[60, 3600]` and answers with the deadline it actually granted, which is the
+authoritative one. The lease is renewed automatically while work is in progress,
+on a timer at a quarter of the granted lease — three renewals fit inside every
+lease, so two may fail in a row with the deadline still ahead.
+
+The heartbeat is sent only when the Runner has nothing to do. A Runner holding a
+job is renewing its lease instead, which says the same thing more precisely.
+
+## Storage
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Cache__Path` | `/var/cache/algojudge-runner` | The package cache |
+| `AJ_Cache__MaxBytes` | `10737418240` (10 GiB) | Cache ceiling |
+| `AJ_Work__Path` | `/var/lib/algojudge-runner/work` | Scratch, as **this process** sees it |
+| `AJ_Work__HostPath` | the value of `AJ_Work__Path` | Scratch, as the **container runtime's daemon** sees it |
+
+The package cache is the only state a Runner keeps besides its key. Losing it
+costs a re-download, nothing more.
+
+<Callout type="warn" title="AJ_Work__HostPath is the path the Docker daemon can open, not the path the Runner sees">
+A bind mount is resolved by the container runtime's **daemon**. When the Runner
+is itself in a container, the path it sees is not a path the daemon can open —
+and a path the daemon cannot open produces an **empty directory** rather than an
+error.
+
+The failure that follows is silent and looks like nothing at all: tests run
+against an empty mount, and every submission is judged against no input.
+
+Where the Runner is **not** containerised the two paths are the same and this can
+be left alone. Where it is, `AJ_Work__HostPath` must name the host directory that
+is bind-mounted at `AJ_Work__Path`.
+</Callout>
+
+## The sandbox and the language images
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Sandbox__AllowCgroupV1` | unset | Start anyway on a host reporting cgroup v1 |
+| `AJ_Sandbox__Image__Gcc` | `algojudge/lang-gcc:local` | |
+| `AJ_Sandbox__Image__Clang` | `algojudge/lang-clang:local` | |
+| `AJ_Sandbox__Image__Python` | `algojudge/lang-python:local` | |
+| `AJ_Sandbox__Image__Pypy` | `algojudge/lang-pypy:local` | |
+| `AJ_Sandbox__Image__Cpp` | — | The old name for `AJ_Sandbox__Image__Gcc`, still read. The new name wins where both are set |
+
+Each image is independent: anything left unset keeps its compiled-in default, so
+an operator republishing one image says so in one line. The defaults are what a
+development stack builds locally, so **a deployment names all four explicitly**.
+
+```ini
+AJ_Sandbox__Image__Gcc=ghcr.io/algojudge/lang-gcc:1.2.3
+AJ_Sandbox__Image__Clang=ghcr.io/algojudge/lang-clang:1.2.3
+AJ_Sandbox__Image__Python=ghcr.io/algojudge/lang-python:1.2.3
+AJ_Sandbox__Image__Pypy=ghcr.io/algojudge/lang-pypy:1.2.3
+```
+
+Pin the same version as the Runner unless there is a reason not to: that pairing
+is what the release was tested as. [Languages](/en/runner/languages) says why the
+compiler version is a thing to pin rather than a thing that moves.
+
+<Callout type="warn" title="AJ_Sandbox__AllowCgroupV1 is on whenever it holds any value at all">
+It is read as *set or not set*, not as a boolean. Any non-empty value turns it
+on — including `AJ_Sandbox__AllowCgroupV1=false`, which reads as *allow*.
+
+To turn it off, remove the variable or leave it empty.
+
+It exists for a development machine whose Docker still reports v1, and it shouts
+at `ERROR` on every start: *"STARTING BELOW SPECIFICATION"*. Times and memory
+reported beside a verdict on such a host are not to be trusted.
+[Isolation](/en/runner/isolation) says why.
+</Callout>
+
+## Logging
+
+`RUST_LOG` sets the log filter, in the usual `tracing` grammar. It is not an
+`AJ_` variable. Unset, the Runner logs at `info`.
+
+## Two ways a configuration fails
+
+**A malformed number panics at start.** Every numeric variable above is parsed
+strictly, and `AJ_Poll__MaxSeconds=3O` — a letter O for a zero — stops the
+process with a message naming the key and the value. There is deliberately no
+fallback to the default: an operator whose setting did nothing would otherwise
+never learn it.
+
+**A wrong `AJ_Work__HostPath` does not fail at all.** It is the opposite case and
+the reason the callout above exists.
+
+Everything else that can be wrong shows up as a queue that never drains. When
+that happens, read [Tags and routing](/en/runner/routing) first.

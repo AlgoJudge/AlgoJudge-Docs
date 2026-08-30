@@ -1,6 +1,47 @@
 ---
 title: AlgoJudge documentation
-description: Self-hosted software for programming contests and courses.
+description: Self-hosted software for programming contests and courses, with automatic evaluation of submitted solutions.
 ---
 
-AlgoJudge is open-source, self-hosted software for programming contests and courses, with automatic evaluation of submitted solutions.
+AlgoJudge is open-source, self-hosted software for programming contests and
+courses, with automatic evaluation of submitted solutions.
+
+You run it yourself. Nobody else holds your participants' accounts, your
+problems or your results.
+
+## Where to start
+
+| If you are | Read |
+|---|---|
+| taking part in a contest or a course | [For a participant](/en/client/participant) |
+| running one | [For a manager](/en/client/manager) |
+| installing AlgoJudge on a machine you own | [Install and operate](/en/install) |
+| building against the API | [Server](/en/server) |
+| running an evaluation machine | [Runner](/en/runner) |
+| implementing a Runner of your own | [Protocol](/en/protocol) |
+
+## How the parts fit together
+
+Three programs, and each one refuses to do the others' work:
+
+- The **Client** is what people look at. It draws activities, problems, forms
+  and results.
+- The **Server** holds everything durable — accounts, problems, submissions,
+  results — and decides who may do what. **It never compiles or runs a submitted
+  solution**, and it does not understand what any particular kind of problem
+  means.
+- A **Runner** does the running. It takes a job, evaluates it in isolation, and
+  reports back. A Runner always opens the connection, so it can sit behind a
+  domestic router with no address of its own.
+
+The consequence worth knowing early: **adding a new kind of problem does not
+require a change to the Server.** The Client learns to draw it and a Runner
+learns to judge it.
+
+## A word on versions
+
+AlgoJudge is `0.x`, and **a `0.x` release carries no promise of backward
+compatibility.** Every minor release comes with a note saying what broke and
+what to do about it. Documentation for older versions is never deleted, because
+for an installation that has not upgraded it is the only documentation that
+works.

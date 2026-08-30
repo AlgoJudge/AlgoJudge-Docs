@@ -1,0 +1,79 @@
+---
+title: Rounds, weeks and classes
+description: What a series is called, what its four states show, and which of them accept a submission.
+---
+
+A **series** is a group of problems inside an activity. A contest calls one a
+**round**; a course calls one a **week** or a **class**.
+
+## Where the name comes from
+
+The name you see — *Round 1*, *Week 3* — is stored on the series, and whoever
+runs the activity may rename it. The **activity type** supplies the default when
+the series is created, and it decides one thing on your screen:
+
+| Activity type | Beside the series heading |
+|---|---|
+| `contest@1` | the **start**, and a countdown to it while it is closed |
+| `course@1` | the **Deadline** |
+| anything else | both |
+
+**An activity with a single series is not split up.** There is no heading and no
+grouping: the problems are simply listed.
+
+## The four states
+
+What a series shows and what it accepts are two different questions, and the
+answer to the second is never the screen's — the Server decides, and a refusal
+the Client performed alone would not be a refusal at all.
+
+| State | Problems | Submissions |
+|---|---|---|
+| **upcoming** | withheld | no |
+| **open** | shown | yes |
+| **paused** | shown, unless the manager took them away as they paused | no |
+| **ended** | shown, for ever | no |
+
+Two consequences worth stating:
+
+- **A round that has ended is still readable.** It is over, not secret, and you
+  can go back to what you were solving. An organiser reusing problems next year
+  may close a finished round off, and then it withholds them like one that has
+  not started — and the panel says which of the cases it is.
+- **The address of a statement does not get you past this.** A link to a problem
+  in a round that has not started, or in one whose statements a manager has just
+  hidden, is refused like everything else.
+
+## What a closed round shows
+
+A panel over the space where the problems would be, saying which of the cases it
+is:
+
+- **Not started yet** — or, where the organiser allows the count to be shown,
+  `Problems: 5`, with blurred placeholder rows behind it. Those rows carry no
+  names: there is nothing hidden behind the blur, because the problems are
+  genuinely absent from what the Server sent.
+- **The series is paused** — a manager stopped it.
+- **The series has ended.**
+- **Locked by …** — a round that outranks this one is running.
+
+Where the round has not started and it has a start time, the panel also shows
+that time and a live countdown. When the countdown reaches zero the page asks
+the Server again, so the problems appear without you reloading.
+
+## Being paused
+
+A pause takes no submission and stops the clock. While one is on:
+
+- the round carries an orange **Paused** badge on the problem list,
+- the header clock says **Paused** instead of counting,
+- the submit form disables its button and gives the reason.
+
+Whether a pause also takes the statements away is decided by the manager at the
+moment of pausing.
+
+## The screen keeps up on its own
+
+A round opening, closing, being paused, resumed or moved arrives as an event and
+the page redraws. So does your status on a problem. You do not have to sit
+reloading at the second a round begins.

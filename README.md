@@ -96,6 +96,7 @@ output is not source.
 | `npm run check:versions` | No page is named so as to look like a version |
 | `npm run check:translations` | No Polish page has drifted from its English source |
 | `npm run check:glossary` | Polish uses the interface's own words |
+| `npm run check:no-playground` | The built site contacts no installation |
 | `npm run snapshot` | The release-day version snapshot |
 
 ### Two dependencies are deliberately not the newest

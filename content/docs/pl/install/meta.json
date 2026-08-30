@@ -1,5 +1,19 @@
 {
   "title": "Instalacja i utrzymanie",
   "description": "Postawienie instalacji, utrzymanie jej i odzyskanie po awarii.",
-  "root": true
+  "root": true,
+  "pages": [
+    "index",
+    "requirements",
+    "first-install",
+    "preconfiguration",
+    "identity",
+    "maintenance",
+    "backup",
+    "restore",
+    "update",
+    "schedule",
+    "reverse-proxy",
+    "troubleshooting"
+  ]
 }

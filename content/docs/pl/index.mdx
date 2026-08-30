@@ -1,6 +1,45 @@
 ---
 title: Dokumentacja AlgoJudge
-description: Samodzielnie hostowane oprogramowanie do konkursów i kursów programistycznych.
+description: Samodzielnie hostowane oprogramowanie do konkursów i kursów programistycznych, z automatyczną oceną nadsyłanych rozwiązań.
+source: en/index.mdx
+sourceSha256: e586b97bb3f85ef7a297dc9e8d9fe8728efa4f418469e5878293b616977c511a
 ---
 
-AlgoJudge to otwarte, samodzielnie hostowane oprogramowanie do konkursów i kursów programistycznych, z automatyczną oceną nadsyłanych rozwiązań.
+AlgoJudge to otwarte, samodzielnie hostowane oprogramowanie do konkursów i
+kursów programistycznych, z automatyczną oceną nadsyłanych rozwiązań.
+
+Uruchamiasz je u siebie. Nikt inny nie trzyma kont Twoich uczestników, Twoich
+zadań ani Twoich wyników.
+
+## Od czego zacząć
+
+| Jeżeli | Czytaj |
+|---|---|
+| bierzesz udział w konkursie albo kursie | [Dla uczestnika](/pl/client/participant) |
+| prowadzisz konkurs albo kurs | [Dla menedżera](/pl/client/manager) |
+| instalujesz AlgoJudge na własnej maszynie | [Instalacja i utrzymanie](/pl/install) |
+| piszesz coś przeciwko API | [Server](/pl/server) — po angielsku |
+| uruchamiasz maszynę oceniającą | [Runner](/pl/runner) — po angielsku |
+
+## Jak to się składa
+
+Trzy programy i każdy odmawia wykonywania pracy pozostałych:
+
+- **Client** to to, na co patrzą ludzie. Rysuje aktywności, zadania, formularze
+  i wyniki.
+- **Server** trzyma wszystko trwałe — konta, zadania, zgłoszenia, wyniki — i
+  decyduje, kto co może. **Nigdy nie kompiluje ani nie uruchamia nadesłanego
+  rozwiązania** i nie rozumie, co znaczy konkretny rodzaj zadania.
+- **Runner** uruchamia. Bierze zlecenie, ocenia je w izolacji i raportuje. To
+  Runner nawiązuje połączenie, więc może stać za domowym routerem bez własnego
+  adresu.
+
+Konsekwencja warta poznania od razu: **dodanie nowego rodzaju zadania nie
+wymaga zmiany w Serverze.** Client uczy się go rysować, a Runner oceniać.
+
+## Słowo o wersjach
+
+AlgoJudge jest w fazie `0.x`, a **wydanie `0.x` nie obiecuje zgodności
+wstecznej.** Każde wydanie minor niesie notatkę, co się zepsuło i co z tym
+zrobić. Dokumentacja starszych wersji nie jest nigdy usuwana, bo dla instalacji,
+która się nie zaktualizowała, jest jedyną działającą dokumentacją.

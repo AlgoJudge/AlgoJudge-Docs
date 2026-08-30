@@ -1,0 +1,130 @@
+---
+title: The REST API
+description: The shape of the surface, what authenticates a request, the error contract, and the admin surface that answers 404 to everything it turns away.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The endpoint-by-endpoint reference is [REST reference](/en/server/rest), which is
+generated from the Server's own `openapi.json` and is never written by hand.
+This page is the shape around it.
+
+## Everything lives under `/api/v1`
+
+The prefix is applied to the whole application — controllers, the Identity
+endpoints and the WebSocket alike — rather than repeated on each route.
+
+<Callout type="warn" title="A request without the prefix is a 404, deliberately">
+Left alone, the framework would answer at both `/health` and `/api/v1/health`.
+A Client asking a correct host for the wrong path would then be *answered*
+instead of corrected, which is the misconfiguration the fixed prefix exists to
+prevent. The guard is explicit and runs before the prefix is stripped.
+</Callout>
+
+## What authenticates a request
+
+| Caller | Credential |
+|---|---|
+| A person, through the Client | the **session cookie** minted by ASP.NET Core Identity, on sign-in or after an OIDC callback |
+| The WebSocket at `/api/v1/ws` | the same cookie. **No token in the query string** — it would end up in proxy logs |
+| A [Runner](/en/server/concepts/runner) | its own bearer token, from a challenge it signed with its immutable key |
+| The admin surface | the loopback interface **and** a token header. See below |
+
+A Runner is not a user and holds no cookie, which is why its controller is
+anonymous at the class level and authenticates each call itself. It is then
+authorized **against the job it holds**, not against being a Runner — without
+that, any approved Runner could fetch every test package in the installation.
+
+Authorisation for everything else is the [permission
+model](/en/server/permissions), resolved per request and cached for that
+request's lifetime only. A longer-lived cache would keep answering with rights
+that had been revoked.
+
+### Parts of the Identity surface are closed
+
+`MapIdentityApi` maps its whole surface unconditionally and offers no way to
+omit any of it, so the Server refuses several of them in middleware — in front
+of the endpoint, before a body is bound.
+
+- **There is no self-service registration.** Accounts are created by an
+  organiser or arrive by SSO.
+- **There is no password reset and no confirmation to resend**, because there is
+  no mail sender in v1. An endpoint that exists and cannot work is worse than
+  one that refuses: it invites a screen to promise something nothing will
+  deliver.
+
+## Errors
+
+Every failure is `application/problem+json` (RFC 9457), including the ones
+nobody raised — a 404 from routing is not an exception, so a status-code page
+supplies the body.
+
+| Member | Meaning |
+|---|---|
+| `status` | the HTTP status |
+| `title` | |
+| `detail` | |
+| `code` | **stable across releases** |
+| `errors` | field name to messages, on a validation failure |
+
+<Callout type="warn" title="Switch on `code`, not on the status">
+A `503` may equally come from an edge proxy that has never heard of this
+product. The code is the Server's own word for what happened.
+</Callout>
+
+## The admin surface
+
+`/api/v1/admin/**` is the **operator's** surface: the maintenance switch, the
+key ring, the storage tools, the pre-configuration endpoint and the
+administrator password.
+
+It requires **two things, and both of them**:
+
+1. the caller is on the Server container's **own loopback interface**;
+2. the request carries the configured token in `X-AlgoJudge-Admin-Token`.
+
+Loopback alone is not enough. Anything that gets a foothold inside the container
+— including the Server's own process — is already on loopback; the token is what
+a stolen foothold does not come with.
+
+The address is captured **before** forwarded headers are applied. Left to the
+rewritten value, a request from the far side of the internet carrying
+`X-Forwarded-For: 127.0.0.1` would look local, and the maintenance switch would
+be a switch anybody could throw.
+
+<Callout type="warn" title="It is deliberately not a permission">
+This is an operator's act rather than a role somebody can be granted. The moment
+it is a permission, it is also something a stolen administrator session can do.
+</Callout>
+
+### Everything it turns away gets a 404
+
+Wrong machine, no token configured, no header, wrong value — one answer, and it
+is `404`, never `403`.
+
+A 403 would confirm that the endpoint is there and that the caller got one of
+the two halves right, which is exactly the feedback somebody probing for it
+wants. **To anything not entitled to be here, this surface does not exist.**
+
+An absent, empty or whitespace token setting closes the whole group. There is no
+"no token means no check" reading: the failure shuts the door rather than
+opening it.
+
+Because the surface is unreachable from the network, the way an operator uses it
+is `docker exec` into the Server's container — which is what `aj-admin` does.
+
+The maintenance gate exempts `/admin`, so an installation that has closed itself
+can still be reopened.
+
+## The generated reference
+
+[REST reference](/en/server/rest) is built from an `openapi.json` pinned by
+commit, fetched from the Server's repository and checked against a recorded
+SHA-256 — never from a local build, which would document whatever happened to be
+on the machine that ran it.
+
+One page per tag rather than one per operation: the pinned document declares 160
+paths over 44 tags, and 160 pages would bury the eight a reader actually wants.
+
+The interactive playground is switched off. Turning it on later is a CORS
+decision, not a framework one.

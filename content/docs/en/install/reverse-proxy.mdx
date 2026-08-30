@@ -1,0 +1,119 @@
+---
+title: Your own reverse proxy
+description: The five rules for putting an installation behind a proxy you already run.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`COMPOSE_PROFILES=app,data`. The bundled nginx is not started; the Server and
+the Client are published on `127.0.0.1:8080` and `127.0.0.1:8082`, and you point
+your own proxy at them.
+
+## The five rules
+
+### 1. One origin, `/api/v1/` to the Server and everything else to the Client
+
+Keeping them on one origin is what makes `API_BASE_URL=/` work, and then there
+is **no CORS to get wrong**. The Client appends `/api/v1` itself — the path is
+fixed on every installation — so that variable names an origin and never a path.
+
+The event socket is `/api/v1/ws`, under the same prefix, so it needs no rule of
+its own beyond the upgrade headers and a read timeout longer than a quiet
+socket.
+
+### 2. Do not route `/api/v1/admin`
+
+<Callout type="warn" title="`/api/v1/admin` must never be proxied">
+It answers only on the Server's **own loopback interface**. A request through a
+proxy arrives inside that container as the bridge gateway, so it would get a 404
+one hop later anyway.
+
+Refuse it at the edge regardless. A refusal that costs no upstream connection is
+better than one that does, and somebody reading your configuration should be able
+to see that the operator's surface is deliberately not proxied rather than wonder
+whether it was forgotten. The bundled nginx returns 404 for the path for exactly
+these two reasons.
+</Callout>
+
+The way in is `docker compose exec -T server aj-admin …`, and that is the whole
+of the supported way in. The published `127.0.0.1:8080` is not a back door: a
+connection to the host's own loopback also arrives as the bridge gateway.
+
+### 3. Do not turn a 502, 503 or 504 from the Server into your own page
+
+The Client reads those. A maintenance window **is** the Server answering `503`
+with a `server.maintenance` body and a `Retry-After`, and the Client turns
+exactly that into its own maintenance page, in this installation's branding and
+language, and polls `/api/v1/health` to learn it may come back.
+
+Intercepting it replaces that with something worse, hides the reason, and — if
+your rule is broad enough to catch the Runner too — defeats the drain, so a
+backup would start while a Runner was still writing a result. In nginx terms:
+`proxy_intercept_errors off` on the API route.
+
+The one case a static page helps is the **application** route, and only for 502
+and 504: the Client container is gone, so the browser gets a connection error and
+has no application to show a message with. Never 503 there — that is the Server
+speaking through the API route.
+
+### 4. Set `TRUSTED_PROXY_NETWORKS` to your proxy's network
+
+The Server refuses to start until it has been told whose word to take for a
+visitor's address. Trusting every sender of `X-Forwarded-For` lets a visitor
+state their own address; trusting only loopback records the proxy instead of the
+person.
+
+The default names the Compose network the bundled nginx sits on. **Behind your
+own proxy, that default is wrong** — put your proxy's network there. Reached
+with no proxy at all, `none` is a complete answer.
+
+Write a **network** address, not a host one: `172.28.0.5/24` is refused at
+startup, by name, with the address it should have been. .NET normalises a CIDR
+with host bits set without a word, which would turn "one machine" into "a whole
+laboratory".
+
+### 5. Send `X-Forwarded-Proto`
+
+Without it the Server sees `http`, and its HTTPS redirect answers a redirect to
+itself. That is an infinite loop, and it looks like the application never
+loading.
+
+## What else to carry
+
+The bundled nginx sends `Host`, `X-Real-IP`, `X-Forwarded-For`,
+`X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port`, sets
+`client_max_body_size` to 128 MB to match the Server's own request ceiling, and
+turns proxy buffering off in both directions — the Client streams nothing, and
+the Server's downloads are already streamed and would be pointlessly spooled to
+disk first.
+
+It sends `Strict-Transport-Security`, `X-Content-Type-Options`,
+`Referrer-Policy`, `X-Frame-Options: SAMEORIGIN` and `Permissions-Policy`, each
+with `always` so the header is not omitted on error responses — which are
+exactly the ones an attacker can provoke most readily.
+
+`X-Frame-Options` is `SAMEORIGIN` rather than `DENY` on purpose: an LTI launch
+puts the application inside an iframe on a Moodle page, and `DENY` would break
+every one of them.
+
+<Callout type="warn" title="There is no Content-Security-Policy, and that is a decision">
+The Client image writes its runtime configuration into `index.html` as an inline
+script at container start — that is what makes one image serve any installation
+— and a policy strict enough to be worth having would need a nonce on it.
+Nothing in the Client emits one, so a CSP would either break the application or
+be `unsafe-inline`, which is a header that says nothing. Closing it belongs in
+the Client.
+</Callout>
+
+## Two different origins
+
+Serving the Client and the Server on different origins works. Then
+`API_BASE_URL` is the Server's public address, and the Client's origin goes in
+the Server's `AJ_Cors__AllowedOrigins`.
+
+## Certificates
+
+Nothing in the stack issues one, and with your own proxy in front the bundled
+nginx is not running at all — TLS is yours. If you use the bundled edge instead,
+`/.well-known/acme-challenge/` is served on both ports so an HTTP-01 challenge
+is never redirected away.

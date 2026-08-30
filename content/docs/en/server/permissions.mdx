@@ -1,0 +1,312 @@
+---
+title: Permissions
+description: The string form, the two scopes, the resolution rules, the three shipped templates, and all 52 keys.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The Server is what enforces authorisation, so the whole vocabulary lives in one
+place: `AlgoJudge.Server/Authorization/Permissions.cs`. The Client fetches it
+rather than hard-coding it, so an installation that adds an entry does not need
+a Client release to show it.
+
+## The form
+
+```
+resource:operation[:qualifier]
+```
+
+A permission is a string, not a column. A schema that enumerated these in
+columns could not express one that did not exist when the migration was written.
+
+`own` versus `all` is baked into the operation rather than evaluated as a
+separate ownership test. That covers the two cases the product has and is
+deliberately not general: "everyone in my group" would need a new operation, not
+a different predicate.
+
+## The two scopes
+
+A [grant](/en/server/concepts/grant) holds a set of these strings and is scoped:
+system-wide (`ActivityId` null) or to one activity. The same string means the
+same thing at either scope; what changes is how far it reaches.
+
+| Scope column below | Where the key is meaningful |
+|---|---|
+| `global` | in a system grant only |
+| `activity` | in an activity grant only |
+| `both` | in either — in a system grant it means "in every activity" |
+
+## Resolution
+
+In this order. The order is the decision.
+
+1. **An activity grant carrying `OverrideSystem` is authoritative inside its
+   activity**, and nothing else applies there — **not even
+   `system:administrator`**. Checked *first*, because checking the administrator
+   bypass before it is exactly how the override would be lost.
+2. `system:administrator`, held in **any** system contribution, bypasses every
+   other check at every other scope.
+3. Otherwise the effective set is the **union**: every system contribution, plus
+   the activity grant when one activity is asked about.
+4. **There is no subtraction anywhere in the model.**
+5. **Nobody may grant, or map onto, a permission they do not themselves hold.**
+   Enforced where a grant is written, not where it is read.
+
+<Callout type="warn" title="Rule 4 has a history worth knowing">
+The rule once read "minus the union of their denies". The denies were removed
+and the subtraction clause outlived them until the override replaced it. A
+document describing a deny list predates the model.
+</Callout>
+
+An `Invited` grant confers nothing. A grant whose `Permissions` column does not
+parse grants nothing either — the alternatives being to lock every user out of
+every screen, or to treat a corrupt row as an administrator.
+
+### System scope is several rows
+
+A user holds one system contribution per source: the manual one, plus one per
+linked identity provider. They union. This is the one place the model is
+additive.
+
+### Two answers a caller must not conflate
+
+The Server's "which activities is this permission held in" query returns
+**null** for *not restricted* and a list for *these activities*. An empty list
+is a third answer and means none.
+
+## The three shipped templates
+
+Choosing a template **copies** its permissions into the grant. Nothing points
+back afterwards, which is the whole reason it is a template rather than a role:
+a role that grants keep pointing at is an object somebody has to keep correct
+for the lifetime of the installation.
+
+The cost is stated plainly: a correction has to be applied to existing grants by
+hand.
+
+<Callout type="warn" title="One object does hold a live reference">
+An identity provider's [mapping rule](/en/server/identity) names a template, and
+the contribution is re-derived from it at **every sign-in**. Editing a template
+touches nobody who already used it — except the people whose grants a mapping
+rule rewrites.
+</Callout>
+
+### `participant` — 7 keys
+
+```
+activity:read        submission:read:own    submission:create    result:read:own
+question:read:own    question:create        ranking:read
+```
+
+This list is load-bearing beyond the grant editor: it is what the staff test
+measures against, and therefore what decides who appears in a ranking.
+
+### `manager` — 32 keys
+
+Everything a participant has, plus:
+
+```
+activity:update            activity:archive      activity:enroll
+problem:read:own           problem:create        problem:update
+problem:share              problem:archive       problem:attach
+submission:read:all        submission:source:read:all
+submission:rejudge         submission:cancel     submission:exclude
+result:read:all            result:log:read:all
+question:read:all          question:answer       question:publish
+announcement:create
+ranking:read:unfrozen      ranking:unfreeze
+user:create:temporary
+grant:read:all             grant:update
+```
+
+Deliberately **not** included: `activity:create`, `activity:delete`,
+`problem:read:all`, `problem:delete`, every `user:` key beyond temporary
+accounts, `template:read`, `template:manage`, the four `runner:` keys,
+`instance:update`, `provider:manage`, `trial:run`. A manager runs an activity;
+they do not run the installation it lives in.
+
+### `admin` — 1 key
+
+```
+system:administrator
+```
+
+One entry, because it bypasses the rest. An administrator with a list of
+individual permissions is an administrator who can be quietly trimmed.
+
+## Staff, and the ranking
+
+A grant is **systemic** — out of the participant count and out of the ranking —
+when it carries any permission an ordinary participant does not hold. The Server
+computes that on every write and never accepts it from the caller.
+
+Two flags are kept per catalogue entry rather than one, because they are two
+questions: *does the participant template grant it* and *does holding it make
+somebody staff*. They differ for exactly one key.
+
+<Callout type="warn" title="`trial:run` is held without becoming staff">
+It is outside the participant template, because a trial spends a Runner and
+opening it is a manager's decision in one activity. It is not staff-conferring,
+because spending your own time on your own package is not seeing or changing
+other people's work.
+
+Inferring one flag from the other would have emptied a whole activity's board
+the moment somebody was allowed to time their own code.
+</Callout>
+
+**A key the catalogue does not describe counts as staff.** An unknown right is
+more likely to be a new one somebody has been given than an ordinary
+participant's, and guessing the other way would quietly put them in the ranking.
+
+## The catalogue — 52 keys
+
+Measured on 2026-08-30 by running `scripts/check-permissions.py`, which compares
+three copies — the Server's catalogue, the Client's fixture and the internal
+specification — and found all three at **52 permissions and a manager template
+of 32**.
+
+### Activity
+
+| Permission | Scope | Means |
+|---|---|---|
+| `activity:read` | activity | see the activity and its series at all |
+| `activity:create` | global | create activities |
+| `activity:update` | both | settings, series, dates, freeze |
+| `activity:archive` | both | close an activity: still readable, nothing new accepted |
+| `activity:delete` | both | destroy an activity and everything in it |
+| `activity:enroll` | both | add and remove members |
+| `trial:run` | both | ask for a package to be run without it being anybody's problem |
+
+### Problems
+
+The library is private by default; these say what a manager may do with a
+problem they can already see. Which problems those are is decided by ownership
+and the share list.
+
+| Permission | Scope | Means |
+|---|---|---|
+| `problem:read:own` | global | see problems they own or that are shared with them |
+| `problem:read:all` | global | see every problem in the installation, sharing ignored |
+| `problem:create` | global | add a problem to the library |
+| `problem:update` | global | edit statement, package, configuration, publish a version |
+| `problem:delete` | global | destroy a problem, refused while it is attached anywhere |
+| `problem:share` | global | change who else can see it |
+| `problem:archive` | global | retire a problem without breaking what uses it |
+| `problem:attach` | both | attach a problem to a series and configure the assignment |
+| `problem:import:external` | global | create a problem whose slug carries a reserved prefix |
+
+The reserved list is **configuration, never a literal in the Server** — it must
+not learn the name of any particular archive.
+
+### Submissions
+
+| Permission | Scope | Means |
+|---|---|---|
+| `submission:read:own` | activity | see one's own submissions |
+| `submission:read:all` | both | see everyone's submissions |
+| `submission:create` | activity | submit a solution |
+| `submission:source:read:all` | both | read the source of someone else's submission |
+| `submission:rejudge` | both | queue another evaluation attempt |
+| `submission:cancel` | both | cancel a queued or running job |
+| `submission:exclude` | both | rule that one submission counts towards no standing |
+
+`submission:source:read:all` is separate from `submission:read:all` on purpose:
+seeing that someone submitted, and reading what they wrote, are different
+disclosures. `submission:exclude` is separate from `submission:rejudge` because
+rejudging asks the Runner to look again while excluding decides an outcome by
+hand.
+
+### Results
+
+| Permission | Scope | Means |
+|---|---|---|
+| `result:read:own` | activity | see one's own verdicts and per-test detail |
+| `result:read:all` | both | see everyone's |
+| `result:log:read:all` | both | read the evaluation log of any submission |
+
+The activity's attachment rules govern **participants**; `result:log:read:all`
+governs managers, and is what lets a jury read a log the participants cannot.
+
+### Questions and announcements
+
+| Permission | Scope | Means |
+|---|---|---|
+| `question:read:own` | activity | see one's own questions and every published one |
+| `question:read:all` | activity | see every question, published or not |
+| `question:create` | activity | ask a question |
+| `question:answer` | activity | answer a question |
+| `question:publish` | activity | make an answered question visible to everyone |
+| `announcement:create` | activity | publish an announcement |
+
+### Ranking
+
+| Permission | Scope | Means |
+|---|---|---|
+| `ranking:read` | activity | see the ranking as published |
+| `ranking:read:unfrozen` | both | see through a freeze |
+| `ranking:unfreeze` | both | lift the freeze for everyone |
+
+### Users
+
+| Permission | Scope | Means |
+|---|---|---|
+| `user:read:all` | global | see the account list |
+| `user:create` | global | create an account |
+| `user:update` | global | edit an account |
+| `user:block` | global | stop an account signing in |
+| `user:create:temporary` | both | create temporary accounts in bulk |
+| `user:merge` | global | carry one account's work onto another |
+
+`user:create:temporary` is the one account operation an activity manager needs —
+a contest hands out accounts at the door — so it is the one that exists at
+activity scope. `user:merge` is its own key rather than part of `user:update`:
+it hands one person's submissions and points to somebody else, and it should not
+arrive with ordinary account editing.
+
+### Grants and templates
+
+| Permission | Scope | Means |
+|---|---|---|
+| `grant:read:all` | both | see who holds what |
+| `grant:update` | both | change what someone holds |
+| `template:read` | global | see the templates |
+| `template:manage` | global | create, edit and delete templates |
+
+`grant:update` is why "nobody may grant a permission they do not hold" exists.
+An activity manager needs it to run their own group, and without that rule it is
+the same as being able to make oneself an administrator.
+
+### Runners and the installation
+
+| Permission | Scope | Means |
+|---|---|---|
+| `runner:read` | global | see registered Runners and their state |
+| `runner:approve` | global | approve a self-registered key |
+| `runner:revoke` | global | revoke a key |
+| `runner:update` | global | rename, retag, add a note |
+| `instance:update` | global | what the installation is called, the mark it shows, the documents it publishes |
+| `provider:manage` | global | register identity providers, edit their claim mapping, enable and disable them |
+| `system:administrator` | global | bypasses every check and cannot be trimmed |
+
+`provider:manage` is the most dangerous key here after `system:administrator`,
+because a mapping rule decides what a token buys. Its two guards are described
+in [Identity](/en/server/identity), and both are enforced rather than
+documented.
+
+`instance:update` is not in the manager template: running an activity is not
+running the installation it lives in.
+
+## Archiving versus deletion
+
+Both follow the same shape: **archive is the ordinary act, deletion is the
+forceful one**, and they are separate permissions so a manager can have the
+first without the second.
+
+- An archived [activity](/en/server/concepts/activity) stays readable and
+  accepts nothing new. It keeps its ranking and its history, because that is
+  what participants come back for.
+- An archived [problem](/en/server/concepts/problem) disappears from the attach
+  picker and takes no new versions, while every assignment already using it
+  keeps working.
+- **A problem that is attached anywhere cannot be deleted.** The database
+  refuses it on its own, whether or not the service layer remembers to check.

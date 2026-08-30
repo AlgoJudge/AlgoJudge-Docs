@@ -1,0 +1,114 @@
+---
+title: Series
+description: A group of problems inside an activity — a round, a week, a class — and the one piece of openness the Server stores rather than derives.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A series is a group of problems inside an [activity](/en/server/concepts/activity).
+Contest vocabulary calls it a round, a course calls it a week or a class; the
+label comes from the activity type's renderer, not from the Server.
+
+`Slug` is unique within its activity. `Order` sets the position.
+
+## Openness is stored, not derived
+
+<Callout type="warn" title="`IsOpen` is a column">
+Nothing may compute openness from the dates, or there would be two answers to
+one question. Decided 2026-08-08.
+</Callout>
+
+| Field | Meaning |
+|---|---|
+| `StartDate`, `EndDate` | the schedule. Optional, so an untimed practice activity needs neither. **They no longer decide whether the series is running** — they are what the scheduler acts on and what a countdown is drawn against |
+| `IsOpen` | whether the series is running now |
+| `PausedAt` | since when a manager has it stopped. A pause takes no submission and stops the countdown |
+| `HideProblemsWhilePaused` | whether the pause also took the statements away. Kept so that resuming knows what it is undoing |
+
+The scheduler owns every transition: it sets `IsOpen` when `StartDate` passes
+and clears it when `EndDate` does, and a manager pausing or resuming writes it
+directly. Every write that moves a date must set it in the same transaction, and
+the scheduler corrects any disagreement it finds at startup.
+
+`RowVersion` gives the row optimistic concurrency, so two Server instances
+cannot both open the same series and two managers cannot lose one another's
+shift.
+
+## What a closed series discloses
+
+`RevealProblemCount` decides whether a participant may see how many problems a
+series holds before it opens. **The problems themselves are never sent while it
+is closed**, whatever this says.
+
+## Ranking freeze and ranking window
+
+Two different mechanisms, and the difference is worth holding:
+
+| Fields | What they do |
+|---|---|
+| `RankingFreezeAt`, `RankingRevealAt` | the freeze. Between these two instants the **Server withholds outcomes**, rather than the Client hiding them |
+| `RankingVisibleFrom`, `RankingVisibleTo` | whether there is a board at all for this round. Absent `From` means the round's own start; absent `To` means for ever |
+
+The freeze hides late results *within* a board; the window decides whether the
+board exists. The window is per round rather than per activity because an
+organiser publishes the first round's standings while the second is still being
+fought.
+
+The Server withholds rather than the Client hiding, because the ranking is
+assembled in the Client: anything sent is disclosed.
+
+## Announcement markers
+
+`StartAnnouncedAt`, `EndAnnouncedAt`, `WindowAnnouncedAt` and
+`UnfrozenAnnouncedAt` record what the scheduler has already announced. They are
+separate from the state they accompany, and that separation is the point: a
+marker answers *has this been announced*, never *is this open*. Keeping them
+apart makes announcing exactly-once a single conditional update, and makes a
+missed announcement recoverable without touching the state.
+
+## Importance, and what it is not
+
+| Field | Meaning |
+|---|---|
+| `Importance` | how much this series outranks everything else while it runs. While it is running, anything of a **lower** rank is locked for whoever is taking part in it |
+| `ImportanceScope` | `Activity` (the default) or `Installation` — how far that reach extends |
+
+Equal ranks survive together, which is what lets two contests share one room. A
+course marking one round an examination should not lock its students out of
+every other course on the installation; a laboratory contest should. Both are
+wanted, so the manager chooses.
+
+<Callout type="warn" title="Visibility, never permission">
+The permission model has no subtraction in it. Grants answer *who may*;
+importance answers *what is reachable while this runs*. They are not the same
+mechanism and importance is not a way to take a permission away.
+</Callout>
+
+## Address rules
+
+`AddressRules` are the address ranges this series may be reached from. Empty
+means anywhere.
+
+**A rule grants and takes away in one act**: a series with any rule is served to
+an address that matches and is **absent** for every other address, whatever
+grant the reader holds.
+
+`RestrictionsEnabled` is the switch for this series alone. Off, it neither hides
+nor locks — and it **keeps its rules**, so turning it back on restores them. A
+wrong list on the day of a contest locks out a whole cohort at once, so there
+has to be something to clear that is not "delete the configuration and rebuild
+it afterwards". The instance carries the same switch for the whole
+installation, for when nobody yet knows which series is at fault.
+
+## Routing
+
+`RunnerTags` overrides the activity's. There are **two states, not three**:
+
+- **null inherits** the activity's tags, and is what every round holds until
+  somebody decides otherwise;
+- a list names the Runners for this round. A round that wants the general pool
+  while its course is pinned to a laboratory writes `default` out, which is why
+  that tag is ordinary text anybody may type.
+
+An empty list would be a third way of writing one of those, and two spellings of
+one meaning is how a manager ends up unable to tell which they chose.

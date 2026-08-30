@@ -1,5 +1,14 @@
 {
   "title": "Server",
   "description": "The domain model, the permission model, and the REST reference.",
-  "root": true
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "permissions",
+    "identity",
+    "api",
+    "events",
+    "..."
+  ]
 }

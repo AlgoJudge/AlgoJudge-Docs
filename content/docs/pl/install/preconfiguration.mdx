@@ -1,0 +1,194 @@
+---
+title: Prekonfiguracja
+description: Postawienie instalacji z plików na dysku zamiast klikania w panelu.
+source: en/install/preconfiguration.mdx
+sourceSha256: 1dc0d0bf71bc06f0a11d76c11dd325d63ddac2932376e028420de6b379a93acb
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Wszystko, co instalacja mówi o sobie — jej nazwa, sposób wpuszczania ludzi,
+strona powitalna, polityka prywatności, znak, kolory — leży w bazie.
+Prekonfiguracja to sposób, w jaki trafia tam z plików, a nie z klikania.
+
+`AlgoJudge-Ops` montuje własny katalog `preconfig/` tylko do odczytu pod
+`/etc/algojudge/preconfig` i kieruje tam `AJ_Preconfiguration__Path`. Katalog
+jest w repozytorium, żeby montowanie nigdy nie zawiodło; wszystko, co instalacja
+w nim umieści, jest ignorowane przez Git, bo to, co konfiguruje organizacja,
+należy do niej. Przy nieustawionym parametrze funkcja jest wyłączona,
+a endpointy odmawiają, nazywając go.
+
+`AlgoJudge-Server/preconfig.example/` to wypełniony katalog do skopiowania.
+
+## Czytane raz, przy pierwszym starcie pustej bazy
+
+Wypełnij `preconfig/` **przed** pierwszym `docker compose up`, a instalacja
+podniesie się już skonfigurowana.
+
+„Świeża” to dwa warunki, sprawdzane zanim ruszy seeder: **brak wiersza
+`Instance` i brak użytkownika.** Dwa, a nie jeden, bo baza odtworzona ze zrzutu
+starszego niż tabela `Instance` też nie ma tego wiersza — a użytkowników ma.
+
+**Potem żaden start już niczego nie stosuje, nigdy.** Ponowne czytanie plików
+przy każdym starcie po cichu cofałoby to, co administrator zmienił w panelu,
+i robiłoby to w chwili najmniej obserwowanej. Drugi raz to ktoś, kto o to prosi:
+
+```bash
+docker compose exec -T server aj-admin config status   # co by się zmieniło
+docker compose exec -T server aj-admin config apply
+```
+
+`status` niczego nie zapisuje, więc można go uruchomić w dowolnym momencie;
+`apply` wykonuje dokładnie to, co wypisał `status`, z tego samego przejścia.
+`apply` nie prosi o słowo potwierdzenia — dodaje, nigdy nie odbiera, i nic z tego,
+co robi, nie jest później nieczytelne.
+
+Obie komendy są za `/admin`: własny interfejs pętli zwrotnej Servera
+i skonfigurowany token, z jednym 404 na każdą odmowę. To celowo **nie jest
+uprawnienie** — rekonfiguruje instalację z pliku, który może tam położyć tylko
+ktoś stojący przy maszynie, i nie powinno być osiągalne z przejętej sesji
+administratora.
+
+<Callout type="warn" title="Pierwszy start, którego nie da się odczytać, w ogóle się nie odbywa">
+Katalog, który nie przejdzie walidacji, zatrzymuje wdrożenie zamiast podnosić
+w połowie skonfigurowaną instalację. Jedyny start, na którym to może się
+zdarzyć, to ten, któremu ktoś się przygląda; każdy późniejszy restart nie czyta
+niczego.
+</Callout>
+
+## Dodaje i nigdy nie odbiera
+
+- Ustawienie, którego plik nie podaje, **zostaje takie, jakie jest**, a nie
+  wraca do wartości domyślnej. Jawny `null` znaczy to samo; trzeciego znaczenia
+  nie ma.
+- Dokument, którego katalog nie niesie, **zostaje opublikowany**.
+- Wycofanie to czynność w panelu, wykonana przez kogoś, kto ją wybrał.
+
+Publikacja dokumentu **dodaje rewizję**, a nie zastępuje poprzedniej, żeby
+pytanie „która polityka obowiązywała trzeciego sierpnia” dalej miało odpowiedź.
+Zastosowanie, które publikowałoby ponownie wszystko, co znajdzie, powiększałoby
+tę historię o wpis na każde uruchomienie i niszczyło to, po co wersjonowanie
+istnieje — dlatego porównanie idzie po **SHA-256**, każdy plik na dysku przeciw
+temu, co jest opublikowane. Równe — nic się nie dzieje. Dwukrotne zastosowanie
+nie powiększa historii rewizji polityki.
+
+Nic nie zapisuje, co zostało zastosowane. Nie ma tabeli stanu ani zapamiętanego
+skrótu: odpowiedź wynika z tego, co naprawdę trzyma baza, więc nie może się od
+niej rozjechać.
+
+## Katalog
+
+```
+preconfig/
+├── algojudge.yml
+├── theme.yml
+├── fonts/
+├── pages/
+└── logo.svg
+```
+
+### algojudge.yml
+
+```yaml
+format: algojudge-preconfiguration
+version: 1
+
+instance:
+  name: "Wydział Matematyki i Informatyki"
+  localRegistrationEnabled: false
+  requireEmail: false
+  requireConfirmedEmail: false
+  showLogo: true
+  showLocalSignIn: true
+  accountDeletionEnabled: true
+  externalJudgingEnabled: false
+  seriesRestrictionsEnabled: true
+  externalFetchHosts:
+    - onlinejudge.org
+```
+
+- `format` i `version` są **wymagane**, a wersja, której ten Server nie zna, jest
+  odrzucana, a nie zgadywana: późniejsza wersja może rozumieć przez znany tu
+  klucz coś innego.
+- Każdy klucz pod `instance:` jest opcjonalny. Brak znaczy „zostaw”.
+- **Nieznany klucz jest odrzucany i nazwany**, z listą akceptowanych. Literówka
+  po cichu zignorowana to klasyczny sposób, w jaki plik konfiguracyjny zaczyna
+  twierdzić coś, co nie obowiązuje.
+- `externalFetchHosts` to **cała lista**, zastępowana, a nie uzupełniana. Pusta
+  lista znaczy, że ta instalacja nie pobiera niczego.
+
+Wartości tekstowe rozwijają odwołanie `${VARIABLE}` ze środowiska samego Servera
+i nic ponadto — bez wartości domyślnych, bez zagnieżdżania. **Nierozwiązana
+zmienna odrzuca zastosowanie** zamiast zapisać tekst własnej nazwy: instalacja,
+której ustawienia wyglądają na skonfigurowane, a nie są, jest gorsza niż taka,
+która nie wstanie.
+
+### pages/
+
+Sześć rodzajów, które publikuje **instancja**:
+
+`welcome` · `home` · `terms` · `privacy` · `cookies` · `accessibility`
+
+Czyli strona powitalna, strona główna po zalogowaniu, regulamin, polityka
+prywatności, ciasteczka i deklaracja dostępności. `rules` nie ma wśród nich —
+regulamin aktywności należy do aktywności, nie do instalacji.
+
+Rdzeń, który nie jest jednym z sześciu, jest odrzucany, z wypisaniem tych sześciu.
+Nazewnictwo jest to samo co dla treści zadania: `welcome.md` to wersja domyślna,
+a `welcome-en.md` tłumaczenie z podtagiem BCP-47, dzielone na **pierwszym**
+myślniku, żeby `welcome-pt-BR.md` przetrwało w całości.
+
+**Front matter to ostrzeżenie, nie odmowa.** Strona, której front matter nie
+podaje `version`, nie wyrenderuje się w Cliencie i powinieneś o tym usłyszeć,
+gdy ktoś jeszcze patrzy — ale strona i tak zostaje opublikowana.
+
+### Znak
+
+`logo.svg`, `logo.png` albo `logo.webp` obok `algojudge.yml`, z nazwą
+`logo-<język>` dla wersji na język. Publikowany jako znak instancji, dokładnie
+tak jak robi to panel.
+
+### theme.yml
+
+Kolory i krój pisma, własny dokument z własnym `format` równym `algojudge-theme`
+i `version: 1`. Jest to **bajt w bajt ten plik, który publikuje panel
+menedżera**, więc motyw wyeksportowany z panelu wchodzi tutaj, a motyw napisany
+tutaj czyta się w panelu — i to samo pozwala porównaniu po sumie kontrolnej
+działać na nim bez zmian.
+
+```yaml
+format: algojudge-theme
+version: 1
+
+light:
+  primary: "#6b4c9a"
+dark:
+  primary: "#a98cd8"
+```
+
+- **Każdy klucz jest opcjonalny, a brak znaczy wartość domyślną produktu** — nie
+  czerń, nie pustkę. Motyw podający dwa klucze zmienia dwie rzeczy.
+- Kolor to sześć cyfr szesnastkowych po haszu i nic więcej: nie słowo kluczowe,
+  nie `rgb()`, nie `var()`. Te wartości trafiają do arkusza stylów, a pole
+  przyjmujące cokolwiek innego pozwoliłoby temu plikowi nieść CSS.
+- Schemat ciemny jest podany w całości, a nie wyliczony z jasnego. Schemat ciemny
+  wyliczony z jasnego koloru przekracza próg kontrastu w sposób nieprzewidywalny.
+- Krój pisma to **plik, który ta instalacja przechowuje**, a nie nazwa, którą ma
+  nadzieję zastać na maszynie czytelnika. Połóż pliki `.woff2` w `fonts/` obok
+  motywu i zadeklaruj je tam. Nazwanie rodziny bez żadnego kroju jest odrzucane;
+  wyjątkiem są cztery nazwy rodzajowe — `system-ui`, `sans-serif`, `serif`,
+  `monospace`.
+
+## Czego nie niesie
+
+**Dostawcy tożsamości i szablony uprawnień są celowo poza tym.** Dostawca
+zarejestrowany z pliku to ścieżka logowania skonfigurowana przez każdego, kto ma
+prawo zapisu do montowanego katalogu, a szablon uprawnień z pliku to przywilej
+z pliku. Jedno i drugie należy do własnej decyzji. Dostawcę rejestruje się
+w panelu: [Tożsamość](/pl/install/identity).
+
+Prekonfiguracja to także **nie środowisko**. Zmienne `AJ_*` konfigurują to, czego
+proces potrzebuje, żeby wystartować — bazę, magazyn plików, zaufane proxy,
+pęk kluczy, token administratora. Ten plik konfiguruje to, co trzyma baza. Dwa
+pliki, dwa cykle życia, dwóch właścicieli i żadne ustawienie nie występuje
+w obu.

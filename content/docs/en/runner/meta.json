@@ -1,5 +1,15 @@
 {
   "title": "Runner",
   "description": "The machines that evaluate submissions, and how to run one.",
-  "root": true
+  "root": true,
+  "pages": [
+    "index",
+    "configuration",
+    "routing",
+    "isolation",
+    "languages",
+    "policy",
+    "problem-types",
+    "uva"
+  ]
 }

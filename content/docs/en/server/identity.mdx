@@ -1,0 +1,215 @@
+---
+title: Identity
+description: How a federated account is keyed, why it is never keyed on an address, and what a claim may never buy.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An installation may trust several OIDC providers at once — a university's SSO,
+`auth.algojudge.app`, whatever else an operator adds. Each is a row an
+administrator edits from the panel rather than a file on disk.
+
+The Server sees a **plain OIDC provider** and nothing more.
+
+<Callout type="warn" title="The Server never learns which identity product is behind a provider">
+Two identity deployments are supported, and neither is named anywhere in the
+model: there is no field, branch or discriminator for either. What differs
+between them is which of the optional switches an operator sets, and every one
+of those already exists.
+
+The evidence is a change that did not happen. In August 2026 one deployment
+gained an account-deletion back channel it had been documented as unable to
+have, built a completely different way from the other one — and not one line of
+the Server changed. A model that had grown a field for *how this product reports
+a deletion* would have had to.
+</Callout>
+
+## A federated identity is keyed on issuer plus `sub`
+
+`UserIdentity` links one account to one identity at one provider, and it is
+unique on `(providerId, subject)`.
+
+<Callout type="warn" title="Never on the email address">
+An address is something a person changes at their provider. A federation keyed
+on it hands the account to whoever inherits the address. `sub` is the only value
+a provider promises is stable and its own.
+</Callout>
+
+Two consequences follow directly:
+
+- **An address changed at the provider does not repoint an account.** The link
+  is unaffected; the address is decoration.
+- **Changing a provider's `Issuer` repoints every user it has.** It is half the
+  key.
+
+`Subject` is opaque: never parsed, never displayed as though it meant something.
+
+An account may hold several links — a university login and
+`auth.algojudge.app` are two ways into the same person — and losing one does not
+end the account while another way in remains.
+
+## One person, one account, whichever door they came through
+
+The rule is about the outcome. The mechanisms that reach it are deliberately
+conservative.
+
+**Provisioning never attaches to an existing account by name or by address.**
+That is the whole reason the key is issuer plus `sub`: a provider that could
+hand over a `preferred_username` matching somebody else's login would be handing
+itself that person's account. A taken login is decorated until it is free.
+
+**An address already on another account is dropped rather than refused.** Two
+providers vouching for the same person will hand over the same address;
+addresses stay unique across accounts, so the second account is provisioned
+without one. It reads as a missing field and is one. What it is not is a reason
+to refuse somebody a directory has already vouched for.
+
+<Callout type="warn" title="Automatic correlation on an unverified address is account takeover">
+It is not a convenience, and the code says so where it would have been easiest
+to do: an LTI roster with nothing to match on correlates on nothing rather than
+on the address it was given.
+</Callout>
+
+An LTI launch for somebody the tool cannot name resolves to **nobody**, and the
+way forward is for that person to sign in through SSO and come back — which
+writes the same link by a route the platform cannot forge. A launch that asserts
+a *different* person for an existing link is reported as a conflict and never
+followed.
+
+Bringing two accounts together after the fact is a deliberate administrative
+act, `user:merge`, with an undo window. It is not something a sign-in does.
+
+## What a sign-in does, in order
+
+The order is the decision, and it is the part most likely to be built backwards.
+
+1. Validate the token and find the subject. No subject, no sign-in.
+2. Resolve the provider's mapping into a permission set.
+3. **Apply the permission change.**
+4. *Then* decide whether to admit.
+
+Step 3 before step 4 is deliberate. A sign-in that is going to be refused still
+has to withdraw what the provider no longer grants — the refusal means "this
+directory no longer says you are staff", and leaving yesterday's contribution in
+place would keep somebody staff for ever by the simple method of never signing
+in again.
+
+Every path through this is idempotent: the same token twice leaves the same
+rows.
+
+## The provider row
+
+| Field | Meaning |
+|---|---|
+| `Slug` | stable, lowercase, URL-safe. It appears in the sign-in path |
+| `DisplayName` | what the sign-in button says. Changed freely |
+| `Issuer` | half of the federated key. Discovery finds everything else from it |
+| `ClientId` | |
+| `ClientSecret` | **write-only** |
+| `Scopes` | space-separated. `openid` is always requested whether or not it is listed |
+| `Enabled` | disabled hides it from the sign-in screen and refuses its callback |
+| `AccountUrl` | where a person edits their own details, because they cannot edit them here |
+| `DeletionUrl` | where a person deletes their account **at the provider** |
+| `ClaimPath` | where in the token the mapped value lives, as a dotted path |
+| `UnmappedBehavior` | `Deny` (the default) or `DefaultTemplate` |
+| `DefaultTemplateName` | what `DefaultTemplate` grants |
+| `DeletionChannelEnabled` | whether this provider may report a deleted account over the back channel |
+| `DeletionSecret` | **write-only** |
+
+`ClientSecret` and `DeletionSecret` are returned by nothing: no endpoint
+discloses them, no projection carries a field for them, and the panel shows
+whether one is set rather than what it is.
+
+<Callout type="warn" title="A provider secret is stored in plaintext, by decision">
+Encrypting it would have relocated the secret rather than removed it — the key
+has to live outside the database, or a backup carries both halves. So the
+exposure is stated instead of engineered around: **a database backup carries a
+usable provider credential** and has to be handled as one.
+</Callout>
+
+`AccountUrl` and `DeletionUrl` are configuration, not discovery: OIDC
+standardises no such URL, so there is nothing to look up and a guess would send
+people to a 404 on somebody else's domain. They are two different addresses for
+two different acts, and sending somebody who wants to leave to a profile editor
+is the kind of helpfulness that reads as a runaround.
+
+Disabling a provider does **not** withdraw what it has already contributed.
+That is a decision about people's access, and turning a provider off to
+reconfigure it should not silently demote everybody who signed in through it.
+
+## Mapping is configuration, not code
+
+A provider carries one `ClaimPath` — `groups`, `realm_access.roles`, whatever
+that provider emits — and a list of rules. One rule is one line of an allowlist:
+*this claim value grants this template*.
+
+**A dotted path, never an expression.** An expression in provider configuration
+is code executed against the contents of a token, and a token is written by
+somebody else. There is no pattern, no prefix, and nothing evaluated:
+`ClaimValue` is compared by exact string equality. A wildcard in an allowlist is
+how an allowlist stops being one.
+
+Two claim shapes are both ordinary and both handled: several claims with the
+same name, and one claim whose value is a JSON array. An installation should not
+have to know which its provider emits.
+
+An empty rule list is a legitimate state and means every sign-in falls to
+`UnmappedBehavior`. Under `Deny` with nothing matched, **no account is
+created** — provisioning somebody the mapping refuses would leave an account
+that can never be used and that an administrator has to explain.
+
+`Deny` is safe as a default only because the Server keeps its own Identity
+permanently: a claim path somebody mistyped cannot lock an installation out,
+because an administrator still signs in locally.
+
+### A mapping rule is the one live reference to a template
+
+Choosing a [template](/en/server/permissions) for a grant copies its permissions
+and nothing points back. A mapping rule is different: the contribution is
+re-derived from it at every sign-in, so **editing the template a rule names does
+reach people**, at their next sign-in. Deleting a named template is refused.
+
+### The two guards
+
+<Callout type="warn" title="A claim never mints privilege on its own">
+`system:administrator` is **unreachable through a mapping, in every
+configuration**, and nobody may map onto a permission they do not themselves
+hold.
+</Callout>
+
+Both are enforced twice, and the second time is the point. The write path
+refuses a rule pointing at a template that carries `system:administrator`, or at
+permissions its author does not hold. The mapping then filters again when it is
+used — because a template can be edited after a rule names it, and "unreachable
+in every configuration" has to mean *at the moment the mapping is used*, not
+only at the moment it was written.
+
+A permission the catalogue does not describe is stripped at the same point. A
+template naming a key this Server has never heard of would otherwise be stored
+into a grant, and an unknown key counts as staff — so a typo in a template would
+quietly take somebody out of a ranking.
+
+## The contribution a provider writes
+
+A provider's contribution is a system-scope [grant](/en/server/concepts/grant)
+carrying `SourceProviderId`. It is **rewritten at every sign-in and is not
+editable by hand**: editing one would last until that person next signed in, and
+a change that silently reverts is a change nobody can trust.
+
+At system scope a user's permissions are the union of the manual contribution
+and one per linked provider.
+
+Mapping into an activity does not exist. That belongs to the LTI work, whose
+purpose is to mirror a course binding.
+
+## The account the Server provisions
+
+It carries no password, which is what makes it not a local account — the profile
+is read-only here and belongs to the provider.
+
+It is **approved on arrival**, because the provider is the decision. An account
+that a trusted directory created and that then sat pending would need an
+approval nobody was told to make, which turns a launch gate into a support
+queue.
+
+`EmailConfirmed` is set only when the token said `email_verified` was true.

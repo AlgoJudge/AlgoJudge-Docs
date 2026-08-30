@@ -1,5 +1,14 @@
 {
   "title": "Protocol",
   "description": "The contract between a Server and a Runner.",
-  "root": true
+  "root": true,
+  "pages": [
+    "index",
+    "registration",
+    "claiming",
+    "reporting",
+    "files",
+    "availability",
+    "not-specified"
+  ]
 }

@@ -1,0 +1,148 @@
+---
+title: Co się stało z moim zgłoszeniem
+description: Pięć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
+source: en/client/participant/results.mdx
+sourceSha256: 88d6aa2614efbef34c7dae5470fafa83fb9507a61fd8bb664110e76d452a35f2
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Jak je znaleźć
+
+**Moje zgłoszenia** wypisują wszystko, co wysłałeś w tej aktywności, po
+dziesięć na stronę, w kolumnach **Data wysłania**, **Zadanie**, **Język**,
+**Status** i **Wynik**. Filtrujesz po zadaniu, po serii i po statusie. Kliknięcie
+wiersza otwiera zgłoszenie.
+
+Wiersze same się aktualizują, gdy przychodzą werdykty — po to jest ten ekran. Tak
+samo panel w prawym dolnym rogu, który trzyma ostatnich kilkanaście zgłoszeń w
+zasięgu wzroku, gdziekolwiek jesteś.
+
+## Pięć stanów
+
+| Stan | Co oznacza |
+|---|---|
+| *W kolejce* | wysłane, czeka, aż podejmie je Runner |
+| *Sprawdzane* | Runner je ocenia |
+| *Zakończone* | skończyło się i jest werdykt |
+| *Błąd* | zepsuła się sama ocena |
+| *Anulowane* | zostało odwołane |
+
+Dopóki zgłoszenie jest oceniane, plakietka pokazuje stan. Gdy się skończy,
+plakietka pokazuje **werdykt** — krótką etykietę od Runnera, na przykład
+`Accepted`.
+
+**Kolor bierze się z punktów, nigdy z treści werdyktu.** Komplet jest zielony,
+część żółta, zero czerwone. Werdykt to napis należący do typu zadania, a
+dopasowywanie się do słowa „Accepted” działałoby dla jednego typu i po cichu
+myliło przy innym.
+
+## Nagłówek
+
+| Pole | Co to jest |
+|---|---|
+| **Autor** | kto wysłał |
+| **Data wysłania** | w strefie czasowej aktywności, z podaną strefą |
+| **Język** | etykieta toolchainu albo `—`, gdy typ żadnego nie ma |
+| **ID** | identyfikator zgłoszenia — podaj go, gdy o nie pytasz |
+| **Wynik** | `punkty / maksimum` albo `—`, dopóki punktów nie ma |
+| **Status** | plakietka opisana wyżej |
+
+Wyprowadzają z niego dwa przyciski: **Zadanie**, z powrotem do treści, i **Kod
+źródłowy**, do [tego, co wysłałeś](/pl/client/participant/source-code).
+
+## Kiedy jeszcze trwa ocena
+
+Zamiast pustej tabeli dostajesz niebieski panel z kręciołkiem: *Czekamy, aż
+runner podejmie zgłoszenie* dla stanu *W kolejce* i *Runner sprawdza to
+zgłoszenie* dla *Sprawdzane*. Sam zastępuje się wynikiem, gdy ten przyjdzie. Nie
+musisz przeładowywać.
+
+## Tabela testów
+
+Dla `standard-io@1` i `output-only@1` — mają wspólną tabelę, bo tabela testów to
+tabela testów:
+
+| Kolumna | Co jest w środku |
+|---|---|
+| **Test** | numer testu |
+| **Status** | `OK`, `WARNING`, `ERROR`, z odpowiednim kolorem |
+| **Czas** | ile zużył Twój program, a obok limit |
+| **Pamięć** | to samo, w MiB |
+| **Wynik** | punkty za ten test wobec jego maksimum |
+| **Uwagi** | dlaczego nie przeszedł i własna notatka checkera |
+
+Czas i pamięć robią się bursztynowe powyżej połowy limitu, a czerwone przy
+limicie i powyżej.
+
+Kolumna **Uwagi** zaczyna się od powodu, za każdym razem tymi samymi słowami,
+więc kolumnę porażek da się przeczytać z góry na dół: *Zła odpowiedź*, *Limit
+czasu*, *Limit pamięci*, *Limit wyjścia*, *Błąd wykonania*, *Naruszenie
+regulaminu*, *Błąd kompilacji*. Powód, którego ta wersja interfejsu nie zna, nie
+jest wypisywany surowo — dostajesz zamiast tego notatkę checkera, w której i tak
+jest szczegół.
+
+Tabela może też napisać: *Dla tego zgłoszenia nie ma wyników testów* oraz *Testy
+pojawią się tutaj po zakończeniu oceny*.
+
+## Wynik `uva@1` nie ma tabeli testów
+
+<Callout type="warn" title="Werdykt należy do kogoś innego">
+Zadanie `uva@1` jest oceniane w onlinejudge.org. AlgoJudge trzyma Twoje
+zgłoszenie i odpowiedź, która wróciła, i niczego nie liczy. **Tabeli testów nie
+ma, bo archiwum żadnej nie ujawnia** — ani liczby testów, ani procentów, ani
+grup — więc tabela byłaby kształtem wymyślonym po to, żeby wyglądał znajomo.
+Zadanie jest zaliczone albo nie; nie ma punktów częściowych.
+</Callout>
+
+Zamiast tego dostajesz:
+
+- **werdykt** archiwum wraz ze skrótem,
+- zdanie *Osądzone przez onlinejudge.org, czyli nie przez tę instalację. Werdykt
+  jest ich.*,
+- małą tabelę: **Czas wykonania**, **Zadanie w archiwum**, **Zgłoszenie w
+  archiwum**, **Wysłano**, **Osądzono**. Identyfikatory archiwum są pokazane jako
+  tekst, nigdy jako odnośniki — ekran uczestnika nie sięga do żadnego innego
+  hosta.
+
+Dwa przypadki szczególne:
+
+- **Nigdy nie osądzone.** *To zgłoszenie nigdy nie zostało osądzone przez
+  zewnętrznego sędziego*, a pod spodem to, co poszło nie tak. To co innego niż
+  zła odpowiedź, i tylko jedno z dwojga dotyczy Twojego rozwiązania.
+- **Błąd kompilacji.** *Archiwum zgłasza błąd kompilacji. Nie udostępnia wyjścia
+  kompilatora.* Archiwum wysyła to wyjście pocztą i pomija ostrzeżenia, więc nie
+  ma tu czego pokazać.
+
+## Log oceny
+
+Karta **Log oceny** pojawia się pod wynikiem, gdy jest co pokazać. O tym, czy
+możesz go czytać, decyduje aktywność: Server albo przysyła plik, albo nie. Gdy go
+nie ma, karty po prostu nie ma i nie jest rozróżniane, czy „nic nie zalogowano”,
+czy „to nie dla Ciebie”.
+
+## Próby
+
+Zgłoszenie jest oceniane więcej niż raz, gdy zostanie przesłane do ponownej
+oceny. Kod źródłowy to te same bajty; każde uruchomienie jest osobną **próbą**.
+
+Rozwijana sekcja **Próby oceny** pojawia się, gdy prób jest więcej niż jedna, i
+niesie numer każdej próby, kiedy się zaczęła, jej stan i werdykt oraz punkty. Od
+najnowszej. Wynik narysowany nad sekcją należy do najnowszej próby.
+
+## Wykluczone zgłoszenie
+
+<Callout type="warn" title="Osądzone, ale nieliczone">
+Pomarańczowy komunikat *To zgłoszenie nie jest liczone do rankingu. Nadal liczy
+się do Twojego limitu zgłoszeń.* oznacza, że menedżer orzekł, że to zgłoszenie
+nie liczy się do żadnej klasyfikacji.
+</Callout>
+
+**Punkty powyżej zostają takie, jakie były.** Wykluczenie rozstrzyga o tym, do
+czego zgłoszenie się liczy, a nie o tym, co powiedziała sprawdzarka — dlatego
+ekran mówi to wprost. Inaczej ten ekran i ranking opisywałyby jedno zgłoszenie
+inaczej i nie byłoby jak się dowiedzieć dlaczego.
+
+Wiersz w panelu w rogu niesie z tego samego powodu pomarańczową plakietkę *Nie
+liczone*. Powód wykluczenia nie jest tu pokazany; jest na ekranie menedżera i w
+Twoim własnym eksporcie danych.

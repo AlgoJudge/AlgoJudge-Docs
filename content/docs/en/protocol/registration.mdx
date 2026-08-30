@@ -1,0 +1,151 @@
+---
+title: Registration and authentication
+description: Announcing a key, waiting for approval, and proving the key on every token.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**The accepted specification prevails.**
+`AlgoJudge-Design/specifications/server-runner/SERVER_RUNNER_API.md` v1.1 is the
+contract; on any divergence from this page, it is right and this page is wrong.
+
+## Registration
+
+```http
+POST /api/v1/runner/register
+```
+
+Anonymous.
+
+```json
+{
+  "name": "runner-01",
+  "product": "AlgoJudge-Runner",
+  "version": "1.0.0",
+  "publicKey": "<32 raw bytes, base64>",
+  "problemTypes": ["standard-io@1"],
+  "external": false,
+  "tags": ["lab-a"],
+  "machine": { "os": "Debian 12", "cores": 16 }
+}
+```
+
+Answers `{ runnerId, fingerprint, state }`, where `state` is `pendingApproval`,
+`approved` or `revoked`.
+
+| Member | |
+|---|---|
+| `name` | what the manager panel shows |
+| `product`, `version` | which implementation this is, and which release |
+| `publicKey` | see below |
+| `problemTypes` | matched by string equality, never parsed |
+| `external` | whether this Runner sends submissions **outside the installation**. Optional, defaults to `false` |
+| `tags` | which pools it belongs to. Optional, and a **seed** — see below |
+| `machine` | host facts. Stored opaquely and only ever shown; the Server does not read inside it |
+
+<Callout type="warn" title="publicKey is the raw 32 bytes, not an SPKI wrapper">
+The implementation is the clearer statement here. The Server takes the bytes
+straight into an Ed25519 public-key parameter object; an SPKI blob is 44 bytes
+and is refused.
+
+| Refusal | Code |
+|---|---|
+| The key is not 32 bytes | `runner.key.length` |
+| The key is not base64 | `runner.key.malformed` |
+| The key has been revoked | `runner.revoked`, **409** |
+
+A useful check on arrival: the Server answers with the fingerprint it computed.
+Both sides hash the same 32 bytes, so a disagreement means something re-encoded
+the key in transit — and every signature after that would fail with nothing to
+explain it.
+</Callout>
+
+### Registering again is how a restart is reported
+
+A Runner registers on every start. The identity is the key, so this does not
+produce a second Runner and does not need a second approval; **every field above
+is refreshed** — except one.
+
+**`tags` is read on the first registration and never again.** From then on it
+belongs to the operator, who sets it on the manager's surface. It exists so a
+room of machines can be deployed from one configuration rather than tagged one at
+a time, and it stops there: a Runner that could re-declare its tags on restart
+would move itself into an examination's pool with nobody having approved that.
+Approval — the trust gate — happened before the tags existed.
+
+`tags` is normalised: trimmed, lowercased, de-duplicated. Absent means the default
+pool. A Server holds a Runner to sixteen tags of sixty-four characters.
+
+### The Runner does not report its own address
+
+The Server reads it from the connection. A machine is a poor witness to how it is
+reached — it sees a private interface or a container's address, not what the
+Server actually talked to.
+
+This makes forwarded-header configuration load-bearing rather than tidy: behind a
+reverse proxy without it, every Runner is recorded as coming from the proxy.
+
+## Approval
+
+Approval is a manager's act, on the ordinary session-authenticated surface:
+
+```http
+POST /api/v1/runners/{id}/approve
+```
+
+That is not a Runner call and needs no place in a Runner implementation. What a
+Runner needs to handle is the waiting.
+
+**Waiting is not a fault, and there is no timeout.** A Runner that has registered
+and not been approved is refused a token, and the right response is to back off
+and ask again — for as long as it takes somebody to reach the panel. A process
+that exited because nobody had got to it yet would need something else watching
+it.
+
+<Callout type="warn" title="There is no key rotation, and revocation is permanent">
+A revoked key is refused at registration with `runner.revoked` and never comes
+back. An implementation should treat that refusal as **terminal** rather than
+retrying: coming back means a new key, a new registration and a new approval,
+which are decisions for a person.
+</Callout>
+
+## Authentication
+
+Two calls, both anonymous, because a Runner has no session.
+
+```http
+POST /api/v1/runner/auth/challenge      { "fingerprint": "…" }
+   → { "nonce": "…", "expiresAt": "…" }
+
+POST /api/v1/runner/auth/token          { "fingerprint": "…", "nonce": "…", "signature": "…" }
+   → { "token": "…", "expiresAt": "…" }
+```
+
+The signature is **Ed25519 over the UTF-8 bytes of the nonce**, base64.
+
+The nonce is **single-use and short-lived**, and both properties matter: without
+single use, a captured exchange is replayable for ever; without expiry, one
+captured today is usable next year.
+
+| Refusal | Code |
+|---|---|
+| No such nonce, or already spent | `runner.nonce.unknown` |
+| The nonce has expired | `runner.nonce.expired` |
+| The nonce belongs to another Runner | `runner.nonce.mismatch` |
+| The signature does not verify | `runner.signature` |
+| Registered but not yet approved, **or revoked** | `runner.notApproved` |
+
+Note the last row. **Revocation is refused at registration, not here**, so a
+Runner revoked while it held a token sees `runner.notApproved` on its next call —
+approval is checked on **every** call, not only at the handshake, which is what
+makes revoking a Runner stop the one that is already working.
+
+### Losing a token is ordinary
+
+Tokens live in the Server's memory. An ordinary Server restart therefore answers
+`401` to a Runner that was working perfectly, and the correct response is to
+forget the token and shake hands again — not to exit, and not to re-register as
+something new.
+
+An implementation that treats a `401` as fatal will restart itself every time the
+Server is updated.

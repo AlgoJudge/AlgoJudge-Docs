@@ -1,0 +1,70 @@
+---
+title: Groups
+description: When the contestant is a team rather than a person.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Groups are managed above the roster on an activity's **Participants** tab: add
+one by name, then set it on each person's row.
+
+## What a group is
+
+Several people competing as **one**, inside one activity. A group submits, it
+spends **one** submission allowance, it holds **one** row in the ranking, and
+its grade goes to every member.
+
+Its members are not contestants themselves. Somebody competing in a group has no
+row of their own — a row per member would score the same points twice in one
+table — and their own row on the board is their group's.
+
+**A group of one is legitimate.** It is how you give one person a name and a
+description in a ranking.
+
+## The rules that follow from it
+
+- A person is in **at most one group** per activity. It is recorded on their
+  membership, not on their account, so the same person may be in a group here and
+  on their own next door.
+- **If somebody is in a group, sending as the group is compulsory.** It is never
+  a choice offered at submission time; the Server decides it from the membership.
+- Staff are not grouped. The control is disabled for a grant that runs the
+  activity, for the same reason the ranking leaves them out.
+
+<Callout type="warn" title="Moving somebody moves nothing already sent">
+A submission stamps its group when it is made and keeps it. You may move
+somebody to another group at any time, and it changes what happens next and
+nothing that already happened — a board read an hour ago still reconciles with
+the board now.
+</Callout>
+
+## The allowance
+
+A ceiling binds **a contestant**, not a person.
+
+- In a group, it counts that group's submissions.
+- Outside one, it counts what the person sent **while not in a group**.
+
+The second half is the one worth knowing: counting everything somebody ever sent
+would charge them for their old group's spending, and counting only the group's
+would make leaving a group a way round the ceiling.
+
+## Naming the members on the board
+
+On the activity's settings tab, **name the members of a group on the ranking**.
+On, a group's row carries its roster under its name; off, it carries the group's
+name alone. It changes nothing in an activity where nobody competes as a group.
+
+## A system group
+
+A group can be marked systemic. It contributes no contestant and no results —
+the same rule that keeps staff out of a ranking, one level up — and it **still
+submits and still spends its allowance**, which is what makes it useful for
+checking an activity from the inside while it runs.
+
+## Removing one
+
+Deleting a group leaves the people who were in it; they simply compete on their
+own again. A group that has submissions cannot be deleted at all: that stamp is
+the record of what competed. Mark it systemic instead — that is how a group is
+retired.

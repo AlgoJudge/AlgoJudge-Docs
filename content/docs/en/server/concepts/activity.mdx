@@ -1,0 +1,112 @@
+---
+title: Activity
+description: A contest or a course — the outermost container, the unit of enrolment, and the owner of the limits the Server itself enforces.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An activity is the outermost container: a contest, a course, a practice set. It
+owns [series](/en/server/concepts/series), [groups](/en/server/concepts/group),
+questions, attachment rules, and the [grants](/en/server/concepts/grant) that
+are its membership.
+
+## Identity and type
+
+| Field | Meaning |
+|---|---|
+| `Slug` | human-readable alias used in URLs, for example `AMMPZ-2019`. Unique per installation, case-insensitively, and immutable once set. **It is not an identifier** — nothing references an activity by slug |
+| `Name` | what people see |
+| `Type` | discriminator, `name@version`. Never interpreted by the Server |
+| `RankingType` | which ranking the Client renders, for example `icpc` or `points` |
+| `TimeZone` | IANA zone the activity's clock is displayed in. **Every instant in the schema is stored UTC**; this is what a manager's "18:00" means when they type it |
+
+`RankingType` is deliberately separate from `Type`, and deliberately never
+branched on in the Server: the moment the Server reads it, adding a ranking
+format becomes a Server release.
+
+## Lifecycle
+
+Two timestamps rather than two booleans, because *since when* is a question that
+gets asked and a flag cannot answer it.
+
+| Field | Meaning |
+|---|---|
+| `PublishedAt` | when somebody decided this exists for the people taking part. **Null means it is being prepared** |
+| `ArchivedAt` | archived: still readable, accepting nothing new — no submissions, no questions, no edits |
+
+**Nothing opens while `PublishedAt` is null.** The series scheduler skips the
+whole activity, so a copy of last year's course does not spring open the moment
+somebody duplicates it. Whoever may edit the activity still reaches it.
+
+Publication is the whole activity, not each round. Hiding rounds one by one
+would allow a half-published copy that nobody chose and that reads, from
+outside, like a deliberate schedule.
+
+Archiving is the ordinary way an activity ends. Deleting one destroys
+submissions participants may still want to look back at, which is why
+`activity:delete` is a separate permission and is not in the manager template.
+
+## Enrolment
+
+| Field | Meaning |
+|---|---|
+| `JoinPolicy` | `Closed`, `Password` or `Open`. These are the three answers to **self**-enrolment; a manager may always enrol somebody by hand, which is what a grant is |
+| `JoinPassword` | the join code under `Password` |
+| `Unlisted` | hidden from the activity list of anybody not enrolled — reachable by its address and nothing else. Independent of the policy |
+
+`JoinPassword` is a join code, not a credential. It authenticates nobody and
+belongs to the activity rather than to a person, so it is neither an end-user
+password nor an exception to the rule that those do not live in the Server. A
+manager reads it back on purpose: its whole use is to go in a link.
+
+## Limits the Server enforces
+
+These are columns rather than entries in an opaque configuration document,
+because the Server is what rejects the request — it cannot police a value it
+does not read.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `MaxUploadBytes` | 8 MiB | ceiling on a participant upload |
+| `MaxAttachments` | 1 | how many files one submission may carry |
+| `MaxSubmissionsPerProblem` | null | submissions one participant may make per problem; null is unlimited |
+
+An [assignment](/en/server/concepts/assignment) may narrow all three. Time and
+memory limits are **not** here: they are the Runner's, and they only become
+knowable while the solution is running.
+
+## Visibility
+
+| Field | Meaning |
+|---|---|
+| `ScoreVisibility` | `Everyone`, `ParticipantOnly`, `ManagersOnly`. Who sees scores — which also decides whether the ranking exists at all |
+| `ShowGroupMembers` | whether a group's ranking row also names who is in it. Off by default |
+| `HideEndedSeriesProblems` | take the problems of a finished series away rather than leaving them readable. Off by default |
+
+There is no second switch beside `ScoreVisibility`: a board turned on where
+nobody may see a score shows nothing, and the two settings would disagree.
+
+## Attachment rules
+
+`AttachmentRule` is a table, one row per attachment name, keyed on the name
+**within the submission** — `source`, `log`, `details` — never on the uploaded
+file name, which is `main.cpp` and differs per person.
+
+<Callout type="warn" title="A name with no rule is managers-only">
+The cost of being wrong here is asymmetric: an over-cautious default is one
+click, an under-cautious one leaks the tests during a contest. A Runner that
+starts attaching something new must not publish it by arriving.
+</Callout>
+
+## Routing
+
+`RunnerTags` says which Runners judge this activity's submissions. Empty means
+the default pool, which is every Runner nobody has tagged. A
+[series](/en/server/concepts/series) may override it, and usually should:
+pinning a whole course to a laboratory sends its homework there too, including
+whatever is submitted from home at night while those machines are off.
+
+## Props
+
+`Props` is free display metadata, opaque since 2026-08-22, never queried and
+never filtered on. Null means none — never `{}`.

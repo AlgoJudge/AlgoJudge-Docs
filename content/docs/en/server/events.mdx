@@ -1,0 +1,165 @@
+---
+title: Change notifications
+description: One socket, one envelope, no subscriptions and no replay — and why a notification is a signal to refetch rather than a payload to trust.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+```
+GET /api/v1/ws        upgrade, same origin, same session cookie
+```
+
+**One connection per tab**, carrying core, participant and manager events
+together. A connection nobody is signed in for is refused at the handshake with
+`401`.
+
+Authenticated by the session cookie that authenticates every other request. **No
+token in the query string** — it would end up in proxy logs.
+
+## The rule this whole surface exists under
+
+<Callout type="warn" title="REST is the source of persistent state; the socket only says something changed">
+There is no replay, no cursor and no catch-up buffer. A screen must be correct
+with the socket permanently down.
+
+A replay buffer would make the socket a second source of truth, and the first
+disagreement between the two would be a bug nobody could reproduce.
+</Callout>
+
+An event is an optimisation. Treat it as a signal to refetch, not as a payload
+to trust — even where a payload carries a whole object, which several do, so
+that a screen can redraw without a round trip.
+
+## The envelope
+
+```json
+{ "type": "submissionStateChanged", "data": { "activityId": "…", "submission": {} } }
+```
+
+No wrapper, no batching, no ids, no acknowledgements. JSON is camelCase and null
+members are omitted rather than sent.
+
+The payload of each type is the one declared beside it in the Client's API
+modules; **those declarations are the schema**. The Server names the types and
+fills the shapes, it does not invent them.
+
+## There are no subscriptions
+
+The Client asks for nothing. Anything it sends up the socket is ignored on
+purpose.
+
+The Server sends an event to a session **only if that session may read what the
+event names**, judged by the same permission model that guards the REST endpoint
+carrying the same data. Fan-out runs through one implementation of that
+question — there were three once, and two of them read only the grants belonging
+to the activity, so an administrator holding a system grant and nothing else was
+left out of events they were entitled to.
+
+The [`OverrideSystem`](/en/server/concepts/grant) flag applies here too, which is
+the easy place to forget it: somebody who stood down to compete in an activity
+would otherwise go on being told what the staff are told about it — including,
+in a contest, about other people's submissions.
+
+A subscribe protocol was rejected because it would restate the permission model
+on the wire, and a client that can ask is a client that can ask for something it
+may not have. The cost is that a screen receives events it is not currently
+showing, which is cheap.
+
+## What it carries
+
+Three audiences, one socket. They are three because the audiences differ, not
+because the transports do.
+
+### Core — anybody with a session
+
+| Type | |
+|---|---|
+| `systemMessage` | |
+| `sessionExpired` | |
+| `maintenanceChanged` | the installation has withdrawn from service, or come back |
+
+`maintenanceChanged` goes to everybody, because it is not about anything a
+permission scopes: a window applies to whoever is looking. A screen that learns
+this way redraws as maintenance; one that learns from its next failed request
+shows an error first.
+
+### Participant
+
+| Type | |
+|---|---|
+| `activityCreated`, `activityUpdated`, `activityDeleted` | |
+| `activityTimesChanged` | |
+| `seriesChanged` | one event rather than five, differing only in `change`: `opened`, `closed`, `paused`, `resumed`, `rescheduled`. `opened` carries the problems that were withheld until then |
+| `problemStatusChanged` | |
+| `submissionStateChanged` | sent as a job is claimed, finishes, or is cancelled |
+| `rankingChanged` | |
+| `questionAnswered`, `questionPublished`, `announcementPublished` | |
+
+`submissionStateChanged` carries the submission whole, as the **participant's**
+projection: rescaled score, no per-test document, nobody else's submission.
+
+Two `rankingChanged` reasons — `unfrozen` and `windowOpened` — carry no result
+on purpose. They mean *what you hold is now incomplete*, and the screen
+refetches.
+
+### Manager
+
+| Type | |
+|---|---|
+| `permissionTemplateChanged`, `grantChanged` | |
+| `problemChanged`, `activityChanged` | |
+| `managerSeriesChanged` | |
+| `submissionChanged`, `questionChanged` | |
+| `userChanged`, `runnerChanged`, `instanceChanged` | |
+
+<Callout type="warn" title="`managerSeriesChanged` is not `seriesChanged`">
+They shared one wire name until 2026-08-08 and carry different payloads: the
+participant's requires `series` and `change`, the manager's has neither and may
+carry `deletedId` instead.
+
+The envelope has no scope member, so one name meant one shape had to be guessed
+from its contents — and a router testing the participant shape first never
+reached the manager dispatcher at all. **One wire name, one shape.**
+</Callout>
+
+## The heartbeat
+
+The Server sends a `ping` frame — `type` is `ping`, `data` is empty — every 25
+seconds. Nothing is expected back, and anything the Client sends is ignored: the
+ping exists so that a half-open socket is noticed rather than counted.
+
+`ping` is not one of the three dispatchers' types, so a Client drops it the same
+way it drops any type it does not know.
+
+That count is not incidental. **The number of open sockets for a session is
+counted live** from the connection registry and never stored, and the users
+screen shows it as "active". A socket that died silently and stayed counted
+would make the screen lie about who is present.
+
+## Reconnect is a refetch
+
+A dropped connection is reopened on a doubling backoff, from one second to a
+ceiling of thirty seconds, and is not given up while a session lasts.
+
+A connection that **returns** — one that had been open and was lost — tells the
+screens so, and they refetch. A first connection does not, and neither does one
+started again after a deliberate stop: that is a first connection, not a return,
+and must not make every screen refetch.
+
+## Forward compatibility
+
+An unknown event type is ignored, on purpose: a newer Server may send events a
+Client build has never heard of, and that must not break the tab. Adding a type
+is additive.
+
+A frame that is not JSON, or whose `type` is not a string, is dropped without
+taking a screen down.
+
+## What is still open
+
+**Back-pressure.** What the Server does with a session whose socket is not
+draining. Dropping the connection is the honest answer, since reconnect is a
+refetch, but the threshold is unset.
+
+A [Runner](/en/runner) does not use this socket. It polls, over the
+[protocol](/en/protocol) — a different audience with different authentication.

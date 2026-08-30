@@ -1,0 +1,112 @@
+---
+title: Activities
+description: A contest, a course or a practice set, and the four tabs it is built in.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An activity is one place where problems are given to people: a contest, a
+course, a practice set. Everything else on this panel either feeds one or reads
+one.
+
+## Creating one
+
+**New activity** asks for three things and nothing more:
+
+- a **name**;
+- a **slug**, used in addresses — `AMMPZ-2019`;
+- a **type**, chosen from a list rather than typed.
+
+The rest is edited on the activity itself, with defaults to start from. Asking
+for the whole settings form before the activity exists would be a worse first
+step.
+
+<Callout type="warn" title="The slug is immutable once set">
+Participants' links point at it. The create form says so, and the field on the
+settings tab is locked from then on. Choose it as you would a URL, because that
+is what it is.
+</Callout>
+
+**Type** is a choice because the type decides how the activity presents its
+series — a string nothing is registered for gets whatever the fallback happens
+to do. **Ranking type** (`points` or `icpc`) is a separate setting and
+independent of it: it chooses which ranking is drawn.
+
+A new activity arrives **unpublished** and the list shows it as *being prepared*
+rather than giving it a state read off its dates. Nothing opens and nobody but
+you reaches it until you **Publish** it; **Withdraw** puts it back.
+
+## Time is stored in UTC and shown in the activity's zone
+
+The activity carries a **time zone**, and every instant it owns is displayed and
+entered in that zone, with the zone named on the field. What is stored is UTC.
+
+That matters when you are not in the room: a manager sitting in another zone can
+set a contest that opens at 18:00 **in the contest's** clock without doing
+arithmetic, and the times a participant sees do not depend on where either of
+you is sitting.
+
+## The four tabs
+
+The open tab is in the address, so a reload, a bookmark and a link you send all
+land where you were.
+
+### Series and problems
+
+Rounds, and what is attached to them. They are edited together because a series
+with no problems is not yet a round. See [Series](/en/client/manager/series) and
+[The problem library](/en/client/manager/problems).
+
+### Settings
+
+Everything the activity is configured with:
+
+| Group | What is in it |
+|---|---|
+| Identity | name, slug (locked), type, ranking type, time zone |
+| | who sees what a submission carries — one row per file a Runner attaches, each either *managers only* or *participant* |
+| Dates | start and end. Leave both empty and the activity spans its series: the earliest start and the latest end |
+| Modules | questions and announcements. A disabled module leaves the participant's sidebar entirely |
+| | whether the problems of a finished series stay readable — off, a finished round is over rather than secret |
+| Visibility and enrolment | who sees scores and the ranking, who may join, whether it is hidden from the list, whether a group's ranking row names its members, the join password and the link to hand out |
+| Runners | the tags that decide which machines judge it — see [Runners](/en/client/manager/runners) |
+| Limits | maximum upload, files per submission, submissions per problem |
+
+The three limits at the bottom are the ones the **Server** enforces. Time and
+memory belong to the problem: they only become knowable while a solution runs,
+and they are set in its [package](/en/client/manager/packages).
+
+### Documents
+
+Three documents an activity may publish, each in as many languages as you write:
+
+| Kind | Who reads it |
+|---|---|
+| welcome | somebody who is not enrolled, looking at the activity from outside |
+| home | somebody who is in it |
+| rules | the rules page |
+
+They are the same editor the installation publishes its own documents in, and
+they behave the same way: publish, unpublish, and a history per kind. A language
+with no text of its own falls back to the default one. Whether an activity has
+rules is whether one is published — there is no separate switch.
+
+Clicking into an activity as a participant lands on the **home** document when
+one is published, and on the problems otherwise.
+
+### Participants
+
+Who is in it, and what they may do — one act, not two. See
+[Enrolment](/en/client/manager/enrolment) and
+[Groups](/en/client/manager/groups).
+
+## Archiving, and deleting
+
+**Archive is the ordinary act.** An archived activity stays readable and accepts
+nothing new — no submissions, no questions, no edits — and keeps its ranking and
+its history, which is what people come back for. Restore it to keep editing.
+
+**Deletion destroys everything in it** and is refused outright for an activity
+that has participants; the button says so instead of failing on the click. It
+also needs `activity:delete`, which is deliberately not in the shipped `manager`
+template.

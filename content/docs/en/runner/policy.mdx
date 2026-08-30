@@ -1,0 +1,132 @@
+---
+title: The policy profile
+description: What a Runner refuses to compile, why a refusal is a verdict rather than a crash, and why every rule in it is expected to be bypassable.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Before a submission is built, the Runner reads its source and checks it against a
+**forbidden-identifier dictionary**. The profile that ships is
+`standard-io/default@1`, compiled into the Runner and versioned with it.
+
+It exists so that a problem states *"the default rules"* rather than restating
+sixty words, and so a problem written today still gets a reviewed set tomorrow.
+
+## A refusal is a verdict
+
+A submission that matches a rule is **never compiled and never run**. The result
+is the verdict `PolicyViolation` with a score of zero, listing every rule that
+matched with the text and the line it matched on.
+
+Three things follow, and each is deliberate:
+
+- **It is not a crash and not an infrastructure failure.** The evaluation
+  completed; the answer is that the submission broke a rule of the activity.
+- **The participant is told which rule**, early, instead of finding out from a
+  results table.
+- **The submission stays rejudgeable.** A manager who decides the rule should not
+  have applied can widen the problem's configuration and rejudge.
+
+Zero is the honest score here. A submission refused for infrastructure reasons
+carries **no score at all**, because a zero on a board reads as a wrong answer
+about a program that was never run.
+
+## What is checked, and how
+
+The source is read as text, with **comments and string literals stripped first**,
+and matches are **whole tokens** — never substrings — and case-sensitive. Every
+match is reported rather than only the first. Only the submitted source is
+scanned; expanding the preprocessor and scanning that again is available per
+problem and is not the default, because system headers expand into everything.
+
+### C and C++
+
+C and C++ share one rule set. `<unistd.h>` is `<unistd.h>` and `fopen` is
+`fopen`; the handful of C++-only names in the list are words a C program cannot
+contain, so they cost nothing.
+
+**Denied headers** are matched as `#include` directives. The list covers the
+POSIX and Linux system headers — process control, file descriptors, sockets,
+memory mapping, `ptrace`, raw syscalls, capabilities — the Windows headers, and
+the C++ standard headers that reach outside the process: `fstream`,
+`filesystem`, `thread`, `future`, `mutex`, `condition_variable`, `semaphore`,
+`execution`, `syncstream` among them.
+
+**Denied identifiers**, grouped, because `<bits/stdc++.h>` transitively provides
+much of the above whatever a submission includes:
+
+| Rule | What it catches | Default |
+|---|---|---|
+| Running another program | `system`, `popen`, `pclose`, `std::system` | on |
+| Opening a file | `fopen` and its family, `mkstemp`, `ifstream`, `ofstream`, `std::filesystem` | on |
+| Changing the file system | `remove`, `rename` | **off** |
+| Reading the environment | `getenv`, `setenv`, `putenv`, `environ` | on |
+| Loading external code | `dlopen`, `dlsym`, `dlclose` | on |
+| Calling the kernel directly | `syscall`, `ptrace` | on |
+| Inline assembly | `asm`, `__asm`, `__asm__` | on |
+| Creating threads | `pthread_create`, `thrd_create`, `std::thread`, `std::async` | on |
+| Changing compiler optimisation | `#pragma GCC optimize`, `#pragma GCC target`, `#pragma omp` | on |
+
+**"Changing the file system" is off by default**, and the reason is worth
+carrying: `remove` collides with `std::remove` and `std::remove_if`, which are
+entirely legal and common. A rule that fires on correct standard-library use is a
+rule that teaches people to distrust the checker.
+
+**A list of names is explicitly never denied**, recorded so nobody re-adds them
+from a legacy list. All of them operate on standard input, output and error, or
+name no file at all: `printf`, `scanf`, `fprintf` — `fprintf(stderr, …)` is
+explicitly permitted — `fread`, which is the fastest legal way to read input,
+`getline`, `setvbuf`, `sync_with_stdio`, `signal`, `malloc`, `exit`.
+
+### Python
+
+Denied **imports** cover the filesystem, subprocesses, sockets and every network
+protocol module, `ctypes` and `cffi`, `mmap`, threading and multiprocessing,
+`signal`, `resource`, terminal control, the import machinery itself,
+`platform`, archive and compression modules, `sqlite3`, and the profilers.
+
+Denied **builtins**: `open`, `exec`, `eval`, `compile`, `__import__`,
+`breakpoint`. Denied **patterns**: `sys.modules`, `sys.settrace`,
+`sys.setprofile`.
+
+`sys` and `gc` stay permitted. `sys.stdin` and `sys.setrecursionlimit` are
+necessary, and `gc.disable()` is a legitimate PyPy speed idiom.
+
+### Languages this Runner does not run
+
+The profile also carries entries for Rust and Java. They are carried, not
+enforced — this Runner has no toolchain for either, so nothing reaches them.
+
+<Callout type="warn" title="This is a policy control, not a security boundary">
+**Every rule here is expected to be bypassable**: token pasting, macro
+indirection, building a name at runtime with `dlsym`, inline assembly, raw
+syscalls, encoding tricks.
+
+That is the project's own conclusion, and the consensus elsewhere — none of
+`isolate`, `nsjail` or `sio2jail` implements source filtering at all.
+
+A submission that gets past the dictionary is still contained by
+[the sandbox](/en/runner/isolation), which is what actually stops a hostile
+program. A document suggesting otherwise would be teaching a false sense of
+safety.
+</Callout>
+
+## Two silent failures the design closes
+
+Both were real, and both fail in the direction of reporting nothing:
+
+- **A rule set found by the whole toolchain id alone finds nothing** for
+  `cpp17-gcc`, and no rules means **no violations** — indistinguishable from a
+  clean submission. Rules are therefore looked up by id **and then by family**,
+  and which checks run is decided by matching the family as a closed set, so a
+  fourth family cannot be added without somebody deciding what its rules are.
+- **An empty rule set for a language means the check is skipped**, not that
+  everything is denied. Worth knowing when reading a profile rather than
+  inferring one.
+
+## Where the rule names come from
+
+The shipped profile is `crates/aj-standard-io/policy/standard-io-default.yml` in
+`AlgoJudge-Runner`, and the names in the table above are the names it carries —
+they are what a participant reads beside their verdict, so they are prose rather
+than symbols.

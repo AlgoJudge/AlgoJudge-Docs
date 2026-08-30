@@ -1,7 +1,6 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 import { i18nConfig, type Locale } from "@/lib/i18n";
-import { sections } from "@/lib/sections";
 
 const tagline: Record<Locale, string> = {
     en: "AlgoJudge documentation",
@@ -19,11 +18,10 @@ export function baseOptions(locale: string): BaseLayoutProps {
             title: tagline[language],
             url: `/${language}`,
         },
-        links: sections.map((section) => ({
-            text: section.title[language],
-            url: `/${language}/${section.slug}`,
-            active: "nested-url",
-        })),
+        // **No `links`, deliberately.** Every section is a root folder, so the
+        // sidebar already carries a switcher for them at the top. Adding the
+        // same five as links put two navigations for the same thing one above
+        // the other, in a different order.
         githubUrl: "https://github.com/AlgoJudge",
     };
 }

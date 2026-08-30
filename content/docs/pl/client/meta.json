@@ -1,5 +1,6 @@
 {
   "title": "Korzystanie z AlgoJudge",
   "description": "Sama aplikacja — dla uczestników i dla prowadzących.",
-  "root": true
+  "root": true,
+  "pages": ["index", "participant", "manager"]
 }

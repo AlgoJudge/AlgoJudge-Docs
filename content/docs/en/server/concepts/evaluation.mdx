@@ -1,0 +1,131 @@
+---
+title: EvaluationJob and Result
+description: One attempt at evaluating a submission, the lease that makes it recoverable, and the four values a completed attempt reports.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Two rows, and the split is the part most often misread.
+
+- **`EvaluationJob` is the job record**: the claim, the lease, the Runner, the
+  delivery count, the failure reason.
+- **`Result` is not.** It is the outcome of one *completed* job, one-to-one, and
+  holds four values the Server reads.
+
+## EvaluationJob
+
+One attempt at evaluating a [submission](/en/server/concepts/submission). A
+[Runner](/en/server/concepts/runner) claims a queued job atomically —
+`SELECT ... FOR UPDATE SKIP LOCKED` — and holds it under a lease.
+
+| Field | Meaning |
+|---|---|
+| `SubmissionId` | what is being evaluated |
+| `Attempt` | increments from 1 within its submission. A rejudge adds an attempt |
+| `ProblemVersionId` | the content version being evaluated. The source of truth, copied onto `Result` |
+| `RunnerId` | null until a Runner claims the job |
+| `State` | `Queued`, `Running`, `Completed`, `Failed`, `Cancelled` |
+| `LeaseToken` | handed to the Runner on claim and required back when it reports |
+| `LeaseSeconds` | how long the lease was, as granted at claim |
+| `Deliveries` | how many times this job has been handed out |
+| `FailureReason` | why it failed, when it failed for a reason that is not a verdict |
+| `RowVersion` | optimistic concurrency for everything that is not the claim |
+| `Files` | what the Runner attached for **this attempt** |
+
+### The permitted transitions
+
+| From | To | When |
+|---|---|---|
+| `Queued` | `Running` | on claim |
+| `Running` | `Completed` | on a verdict |
+| `Running` | `Failed` | on an infrastructure failure |
+| `Running` | `Cancelled` | by a manager |
+| `Running` | `Queued` | when the lease expires |
+
+The Server validates them. **A rejudge is a new job, never a transition**, and a
+finished job never leaves its state.
+
+### The lease is a correctness mechanism
+
+A Runner is stateless apart from a package cache, so a Runner that dies mid-job
+resumes nothing. Recovery is the Server reclaiming the job once
+`LeaseExpiresAt` passes — which makes the lease a correctness mechanism rather
+than a safety net: **it has to outlast the slowest real evaluation.**
+
+`LeaseToken` is what makes result submission idempotent. A Runner may safely
+resend, and a Runner whose lease has already been reclaimed is rejected instead
+of overwriting a newer attempt.
+
+`LeaseSeconds` is kept because `LeaseExpiresAt` cannot be read backwards: every
+renewal moves it, so the duration the Runner was granted is gone after the first
+one. Without it a heartbeat had nothing to renew *by*.
+
+`Deliveries` is incremented on every claim, including the ones that followed a
+lease expiry. A job that keeps being reclaimed is a job that keeps killing
+Runners; past the configured cap it goes to `Failed` with a reason rather than
+back into the queue.
+
+<Callout type="warn" title="An infrastructure failure is not a wrong answer">
+A package whose checksum does not match lands in `FailureReason` and the job
+goes to `Failed`. It must never be scored as a verdict.
+</Callout>
+
+## Result
+
+The outcome of one completed job — and only that. It is not the job record: the
+claim, the lease and the Runner live on the job, and the Runner is reached
+*through* the job rather than copied here.
+
+| Field | Meaning |
+|---|---|
+| `EvaluationJobId` | the completed attempt |
+| `ProblemVersionId` | copied from the job, on purpose |
+| `Score`, `MaxScore` | the Runner's own scale, before any rescaling by the assignment's `MaxPoints` |
+| `Verdict` | short outcome label produced by the Runner, e.g. `Accepted` |
+| `Extra` | whatever the problem type wants a **board** to have |
+| `Props` | what the problem type wants **this participant** shown beside their own result |
+| `RunnerVersion` | which Runner build produced this, for reproducing a disputed result |
+
+`ProblemVersionId` is duplicated deliberately, unlike the Runner: what a result
+was judged against has to stay pinned to it, and the job is not where somebody
+looks a year later.
+
+`Verdict` is an opaque string. The Server matches it exactly where a filter asks
+for it and never parses it, so a problem type may invent a verdict without a
+Server release.
+
+`Score` and `MaxScore` are kept so the Server can order and paginate without
+parsing anything; their meaning is the problem type's business.
+
+### `Extra` and `Props` differ by audience, not by content
+
+`Extra` is **public by construction**: everyone who may see the board is sent
+it, so nothing goes in it that is not meant to be seen. It rides in a list,
+multiplied by every submission of every contestant, which is why its ceiling is
+2 kB — and over it is refused rather than truncated.
+
+`Props` travels with one submission to one reader, under the activity's own
+attachment rules.
+
+Null means none in both; never `{}`.
+
+<Callout type="warn" title="Per-test rows and the compiler log are attachments, not columns">
+Four columns are everything the Server reads of a result. The per-test document
+and the log are `FileReference` rows under the **attempt**, named `details` and
+`log`.
+
+A per-test table would be a hundred and twenty bytes a row, times two thousand
+tests, times every attempt. A database column is the wrong place for it.
+</Callout>
+
+## Trials are not evaluations
+
+A `Trial` is a package somebody asked to have run, attached to no problem. It
+produces timings rather than a verdict, belongs to nobody's standing, counts
+against no ceiling and appears on no board — and it is **its own table** for
+that reason. Carried on `EvaluationJob` with its links left empty, every query
+over submissions, results, rankings and attempt counts would have had to
+remember to exclude it, and forgetting one would not break: it would quietly
+show somebody's private trial as a result.
+
+The package does not survive a trial. Who may ask is `trial:run`.

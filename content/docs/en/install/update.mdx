@@ -1,0 +1,107 @@
+---
+title: Update and rollback
+description: Pull first, close late, and the one thing a rollback cannot undo.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+```bash
+./scripts/update.sh
+./scripts/update.sh --dry-run
+./scripts/update.sh --no-git
+```
+
+## The order is the point
+
+1. **`git pull`** — new Compose files and scripts, never new image versions.
+2. **`docker compose pull`** — the longest step, and **it costs no downtime**.
+3. **Nothing new? Stop.** Nothing is closed.
+4. **Back up.**
+5. **Close, and wait for the drain.**
+6. **`up -d`, wait for healthy.**
+7. Healthy: record the digests. Not healthy: roll back.
+8. **Reopen**, and prune only this project's images.
+
+The outage is steps 5 to 7 — measured at about **eighteen seconds** on a small
+installation, most of it the drain.
+
+Step 4 is not optional and the script will not skip it: an update with no backup
+in front of it is not one this script will do. If the pre-update dump fails,
+nothing is updated.
+
+## What "something new" means
+
+Not the tag. `SERVER_TAG=1` points at a different image after every release, so
+"is the tag the same" would answer yes for ever. Each running container knows the
+reference it was created from and the image id that reference resolved to at the
+time; after a pull, the same reference resolves to whatever arrived. Those two
+ids differing is exactly "something new".
+
+## Versions are tags; what is running is a digest
+
+**Tags live in `.env`. Digests live in `state/current.lock`.** The tag says what
+was asked for; the digest says what is running, and is what a rollback restores.
+
+Digests cannot live in the repository. This is a product many organisations
+deploy independently, and none of them can commit to it.
+
+The default `SERVER_TAG=1` is a **moving major** and carries no `v`: a release
+tagged `v1.4.2` publishes the image tags `1.4.2`, `1.4`, `1` and `latest`.
+Staying on `1` takes patches and minors on the next update and never a major. An
+installation that wants to decide every version writes `1.4.2`. `latest` is not
+offered — an installation that changed version because somebody pulled is not a
+deployment.
+
+## Rollback
+
+```bash
+./scripts/rollback.sh
+```
+
+Restores exactly the images in `state/current.lock`, whatever the tags point at
+now, through an override written to `state/rollback.compose.yaml`.
+
+<Callout type="warn" title="Bring the stack up with both files until the cause is fixed">
+The override is not read by a plain `docker compose up`, so a plain `up` puts the
+new images straight back.
+
+```bash
+docker compose -f compose.yaml -f state/rollback.compose.yaml up -d
+```
+</Callout>
+
+There is nothing to roll back to on an installation that has never updated:
+`state/current.lock` is written by a **successful** update.
+
+### A rollback does not undo a migration
+
+If the update moved the schema, `state/last-migration` records it and
+`rollback.sh` refuses to be quiet about it. An older Server against a newer
+schema does not start, and the only way back is restoring the dump taken
+immediately before — **which loses everything written since**. The script names
+that dump.
+
+## The Runner during an update
+
+The Runner does not handle `SIGTERM`. It is killed, and its job goes back on the
+queue when the lease expires. `stop_grace_period` is set generously and buys
+nothing on its own.
+
+A clean drain is `maintenance.sh on --wait-closed` on the **Server** first,
+which `update.sh` does. Never `docker stop` on a Runner as a way of being
+careful.
+
+## If both halves fail
+
+If the new images do not come up healthy within 120 seconds, the script rolls
+back on its own and writes the Server's last fifty log lines to
+`state/failed-update.log`. If the rollback also fails it stops trying: the
+installation is left closed, and the log and the pre-update dump are named.
+That is not something a script should keep attempting.
+
+## The update is not scheduled for you
+
+`cron/algojudge.cron` ships the update entry **commented out**. Uncomment it
+only once you have restored a backup at least once and know it works — an
+automatic update with an untested backup behind it is a nightly opportunity to
+lose an installation.
