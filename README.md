@@ -140,8 +140,8 @@ page** — a fallback is the English text at a Polish address, so advertising it
 as a translation would be a lie to a crawler. Those, and archived versions,
 carry `noindex` and stay out of `sitemap.xml`.
 
-Page titles append the product: *Backup | AlgoJudge*. The two landing pages opt
-out, or they would say it twice.
+Page titles append the site: *Backup | AlgoJudge Docs*. The two landing pages
+opt out, or they would say it twice.
 
 The theme is Fumadocs' **ocean**. The favicon is the square mark
 `algojudge.pl` already uses, and `public/og.png` is generated from the wordmark

@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { i18n, i18nConfig, type Locale } from "@/lib/i18n";
-import { hreflang, ogLocale, OG_IMAGE, site, SITE_NAME, SITE_URL } from "@/lib/site";
+import { hreflang, ogLocale, OG_IMAGE, site, SITE_NAME, SITE_URL, TITLE_SUFFIX } from "@/lib/site";
 import { polishInterface } from "@/lib/ui-translations";
 import SearchDialog from "@/components/search";
 
@@ -69,10 +69,10 @@ export async function generateMetadata({
     return {
         metadataBase: new URL(SITE_URL),
         title: {
-            // Every page appends the product; the landing pages opt out with an
+            // Every page appends the site; the landing pages opt out with an
             // absolute title, or they would read "AlgoJudge documentation |
-            // AlgoJudge".
-            template: `%s | ${SITE_NAME}`,
+            // AlgoJudge Docs".
+            template: `%s | ${TITLE_SUFFIX}`,
             default: name,
         },
         description,
