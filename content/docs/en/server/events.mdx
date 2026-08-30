@@ -113,9 +113,8 @@ refetches.
 | `userChanged`, `runnerChanged`, `instanceChanged` | |
 
 <Callout type="warn" title="`managerSeriesChanged` is not `seriesChanged`">
-They shared one wire name until 2026-08-08 and carry different payloads: the
-participant's requires `series` and `change`, the manager's has neither and may
-carry `deletedId` instead.
+They carry different payloads: the participant's requires `series` and `change`,
+the manager's has neither and may carry `deletedId` instead.
 
 The envelope has no scope member, so one name meant one shape had to be guessed
 from its contents — and a router testing the participant shape first never

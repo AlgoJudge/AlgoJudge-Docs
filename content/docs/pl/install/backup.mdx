@@ -2,7 +2,7 @@
 title: Kopie zapasowe
 description: Co obejmuje zrzut, co teraz niesie i dwie granice, które nie pozwalają katalogowi kopii stać się awarią.
 source: en/install/backup.mdx
-sourceSha256: e9c5f980534ceb51d154f07e3c29eafc61d248ccb941c21e259e9706bbed58ba
+sourceSha256: c7058177d27c1acdc76c6e1b61347fe248585c1f45c58c88945e1b10c541b9cf
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -22,10 +22,9 @@ Każde uruchomienie: zrzut do pliku `.partial`, weryfikacja, zmiana nazwy, zapis
 
 ## Przeczytaj to w dniu, w którym ustawiasz kopie
 
-<Callout type="warn" title="Zrzut bazy wystarczy dziś, żeby wybić ciasteczko sesji dowolnego konta">
-Klucze szyfrujące każde ciasteczko sesji leżą we własnej bazie instalacji, od
-2026-08-27. **Wcześniej nie leżały** — mieszkały w kontenerze i ginęły razem
-z nim, więc zrzut niósł konta i żadnego sposobu, żeby się pod kogoś podszyć.
+<Callout type="warn" title="Zrzut bazy wystarcza, żeby wybić ciasteczko sesji dowolnego konta">
+Klucze szyfrujące każde ciasteczko sesji leżą we własnej bazie instalacji. Zrzut
+niesie więc konta **i** sposób, żeby zalogować się jako dowolne z nich.
 
 Nic nie zostało osłabione. Klucze przeżywające restart są celem: bez nich każdy
 restart wylogowywał wszystkich, a druga instancja nie potrafiła odczytać
@@ -60,7 +59,7 @@ odczytać tę tabelę, potrafi też dopisać wiersz do tabeli użytkowników, wi
 certyfikat kupuje mniej, niż się wydaje. Jest dla instalacji, której bazę trzyma
 ktoś inny.
 
-Dwie rzeczy zmierzono o nim 2026-08-27 i obie przeczą oczekiwaniom czytelnika.
+Dwie rzeczy o nim przeczą oczekiwaniom czytelnika.
 
 - **Włączenie go później nie jest ani uciążliwe, ani skuteczne.** Dodanie
   ustawienia do instalacji, która już ma klucz, zostawia sesje działające,

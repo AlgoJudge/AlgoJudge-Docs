@@ -75,12 +75,10 @@ terms link is versioned. The Authentik deployment writes the version server-side
 inside a policy, deliberately beyond the browser's reach. That is stronger.
 
 **A deletion report does not survive a restart of the identity server.** Both
-deployments report a deleted account back to AlgoJudge, and have since
-2026-08-27 — anything written before that saying to register a Keycloak provider
-with the deletion channel **off** is out of date. But Authentik hands its webhook
-to a worker with a queue in its database, while the Keycloak extension retries in
-memory for about ninety seconds and then prints one `ERROR` carrying everything
-needed to replay it by hand. If nobody reads that log line, that deletion is not
+deployments report a deleted account back to AlgoJudge. Authentik hands its
+webhook to a worker with a queue in its database, while the Keycloak extension
+retries in memory for about ninety seconds and then prints one `ERROR` carrying
+everything needed to replay it by hand. If nobody reads that log line, that deletion is not
 reported.
 
 **It cannot serve LDAP.** Keycloak consumes a directory; it does not publish

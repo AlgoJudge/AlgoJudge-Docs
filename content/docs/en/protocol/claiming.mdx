@@ -5,9 +5,9 @@ description: How work is taken, what a claimed job carries, and why the lease is
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.**
-`AlgoJudge-Design/specifications/server-runner/SERVER_RUNNER_API.md` v1.1 is the
-contract; on any divergence from this page, it is right and this page is wrong.
+**The accepted specification prevails.** This page describes **version 1.1** of
+the contract; on any divergence, the specification is right and this page is
+wrong.
 
 ## Claiming
 
@@ -105,8 +105,8 @@ not the solution's fault.
 
 <Callout type="warn" title="A file entry may still carry a `language` member; do not read it">
 The reference implementation's `SubmissionFile` declares an optional `language`
-and never reads it. Since the 2026-08-22 amendment the language lives in `props`,
-and that is where `standard-io@1` looks for it.
+and never reads it. **The language lives in `props`**, and that is where
+`standard-io@1` looks for it.
 
 An implementation reading the file's member instead would work against a Server
 that still populates it and fail silently against one that does not.

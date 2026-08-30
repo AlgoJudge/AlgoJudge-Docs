@@ -100,8 +100,8 @@ The bytes are shared between versions: carrying a figure forward into the next
 version is a second reference, not a second upload.
 
 <Callout type="warn" title="Configuration is a chain of two, not three">
-`ProblemVersion.Config` existed until 2026-08-22 and was removed. A version
-wanting different limits is a version with a different package, because limits
-are calibrated against the tests that version ships. What overlays the package's
+A version carries no configuration of its own. A version wanting different
+limits is a version with a different package, because limits are calibrated
+against the tests that version ships. What overlays the package's
 own `config.yml` is the assignment, and nothing else.
 </Callout>

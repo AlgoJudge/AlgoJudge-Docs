@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów, który się zatrzymuje.
 source: en/install/requirements.mdx
-sourceSha256: 75907b6736b5fb3a30f56140300801d7f32ccad238b38e8b91441e6e92d91820
+sourceSha256: f66b94746709ea2a91e1936018a07970c6e17b70b4b7261def5f1d2ae9424fcf
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -17,8 +17,8 @@ compose` — wtyczka, nie starszy skrypt `docker-compose`.
 Runner pyta środowisko uruchomieniowe kontenerów o wersję cgroup przy starcie
 i **odmawia uruchomienia na v1**.
 
-Nie chodzi o to, czy sandbox się trzyma. Zmierzono to 2026-08-09 na Docker
-Desktop 24.0.7 na jądrze WSL2: **v1 egzekwuje limity całkowicie poprawnie.**
+Nie chodzi o to, czy sandbox się trzyma: **v1 egzekwuje limity całkowicie
+poprawnie.**
 Kontener zadania ponad limitem pamięci zostaje zabity i zgłoszony jako
 `OOMKilled`, a cały zestaw testów adwersaryjnych przechodzi.
 

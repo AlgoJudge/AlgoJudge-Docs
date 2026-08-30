@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane wdrożenia OIDC, jak między nimi wybrać i jak zarejestrować dostawcę w AlgoJudge.
 source: en/install/identity.mdx
-sourceSha256: e6127b12a78b59be4f69aa209d2f8613444e8084ba30fb0b2e0f684c67466471
+sourceSha256: eb22c299ccc6c1ddf9551617870a861ddb6a061217da5033495fcfc121f27697
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -77,12 +77,10 @@ zapisuje wersję po stronie serwera, wewnątrz polityki, celowo poza zasięgiem
 przeglądarki. To jest mocniejsze.
 
 **Zgłoszenie usunięcia nie przeżywa restartu serwera tożsamości.** Oba wdrożenia
-zgłaszają usunięte konto z powrotem do AlgoJudge i robią to od 2026-08-27 —
-cokolwiek napisano wcześniej o rejestrowaniu dostawcy Keycloak z **wyłączonym**
-kanałem usunięć, jest nieaktualne. Ale Authentik przekazuje swój webhook
-workerowi z kolejką w bazie, a rozszerzenie Keycloaka ponawia w pamięci przez
-około dziewięćdziesiąt sekund, po czym wypisuje jeden `ERROR` z wszystkim, co
-potrzebne do ręcznego powtórzenia. Jeśli nikt nie przeczyta tej linii, to
+zgłaszają usunięte konto z powrotem do AlgoJudge. Authentik przekazuje swój
+webhook workerowi z kolejką w bazie, a rozszerzenie Keycloaka ponawia w pamięci
+przez około dziewięćdziesiąt sekund, po czym wypisuje jeden `ERROR` z wszystkim,
+co potrzebne do ręcznego powtórzenia. Jeśli nikt nie przeczyta tej linii, to
 usunięcie nie zostaje zgłoszone.
 
 **Nie potrafi serwować LDAP.** Keycloak konsumuje katalog; nie publikuje go. Ma

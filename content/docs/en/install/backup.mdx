@@ -20,10 +20,10 @@ beside it, rotates, and reports any overdue hold.
 
 ## Read this on the day you set backups up
 
-<Callout type="warn" title="A dump of the database is now enough to mint a session cookie for any account">
+<Callout type="warn" title="A dump of the database is enough to mint a session cookie for any account">
 The keys that encrypt every session cookie live in the installation's own
-database, since 2026-08-27. **They did not before** — they lived in the container
-and died with it, so a dump carried accounts and no way to impersonate one.
+database. A dump therefore carries the accounts **and** the means to sign in as
+any of them.
 
 Nothing was weakened. Keys that survive a restart are the point: without them
 every restart signed everybody out, and a second instance could not read a cookie
@@ -57,8 +57,7 @@ That is accepted and documented rather than hidden: whoever can read that table
 can also write a row into the users table, so the certificate buys less than it
 looks. It is there for an installation whose database is somebody else's to hold.
 
-Two things about it were measured on 2026-08-27, and both contradict what a
-reader would expect.
+Two things about it contradict what a reader would expect.
 
 - **Turning it on later is neither disruptive nor effective.** Adding the
   setting to an installation that already holds a key leaves sessions working and

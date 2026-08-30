@@ -5,9 +5,9 @@ description: Answering with a result, the failure that must never be scored, and
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.**
-`AlgoJudge-Design/specifications/server-runner/SERVER_RUNNER_API.md` v1.1 is the
-contract; on any divergence from this page, it is right and this page is wrong.
+**The accepted specification prevails.** This page describes **version 1.1** of
+the contract; on any divergence, the specification is right and this page is
+wrong.
 
 ## The call
 
@@ -50,9 +50,6 @@ Send `infrastructureFailure: true` with a `failureReason`, and **send no score a
 all** — not zero. A zero on a board reads as a wrong answer about a program that
 was never run. The submission stays rejudgeable once the cause is fixed.
 </Callout>
-
-The separation was one of the questions the original 2025-03-27 proposal left
-open. It is a field now.
 
 ## Reporting is idempotent on the lease token
 

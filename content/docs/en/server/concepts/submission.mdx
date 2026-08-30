@@ -32,12 +32,12 @@ The files hang off the submission rather than off an attempt, because they are
 what somebody did once and every rejudge reads the same bytes. A Runner's log
 hangs off the attempt instead.
 
-`Props` was a `Language` column until 2026-08-22, and the Server read it: it
-refused a language the activity did not list, and chose a file extension for
-pasted source from a table of seven languages compiled into a controller. That
-table meant **a Server release for every new language**, against the guardrail
-saying a problem type must not need one. Both are gone; the allowed set lives in
-the assignment's `Config` and the Runner refuses what the assignment excluded.
+`Props` is opaque: the Server stores it and never reads it. **The language is in
+there**, and nothing on this side validates it — the allowed set lives in the
+assignment's `Config`, and the Runner refuses what the assignment excluded.
+
+A column the Server understood would mean **a Server release for every new
+language**, against the guardrail saying a problem type must not need one.
 
 Null means none; never `{}`.
 

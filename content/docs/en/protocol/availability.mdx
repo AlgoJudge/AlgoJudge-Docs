@@ -5,13 +5,9 @@ description: The heartbeat, and what a Runner must do when the Server is up and 
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.**
-`AlgoJudge-Design/specifications/server-runner/SERVER_RUNNER_API.md` v1.1 is the
-contract; on any divergence from this page, it is right and this page is wrong.
-Unavailability is §9, **added in version 1.1 on 2026-08-09** — version 1.0 had no
-notion of a Server that is up and declining to serve, which meant every Runner
-written against it treated one as a fault, and the fault it most resembled was
-*"this submission failed"*.
+**The accepted specification prevails**, and unavailability is its §9. A Runner
+that has no notion of a Server which is up and declining to serve will treat one
+as a fault — and the fault it most resembles is *"this submission failed"*.
 
 ## The heartbeat
 

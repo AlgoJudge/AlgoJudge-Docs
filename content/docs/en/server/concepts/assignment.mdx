@@ -33,8 +33,7 @@ concurrent requests can both pass.
 |---|---|
 | `PinnedProblemVersionId` | the content version this assignment evaluates against |
 
-**Set when the problem is attached** (decided 2026-08-08), to the library's
-current version. Publishing a correction therefore does not change what a
+**Set when the problem is attached**, to the library's current version. Publishing a correction therefore does not change what a
 running round is judged against, and following it is a manager's deliberate act
 rather than a side effect of fixing a typo.
 
@@ -55,8 +54,8 @@ in how they fail.
 
 `Config` is **anything that changes the verdict** — time and memory limits, the
 set of languages that may be submitted, whatever else the problem type enforces.
-It is laid over the package's own `config.yml`, and since 2026-08-22 it is the
-only layer over it.
+It is laid over the package's own `config.yml`, and it is the only layer over
+it.
 
 `Config` **reaches the participant too**, deliberately: limits and language ids
 are exactly what a problem page should show. The package's own `config.yml`
@@ -80,9 +79,8 @@ multiplier, so a round's total is read off the column rather than worked out.
 The Server rescales wherever it reports a number:
 `round(score / maxScore × MaxPoints)`.
 
-**Null keeps the Runner's own scale**, which became true on 2026-08-22: the code
-had substituted 100, so a package marking out of 70 reported a full solve as
-100/100 — the problem's own scoring replaced by a convention nobody chose.
+**Null keeps the Runner's own scale.** A package marking out of 70 reports out
+of 70; the problem's own scoring is not replaced by a convention nobody chose.
 
 **Zero and negative are refused.** Zero is not a problem worth nothing: it is a
 problem whose every number is `0 / 0`, which a board reads as full marks.

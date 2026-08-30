@@ -15,8 +15,7 @@ The stack is one `compose.yaml` with profiles. Everything in this section is
 The Runner asks the container runtime for its cgroup version at startup and
 **refuses to start on v1**.
 
-This is not about whether the sandbox holds. It was measured on 2026-08-09,
-on Docker Desktop 24.0.7 over a WSL2 kernel: **v1 enforces the limits perfectly
+This is not about whether the sandbox holds: **v1 enforces the limits perfectly
 well.** A job container over its memory limit is killed and reported as
 `OOMKilled`, and the whole adversarial test suite passes.
 
