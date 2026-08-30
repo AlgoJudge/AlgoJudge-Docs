@@ -4,50 +4,70 @@
 // If the page says "problem" and the screen says "Zadanie", the page is a
 // mistranslation however good the sentence is.
 //
-// The glossary is not written here. It is read from the Client's own
-// `pl/translation.json` at run time and **checked against what this file
-// expects**, so a term the product renames cannot drift away from the
-// documentation quietly: the rename fails this check on the next run and says
-// which page has to be re-read.
+// **The terms are committed here rather than read from `AlgoJudge-Client`.**
+// They came from that repository — `public/locales/pl/translation.json` — but
+// this is not a monorepo, and CI checks out one repository. A check that reaches
+// through `../AlgoJudge-Client` passes on a workstation and dies with ENOENT on
+// the runner, which is how this file was written the first time.
+//
+// So the copy is the source of truth for the check, and **the check verifies the
+// copy** whenever the sibling repository happens to be there: if the product
+// renames a term, this fails on the next local run and names the pages to
+// re-read. In CI it says the comparison was skipped rather than pretending.
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
+import { uiTranslations } from "fumadocs-ui/i18n";
+
+import { GLOSSARY, GLOSSARY_SOURCE, TERMS, WRONG } from "../lib/glossary.ts";
+import { polishInterface } from "../lib/ui-translations.ts";
+
 const ROOT = "content/docs";
-const GLOSSARY = "../AlgoJudge-Client/public/locales/pl/translation.json";
-
-/**
- * `key` is looked up in the Client's Polish file and must still say `expect`.
- * `english` finds the term on the English page; `polish` is the stem the Polish
- * page must then contain. Stems rather than words, because Polish inflects.
- */
-const TERMS = [
-    { key: "Problem", expect: "Zadanie", english: /\bproblems?\b/i, polish: /zadani/i },
-    { key: "Submission", expect: "Zgłoszenie", english: /\bsubmissions?\b/i, polish: /zgłoszen/i },
-    { key: "Activity", expect: "Aktywność", english: /\bactivit(y|ies)\b/i, polish: /aktywno/i },
-    { key: "Verdict", expect: "Werdykt", english: /\bverdicts?\b/i, polish: /werdykt/i },
-    { key: "Group", expect: "Grupa", english: /\bgroups?\b/i, polish: /grup/i },
-    { key: "Ranking", expect: "Ranking", english: /\branking\b/i, polish: /ranking/i },
-];
-
-/** Renderings that are wrong wherever they appear on a Polish page. */
-const WRONG = [
-    { pattern: /\bsubmisj/i, instead: "Zgłoszenie" },
-    { pattern: /\bbiegacz/i, instead: "Runner, untranslated" },
-    { pattern: /\btask(i|ów|iem)?\b/i, instead: "Zadanie - `Task` was renamed to `Problem` in 2026-08" },
-];
-
-const glossary = JSON.parse(await readFile(GLOSSARY, "utf8"));
 
 let failed = false;
 
-// The glossary itself still says what this file assumes it says.
-for (const term of TERMS) {
-    const actual = glossary[term.key];
-    if (actual === term.expect) continue;
+// 1. The committed copy against the product, when the product is reachable.
+const upstream = await readFile(GLOSSARY_SOURCE, "utf8").then(JSON.parse, () => null);
 
-    console.error(`  FAIL the Client now translates "${term.key}" as "${actual}", not "${term.expect}"`);
-    console.error(`         Re-read every Polish page that uses it, then update this script.`);
-    failed = true;
+if (upstream === null) {
+    console.log(`  --   ${GLOSSARY_SOURCE} is not here, so the copy was not re-checked`);
+} else {
+    for (const [key, expected] of Object.entries(GLOSSARY)) {
+        const actual = upstream[key];
+        if (actual === expected) continue;
+
+        console.error(`  FAIL the Client now translates "${key}" as "${actual}", not "${expected}"`);
+        console.error(`         Re-read every Polish page that uses it, then update lib/glossary.ts.`);
+        failed = true;
+    }
+    if (!failed) console.log(`  ok   the committed glossary still matches the Client's own`);
+}
+if (failed) process.exit(1);
+
+// 2. The Polish interface strings against the keys Fumadocs actually emits.
+//
+// **This is the one failure nothing else can see.** Fumadocs' translation keys
+// are the English strings themselves, so a key it renames does not go missing -
+// it silently renders in English. Lint stays green, typecheck stays green, the
+// build stays green, and a Polish reader gets an English table of contents. Four
+// such strings were sitting in the Client's Polish file before its own
+// `check:i18n` existed, which is why this exists here too.
+{
+    const emitted = new Set(uiTranslations().keys);
+    const ours = new Set(Object.keys(polishInterface));
+
+    for (const key of emitted) {
+        if (ours.has(key)) continue;
+        console.error(`  FAIL lib/ui-translations.ts: no Polish for ${JSON.stringify(key)}`);
+        failed = true;
+    }
+    for (const key of ours) {
+        if (emitted.has(key)) continue;
+        console.error(`  FAIL lib/ui-translations.ts: ${JSON.stringify(key)} is no longer a Fumadocs key`);
+        console.error("         It renders in English now. Check what replaced it.");
+        failed = true;
+    }
+    if (!failed) console.log(`  ok   all ${emitted.size} interface string(s) have Polish`);
 }
 if (failed) process.exit(1);
 
@@ -87,7 +107,7 @@ for (const path of await pages(join(ROOT, "pl"))) {
         if (!term.english.test(body(english))) continue;
         if (term.polish.test(polish)) continue;
 
-        console.error(`  FAIL ${shown}: the English page uses "${term.key}" and this one never says "${term.expect}"`);
+        console.error(`  FAIL ${shown}: the English page uses "${term.key}" and this one never says "${GLOSSARY[term.key]}"`);
         failed = true;
     }
 }

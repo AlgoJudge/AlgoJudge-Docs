@@ -24,7 +24,7 @@ import { useMemo } from "react";
  */
 export default function DocsSearchDialog(props: SharedProps) {
     const { locale } = useI18n();
-    const client = useMemo(() => staticClient({ locale }), [locale]);
+    const client = useMemo(() => staticClient({ from: `/api/search/${locale}`, locale }), [locale]);
     const { search, setSearch, query } = useDocsSearch({ client });
 
     return (

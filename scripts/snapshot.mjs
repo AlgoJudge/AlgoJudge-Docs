@@ -11,6 +11,7 @@
 //
 // **Nothing is ever deleted.** Under `0.x` releases old documentation is the
 // only documentation that works for an installation that has not upgraded.
+import { createHash } from "node:crypto";
 import { copyFile, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 
@@ -21,6 +22,7 @@ const ROOT = "content/docs";
 const VERSION = /^v\d+\.\d+$/;
 
 const [version, ...only] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const { defaultLanguage } = i18nConfig;
 
 if (!version || !VERSION.test(version)) {
     console.error("usage: npm run snapshot -- v<major>.<minor> [section …]");
@@ -109,9 +111,47 @@ for (const section of chosen) {
                 text = text.replaceAll(`(/${other}/${section.slug})`, `(/${other}/${section.slug}/${version})`);
             }
 
+            // **`source:` has to move too, and it has no leading slash**, so the
+            // link rewriting above does not touch it. Left alone, the archived
+            // Polish page keeps pointing at the *live* English one: the first
+            // edit to that page turns `check:translations` red on a frozen
+            // archive, and the documented remedy (`-- --update`) then rewrites
+            // the archive's fingerprint — destroying the provenance of something
+            // this script calls immutable.
+            text = text.replace(
+                new RegExp(`^source:\\s*(${defaultLanguage})/${section.slug}/`, "m"),
+                `source: $1/${section.slug}/${version}/`,
+            );
+
             await writeFile(into, text);
             copied += 1;
         }
+    }
+}
+
+// **The fingerprints have to be recomputed, not copied.** A Polish page records
+// the SHA-256 of the English page it was written from; the copy above rewrote
+// the English page's links to point inside the snapshot, so its bytes moved and
+// the copied fingerprint no longer matches anything. Left as it was, every
+// archived Polish page fails `check:translations` from the day it is cut - and
+// the documented remedy would then repoint it at the *live* English page.
+for (const section of chosen) {
+    const base = join(ROOT, "pl", section.slug, version);
+    if (!(await exists(base))) continue;
+
+    for (const entry of await readdir(base, { withFileTypes: true, recursive: true })) {
+        if (!entry.isFile() || !entry.name.endsWith(".mdx")) continue;
+
+        const path = join(entry.parentPath, entry.name);
+        const text = await readFile(path, "utf8");
+        const source = /^source:\s*(.+)$/m.exec(text)?.[1]?.trim();
+        if (!source) continue;
+
+        const english = await readFile(join(ROOT, source), "utf8").catch(() => null);
+        if (english === null) continue;
+
+        const digest = createHash("sha256").update(english, "utf8").digest("hex");
+        await writeFile(path, text.replace(/^sourceSha256:.*$/m, `sourceSha256: ${digest}`));
     }
 }
 

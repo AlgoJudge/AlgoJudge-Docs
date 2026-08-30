@@ -8,6 +8,13 @@
 //
 // Reading the content tree rather than the built site, so a broken link is a
 // failed check rather than a page that 404s after deployment.
+//
+// **One part of that tree is build output.** The REST reference under
+// `content/docs/en/server/rest/` is generated from the Server's `openapi.json`
+// and is gitignored, so on a fresh clone it is not there and three perfectly
+// good links into it look broken. Rather than report those, this says the
+// reference was not generated and leaves them alone - CI builds first, so CI
+// checks them.
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
@@ -31,6 +38,9 @@ const toUrl = (path) =>
         .replace(/\.mdx$/, "")
         .replace(/\/index$/, "");
 
+const GENERATED = join(ROOT, i18nConfig.defaultLanguage, "server", "rest");
+const generated = await readdir(GENERATED).then(() => true, () => false);
+
 const known = new Set();
 
 for (const locale of i18nConfig.languages) {
@@ -50,6 +60,7 @@ const LINK = /(?<!\!)\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)|href=["']([^"']+)["'
 
 let failed = false;
 let checked = 0;
+let skipped = 0;
 
 for (const locale of i18nConfig.languages) {
     for (const path of await pages(join(ROOT, locale))) {
@@ -73,6 +84,11 @@ for (const locale of i18nConfig.languages) {
 
             if (known.has(target)) continue;
 
+            if (!generated && /^\/[a-z]{2}\/server\/rest(\/|$)/.test(target)) {
+                skipped += 1;
+                continue;
+            }
+
             console.error(`  FAIL ${shown}: ${raw}`);
             console.error(`         nothing is served at ${target}`);
             failed = true;
@@ -82,3 +98,6 @@ for (const locale of i18nConfig.languages) {
 
 if (failed) process.exit(1);
 console.log(`  ok   ${checked} internal link(s) resolve, and all carry a locale`);
+if (!generated) {
+    console.log(`  --   ${skipped} link(s) into the REST reference were not checked: run \`npm run build\` to generate it`);
+}

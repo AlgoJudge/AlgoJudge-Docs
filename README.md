@@ -51,14 +51,19 @@ the two a participant, a manager and an administrator actually read — and is
 versioned on the same axes. Accepted 2026-08-09.
 
 A Polish address in any other section renders the English page **with a visible
-notice saying so**. It is not a 404 and it is not a silent substitution: under
-`0.x` releases an installation procedure quietly served in the wrong language is
-worse than one that is missing.
+notice saying so**, its body marked `lang="en"` for anything reading the page
+aloud, and `noindex` so the same text is not indexed at two addresses. It is not
+a 404 and it is not a silent substitution: under `0.x` releases an installation
+procedure quietly served in the wrong language is worse than one that is
+missing.
 
-Polish pages use the words the interface itself uses, from
-`AlgoJudge-Client/public/locales/pl/translation.json` — `Problem` is *Zadanie*,
-`Submission` is *Zgłoszenie*. `npm run check:glossary` is what enforces it. A
-reader following a Polish page has to be able to find the button it names.
+Polish pages use the words the interface itself uses. Those words are copied
+into `lib/glossary.ts` from `AlgoJudge-Client/public/locales/pl/translation.json`
+— **copied, because this is not a monorepo and CI checks out one repository** —
+and `npm run check:glossary` re-checks the copy against the Client whenever the
+Client happens to be on disk, so a rename there cannot pass unnoticed. `Problem`
+is *Zadanie*, `Submission` is *Zgłoszenie*. A reader following a Polish page has
+to be able to find the button it names.
 
 ## Versions
 
@@ -73,6 +78,12 @@ a `v*` tag. Today each section's content lives at its version-less path, which
 *is* the page. On the day of the first release, `npm run snapshot` copies a
 section to `v0.1/` and the version-less path becomes a 302 to the newest. There
 is **no backfill**: a version directory is created on release day or not at all.
+
+A snapshot writes three things, and **all three are committed**: the copied
+pages, `versions.json` — which the build reads to decide what is archived — and
+`deploy/redirects.conf`, which the image's nginx includes. It also rewrites the
+copies' links and translation fingerprints to point inside the snapshot, so an
+archive stops moving the moment it is cut.
 
 ## Building it
 
@@ -95,7 +106,7 @@ output is not source.
 | `npm run check:links` | Every internal link resolves |
 | `npm run check:versions` | No page is named so as to look like a version |
 | `npm run check:translations` | No Polish page has drifted from its English source |
-| `npm run check:glossary` | Polish uses the interface's own words |
+| `npm run check:glossary` | Polish uses the interface's own words, and every interface string has one |
 | `npm run check:no-playground` | The built site contacts no installation |
 | `npm run snapshot` | The release-day version snapshot |
 

@@ -14,6 +14,21 @@
 // `auth.algojudge.app` in prose, correctly - an operator has to be told what it
 // is. A hostname in a sentence is not a request, and an earlier version of this
 // check that could not tell the two apart failed on four pages that were right.
+//
+// **Script is not scanned, and neither are the chunks.** Next serialises the
+// whole page - prose, link targets, nav configuration - into an RSC payload
+// inside a `<script>`, so every URL a page merely mentions appears there. The
+// bundled chunks look more promising and are not: tried on 2026-08-30, scanning
+// `out/_next/static` for absolute URLs reported a core-js licence header, a
+// base-ui error-page link, an F# grammar's issue tracker and a handful of URL
+// parser fixtures - none of them a fetch, and nothing in a minified bundle
+// distinguishes a string from a call site.
+//
+// What covers that gap is not a grep but the **`Content-Security-Policy`** in
+// `deploy/nginx.conf`: `default-src 'self'` with `connect-src 'self'` means a
+// bundled fetch to another origin is refused by the browser. The two are
+// complementary - the policy catches what this cannot see, and this catches a
+// page that would fetch cross-origin if the policy were ever removed.
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -23,10 +38,18 @@ const OUT = "out";
  * Attributes the browser resolves on its own, before anybody clicks anything.
  *
  * **A plain `<a href>` is not one**, and is deliberately absent: a documentation
- * page linking to GitHub or to onlinejudge.org is doing its job. What is checked
- * is what the page fetches, not what it mentions.
+ * page linking to GitHub or to onlinejudge.org is doing its job.
  */
-const FETCHED = /\b(?:src|action|formaction|data-src)\s*=\s*["']([^"']+)["']/gi;
+const FETCHED = /\b(?:src|srcset|poster|action|formaction|data-src)\s*=\s*["']([^"']+)["']/gi;
+
+/**
+ * **`<link href>` is one**, and leaving it out was the gap. A
+ * `<link rel="stylesheet">` or `<link rel="preconnect">` pointing at a font
+ * service is fetched on load and hands that service the reader's address -
+ * exactly what this file says it prevents. Matched by element, so `<a href>`
+ * stays exempt.
+ */
+const LINKED = /<link\b[^>]*?\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi;
 
 /** What a rendered playground puts on the page. */
 const PLAYGROUND = [/data-playground/i, /\bSend Request\b/];
@@ -61,16 +84,17 @@ let failed = false;
 let rest = 0;
 let requests = 0;
 
-for (const path of await Promise.resolve(pages)) {
+for (const path of pages) {
     const html = await readFile(path, "utf8");
     const shown = path.replaceAll("\\", "/");
-
     const offenders = new Set();
 
-    for (const [, url] of html.matchAll(FETCHED)) {
-        const h = host(url);
-        if (h && !ALLOWED_HOSTS.includes(h)) offenders.add(url);
-        else if (!h) requests += 1;
+    for (const pattern of [FETCHED, LINKED]) {
+        for (const [, url] of html.matchAll(pattern)) {
+            const at = host(url);
+            if (at === null) requests += 1;
+            else if (!ALLOWED_HOSTS.includes(at)) offenders.add(url);
+        }
     }
 
     for (const url of offenders) {
@@ -89,5 +113,5 @@ for (const path of await Promise.resolve(pages)) {
 }
 
 if (failed) process.exit(1);
-console.log(`  ok   ${pages.length} page(s) fetch only from this site (${requests} same-site asset reference(s))`);
+console.log(`  ok   ${pages.length} page(s) fetch only from this site (${requests} same-site reference(s))`);
 console.log(`  ok   ${rest} REST page(s) carry no request playground`);

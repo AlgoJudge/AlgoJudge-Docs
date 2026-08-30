@@ -21,6 +21,7 @@ FROM nginx:1.29-alpine AS runtime
 
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/redirects.conf /etc/nginx/redirects.conf
+COPY deploy/security-headers.conf /etc/nginx/security-headers.conf
 COPY --from=build /src/out /usr/share/nginx/html
 
 # **Unprivileged, and therefore above 1024.** The base image drops to `nginx`

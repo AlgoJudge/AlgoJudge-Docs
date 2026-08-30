@@ -4,9 +4,17 @@
  * section without an owner has no honest version axis, so it does not exist.
  * Accepted 2026-08-09.
  *
- * This list is the single place that says so. The navigation reads it, the
- * landing pages read it, and `scripts/check-versions.mjs` reads it to know
- * which directories a version segment may appear under.
+ * This list is the single place that says so, and what reads it is worth being
+ * exact about: `components/fallback-notice.tsx` (which sections Polish covers,
+ * and their Polish names), `lib/versions.ts` (whether a first path segment is a
+ * section at all), `scripts/check-versions.mjs` and `scripts/snapshot.mjs`.
+ *
+ * **The navigation does not read it.** Each section's title and description are
+ * also written in its `meta.json`, because that is where Fumadocs builds the
+ * sidebar from — so renaming a section here changes the notice and the checks,
+ * and the ten `meta.json` files are the other half of the edit. This comment
+ * claimed otherwise until 2026-08-30, when the sidebar links it described were
+ * removed for duplicating the section switcher.
  */
 export interface Section {
     /** The first path segment after the locale. */
@@ -74,4 +82,5 @@ export const sections: readonly Section[] = [
 
 export const sectionSlugs = sections.map((section) => section.slug);
 
-export const isSection = (slug: string): boolean => sectionSlugs.includes(slug);
+/** The sections Polish is authored for, by their Polish names. */
+export const polishSections = sections.filter((section) => section.polish);

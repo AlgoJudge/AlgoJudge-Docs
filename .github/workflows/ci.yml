@@ -80,7 +80,7 @@ jobs:
             sleep 1
           done
           curl -sS -o /dev/null -w 'healthz %{http_code}\n' http://localhost:8080/healthz
-          for path in /en/ /pl/ /en/install/ /pl/install/ /en/server/rest/ /api/search; do
+          for path in /en/ /pl/ /en/install/ /pl/install/ /en/server/rest/ /api/search/en /api/search/pl; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
             echo "$path $code"
             [ "$code" = "200" ] || { echo "expected 200 at $path" >&2; docker logs docs-ci >&2; exit 1; }
@@ -89,4 +89,15 @@ jobs:
           code=$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/)
           echo "/ $code"
           [ "$code" = "302" ] || { echo "expected 302 at /" >&2; exit 1; }
+
+          # **A header set in one `location` cancels every header inherited from
+          # the server block.** That is nginx's rule, it is silent, and it took
+          # the whole policy off every script and stylesheet on the site once.
+          asset=$(curl -sS http://localhost:8080/en/ | grep -o '/_next/static/chunks/[^"]*\.js' | head -1)
+          echo "asset $asset"
+          for header in content-security-policy x-content-type-options x-frame-options; do
+            curl -sSI "http://localhost:8080$asset" | grep -qi "^$header:" || { echo "$header missing on $asset" >&2; exit 1; }
+          done
+          echo "security headers reach static assets"
+
           docker stop docs-ci

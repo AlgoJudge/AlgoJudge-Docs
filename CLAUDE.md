@@ -38,10 +38,15 @@ Two known traps:
 - **English is the source language.** Every page is written in English first.
 - **Polish covers `/client/` and `/install/` only**, and is written *with* the
   English rather than translated from it afterwards.
-- **Polish uses the interface's own words.** The glossary is
-  `AlgoJudge-Client/public/locales/pl/translation.json`, and
-  `npm run check:glossary` enforces it. `Problem` is *Zadanie*, `Submission` is
-  *Zgłoszenie*, `Activity` is *Aktywność*.
+- **Polish uses the interface's own words.** They live in `lib/glossary.ts`,
+  copied from `AlgoJudge-Client/public/locales/pl/translation.json` because CI
+  checks out one repository — and `npm run check:glossary` re-checks the copy
+  against the Client whenever it is on disk. `Problem` is *Zadanie*,
+  `Submission` is *Zgłoszenie*, `Activity` is *Aktywność*.
+- **The interface's own Polish is in `lib/ui-translations.ts`**, and the same
+  check verifies every key Fumadocs emits has one. Its keys *are* the English
+  strings, so a renamed key does not go missing — it silently renders in
+  English.
 - Every Polish page records the fingerprint of the English source it was written
   from, in its front matter. `npm run check:translations` fails when the English
   moves and the Polish does not.
