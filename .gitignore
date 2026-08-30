@@ -1,0 +1,30 @@
+# dependencies
+/node_modules
+
+# Next.js
+/.next
+/out
+next-env.d.ts
+
+# Fumadocs MDX's generated types
+/.source
+
+# Fetched from the repositories that own them, pinned by content-sources.json.
+# Nothing here is written by hand and nothing here is committed.
+/.sources
+
+# The REST reference, generated from the Server's openapi.json at build time.
+# The accepted decision of 2026-08-09: generated output is not committed.
+/content/docs/en/server/rest
+
+# local environment files
+.env*
+!.env.example
+
+# logs and OS files
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo

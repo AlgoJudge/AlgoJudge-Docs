@@ -1,0 +1,5 @@
+{
+  "title": "Protocol",
+  "description": "The contract between a Server and a Runner.",
+  "root": true
+}
