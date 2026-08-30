@@ -21,13 +21,13 @@ domyślną przy tworzeniu serii i decyduje o jednej rzeczy na Twoim ekranie:
 | cokolwiek innego | jedno i drugie |
 
 **Aktywność z jedną serią nie jest dzielona.** Nie ma nagłówka ani grupowania —
-zadania są po prostu wypisane.
+zadania są wypisane jedno pod drugim.
 
 ## Cztery stany
 
-Co seria pokazuje i co przyjmuje to dwa różne pytania, a na drugie nigdy nie
-odpowiada ekran: decyduje Server, a odmowa wykonana wyłącznie po stronie Clienta
-nie byłaby żadną odmową.
+Co seria pokazuje i co przyjmuje to dwa różne pytania. Na drugie nigdy nie
+odpowiada ekran — decyduje Server, bo odmowa wykonana wyłącznie po stronie
+Clienta nie byłaby żadną odmową.
 
 | Stan | Zadania | Zgłoszenia |
 |---|---|---|
@@ -36,19 +36,19 @@ nie byłaby żadną odmową.
 | **wstrzymana** | widoczne, chyba że menedżer je zabrał, wstrzymując serię | nie |
 | **zakończona** | widoczne, na zawsze | nie |
 
-Dwie rzeczy warte powiedzenia wprost:
+Warto powiedzieć wprost, co z tego wynika:
 
-- **Zakończona runda dalej jest do czytania.** Jest po niej, a nie jest tajna, i
-  można wrócić do tego, co się rozwiązywało. Organizator, który za rok użyje tych
-  samych zadań, może zamknąć zakończoną rundę — wtedy ukrywa zadania tak jak
-  runda, która się nie zaczęła, a panel mówi, o który przypadek chodzi.
+- **Zakończona runda dalej jest do czytania.** Skończyła się, ale nie stała się
+  tajna — możesz wrócić do tego, co rozwiązywałeś. Organizator, który za rok
+  użyje tych samych zadań, może zamknąć zakończoną rundę — wtedy ukrywa zadania
+  tak jak runda, która się nie zaczęła, a panel mówi, o który przypadek chodzi.
 - **Adres treści zadania niczego nie omija.** Link do zadania w rundzie, która się
   nie zaczęła, albo w takiej, której treści menedżer właśnie ukrył, jest odrzucany
   tak samo jak wszystko inne.
 
 ## Co pokazuje zamknięta runda
 
-Panel nad miejscem, w którym byłyby zadania, mówiący, o który przypadek chodzi:
+Nad miejscem, w którym byłyby zadania, panel mówi, o który przypadek chodzi:
 
 - **Jeszcze się nie rozpoczęła** — albo, jeżeli organizator pozwala pokazać
   liczbę, `Zadania: 5` i rozmyte wiersze-zaślepki za panelem. Te wiersze nie mają
@@ -64,7 +64,8 @@ raz, więc zadania pojawiają się bez przeładowywania.
 
 ## Wstrzymanie
 
-Wstrzymanie nie przyjmuje żadnego zgłoszenia i zatrzymuje zegar. Gdy trwa:
+Wstrzymana seria nie przyjmuje żadnego zgłoszenia, a zegar staje. Kiedy trwa
+wstrzymanie:
 
 - runda ma pomarańczową plakietkę **Wstrzymana** na liście zadań,
 - zegar w nagłówku pisze **Wstrzymana** zamiast odliczać,
@@ -75,6 +76,6 @@ wstrzymywania.
 
 ## Ekran sam się aktualizuje
 
-Otwarcie rundy, jej zamknięcie, wstrzymanie, wznowienie i przesunięcie
-przychodzą jako zdarzenia i strona przerysowuje się sama. Tak samo Twój status na
+Kiedy runda się otwiera, zamyka, zostaje wstrzymana, wznowiona albo przesunięta,
+przychodzi zdarzenie i strona przerysowuje się sama. Tak samo Twój status na
 zadaniu. Nie musisz siedzieć i odświeżać w sekundzie, w której runda się zaczyna.

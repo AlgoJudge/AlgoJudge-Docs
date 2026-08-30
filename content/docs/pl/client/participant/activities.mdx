@@ -13,8 +13,8 @@ wewnątrz jednej z nich.
 
 ## Jak znaleźć swoją
 
-**Aktywności** w nawigacji pokazują listę, po pięć na stronę. To nie jest tylko
-to, do czego już dołączyłeś. Lista zawiera:
+**Aktywności** w nawigacji pokazują listę, po pięć na stronę. Nie są to wyłącznie
+aktywności, do których już dołączyłeś. Na liście są:
 
 - aktywności, w których jesteś zapisany,
 - aktywności, do których dostałeś zaproszenie — plakietka *Zaproszenie*,
@@ -33,19 +33,19 @@ Dwa rzędy chipów, w każdym można zaznaczyć kilka:
 - **Typ** — *Zawody* albo *Zajęcia*. Zawody mają ikonę pucharu, zajęcia ikonę
   szkoły, a typ, którego ta wersja nie zna, znak zapytania.
 
-Zmiana filtra wraca na pierwszą stronę.
+Po zmianie filtra wracasz na pierwszą stronę.
 
 ### Co pokazuje kafelek
 
 Ikonę, nazwę, **slug** — krótki alias widoczny w adresie, na przykład
-`AMMPZ-2019` — a po zakończeniu aktywności Twój **Wynik**. Wolne wiersze tekstu
+`AMMPZ-2019` — a po zakończeniu aktywności Twój **Wynik**. Luźne wiersze tekstu
 obok (*Prowadzący: …* i cokolwiek innego) to dane opisowe, które wpisał
 organizator.
 
-Kliknięcie kafelka otwiera własną stronę aktywności, jeżeli organizator napisał
-stronę dla uczestników, a jeżeli nie — od razu listę zadań. Nie ma po co
-zatrzymywać się na pustej stronie, więc adres też się nie zatrzymuje: wpisanie go
-wprost przenosi Cię do zadań.
+Kiedy klikniesz kafelek, otworzy się własna strona aktywności — jeżeli
+organizator napisał stronę dla uczestników. Jeżeli nie napisał, trafiasz od razu
+na listę zadań. Nie ma po co zatrzymywać się na pustej stronie, więc adres też
+się nie zatrzymuje: wpisany wprost też przenosi Cię do zadań.
 
 Osoba, która **nie** jest zapisana, dostaje to, co organizator napisał dla osób z
 zewnątrz, oraz formularz zapisu.
@@ -59,12 +59,12 @@ albo w całej instalacji — i wszystko o niższej randze jest w tym czasie poza
 zasięgiem. Plakietka nazywa rundę, która to zrobiła.
 </Callout>
 
-Nic nie przepada. Sama strona aktywności nadal się ładuje, niesie powód i
+Nic nie przepada. Sama strona aktywności nadal się otwiera, podaje powód i
 zdanie: *Zadania, zgłoszenia, pytania i ranking wrócą, gdy się zakończy.*
 
 ## Jak się dostać do środka
 
-Trzy drogi, a to, która obowiązuje, jest ustawieniem organizatora.
+Trzy drogi. Która z nich obowiązuje, ustawia organizator.
 
 | Ustawienie | Co oferuje strona aktywności |
 |---|---|
@@ -73,24 +73,23 @@ Trzy drogi, a to, która obowiązuje, jest ustawieniem organizatora.
 | **otwarte** | Przycisk **Zapisz się**, bez hasła. |
 
 Jeżeli aktywność publikuje regulamin, formularz ma też wymagane pole
-**Zapoznałem się z regulaminem i akceptuję go**. Kliknięcie tego tekstu otwiera
-regulamin **nad formularzem**, więc przeczytanie go nie kasuje tego, co
+**Zapoznałem się z regulaminem i akceptuję go**. Kiedy klikniesz ten tekst,
+regulamin otworzy się **nad formularzem**, więc nie stracisz tego, co już
 wpisałeś.
 
 ### Link od prowadzącego
 
 Link zapisu wygląda tak: `https://host/activities/AMMPZ-2019#haslo`. To, co jest
-po `#`, to hasło zapisu. Strona bierze je, wypełnia pole i czyści adres. Fragment
-nigdy nie jest wysyłany na serwer, więc hasło nie trafia po drodze do żadnego
-logu.
+po `#`, to hasło zapisu. Strona bierze je, wypełnia pole i usuwa je z paska
+adresu. Fragment nigdy nie jest wysyłany na serwer, więc hasło nie trafia po
+drodze do żadnego logu.
 
 Link wymaga zalogowania. Jeżeli nie masz sesji, najpierw trafiasz na logowanie, a
 potem wracasz tutaj — razem z fragmentem, czyli z tą częścią, o którą chodziło.
 
 ## Co dostajesz po zapisaniu
 
-Nawigacja wypełnia się wpisami samej aktywności. Każdy pojawia się tylko pod
-warunkiem:
+Nawigacja wypełnia się wpisami samej aktywności. Każdy z nich ma swój warunek:
 
 | Wpis | Widoczny, gdy |
 |---|---|
@@ -103,14 +102,13 @@ warunkiem:
 | **Regulamin** | organizator opublikował regulamin — zapisany czy nie |
 
 Osoba, która nie jest zapisana, dostaje nazwę aktywności i regulamin, i nic
-więcej. Oferowanie wysyłki komuś, kto nie jest w aktywności, byłoby oferowaniem
-ekranów, które i tak odmówią.
+więcej. Nie ma po co pokazywać wysyłki komuś, kto nie jest w aktywności: te
+ekrany i tak odmówią.
 
 ### Zegar w nagłówku
 
 Plakietka odlicza do **końca rundy, która trwa teraz** — nie do końca
-aktywności, bo w zawodach z trzema rundami to nie jest termin, przeciwko któremu
-ktokolwiek pracuje.
+aktywności, bo w zawodach z trzema rundami nikt nie pracuje pod ten termin.
 
 Pojawia się dopiero po starcie rundy. Gdy runda jest wstrzymana, plakietka pisze
 **Wstrzymana** zamiast odliczać: zegar tykający przez przerwę jest gorszy od
@@ -119,14 +117,14 @@ zegara, który staje.
 ### Panel w rogu
 
 Prawy dolny róg, zwinięty po wejściu: Twoje ostatnie zgłoszenia w tej
-aktywności, od najnowszego, z godziną, `[slugiem]` i nazwą zadania, punktami i
+aktywności, od najnowszego, z godziną, `[slug]` i nazwą zadania, punktami i
 stanem. Sam się aktualizuje w miarę, jak przychodzą werdykty, więc możesz
 patrzeć, jak zgłoszenie się kończy, nie odchodząc od czytanej treści.
 
 Przycisk **Wyślij** w panelu otwiera formularz wysyłki w oknie dialogowym — na
-tym zadaniu, na które właśnie patrzysz, jeżeli na jakieś patrzysz.
+tym zadaniu, które masz właśnie otwarte, jeżeli masz otwarte jakieś.
 
-To, czy panel jest rozwinięty, jest pamiętane na czas sesji.
+Rozwinięty czy zwinięty — panel pamięta to na czas sesji.
 
 ## Start w grupie
 

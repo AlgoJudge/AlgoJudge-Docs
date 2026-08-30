@@ -7,19 +7,19 @@ sourceSha256: 670792a726556b131d3edcc799d62c58dee57433e01a986f291539c7dbcea9dd
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-Zakładka **Uczestnicy** w aktywności jest miejscem, w którym zapisuje się do
-niej ludzi. Dodanie kogoś i powiedzenie, co może, to jedna czynność, bo to jeden
-fakt.
+W zakładce **Uczestnicy** zapisujesz ludzi do aktywności. Dodajesz kogoś i
+mówisz, co może, w jednej czynności, bo to jeden fakt.
 
 <Callout type="warn" title="Nadanie w aktywności jest członkostwem">
 Obok nadań nie ma żadnej tabeli członkostwa. Mieć nadanie w aktywności **znaczy**
-być w niej, a odebranie go jest usunięciem stamtąd. Dwie tabele odpowiadające na
-pytanie *czy ta osoba jest w tej aktywności* mogą się poróżnić; jedna nie może.
+być w niej, a gdy je odbierzesz, usuwasz stamtąd tę osobę. Dwie tabele
+odpowiadające na pytanie *czy ta osoba jest w tej aktywności* mogą się poróżnić;
+jedna nie może.
 </Callout>
 
-Dlatego zapisanie kogoś otwiera edytor uprawnień, a nie pole wyboru, i dlatego
-te same wiersze pojawiają się w [Nadaniach](/pl/client/manager/permissions)
-przefiltrowanych do tej aktywności.
+Dlatego, gdy kogoś zapisujesz, otwiera się edytor uprawnień, a nie pole wyboru,
+i dlatego te same wiersze zobaczysz w
+[Nadaniach](/pl/client/manager/permissions) przefiltrowanych do tej aktywności.
 
 ## Zapisanie jednej osoby
 
@@ -35,19 +35,20 @@ a Server odmawia niezależnie od tego, co zrobił ekran.
 
 ### Członkostwo systemowe
 
-Jeden przełącznik w tym samym oknie: *zgłasza jak każdy, liczy się jak nikt* —
-nieobecny w liczbie uczestników i w rankingu.
+Jeden przełącznik w tym samym oknie: *wysyła zgłoszenia jak każdy, nie liczy się
+jak nikt* — nie ma go ani w liczbie uczestników, ani w rankingu.
 
-Jest **wymuszony** dla nadania niosącego cokolwiek ponad zestaw zwykłego
+Włącza się **sam** przy nadaniu, które daje cokolwiek ponad zestaw zwykłego
 uczestnika. Członek jury w rankingu obok studentów to błąd, a nie preferencja,
 więc Server wylicza to przy każdym zapisie i nigdy nie przyjmuje z ekranu. Przy
-zwykłym członkostwie wybór należy do ciebie: konto testowe albo to, na którym
-puszczasz rozwiązanie wzorcowe, jest dokładnie tym, do czego ono służy.
+zwykłym członkostwie decydujesz sam: konto testowe albo to, na którym puszczasz
+rozwiązanie wzorcowe, jest dokładnie tym, do czego ten przełącznik służy.
 
 ## Nadanie zaproponowane, ale nieprzyjęte
 
 Nadanie jest *aktywne* albo *zaproszony*. Nadanie w stanie zaproszenia nie daje
-niczego — jest ofertą, a osoba nie jest w aktywności, dopóki jej nie przyjmie.
+niczego — to dopiero oferta, a osoba nie jest w aktywności, dopóki jej nie
+przyjmie.
 
 ## Gdy ludzie mają zapisywać się sami
 
@@ -59,35 +60,35 @@ W zakładce ustawień aktywności, **kto może dołączyć**:
 | na hasło | każdy, kto ma konto i kod zapisu, zapisuje się sam |
 | otwarta | każdy, kto ma konto, zapisuje się sam |
 
-Obie polityki dopuszczające samodzielny zapis oferują **link do rozdania**. Gdy
-ustawione jest hasło zapisu, jedzie ono we fragmencie linku, a nie w parametrze
-zapytania — fragment nie jest wysyłany do serwera, więc nie trafia do żadnego
-logu dostępu, proxy ani nagłówka referrer.
+Obie polityki, które dopuszczają samodzielny zapis, dają ci **link do
+rozdania**. Gdy ustawisz hasło zapisu, jedzie ono we fragmencie linku, a nie w
+parametrze zapytania — fragmentu przeglądarka nie wysyła do serwera, więc nie
+trafi on do żadnego logu dostępu, proxy ani nagłówka referrer.
 
-Aktywność zamknięta jest i tak ukryta przed listami osób, których w niej nie ma.
-Pozostałe dwie też można ukryć — zostają wtedy osiągalne przez swój adres, a po
-to właśnie jest link.
+Aktywność zamknięta i tak nie pokazuje się na listach osobom, których w niej nie
+ma. Pozostałe dwie też możesz ukryć — zostają wtedy dostępne pod swoim adresem,
+a po to właśnie jest link.
 
 Prowadzący zawsze może zapisać kogoś ręcznie, cokolwiek mówi polityka.
 
 ## Klasa, która nie ma jeszcze kont
 
-**Konta tymczasowe** tworzy konta hurtowo i zapisuje je tutaj w miarę
+**Konta tymczasowe** zakłada konta hurtem i zapisuje je tutaj w miarę
 powstawania. Przycisk pojawia się tylko wtedy, gdy możesz zrobić obie połowy:
-`activity:enroll` **w tej aktywności**, bo nadanie jest per aktywność, oraz
-`user:create:temporary` gdziekolwiek, bo tworzenie kont nie jest zawężone do
-aktywności, w której konta wylądują.
+`activity:enroll` **w tej aktywności**, bo nadanie dotyczy jednej aktywności,
+oraz `user:create:temporary` gdziekolwiek, bo zakładanie kont nie jest zawężone
+do aktywności, w której konta wylądują.
 
-Hasła, które wraca ci narzędzie, są jedyną kopią, jaka kiedykolwiek będzie, a
+Hasła, które dostajesz z powrotem, są jedyną kopią, jaka kiedykolwiek będzie, a
 kartka do wydruku wskazuje na tę aktywność, a nie na stronę główną, od której
 ktoś musiałby zacząć szukać.
 
 ## Same konta to inny ekran
 
-Obszar **Użytkownicy** to lista kont: tworzenie, edycja, blokowanie, reset
-hasła, podgląd sesji i przeniesienie dorobku jednego konta na inne.
+Obszar **Użytkownicy** to lista kont: tam je zakładasz, edytujesz, blokujesz,
+resetujesz hasło, oglądasz sesje i przenosisz dorobek jednego konta na drugie.
 
-Blokada zatrzymuje logowanie w ogóle — kończy sesje i nie dopuszcza nowych. To,
-co ktoś może wewnątrz aktywności, jest nadaniem, i jedno nie zastępuje drugiego:
-blokowanie jest czynnością na poziomie instalacji i wymaga `user:block`, którego
-nie ma w dostarczanym szablonie `manager`.
+Blokada w ogóle nie pozwala się zalogować — kończy istniejące sesje i nie
+dopuszcza nowych. To, co ktoś może wewnątrz aktywności, opisuje nadanie, i jedno
+nie zastępuje drugiego: blokujesz na poziomie całej instalacji i potrzebujesz do
+tego `user:block`, którego nie ma w dostarczanym szablonie `manager`.

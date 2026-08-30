@@ -7,8 +7,8 @@ sourceSha256: 03ee20a7b6d4080644ea7f78529f6c6a7ac8c337fefd7df8a034b3433099be52
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**Zadania** w nawigacji pokazują wszystko, co jest w aktywności, pogrupowane po
-seriach. Każdy wiersz to `[slug] Nazwa`, plakietka stanu i przycisk **Wyślij
+**Zadania** w nawigacji pokazują wszystko, co jest w aktywności, z podziałem na
+serie. Każdy wiersz to `[slug] Nazwa`, plakietka stanu i przycisk **Wyślij
 zgłoszenie**.
 
 Slug to krótka etykieta — `A`, `P1`, `plecak` — i to ona pojawia się w adresie.
@@ -16,8 +16,8 @@ Jest unikalna w całej aktywności, nie tylko w obrębie swojej rundy.
 
 ## Twój stan na zadaniu
 
-Plakietka po prawej stronie wiersza dotyczy tylko Ciebie, a nie wszystkich. Niesie
-do trzech rzeczy:
+Plakietka po prawej stronie wiersza dotyczy tylko Ciebie, a nie wszystkich.
+Składa się z maksymalnie trzech elementów:
 
 | Element | Znaczenie |
 |---|---|
@@ -26,8 +26,8 @@ do trzech rzeczy:
 | sama plakietka | *Rozwiązane*, *Częściowo*, *Próbowane* albo *Nierozpoczęte* |
 
 Najlepszy wynik to ten, który liczy się według zasad aktywności, więc
-[wykluczone zgłoszenie](/pl/client/participant/results) go nie tworzy. Jeżeli
-startujesz w grupie, obie liczby należą do grupy.
+[wykluczone zgłoszenie](/pl/client/participant/results) się do niego nie liczy.
+Jeżeli startujesz w grupie, obie liczby należą do grupy.
 
 Ta sama plakietka jest na górze treści zadania, bo to przy treści się siedzi,
 czekając na werdykt — i tam też się zmienia, gdy werdykt przyjdzie.
@@ -35,45 +35,47 @@ czekając na werdykt — i tam też się zmienia, gdy werdykt przyjdzie.
 ## Dlaczego przycisk wysyłki jest wyszarzony
 
 <Callout type="warn" title="Przycisk zablokowany, a nie usunięty">
-Przycisk zostaje tam, gdzie zawsze był, i mówi, że jest zamknięty, zamiast
-znikać. Jest zablokowany zawsze wtedy, gdy runda z tym zadaniem nic nie
+Przycisk zostaje tam, gdzie zawsze był, i zamiast zniknąć, mówi, że jest
+zamknięty. Jest zablokowany zawsze wtedy, gdy runda z tym zadaniem nic nie
 przyjmuje: **zakończyła się**, menedżer ją **wstrzymał** albo jeszcze się nie
 zaczęła.
 </Callout>
 
-Ekran z treścią zadania niesie też plakietkę mówiącą, który z dwóch przypadków to
-jest — *Seria jest wstrzymana* na pomarańczowo, *Seria się zakończyła* na szaro —
-więc powód czytasz tam, gdzie patrzysz na przycisk.
+Na ekranie z treścią zadania plakietka mówi, o który z dwóch przypadków chodzi —
+*Seria jest wstrzymana* na pomarańczowo, *Seria się zakończyła* na szaro — więc
+powód czytasz tam, gdzie patrzysz na przycisk.
 
-Sam formularz wysyłki powtarza to zdaniem, zanim cokolwiek napiszesz. Pełną
-tabelę masz w [Rundy, tygodnie i zajęcia](/pl/client/participant/series).
+Sam formularz wysyłki powtarza to jednym zdaniem, zanim cokolwiek napiszesz.
+Pełną tabelę masz w [Rundy, tygodnie i zajęcia](/pl/client/participant/series).
 
 ## Treść zadania
 
-Po otwarciu zadania dostajesz tytuł w postaci `[slug] Nazwa`, plakietkę stanu
-oraz to, co przypisanie mówi o limitach i o Twoich pozostałych zgłoszeniach.
+Kiedy otworzysz zadanie, zobaczysz tytuł w postaci `[slug] Nazwa`, plakietkę
+stanu oraz to, co przypisanie mówi o limitach i o Twoich pozostałych
+zgłoszeniach.
 
 ### Więcej niż jeden język
 
 Jeżeli autor napisał tłumaczenia, nad treścią pojawia się przełącznik: **Treść
 domyślna** i po jednej pozycji na język. Zmienia samą treść, a nie interfejs —
-chęć przeczytania angielskiej treści w polskim interfejsie jest zupełnie zwykła.
+nie ma nic dziwnego w tym, że ktoś chce przeczytać angielską treść w polskim
+interfejsie.
 
 Dostajesz treść w języku swojego interfejsu, jeżeli autor ją napisał, a w
-przeciwnym razie tę napisaną jako pierwsza. Brak tłumaczenia jest zastępowany, a
-nigdy nie jest błędem.
+przeciwnym razie tę napisaną jako pierwsza. Gdy tłumaczenia nie ma, dostajesz
+zastępcze — to nigdy nie jest błąd.
 
 Treści są zwykle w Markdownie. Zadanie zaimportowane z archiwum może mieć zamiast
-tego PDF — jest wtedy rysowany w przeglądarce dokumentów na stronie, a nie
-podawany jako odnośnik do pobrania.
+tego PDF — otwiera się wtedy w podglądzie na stronie, a nie jako odnośnik do
+pobrania.
 
 ### Limity
 
-Dwie plakietki obok tytułu — czas i pamięć — to własna para przypisania, zanim
-cokolwiek ją zawęzi.
+Dwie plakietki obok tytułu — czas i pamięć — to wartości samego przypisania,
+zanim cokolwiek je zawęzi.
 
-Pod treścią mogą być **dwie tabele** — **Limity**, a w nich *Per grupa testowa* i
-*Per język* — i są dwie, a nie jedna, celowo:
+Pod treścią mogą być **dwie tabele** — karta **Limity**, a w niej *Per grupa
+testowa* i *Per język*. Są dwie, a nie jedna, i to celowo:
 
 - **Per grupa testowa** — to samo dla każdego języka.
 - **Per język** — to samo dla każdej grupy.
@@ -101,4 +103,4 @@ jako osobne pliki.
 Tam, gdzie aktywność ustawia limit, plakietka mówi, ile Ci zostało. Poniżej trzech
 formularz wysyłki podnosi to do ostrzeżenia. Brak plakietki oznacza brak limitu.
 
-W grupie limit należy do grupy.
+W grupie limit należy do grupy — zużywa go każdy, kto wyśle.

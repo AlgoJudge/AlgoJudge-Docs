@@ -39,10 +39,10 @@ W tej kolejności:
    systemowych plus nadania w aktywności, gdy pytanie dotyczy jednej aktywności.
 
 <Callout type="warn" title="W tym modelu nigdzie nie ma odejmowania">
-Zakres systemowy jest sumą wkładów i jest czysto addytywny. Nadanie w aktywności
-albo nadpisuje go w całości, albo się do niego dokłada. Nie da się zapisać
-*menedżer minus ta jedna rzecz* jako odjęcia — mówi się to mniejszym zestawem
-albo nadpisaniem.
+Zakres systemowy jest sumą wkładów i tylko przyrasta. Nadanie w aktywności albo
+nadpisuje go w całości, albo się do niego dokłada. Nie zapiszesz *menedżer bez
+tego jednego uprawnienia* jako odjęcia — powiesz to mniejszym zestawem albo
+nadpisaniem.
 </Callout>
 
 ### Zakres systemowy to kilka wierszy
@@ -52,9 +52,9 @@ ręcznie plus po jednym na każdego powiązanego dostawcę tożsamości**. Lista
 oznacza wkład zarządzany dostawcą, od którego przyszedł.
 
 Wkład zarządzany jest **przepisywany z mapowania dostawcy przy każdym logowaniu i
-nie da się go edytować ręcznie**. Edycja trwałaby do następnego logowania tej
-osoby, a zmiana, która po cichu się cofa, jest gorsza niż odmowa. Zmień zamiast
-tego mapowanie dostawcy — zobacz [Logowania
+nie da się go edytować ręcznie**. Poprawka trzymałaby się do następnego logowania
+tej osoby, a zmiana, która po cichu się cofa, jest gorsza niż odmowa. Zmień
+zamiast tego mapowanie dostawcy — zobacz [Logowania
 zewnętrzne](/pl/client/manager/logins).
 
 ### Flaga nadpisania
@@ -62,14 +62,14 @@ zewnętrzne](/pl/client/manager/logins).
 Na nadaniu w aktywności: *to nadanie jest całą odpowiedzią wewnątrz aktywności*.
 Tak mówi się „menedżer wszędzie, poza tymi zawodami, w których startuję”.
 
-Dwie rzeczy warto wiedzieć, zanim się ją ustawi:
+Zanim ją ustawisz, weź pod uwagę dwie konsekwencje:
 
-- **Ustawienie jej komuś, kto ma uprawnienia systemowe, degraduje go tam.** Okno
-  ostrzega w chwili czynności, bo pierwszym objawem jest inaczej menedżer, któremu
-  po cichu zniknął ekran.
+- **Komuś, kto ma uprawnienia systemowe, obniżysz nią prawa w tej aktywności.**
+  Okno ostrzega o tym w chwili czynności, bo inaczej pierwszym objawem będzie
+  menedżer, któremu po cichu zniknął ekran.
 - **Może uwięzić swojego właściciela.** Wewnątrz tej aktywności jest on tym, co
-  mówi nadanie — zwykle uczestnikiem bez `grant:update` — więc do wyczyszczenia
-  flagi potrzeba innego prowadzącego tej aktywności albo administratora.
+  mówi nadanie — zwykle uczestnikiem bez `grant:update` — więc żeby wyczyścić
+  flagę, potrzeba innego prowadzącego tej aktywności albo administratora.
 
 Praw administratora nadal nie da się przyciąć od dołu: flagę na nadaniu
 administratora mógł ustawić tylko administrator.
@@ -86,9 +86,9 @@ nie jest ten sam zestaw co twoje prawa w całej instalacji.
 
 **`system:administrator` jest nieosiągalny przez mapowanie claimów.** Mapowanie
 decyduje, ile warta jest tu grupa z zewnętrznego katalogu, a katalog nigdy nie
-może wykreować administratora. Pilnowane są obie połowy: reguła mapowania nie może
-wskazać szablonu, który go niesie, a do szablonu już zmapowanego nie da się go
-dopisać.
+może wykreować administratora. Server pilnuje obu części: reguła mapowania nie może
+wskazać szablonu, który to uprawnienie zawiera, a do szablonu już zmapowanego nie
+da się go dopisać.
 
 Ta sama reguła dotyczy mapowania co nadawania: nikt nie zmapuje na uprawnienie,
 którego sam nie ma.
@@ -100,14 +100,14 @@ zapomniany** — nadanie trzyma kopię, a nazwa szablonu zostaje obok wyłączni
 etykieta mówiąca, od czego zestaw się zaczął.
 
 <Callout type="warn" title="Zmiana szablonu nie dotyka nikogo, kto już go użył">
-To jest to rozsądne, ale błędne założenie, i ekran mówi o tym na samej górze.
-Jeśli musisz zmienić to, co ma sto osób, zmieniasz ich nadania, a nie szablon, z
+Zakłada się to rozsądnie i błędnie, więc ekran mówi o tym na samej górze. Jeśli
+musisz zmienić to, co ma sto osób, zmieniasz ich nadania, a nie szablon, z
 którego przyszły.
 </Callout>
 
 Obszar **Szablony uprawnień** je wypisuje i oznacza te dostarczone z produktem
-jako wbudowane; tych nie da się usunąć, bo usunięcie jednego zostawiłoby świeżą
-instalację bez czegokolwiek, od czego zacząć nadanie.
+jako wbudowane; tych nie usuniesz, bo po usunięciu jednego świeża instalacja nie
+miałaby od czego zacząć nadania.
 
 ### Trzy dostarczane
 
@@ -124,14 +124,13 @@ ranking:read
 ```
 
 **`manager`** — wszystko, co ma uczestnik, plus to, czego trzeba do prowadzenia
-aktywności: aktualizacja i archiwizacja, zapisywanie ludzi, biblioteka zadań —
-czytanie własnych, tworzenie zadania, edycja, udostępnianie, archiwizacja i
+aktywności: zmienianie jej i archiwizowanie, zapisywanie ludzi, biblioteka zadań
+— czytanie własnych, zakładanie zadania, edycja, udostępnianie, archiwizowanie i
 podpinanie do serii (`read:own`, `create`, `update`, `share`, `archive`,
 `attach`) — cudze zgłoszenia i ich kod, ponowna ocena, anulowanie i wyłączanie z
 klasyfikacji, cudze wyniki i logi, wszystkie pytania wraz z odpowiadaniem i
-publikowaniem, ogłoszenia,
-czytanie i zdejmowanie zamrożenia rankingu, konta tymczasowe oraz czytanie i
-zmienianie nadań.
+publikowaniem, ogłoszenia, czytanie i zdejmowanie zamrożenia rankingu, konta
+tymczasowe oraz czytanie i zmienianie nadań.
 
 Celowo **nie ma w nim**: `activity:create`, `activity:delete`,
 `problem:read:all`, `problem:delete`, `user:*` poza kontami tymczasowymi,
@@ -152,6 +151,6 @@ Dwa ekrany, jedna tabela pod spodem.
   aktywności i tam odbywają się zapisy.
 
 Nadanie decyduje też o tym, czy ktoś jest **prowadzącym**: Server wylicza to przy
-każdym zapisie z uprawnień w zestawie — cokolwiek ponad siedem uczestnika, z
-wyjątkiem `trial:run` — a prowadzący są nieobecni w liczbie uczestników i w
-rankingu.
+każdym zapisie z uprawnień w zestawie — cokolwiek ponad siedem uprawnień
+uczestnika, z wyjątkiem `trial:run` — a prowadzących nie ma ani w liczbie
+uczestników, ani w rankingu.

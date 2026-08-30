@@ -1,6 +1,6 @@
 ---
 title: Odtwarzanie
-description: Jak wgrać zrzut z powrotem, co jest sprawdzane, zanim cokolwiek zostanie ruszone, i dlaczego się to ćwiczy.
+description: Jak wgrać zrzut z powrotem, co sprawdzamy, zanim cokolwiek ruszymy, i po co się to ćwiczy.
 source: en/install/restore.mdx
 sourceSha256: dd72034d639c3088105e4ac36eae76d647914ffb599d6887b7f0bdd9ac09a2cf
 ---
@@ -12,11 +12,11 @@ import { Callout } from "fumadocs-ui/components/callout";
 ```
 
 Skrypt zamyka instalację, zatrzymuje Server i Client, odtwarza, sprawdza, czy
-cokolwiek faktycznie dotarło, uruchamia je z powrotem, czeka na zdrowie i otwiera
-instalację.
+cokolwiek faktycznie dotarło, uruchamia je z powrotem, czeka, aż będą zdrowe,
+i otwiera instalację.
 
 <Callout type="warn" title="To niszczy bieżącą bazę">
-`pg_restore --clean --if-exists` usuwa każdy obiekt, który niesie zrzut, zanim go
+`pg_restore --clean --if-exists` usuwa każdy obiekt zawarty w zrzucie, zanim go
 odtworzy. To, co jest teraz w instalacji, znika. Skrypt najpierw pyta — wpisujesz
 słowo `restore` — chyba że podasz `--yes`.
 </Callout>
@@ -25,31 +25,31 @@ słowo `restore` — chyba że podasz `--yes`.
 
 Plik `.meta` leżący obok zrzutu:
 
-- **sumę kontrolną.** Zrzut, który jej nie odpowiada, został od czasu zrobienia
-  zmieniony albo uszkodzony, i odtwarzanie odmawia.
+- **sumę kontrolną.** Zrzut, który się z nią nie zgadza, ktoś od czasu zrobienia
+  zmienił albo plik się uszkodził — i odtwarzanie odmawia.
 - **czy zrzut obejmował pliki.** Zrzut z `coverage=INCOMPLETE` odtwarza się do
   instalacji, której wiersze wskazują na bajty, których nie ma; odtwórz magazyn
   plików z tego samego okna.
-- **jaki schemat trzyma.**
+- **jaki schemat zawiera.**
 
 Bez pliku `.meta` obok nie da się sprawdzić niczego — ani sumy kontrolnej, ani
-schematu, ani zakresu — i skrypt to mówi. Kontynuowanie jest decyzją.
+schematu, ani zakresu — i skrypt to mówi. Jeśli mimo to ruszysz dalej, jest to
+Twoja decyzja.
 
-## Schemat jest krokiem, który naprawdę gryzie
+## Schemat to krok, który potrafi ugryźć
 
 Starszy zrzut pod nowszym Serverem **nie jest błędem**. Przy
 `MIGRATE_ON_START=true` Server przy najbliższym starcie doprowadza odtworzony
-schemat do przodu, co zwykle jest tym, czego chce ktoś odtwarzający kopię
-sprzed tygodnia.
+schemat do przodu, czego zwykle chce ten, kto odtwarza kopię sprzed tygodnia.
 
-**Jest to jednokierunkowe**, i dowiadujesz się o tym przed, a nie po. Jeśli
+**Działa to w jedną stronę**, a dowiadujesz się o tym przed, nie po. Jeśli
 zamierzałeś wrócić także do starszego Servera, ustaw najpierw `SERVER_TAG` na
 jego wersję.
 
 ## Dlaczego Server i Client są zatrzymywane, a nie drenowane
 
 Nic nie powinno trzymać połączenia do bazy, której tabele są właśnie usuwane.
-PostgreSQL zostaje podniesiony, bo to do niego się odtwarza.
+PostgreSQL zostaje na chodzie, bo to do niego odtwarzamy.
 
 ## Nie zgłosi sukcesu na pustej bazie
 
@@ -59,10 +59,10 @@ mniej niż dwie.
 Ta kontrola istnieje z powodu prawdziwej awarii, znalezionej przy pisaniu tego
 repozytorium: wywołanie Compose zawiodło, jego jednolinijkowy błąd został
 zaraportowany jako ostrzeżenie `pg_restore`, a odtwarzanie **nie zrobiło
-zupełnie nic**, podczas gdy każda kontrola po nim przechodziła na danych, których
-po prostu nikt nie tknął.
+zupełnie nic**, podczas gdy każda kontrola po nim przechodziła na danych,
+których nikt nawet nie tknął.
 
-`state/restore.log` trzyma to, co powiedział `pg_restore`. Część jest rutynowa —
+W `state/restore.log` leży to, co powiedział `pg_restore`. Część jest rutynowa —
 rozszerzenie, którego rola nie może usunąć, komentarz do czegoś, czego nie
 posiada — i uruchomienie nie zatrzymuje się na pierwszym, bo baza odtworzona
 w połowie jest wyraźnie gorsza niż kompletna z ostrzeżeniami. Jedna z tych linii
@@ -71,12 +71,12 @@ jest.
 
 ## Przećwicz to
 
-**Kopia bez przetestowanego odtworzenia jest hipotezą.** Uczciwa próba odbywa
-się na zapasowym hoście: sklonuj repozytorium, skopiuj `.env` i jeden zrzut,
+**Kopia bez przetestowanego odtworzenia jest hipotezą.** Uczciwa próba wygląda
+tak, na zapasowym hoście: sklonuj repozytorium, skopiuj `.env` i jeden zrzut,
 `docker compose up -d --wait`, `./scripts/restore.sh`, a potem zaloguj się
 i zobacz coś, co rozpoznajesz.
 
-<Callout type="warn" title="Prawdziwym testem jest ten, który wyłapał ciche nic-nie-robienie">
+<Callout type="warn" title="Prawdziwy test to ten, który wyłapał odtwarzanie, które nic nie zrobiło">
 **Najpierw coś zmień**, potem odtwórz, potem sprawdź, że zmiana zniknęła.
 Odtwarzanie, które nic nie zrobiło, przechodzi każdą inną kontrolę, jaka istnieje.
 </Callout>

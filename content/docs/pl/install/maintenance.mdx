@@ -1,6 +1,6 @@
 ---
 title: Przerwa techniczna
-description: Wyłączenie instalacji z ruchu bez zatrzymywania jej, i droga, która wygląda oczywiście i jest błędna.
+description: Jak wyłączyć instalację z ruchu, nie zatrzymując jej, i droga, która wygląda na oczywistą, a jest błędna.
 source: en/install/maintenance.mdx
 sourceSha256: 30297fa46964341430ebd18fb0436b7373a008128c004781761b99a48a179955
 ---
@@ -28,12 +28,12 @@ Servera**, a cała funkcja opiera się na jednym rozróżnieniu:
 | **1** | `draining` | `/api/v1/health`; dzierżawa, postęp, raport, odczyt pliku, upload i attach Runnera | API uczestnika, zgłoszenia, zapisy menedżera, **nowe pobrania pracy** |
 | **2** | `closed` | `/api/v1/health` | wszystko inne |
 
-- Włączenie przełącznika wchodzi natychmiast w `draining`, **nigdy prosto
+- **Włączony** przełącznik wchodzi natychmiast w `draining`, **nigdy prosto
   w `closed`**. Praca w locie dostaje swoją szansę.
 - Server dochodzi do `closed`, gdy nie działa żadne zlecenie oceny ani żaden
   trial, albo po `Maintenance:ForceAfterSeconds` — domyślnie 300 — co nastąpi
   pierwsze.
-- Wyłączenie wraca do `open` natychmiast, z każdego poziomu.
+- **Wyłączony** wraca do `open` natychmiast, z każdego poziomu.
 
 Poziom to wiersz w bazie, a nie flaga w pamięci, więc **przeżywa restart**.
 Operator, który w oknie zatrzyma Server i uruchomi go ponownie, zastanie okno
@@ -42,43 +42,44 @@ nadal otwarte — i to jedyny bezpieczny kierunek tej niespodzianki.
 <Callout type="warn" title="`closed` to jedyny poziom, na którym wolno ruszać bazę">
 Na `draining` Runner może jeszcze zapisywać wynik. Zrzut zrobiony wtedy jest
 wewnętrznie spójny i po cichu gubi ten wynik przy odtworzeniu. `--wait-closed`
-jest tym, co czeka, i to z niego korzysta `backup.sh --quiesce`.
+właśnie na to czeka i korzysta z niego `backup.sh --quiesce`.
 </Callout>
 
 **Wymuszone zamknięcie niczego nie gubi.** Porzucone zlecenie zachowuje swoją
-dzierżawę, dzierżawa wygasa, a reaper wkłada je z powrotem do kolejki. Kosztem
-jest jedno ocenianie wykonane dwa razy — przeciw kosztowi operatora trzymanego
-w zakładnikach przez jednego zakleszczonego Runnera.
+dzierżawę, dzierżawa wygasa, a reaper wkłada je z powrotem do kolejki. Kosztuje
+to jedno ocenianie wykonane dwa razy — wobec kosztu operatora trzymanego jako
+zakładnik przez jednego zakleszczonego Runnera.
 
 ## `/api/v1/health` to drzwi, które nigdy się nie zamykają
 
-Odpowiada **200 na każdym poziomie**, anonimowo, niosąc okno:
+Odpowiada **200 na każdym poziomie**, anonimowo, i podaje okno:
 
 ```json
 { "status": "ok", "maintenance": { "level": "draining", "since": "…", "reason": "nocna kopia" } }
 ```
 
-Obiekt `maintenance` jest **nieobecny, gdy jest otwarte**, więc czytelnik, który
-nigdy o tym nie słyszał, widzi dokładnie ten dokument, który widział zawsze.
+Obiektu `maintenance` **nie ma, kiedy instalacja jest otwarta**, więc czytelnik,
+który nigdy o tym nie słyszał, widzi dokładnie ten dokument co zawsze.
 
-Zależą od tego trzy osobne rzeczy i każda z osobna by wystarczyła:
+Zależą od tego trzy niezależne mechanizmy i każdy z osobna by wystarczył:
 
 - healthcheck kontenera Servera przeszukuje tę odpowiedź, więc 503 tutaj kazałby
   Dockerowi zabić proces, który celowo utrzymujesz przy życiu;
 - `docker compose up --wait` odpytuje ją, więc stos nie mógłby wstać w oknie;
-- to jej pilnują Client i każdy Runner, żeby dowiedzieć się, że mogą wrócić.
+- to ją odpytują Client i każdy Runner, żeby się dowiedzieć, że mogą wrócić.
 
 ## Nie stawiaj strony przerwy przed nginxem
 
-To pomysł oczywisty i psuje trzy rzeczy naraz.
+To pomysł oczywisty i psuje naraz trzy sprawy.
 
 - **`/api/v1/health` znika razem z resztą**, z trzech powodów powyżej.
 - **Client już ma stronę przerwy technicznej**, w brandingu i języku tej
-  instalacji, budowaną z odmowy `server.maintenance` Servera. Statyczna strona
-  z proxy zastępuje ją czymś gorszym i ukrywa powód.
+  instalacji, składaną z odmowy `server.maintenance`, którą zwraca Server.
+  Statyczna strona z proxy zastępuje ją czymś gorszym i ukrywa powód.
 - **Proxy odmawiające wszystkiego odmawia też Runnerowi**, więc nic w locie nie
-  może się skończyć i drenowanie nigdy się nie kończy. Każde okno kosztowałoby
-  wtedy przerwane ocenianie, czyli dokładnie to, czemu ma zapobiegać.
+  może się dokończyć, a drenowanie nigdy nie dobiega końca. Każde okno
+  kosztowałoby wtedy przerwane ocenianie, czyli dokładnie to, czemu ma
+  zapobiegać.
 
 `nginx/algojudge.conf` ma z tego powodu `proxy_intercept_errors off` przy
 lokalizacji API, a `scripts/check-repository.py` zgłasza błąd, jeśli to się
@@ -94,37 +95,37 @@ zamiast odmawiać, bo pusta kolejka to coś, co każdy Runner już obsługuje
 poprawnie — więc Runner, którego niczego nie nauczono o przerwach, na `draining`
 zachowa się prawidłowo.
 
-`maintenanceChanged` jest rozsyłane do każdej podłączonej sesji w **obie**
-strony. Client, któremu powiedziano tylko, że Server odchodzi, siedziałby na
-stronie przerwy, dopóki ktoś nie przeładowałby karty.
+`maintenanceChanged` rozsyłamy do każdej podłączonej sesji w **obie** strony.
+Client, któremu powiedziano tylko, że Server odchodzi, siedziałby na stronie
+przerwy, dopóki ktoś nie przeładowałby karty.
 
 ## Całe `/admin` jest zwolnione
 
-Bramka działa po autoryzacji i zostawia osiągalne ścieżki operatora oraz Runnera
-na poziomie `draining`. Każda ścieżka `/api/v1/admin` zostaje otwarta na każdym
+Bramka działa po autoryzacji i na poziomie `draining` zostawia osiągalne ścieżki
+operatora oraz Runnera. Każda ścieżka `/api/v1/admin` zostaje otwarta na każdym
 poziomie: okno, z którego nikt nie może wyjść, i konto, na które nikt nie może
 wejść, to ta sama blokada.
 
 ## Runner w trakcie okna
 
-Runner czeka, zamiast kończyć pracę. Porzuca zlecenie na rzecz jego dzierżawy,
-zamiast zgłaszać porażkę, której nie zaobserwował, i przetrzymuje gotowy wynik
-przez okno, zamiast go wyrzucać.
+Runner czeka, zamiast kończyć pracę. Zostawia zlecenie jego dzierżawie, zamiast
+zgłaszać porażkę, której nie zaobserwował, i przetrzymuje gotowy wynik przez
+okno, zamiast go wyrzucać.
 
 <Callout type="warn" title="Nigdy nie używaj `docker stop` na Runnerze jako ostrożności">
 Runner nie obsługuje `SIGTERM`. Zostaje zabity, a jego zlecenie wraca do kolejki,
 gdy wygaśnie dzierżawa. `stop_grace_period` jest ustawione hojnie i samo w sobie
-nic nie kupuje. Czyste drenowanie to `maintenance.sh on --wait-closed` na
+nic nie daje. Czyste drenowanie to `maintenance.sh on --wait-closed` na
 **Serverze** najpierw — potem nie ma już w locie nic do stracenia.
 </Callout>
 
 ## Czego to celowo nie robi
 
-- **Nie planuje.** Nie ma „zamknij o 22:00”. Okno rzuca człowiek, który jest na
-  miejscu, bo ktoś musi być, żeby zauważyć, że poszło źle.
-- **Nie ma okien na aktywność.** Przerwa jest własnością instalacji. Konkurs,
-  którego nie wolno przerwać, jest powodem, żeby nie rzucać przełącznika, a nie
-  powodem, żeby przełącznik był drobniejszy.
+- **Nie planuje.** Nie ma „zamknij o 22:00”. Okno otwiera człowiek, który jest
+  na miejscu, bo ktoś musi tam być, żeby zauważyć, że poszło źle.
+- **Nie ma okien na aktywność.** Przerwa to sprawa całej instalacji. Konkurs,
+  którego nie wolno przerwać, jest powodem, żeby nie przestawiać przełącznika,
+  a nie powodem, żeby przełącznik był drobniejszy.
 - **Nie ma trybu tylko do odczytu.** Poziom, który serwowałby odczyty i odmawiał
   zapisów, trzeba by przemyśleć endpoint po endpoincie, a pierwszy źle
   zaklasyfikowany odkryłby uczestnik.

@@ -106,6 +106,7 @@ output is not source.
 | `npm run check:links` | Every internal link resolves |
 | `npm run check:versions` | No page is named so as to look like a version |
 | `npm run check:translations` | No Polish page has drifted from its English source |
+| `npm run check:structure` | A translation has the same headings, blocks and links as its source |
 | `npm run check:glossary` | Polish uses the interface's own words, and every interface string has one |
 | `npm run check:no-playground` | The built site contacts no installation |
 | `npm run og` | Regenerate the Open Graph card from the wordmark |

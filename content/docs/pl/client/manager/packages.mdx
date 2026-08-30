@@ -33,53 +33,54 @@ package.zip
 ```
 
 `config.yml` to YAML i jedyny plik w produkcie, w którym komentarz jest coś wart
-— notatka mówiąca, dlaczego grupa 3 ma dłuższy limit, zostaje wewnątrz paczki.
+— notatka o tym, dlaczego grupa 3 ma dłuższy limit, zostaje wewnątrz paczki.
 
 | W `config.yml` | Co mówi |
 |---|---|
 | `type` | jaki to format. Runner, który nie zna wersji, odmawia paczki, zamiast zgadywać |
 | `limits.timeMs` | milisekundy |
 | `limits.memoryBytes` | **bajty, wszędzie.** W całym produkcie nie ma drugiej jednostki pamięci |
-| `languages` | w czym wolno zgłaszać. Puste znaczy, że paczka nie mówi, co dopuszcza wszystko, co Runner umie zbudować |
-| `overrideLimits` | na język, kluczowane rodziną (`cpp`, `python`) albo jednym toolchainem (`pypy3`). Python jest wolniejszy i mówi się to tutaj |
+| `languages` | w czym wolno zgłaszać. Puste znaczy, że paczka nic nie narzuca, a wtedy wolno wszystko, co Runner umie zbudować |
+| `overrideLimits` | limity na język, kluczem jest rodzina (`cpp`, `python`) albo jeden toolchain (`pypy3`). Tutaj zapisujesz, że Python jest wolniejszy |
 | `groups` | grupy punktowe, ich punkty i opcjonalnie własne limity |
 | `checker` | brak oznacza, że decydują pliki `.out` |
 | `modelSolution` | służy do kalibracji limitów, nigdy do oceniania |
 
-Własne limity grupy zastępują globalne dla testów tej jednej grupy; ich brak
-oznacza dziedziczenie. Edytor przyjmuje milisekundy albo sekundy oraz bajty, KiB
-lub MiB i przelicza — nikt nie wpisuje 268435456, żeby powiedzieć 256 MiB.
+Własne limity grupy zastępują globalne dla testów tej jednej grupy; gdy ich nie
+ma, grupa dziedziczy globalne. Edytor przyjmuje milisekundy albo sekundy oraz
+bajty, KiB lub MiB i sam przelicza — nikt nie wpisuje 268435456, żeby powiedzieć
+256 MiB.
 
 ## Budowanie
 
 Zakładka bierze luźne pliki i paruje je po nazwie: **`1a.in` idzie z `1a.out`.
-Liczba to grupa, litera to test.** Test można też wpisać ręcznie. Pliki, których
-nie rozpoznaje, są wypisane, a nie po cichu pominięte.
+Liczba to grupa, litera to test.** Test możesz też wpisać ręcznie. Pliki, których
+zakładka nie rozpoznaje, wypisuje, zamiast po cichu je pomijać.
 
-Tabela **Grupy** jest miejscem, gdzie mieszkają punkty i gdzie jedną grupę
-oznacza się jako **przykłady**. Te testy są wycinane do osobnego archiwum i
-publikowane uczestnikom jako `examples.zip` — z tych samych plików, więc przykład
-w treści i przykład do pobrania nie mogą się różnić. Jeśli żadna grupa nie jest
-oznaczona jako przykłady, uczestnik nie dostaje żadnych.
+W tabeli **Grupy** wpisujesz punkty i tam oznaczasz jedną grupę jako
+**przykłady**. Te testy są wycinane do osobnego archiwum i publikowane
+uczestnikom jako `examples.zip` — z tych samych plików, więc przykład w treści i
+przykład do pobrania nie mogą się różnić. Jeśli nie oznaczysz żadnej grupy jako
+przykłady, uczestnik nie dostanie żadnych.
 
-Archiwum składane jest w twojej przeglądarce, bo jego układ jest własnością typu
-zadania, a Server nie może odróżniać jednego typu od drugiego. Zbudowaną paczkę i
-przykłady można pobrać i obejrzeć, a istniejącą paczkę — otworzyć do edycji.
+Archiwum składa się w twojej przeglądarce, bo jego układ należy do typu zadania,
+a Server nie może odróżniać jednego typu od drugiego. Zbudowaną paczkę i
+przykłady możesz pobrać i obejrzeć, a istniejącą paczkę otworzyć do edycji.
 
 Walidator nie pozwala opublikować zepsutej paczki i przycisk mówi to wprost,
 zamiast zawieść po kliknięciu.
 
 <Callout type="warn" title="Paczki nie da się dołożyć do istniejącej wersji">
-Zmieniona paczka jest publikowana z **następną** wersją, razem z treścią i
-załącznikami. To właśnie czyni przypiętą wersję obietnicą: tego, względem czego
+Zmienioną paczkę opublikujesz dopiero z **następną** wersją, razem z treścią i
+załącznikami. Dlatego przypięta wersja jest obietnicą: tego, względem czego
 oceniano, nie da się potem zmienić.
 </Callout>
 
 ## Kalibracja limitów
 
-Jeśli paczka niesie rozwiązanie wzorcowe, **zmierz rozwiązanie wzorcowe** puszcza
-je na prawdziwym Runnerze i raportuje pomiar, osobno dla każdej grupy. Wymaga to
-uprawnienia `trial:run`, którego celowo nie ma w szablonie uczestnika — pomiar
+Jeśli paczka zawiera rozwiązanie wzorcowe, **zmierz rozwiązanie wzorcowe** puści
+je na prawdziwym Runnerze i pokaże pomiar osobno dla każdej grupy. Potrzebujesz
+do tego `trial:run`, którego celowo nie ma w szablonie uczestnika — pomiar
 zajmuje Runnera.
 
 Reguła kalibracji zamienia pomiar w limit: mnożnik, stała do dodania i wartość,
@@ -87,16 +88,16 @@ do której zaokrąglić w górę. Sugestia bierze się z **najwolniejszego zmier
 języka**, bo limit grupy musi mieścić każdy język, który aktywność dopuszcza.
 Zastosuj sugestię jednej grupy albo wszystkich.
 
-Pomiar dzieje się raz, na żądanie, a liczba jest wpisywana do paczki. Ocenianie
-nigdy nie uruchamia rozwiązania wzorcowego: limit musi być liczbą, do której
-przyłożono każde zgłoszenie, a nie liczoną na nowo przy każdym uruchomieniu.
+Mierzysz raz, na żądanie, a wyliczona liczba trafia do paczki. Ocenianie nigdy
+nie uruchamia rozwiązania wzorcowego: limit musi być liczbą, która obowiązywała
+każde zgłoszenie, a nie liczoną od nowa przy każdym uruchomieniu.
 
 ## Skąd zadanie bierze testy i limity
 
-1. Paczka niesie testy i limity domyślne.
+1. Paczka zawiera testy i limity domyślne.
 2. Grupa wewnątrz niej może podać własne.
 3. Dokument **Konfiguracja** z podpięcia jest nakładany na ustawienia paczki — to
    tam aktywność zawęża języki albo podnosi limit na własny użytek.
 
-Czasu i pamięci nigdy nie ustawia się na aktywności. Stają się poznawalne
-dopiero, gdy rozwiązanie działa, i należą do zadania.
+Czasu i pamięci nigdy nie ustawia się na aktywności. Poznasz je dopiero wtedy,
+gdy rozwiązanie się wykona, i należą do zadania.

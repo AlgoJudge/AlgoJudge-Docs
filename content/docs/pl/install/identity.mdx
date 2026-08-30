@@ -9,7 +9,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 Instalacja potrzebuje dostawcy OIDC. AlgoJudge na stałe prowadzi własne konta —
 administratora, konta lokalne i tymczasowe — ale ludzie, którzy biorą udział,
-logują się przez katalog, który prowadzisz Ty.
+logują się przez katalog prowadzony przez Ciebie.
 
 **Wspierane są dwa wdrożenia: Keycloak i Authentik.** Żadne nie jest awaryjnym
 zamiennikiem drugiego i żadne drugiego nie zastępuje. To dwa sugerowane
@@ -18,17 +18,17 @@ obok stosu AlgoJudge, a nie w nim; **żadne nie jest usługą w `compose.yaml`**
 Instalacja uruchamia jedno.
 
 AlgoJudge ich nie odróżnia. W obu przypadkach widzi zwykłego dostawcę OIDC
-i w całym modelu nie ma pola, gałęzi ani dyskryminatora mówiącego, jaki produkt
-stoi za rejestracją. Różnica między nimi jest operacyjna.
+i w całym modelu nie ma pola, gałęzi ani dyskryminatora, który mówiłby, jaki
+produkt stoi za rejestracją. Różnica między nimi jest operacyjna.
 
 ## Zacznij od Keycloaka
 
-**Keycloak jest opcją sugerowaną dla instalacji, która nie ma powodu, żeby wolała
-drugą.** Przeczytaj dwie kolejne sekcje przed decyzją; jeśli żadna nie mówi nic
-o Twojej sytuacji, uruchom Keycloaka.
+**Keycloak sugerujemy każdej instalacji, która nie ma powodu, żeby wybrać
+drugie.** Zanim zdecydujesz, przeczytaj dwie kolejne sekcje; jeśli żadna nie
+mówi nic o Twojej sytuacji, uruchom Keycloaka.
 
-Sam `auth.algojudge.app` działa na wdrożeniu Keycloak. To rozstrzyga wybór jednej
-instalacji i niczego nie archiwizuje.
+Sam `auth.algojudge.app` działa na wdrożeniu Keycloak. Rozstrzyga to wybór
+jednej instalacji i niczego nie odsyła do archiwum.
 
 ## Porównanie
 
@@ -37,12 +37,12 @@ instalacji i niczego nie archiwizuje.
 | Kontenery | **2** — Keycloak, PostgreSQL | 4 — server, worker, PostgreSQL, Redis |
 | Licencja | Apache-2.0 w całości; projekt CNCF | open core: rdzeń MIT, własnościowy katalog `enterprise/` w tym samym repozytorium |
 | Log audytowy z wartościami przed i po oraz eksport logu | w komplecie | funkcja Enterprise |
-| Konfiguracja stosowana ponownie samoczynnie | **nie** — import zakłada realm i pomija istniejący; dryf jest *raportowany* przez `scripts/check-realm.py` | **tak** — blueprinty są stosowane ponownie wedle harmonogramu |
+| Konfiguracja stosowana ponownie sama z siebie | **nie** — import zakłada realm i pomija istniejący; dryf *zgłasza* `scripts/check-realm.py` | **tak** — blueprinty są stosowane ponownie wedle harmonogramu |
 | Zgłaszanie usuniętego konta z powrotem do AlgoJudge | tak, **Event Listener SPI provider** | tak, dopasowanie zdarzeń i transport webhook |
 | Zgłoszenie przeżywające restart serwera tożsamości | **nie** — ponawiane w pamięci, potem `ERROR` do ręcznego powtórzenia | tak, kolejka w jego bazie |
-| Serwowanie katalogu przez **LDAP** | **niemożliwe** — Keycloak konsumuje LDAP, nie serwuje go | tak, przez outpost LDAP |
+| Serwowanie katalogu przez **LDAP** | **niemożliwe** — Keycloak korzysta z LDAP, sam go nie udostępnia | tak, przez outpost LDAP |
 | Ograniczenie listy języków | konfiguracja | CSS sięgający do shadow roota |
-| Osobne brzmienie naszych tekstów na język | prawdziwe tłumaczenia | jedno pole niosące oba języki |
+| Nasze teksty osobno dla każdego języka | prawdziwe tłumaczenia | jedno pole na oba języki |
 
 ## Dlaczego Keycloak pasuje instytucji
 
@@ -50,28 +50,28 @@ instalacji i niczego nie archiwizuje.
 Authentik to open core: rdzeń na MIT i własnościowy katalog `enterprise/` w tym
 samym repozytorium, a **log audytowy z wartościami przed i po oraz eksport logu
 są funkcjami Enterprise**. Dla oprogramowania, które instaluje podmiot
-publiczny, to zła własność — zapis, kto zmienił które konto, i możliwość
-wyciągnięcia tego zapisu z produktu, to dokładnie to, o co pyta audyt.
+publiczny, to cecha, na którą trudno się zgodzić — zapis, kto zmienił które
+konto, i możliwość wyciągnięcia tego zapisu z produktu, to dokładnie to, o co
+pyta audyt.
 
-**Typowy kształt instytucjonalny to istniejący katalog LDAP i brak endpointu
-OIDC.** Na to **Keycloak z federacją użytkowników LDAP jest zwykłą
-odpowiedzią**: konsumuje katalog, który już masz, i stawia przed nim standardowy
-front OIDC — czyli to, czego potrzebuje AlgoJudge, a czego Twój katalog nie
-oferuje.
+**W instytucji zwykle jest tak: katalog LDAP już stoi, a endpointu OIDC nie
+ma.** Zwykłą odpowiedzią jest wtedy **Keycloak z federacją użytkowników LDAP**:
+korzysta z katalogu, który już masz, i stawia przed nim standardowy front OIDC —
+czyli dokładnie to, czego potrzebuje AlgoJudge, a czego Twój katalog nie daje.
 
 Dwa kontenery zamiast czterech nie są argumentem, ale też nie są niczym — to
 jedna baza do kopiowania i jeden proces do aktualizowania.
 
 ## Ile kosztuje Keycloak
 
-Porównanie wymieniające słabości tylko jednej strony jest reklamą. Trzy rzeczy
-są tu gorsze, a jedna może przesądzić sprawę.
+Porównanie, które wymienia słabości tylko jednej strony, jest reklamą. Trzy
+sprawy wypadają tu gorzej, a jedna może przesądzić o wyborze.
 
-**Nie potrafi zapisać, którą wersję regulaminu ktoś zaakceptował.** Własna akcja
-regulaminowa Keycloaka zapisuje **że** został zaakceptowany i kiedy, a nie jaki
-tekst wtedy obowiązywał, a atrybut profilu wypełniony w formularzu to cokolwiek
-prześle przeglądarka. Akceptacja i jej znacznik czasu jadą jako
-`terms_accepted_at`; jaki to był tekst, odczytuje się z historii repozytorium
+**Nie potrafi zapisać, którą wersję regulaminu ktoś zaakceptował.** Wbudowana
+w Keycloaka akcja regulaminowa zapisuje, **że** ktoś zaakceptował i kiedy, ale
+nie jaki tekst wtedy obowiązywał, a atrybut profilu wypełniony w formularzu to
+tyle, ile prześle przeglądarka. Akceptację i jej znacznik czasu przenosi
+`terms_accepted_at`; jaki to był tekst, odczytasz z historii repozytorium
 wdrożenia, gdzie odnośnik do regulaminu jest wersjonowany. Wdrożenie Authentik
 zapisuje wersję po stronie serwera, wewnątrz polityki, celowo poza zasięgiem
 przeglądarki. To jest mocniejsze.
@@ -79,20 +79,20 @@ przeglądarki. To jest mocniejsze.
 **Zgłoszenie usunięcia nie przeżywa restartu serwera tożsamości.** Oba wdrożenia
 zgłaszają usunięte konto z powrotem do AlgoJudge. Authentik przekazuje swój
 webhook workerowi z kolejką w bazie, a rozszerzenie Keycloaka ponawia w pamięci
-przez około dziewięćdziesiąt sekund, po czym wypisuje jeden `ERROR` z wszystkim,
-co potrzebne do ręcznego powtórzenia. Jeśli nikt nie przeczyta tej linii, to
-usunięcie nie zostaje zgłoszone.
+przez około dziewięćdziesiąt sekund, po czym wypisuje jeden `ERROR` ze
+wszystkim, co potrzebne do ręcznego powtórzenia. Jeśli nikt nie przeczyta tej
+linii, to usunięcie nie zostaje zgłoszone.
 
-**Nie potrafi serwować LDAP.** Keycloak konsumuje katalog; nie publikuje go. Ma
-to znaczenie dla instalacji, której LMS uwierzytelnia się względem katalogu —
-referencyjny stos Moodle zależy od tego widoku i dlatego wdrożenie Authentik nie
-zostało wycofane.
+**Nie potrafi serwować LDAP.** Keycloak korzysta z katalogu; sam go nie
+udostępnia. Ma to znaczenie dla instalacji, której LMS uwierzytelnia się
+względem katalogu — referencyjny stos Moodle zależy od tego widoku i dlatego
+wdrożenie Authentik nie zostało wycofane.
 
 <Callout type="warn" title="Jeśli cokolwiek w Twojej instalacji czyta LDAP, to przesądza sprawę">
-LMS, logowanie do maszyn w pracowni albo system pocztowy uwierzytelniający się
-względem katalogu serwowanego przez Twoje wdrożenie tożsamości nie da się
-skierować na Keycloaka. Authentik serwuje LDAP przez outpost; Keycloak nie ma na
-to sposobu.
+Jeśli LMS, logowanie do maszyn w pracowni albo system pocztowy uwierzytelniają
+się względem katalogu udostępnianego przez Twoje wdrożenie tożsamości, nie
+skierujesz ich na Keycloaka. Authentik serwuje LDAP przez outpost; Keycloak nie
+ma na to sposobu.
 </Callout>
 
 ## Rejestracja dostawcy w AlgoJudge
@@ -112,10 +112,10 @@ Trzy kroki, w panelu menedżera, za uprawnieniem `provider:manage`.
 
 | Pole | Uwagi |
 |---|---|
-| `slug` | pojawia się w ścieżce logowania i w adresie powrotnym; kosztowny do zmiany |
+| `slug` | pojawia się w ścieżce logowania i w adresie powrotnym; drogo go potem zmieniać |
 | `issuer` | discovery znajduje endpointy i klucze. **HTTPS, poza pętlą zwrotną** |
 | `clientId`, `clientSecret` | sekret jest **tylko do zapisu** |
-| `scopes` | `openid` jest żądane niezależnie od tego, czy jest wymienione |
+| `scopes` | `openid` żądamy niezależnie od tego, czy jest tu wymieniony |
 | `claimPath` | ścieżka z kropkami — `groups`, `realm_access.roles`. **Nigdy wyrażenie** |
 | `unmappedBehavior` | `deny` *(domyślnie)* albo `defaultTemplate` |
 | `accountUrl` | konfiguracja, nie discovery: OIDC nie standaryzuje takiego adresu |
@@ -123,14 +123,14 @@ Trzy kroki, w panelu menedżera, za uprawnieniem `provider:manage`.
 | `callbackPath` | **wyliczany i zwracany**, do wklejenia u dostawcy |
 
 **`claimPath` to ścieżka z kropkami i nigdy wyrażenie.** Wyrażenie
-w konfiguracji dostawcy to kod wykonywany na zawartości tokenu. Czytane są dwa
-kształty claimu, żeby instalacja nie musiała wiedzieć, który ma: kilka claimów
-o tej samej nazwie oraz jeden claim niosący tablicę albo obiekt JSON.
+w konfiguracji dostawcy to kod wykonywany na zawartości tokenu. Czytamy dwa
+kształty claimu, żeby instalacja nie musiała wiedzieć, który ma u siebie: kilka
+claimów o tej samej nazwie albo jeden claim z tablicą lub obiektem JSON.
 
-Reguła mapowania to **wartość** claimu i **nazwa** szablonu uprawnień, dopasowane
-przez dokładną równość napisów. Nie ma wzorców, bo znak wieloznaczny na liście
-dozwolonych to sposób, w jaki lista dozwolonych przestaje nią być. Dwie zasady
-są egzekwowane i nie da się ich wyłączyć: **`system:administrator` jest
+Reguła mapowania to **wartość** claimu i **nazwa** szablonu uprawnień,
+porównywane jako napisy, znak w znak. Nie ma wzorców, bo znak wieloznaczny na
+liście dozwolonych to sposób, w jaki lista dozwolonych przestaje nią być. Dwie
+zasady są egzekwowane i nie da się ich wyłączyć: **`system:administrator` jest
 nieosiągalny przez mapowanie** w każdej konfiguracji, a **nikt nie zmapuje
 uprawnienia, którego sam nie ma**.
 
@@ -138,48 +138,48 @@ uprawnienia, którego sam nie ma**.
 
 Projekcja, którą AlgoJudge zwraca dla dostawcy, **nie ma pola na sekret** — i to
 jest egzekwowanie, a nie filtr gdzieś po drodze. Panel dostaje zamiast tego
-`hasClientSecret`, bo formularz pokazujący puste pole tam, gdzie wartość
-istnieje, czyta się jak utrata. Przy aktualizacji brak sekretu znaczy „zostaw
-zapisany”.
+`hasClientSecret`, bo formularz, który pokazuje puste pole tam, gdzie wartość
+jest zapisana, wygląda, jakby ta wartość przepadła. Przy aktualizacji brak
+sekretu znaczy „zostaw zapisany”.
 
-<Callout type="warn" title="Kopia zapasowa bazy niesie działające poświadczenie dostawcy">
-Sekret klienta jest przechowywany jawnym tekstem, na mocy decyzji. Szyfrowanie
-przeniosłoby sekret, a nie usunęło — klucz musiałby leżeć poza bazą, inaczej
-kopia niesie obie połowy — więc ekspozycja jest wypowiedziana zamiast obchodzona.
-Traktuj zrzut tak, jak traktowałbyś samo poświadczenie. Patrz [Kopie
-zapasowe](/pl/install/backup), gdzie to samo dotyczy pęku kluczy.
+<Callout type="warn" title="W kopii zapasowej bazy leży działające poświadczenie dostawcy">
+Sekret klienta przechowujemy jawnym tekstem — tak zdecydowaliśmy. Szyfrowanie
+przeniosłoby sekret w inne miejsce, a nie usunęło — klucz musiałby leżeć poza
+bazą, inaczej kopia ma w środku obie połowy — więc wolimy o tym ryzyku powiedzieć
+wprost, niż je obchodzić. Traktuj zrzut tak, jak traktowałbyś samo
+poświadczenie. Patrz [Kopie zapasowe](/pl/install/backup), gdzie to samo dotyczy
+pęku kluczy.
 </Callout>
 
 ## Co robi logowanie
 
-Tożsamość federacyjna jest kluczowana na **issuer plus `sub`**, nigdy na adresie
-e-mail. Adres to coś, co człowiek zmienia u swojego dostawcy, a federacja
-kluczowana na nim oddaje konto temu, kto po adresie dziedziczy.
+Kluczem tożsamości federacyjnej jest **issuer plus `sub`**, nigdy adres e-mail.
+Adres człowiek zmienia u swojego dostawcy, a federacja oparta na adresie oddaje
+konto temu, kto ten adres po nim przejmie.
 
 Dwie konsekwencje zaskakują ludzi i obie są celowe:
 
 - **Dostawca nigdy nie przejmuje istniejącego konta po nazwie ani po adresie.**
   Kolidująca nazwa użytkownika dostaje krótki skrót subjectu, a kolidujący adres
-  jest porzucany i konto powstaje bez niego.
+  pomijamy i konto powstaje bez niego.
 - **Dwóch dostawców ręczących za jedną osobę to dziś dwa konta.** Jedna osoba,
   jedno konto, którymi drzwiami by nie weszła, to wymaganie, które produkt
   przyjął i którego jeszcze nie zbudował.
 
 Kolejność przy każdym logowaniu jest taka: zwaliduj, rozwiąż mapowanie, zastosuj
-zmianę uprawnień, dopiero potem zdecyduj o wpuszczeniu. Najbardziej liczy się
+zmianę uprawnień, dopiero potem zdecyduj o wpuszczeniu. Najbardziej widać to
 w jednym przypadku: **znany subject, który przy `deny` nie mapuje się na nic, ma
-swój wkład odebrany i dopiero potem dostaje odmowę.** Odmowa zostawiająca
-wczorajszy wkład trzymałaby kogoś w kadrze na zawsze prostą metodą nielogowania
-się już nigdy.
+swój wkład odebrany i dopiero potem dostaje odmowę.** Odmowa, która zostawiałaby
+wczorajszy wkład, trzymałaby kogoś w kadrze na zawsze — wystarczyłoby, żeby
+nigdy więcej się nie zalogował.
 
 Dostawca **wyłączony** to przypadek odwrotny i też celowy: nic nie jest
-zapisywane i nikt nie traci uprawnień. Wyłączenie dostawcy na czas
-przekonfigurowania jest zdaniem o rejestracji, a nie o czyichkolwiek
-uprawnieniach.
+zapisywane i nikt nie traci uprawnień. Kiedy wyłączasz dostawcę, żeby go
+przekonfigurować, mówisz coś o rejestracji, a nie o czyichkolwiek uprawnieniach.
 
-Konto założone przez dostawcę jest zatwierdzone od razu i **nie ma hasła** — i to
-czyni je nielokalnym. Konto mające i powiązanie, i hasło zostaje lokalne: ktoś
-świadomie dał mu własne poświadczenie.
+Konto założone przez dostawcę jest zatwierdzone od razu i **nie ma hasła** —
+i właśnie dlatego nie jest kontem lokalnym. Konto, które ma i powiązanie,
+i hasło, zostaje lokalne: ktoś świadomie dał mu własne poświadczenie.
 
 ## Kanał zwrotny usunięć
 
@@ -191,15 +191,16 @@ i na nieznany subject, żeby dostawca nie mógł dowiedzieć się, kto ma tu kon
 pytając o ludzi po kolei.
 
 Otwiera **okno dwudziestoczterogodzinne**, które administrator może zatrzymać.
-`requestedAt` jest zapisywane i celowo nieużywane do wyliczenia tego okna: zegar,
-którego ta instalacja nie posiada, nie może skrócić administratorowi doby do zera.
+`requestedAt` zapisujemy i celowo nie liczymy z niego tego okna: zegar, który nie
+należy do tej instalacji, nie może skrócić administratorowi doby do zera.
 
 <Callout type="warn" title="Authentik wymaga `sub_mode = user_id`, inaczej kanał nikogo nie rozwiąże">
-Jego webhook usunięcia niesie klucz główny konta, a jego `sub` jest skrótem tego
-klucza, chyba że dostawca jest tak skonfigurowany. Przy ustawieniu domyślnym
-te dwie wartości nigdy się nie zgadzają, każde zgłoszenie rozwiązuje się na
-nikogo i nic nigdzie tego nie mówi. `sub` w Keycloaku jest już własnym, stabilnym
-identyfikatorem konta, więc nie ma tam odpowiednika, który dałoby się pomylić.
+Jego webhook usunięcia zawiera klucz główny konta, a jego `sub` jest skrótem
+tego klucza — chyba że dostawca jest tak skonfigurowany. Przy ustawieniu
+domyślnym te dwie wartości nigdy się nie zgadzają, każde zgłoszenie rozwiązuje
+się na nikogo i nic nigdzie tego nie mówi. `sub` w Keycloaku jest już własnym,
+stabilnym identyfikatorem konta, więc nie ma tam odpowiedniego ustawienia, które
+dałoby się przestawić źle.
 </Callout>
 
 Tam, gdzie nie kontrolujesz dostawcy, zostaw jego kanał wyłączony.

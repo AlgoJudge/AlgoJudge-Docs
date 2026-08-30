@@ -7,12 +7,12 @@ sourceSha256: 490f1ce3dd30818951ba9c98584ba03e343f4dee969877d96dac072ebf20e004
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-Skopiować można trzy rzeczy i wszystkie trzy robi to samo okno: aktywność,
-rundę, zadanie. Każde z nich mówi, co jedzie, a co nie, **zanim** zatwierdzisz.
+Skopiować możesz aktywność, rundę albo zadanie, a wszystkie trzy robi to samo
+okno. Za każdym razem mówi ono, co jedzie, a co nie, **zanim** zatwierdzisz.
 
 <Callout type="warn" title="Kopia jest kształtem, a nie historią">
-Żadna kopia nie niesie zgłoszeń, wyników ani niczyich praw. O to w niej chodzi i
-jest to napisane w oknie, a nie odkrywane w następnym semestrze.
+Żadna kopia nie zabiera zgłoszeń, wyników ani niczyich praw. O to właśnie chodzi,
+a okno mówi to od razu — nie dowiesz się o tym dopiero w następnym semestrze.
 </Callout>
 
 ## Skopiuj aktywność na nową edycję
@@ -20,38 +20,39 @@ jest to napisane w oknie, a nie odkrywane w następnym semestrze.
 Z listy aktywności: **skopiuj na nową edycję**. Podajesz własną nazwę i mówisz,
 **kiedy zaczyna się pierwsza runda**.
 
-- Kopia niesie rundy, zadania i ustawienia.
-- Nie niesie niczego, co się wydarzyło: żadnych zgłoszeń, wyników ani niczyich
+- Kopia zabiera rundy, zadania i ustawienia.
+- Nie zabiera niczego, co się wydarzyło: żadnych zgłoszeń, wyników ani niczyich
   praw.
 - **Każda data przesuwa się** tak, żeby pierwsza runda zaczęła się wtedy, kiedy
   powiesz.
-- Przychodzi nieopublikowana. Nic się nie otwiera i nikt poza tobą jej nie
-  osiągnie, dopóki jej nie opublikujesz.
+- Powstaje nieopublikowana. Nic się nie otworzy i nikt poza tobą jej nie
+  zobaczy, dopóki jej nie opublikujesz.
 
 ## Skopiuj rundę
 
 Z serii: **skopiuj tę rundę**. Wybierasz, do której aktywności trafi — łącznie z
 **tą samą**, i tak właśnie robi się drugi termin tej samej rundy.
 
-- Kopia niesie zadania podpięte do rundy, ich przypięte wersje i ustawienia,
-  daty rankingu, ważność oraz adresy, z których wolno ją osiągnąć.
-- Przychodzi zamknięta i nie trzyma niczyjej pracy: żadnych zgłoszeń, wyników,
+- Kopia zabiera zadania podpięte do rundy, ich przypięte wersje i ustawienia,
+  daty rankingu, ważność oraz adresy, z których wolno się do niej dostać.
+- Powstaje zamknięta i nie trzyma niczyjej pracy: żadnych zgłoszeń, wyników,
   niczego ogłoszonego.
 - Zadania są własnością biblioteki. Kopia **wskazuje na te same**, zamiast je
   duplikować.
 - Gdy slug zadania jest w aktywności docelowej zajęty, kopia dostaje wolny.
 
-Zarchiwizowanych aktywności nie ma na liście docelowych, bo Server ich odmawia.
+Zarchiwizowanych aktywności nie ma na liście docelowych, bo Server ich nie
+przyjmie.
 
 ## Zduplikuj zadanie
 
 Z biblioteki: **duplikuj**.
 
-- Kopia niesie **wyłącznie najnowszą wersję** — jej treść, pliki i paczkę.
+- Kopia zabiera **wyłącznie najnowszą wersję** — jej treść, pliki i paczkę.
 - Historia nie jedzie: notatki o zmianach, które tej kopii nigdy się nie
   przydarzyły, byłyby cudzą przeszłością.
-- Przychodzi prywatna i twoja, czymkolwiek był oryginał, i nie jest nigdzie
-  podpięta. Slug wywodzi się ze sluga oryginału.
+- Powstaje prywatna i twoja, czymkolwiek był oryginał, i nie jest nigdzie
+  podpięta. Jej slug wywodzi się ze sluga oryginału.
 
 ## Między dwiema instalacjami
 
@@ -65,22 +66,22 @@ Rysunek wspólny dla dwóch zadań leży tam raz.
 
 ### Co jedzie, a co nie
 
-Dokładnie to, co niesie kopia, minus to, co należy do instalacji. **Nigdy**:
+Dokładnie to, co zabiera kopia, bez tego, co należy do instalacji. **Nigdy**:
 zgłoszenia, wyniki, pytania, nadania, zapisy, grupy, hasło zapisu, to czy było
 opublikowane lub zarchiwizowane, stan rundy oraz właściciel zadania i lista
 udostępnień.
 
-Dwie rzeczy jadą inaczej, zamiast wypaść:
+Dwa wyjątki nie wypadają, tylko jadą inaczej:
 
 - **Przypięta wersja nie jedzie.** Identyfikator wersji należy do instalacji
-  eksportującej, a paczka i tak niesie jedną wersję — więc importer przypina do
+  eksportującej, a paczka i tak zawiera jedną wersję — więc importer przypina do
   tej, która przyjechała.
 - **Dokumenty aktywności jadą** — regulamin i strony wejściowe, najnowsza wersja
   na język. Regulamin kursu jest częścią jego kształtu.
 
 ### Import ma dwa kroki, a pierwszy nie zapisuje niczego
 
-Po otwarciu archiwum dostajesz plan: które zadania są nowe, które są już tutaj i
+Otwórz archiwum, a dostaniesz plan: które zadania są nowe, które są już tutaj i
 co do których paczka i twoja biblioteka **się nie zgadzają**. Slug, który pasuje
 przy innych bajtach, jest pytaniem, nigdy cichym podstawieniem — podpięcie
 cudzego `zadanie-1` do zaimportowanej rundy postawiłoby całemu rocznikowi nie tę
@@ -98,18 +99,18 @@ To ostatnie nie jest nadmiarowe: przekręcony bajt w zapisanym wpisie rozpakowuj
 się czysto i bez słowa, a łapie to właśnie suma kontrolna — zanim cokolwiek
 zostanie wysłane.
 
-Czytany jest też eksport z **ZawodyWeb**. Jest najpierw konwertowany na paczkę
+Czytnik przyjmuje też eksport z **ZawodyWeb**. Najpierw konwertuje go na paczkę
 wymiany, więc dalej wszystko idzie tą samą ścieżką, a to, czego konwersja nie
-umiała przenieść, jest wypisane, zanim zatwierdzisz.
+umiała przenieść, zobaczysz, zanim zatwierdzisz.
 
 ### Sufit rozmiaru
 
-Wszystko przechodzi przez pamięć przeglądarki. Paczka powyżej **64 MB**
-ostrzega, a powyżej **256 MB** jest odrzucana z wymienieniem najcięższych zadań —
-eksportuj wtedy rundami.
+Wszystko przechodzi przez pamięć przeglądarki. Przy paczce powyżej **64 MB**
+dostajesz ostrzeżenie; powyżej **256 MB** zostaje ona odrzucona, a ekran wymienia
+najcięższe zadania — eksportuj wtedy rundami.
 
 ## Import z innego sędziego
 
-Zadania można też ściągnąć z usługi, której ta instalacja nie prowadzi — dziś z
+Zadania możesz też ściągnąć z usługi, której ta instalacja nie prowadzi — dziś z
 archiwum UVa. To [Zasoby zewnętrzne](/pl/client/manager/external-content) i jest
 to wyłączone, dopóki ktoś z `instance:update` tego nie włączy.

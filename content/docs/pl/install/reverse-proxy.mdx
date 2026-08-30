@@ -1,6 +1,6 @@
 ---
 title: Własne reverse proxy
-description: Pięć reguł stawiania instalacji za proxy, które już prowadzisz.
+description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
 sourceSha256: 0abc2c722d4ca42ab767fdff85a618e5d3218e7ad93c459c674ee7d5e2986158
 ---
@@ -15,10 +15,9 @@ proxy.
 
 ### 1. Jedno origin, `/api/v1/` na Server, reszta na Client
 
-Trzymanie ich na jednym origin jest tym, co pozwala działać `API_BASE_URL=/`,
-a wtedy **nie ma żadnego CORS do popsucia**. Client sam dokleja `/api/v1` —
-ścieżka jest stała w każdej instalacji — więc ta zmienna nazywa origin, a nigdy
-ścieżkę.
+Dopiero na jednym origin działa `API_BASE_URL=/`, a wtedy **nie ma żadnego CORS
+do popsucia**. Client sam dokleja `/api/v1` — ścieżka jest stała w każdej
+instalacji — więc ta zmienna nazywa origin, a nigdy ścieżkę.
 
 Gniazdo zdarzeń to `/api/v1/ws`, pod tym samym prefiksem, więc nie potrzebuje
 własnej reguły poza nagłówkami upgrade i timeoutem odczytu dłuższym niż cicha
@@ -38,7 +37,7 @@ proxowana, zamiast zastanawiać się, czy o niej zapomniano. Dołączony nginx z
 dla tej ścieżki 404 dokładnie z tych dwóch powodów.
 </Callout>
 
-Drogą wejścia jest `docker compose exec -T server aj-admin …` i to cała wspierana
+Wchodzi się przez `docker compose exec -T server aj-admin …` i to cała wspierana
 droga. Opublikowane `127.0.0.1:8080` nie jest tylnymi drzwiami: połączenie do
 pętli zwrotnej hosta również dociera jako brama mostka.
 
@@ -49,30 +48,31 @@ Client je czyta. Przerwa techniczna **jest** odpowiedzią `503` Servera z ciałe
 we własną stronę przerwy, w brandingu i języku tej instalacji, i odpytuje
 `/api/v1/health`, żeby dowiedzieć się, że może wrócić.
 
-Przechwycenie zastępuje to czymś gorszym, ukrywa powód, a jeśli Twoja reguła jest
-na tyle szeroka, że łapie też Runnera — niweczy drenowanie, więc kopia
-zaczęłaby się, gdy Runner jeszcze zapisuje wynik. W terminach nginxa:
+Jeśli je przechwycisz, zastąpisz to czymś gorszym i ukryjesz powód, a gdy Twoja
+reguła jest na tyle szeroka, że łapie też Runnera — zniweczysz drenowanie, więc
+kopia ruszyłaby, gdy Runner jeszcze zapisuje wynik. W terminach nginxa:
 `proxy_intercept_errors off` na trasie API.
 
 Jedyny przypadek, w którym statyczna strona pomaga, to trasa **aplikacji** i tylko
 dla 502 oraz 504: nie ma kontenera Client, więc przeglądarka dostaje błąd
-połączenia i nie ma aplikacji, którą pokazałaby komunikat. Nigdy 503 — to Server
-mówiący przez trasę API.
+połączenia i nie ma już aplikacji, która pokazałaby komunikat. Nigdy 503 — tak
+odzywa się Server przez trasę API.
 
 ### 4. Ustaw `TRUSTED_PROXY_NETWORKS` na sieć swojego proxy
 
-Server odmawia startu, dopóki nie powiesz mu, czyjemu słowu wierzyć w sprawie
-adresu odwiedzającego. Zaufanie każdemu nadawcy `X-Forwarded-For` pozwala
-odwiedzającemu podać własny adres; zaufanie tylko pętli zwrotnej zapisuje proxy
+Server odmawia startu, dopóki nie wskażesz mu, czyim informacjom o adresie
+odwiedzającego ma wierzyć. Jeśli zaufasz każdemu nadawcy `X-Forwarded-For`,
+odwiedzający sam poda swój adres; jeśli tylko pętli zwrotnej, zapisze się proxy
 zamiast człowieka.
 
-Domyślna wartość nazywa sieć Compose, na której stoi dołączony nginx. **Za
-własnym proxy ta domyślna jest zła** — wpisz tam sieć swojego proxy. Przy braku
-proxy `none` jest pełną odpowiedzią.
+Domyślna wartość nazywa sieć Compose, w której stoi dołączony nginx. **Za
+własnym proxy ta domyślna jest zła** — wpisz tam sieć swojego proxy. Jeśli proxy
+nie ma w ogóle, `none` jest pełną odpowiedzią.
 
-Wpisz adres **sieci**, nie hosta: `172.28.0.5/24` jest odrzucane przy starcie,
-z nazwy, wraz z adresem, który powinien tam stać. .NET normalizuje CIDR z bitami
-hosta bez słowa, co zamieniłoby „jedną maszynę” w „całą pracownię”.
+Wpisz adres **sieci**, nie hosta: `172.28.0.5/24` odrzucamy przy starcie,
+podając nazwę zmiennej i adres, który powinien się tam znaleźć. .NET normalizuje
+CIDR z bitami hosta bez słowa, co zamieniłoby „jedną maszynę” w „całą
+pracownię”.
 
 ### 5. Wysyłaj `X-Forwarded-Proto`
 
@@ -80,14 +80,14 @@ Bez tego Server widzi `http`, a jego przekierowanie na HTTPS odpowiada
 przekierowaniem na siebie. To nieskończona pętla i wygląda jak aplikacja, która
 nigdy się nie ładuje.
 
-## Co jeszcze nieść
+## Co jeszcze przekazywać
 
 Dołączony nginx wysyła `Host`, `X-Real-IP`, `X-Forwarded-For`,
 `X-Forwarded-Proto`, `X-Forwarded-Host` i `X-Forwarded-Port`, ustawia
 `client_max_body_size` na 128 MB, żeby pasowało do własnego limitu żądania
 Servera, i wyłącza buforowanie w obie strony — Client niczego nie streamuje,
-a pobrania Servera są już strumieniowane i byłyby bez sensu najpierw zapisywane
-na dysk.
+a pobrania Servera są już strumieniowane i bez sensu lądowałyby najpierw na
+dysku.
 
 Wysyła `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`,
 `X-Frame-Options: SAMEORIGIN` i `Permissions-Policy`, każdy z `always`, żeby
@@ -108,9 +108,9 @@ mówi. Zamknięcie tego należy do Clienta.
 
 ## Dwa różne origins
 
-Serwowanie Clienta i Servera na różnych origins działa. Wtedy `API_BASE_URL` to
-publiczny adres Servera, a origin Clienta trafia do `AJ_Cors__AllowedOrigins`
-Servera.
+Client i Server mogą też stać na różnych origins i to działa. Wtedy
+`API_BASE_URL` to publiczny adres Servera, a origin Clienta trafia do
+`AJ_Cors__AllowedOrigins` Servera.
 
 ## Certyfikaty
 

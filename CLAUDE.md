@@ -78,7 +78,7 @@ is `sha256`, never `hash`; in prose, SHA-256.
 ```bash
 npm run lint && npm run typecheck && npm run build
 npm run check:links && npm run check:versions
-npm run check:translations && npm run check:glossary
+npm run check:translations && npm run check:structure && npm run check:glossary
 ```
 
 **A new check is not trusted until it has been shown to fail.** Break the thing

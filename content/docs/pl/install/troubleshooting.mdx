@@ -21,7 +21,7 @@ ma wszystkie migracje oczekujące.
 ### Kończy pracę, narzekając na `Forwarded`
 
 `TRUSTED_PROXY_NETWORKS` jest nieustawione. Server odmawia startu, dopóki nie
-powiesz mu, czyjemu słowu wierzyć w sprawie adresu odwiedzającego. `none` to
+wskażesz mu, czyim informacjom o adresie odwiedzającego ma wierzyć. `none` to
 pełna odpowiedź dla Servera osiąganego bezpośrednio.
 
 ### Nazywa sieć, której nie napisałeś
@@ -42,8 +42,8 @@ albo `s3`.
 
 Każda instalacja serwuje API pod `/api/v1`, a Server odpowiada **404 w gołym
 korzeniu celowo** — żeby Client wskazany na złą ścieżkę został poprawiony,
-a nie obsłużony. Monitor napisany przeciw `/health` zgłasza instalację jako
-niedostępną, gdy ta serwuje bez zarzutu.
+a nie obsłużony. Monitor odpytujący `/health` zgłasza instalację jako
+niedostępną, choć ta serwuje bez zarzutu.
 
 <Callout type="warn" title="Przez dołączony nginx jest gorzej">
 `/health` nie jest tam nawet 404. `location /` kieruje na Client, który dla
@@ -62,10 +62,10 @@ interfejs pętli zwrotnej** Servera, a:
   działa opublikowany port — 404.
 
 Każda odmowa to celowo to samo 404, więc nic nie odróżnia złego tokenu od złej
-trasy. Nie 403: 403 potwierdziłoby, że endpoint tam jest i że dzwoniący trafił
+trasy. Nie 403: 403 potwierdziłoby, że endpoint tam jest i że wywołujący trafił
 jedną z dwóch połówek.
 
-Droga wejścia:
+Wchodzi się tak:
 
 ```bash
 docker compose exec -T server aj-admin status
@@ -76,12 +76,12 @@ gdy kontener startował. Ustaw go w `.env` i odtwórz Server.
 
 ## Nic nie jest oceniane
 
-W kolejności częstości:
+Od najczęstszej przyczyny:
 
 1. **Runner nie został zatwierdzony.** Jego log mówi `waiting: this Runner has
    not been approved yet` i będzie to mówił zawsze. Zatwierdź go w panelu pod
    **Runnery**.
-2. **Obrazy sandboxa nie istnieją.** Wkompilowany Runner szuka
+2. **Obrazy sandboxa nie istnieją.** Runner szuka wkompilowanych domyślnych
    `algojudge/lang-*:local`, które ma tylko host deweloperski. `compose.yaml`
    ustawia wszystkie cztery zmienne `AJ_Sandbox__Image__*` z `REGISTRY`
    i `RUNNER_TAG`; jeśli je nadpisałeś, sprawdź `docker images`.
@@ -97,7 +97,7 @@ W kolejności częstości:
 
 ## `Permission denied (os error 13)` w Runnerze
 
-`DOCKER_GID` nie zgadza się z grupą właściciela gniazda demona. Komunikat
+`DOCKER_GID` nie zgadza się z grupą, do której należy gniazdo demona. Komunikat
 przychodzi z głębi klienta HTTP i nie nazywa ani jednego, ani drugiego.
 
 ```bash
@@ -125,9 +125,10 @@ docker run --rm --add-host server:127.0.0.1 --add-host client:127.0.0.1 \
 konfiguracji**, więc poza siecią Compose zawodzi z `host not found in upstream
 "server:8080"` na konfiguracji, która jest zupełnie poprawna.
 
-Dwa prawdziwe przypadki stąd: **zduplikowany `proxy_read_timeout`**, bo `include`
-wstawia dyrektywę do bloku włączającego, a nginx odrzuca duplikaty wprost,
-zamiast nadpisywać; oraz brakujący certyfikat, bo `certs/` było puste.
+Zdarzyły się tu naprawdę dwa takie przypadki: **zduplikowany
+`proxy_read_timeout`**, bo `include` wstawia dyrektywę do bloku włączającego,
+a nginx odrzuca duplikaty wprost, zamiast nadpisywać; oraz brakujący certyfikat,
+bo `certs/` było puste.
 
 ## PostgreSQL nie startuje po aktualizacji
 
@@ -164,9 +165,9 @@ przejmie blokadę i to powie — blokada nigdy nie zostaje zakleszczona na stał
 
 `backup.sh` ostrzega przy każdym uruchomieniu, gdy `STORAGE_KIND` nie jest
 `postgres`, a `.meta` obok każdego zrzutu zapisuje to jako
-`coverage=INCOMPLETE`. Odtworzenie samego takiego zrzutu daje instalację, której
-wiersze wskazują na bajty, których nie ma — co objawia się jako **503 przy każdym
-pobraniu, bez niczego, co nazwałoby przyczynę**.
+`coverage=INCOMPLETE`. Jeśli odtworzysz sam taki zrzut, dostaniesz instalację,
+której wiersze wskazują na bajty, których nie ma — co objawia się jako **503 przy
+każdym pobraniu, bez niczego, co nazwałoby przyczynę**.
 
 ## Odtwarzanie wyglądało na udane i nic nie zmieniło
 
@@ -175,7 +176,7 @@ Przeczytaj `state/restore.log`.
 Ta awaria zdarzyła się naprawdę, przy pisaniu repozytorium wdrożeniowego:
 wywołanie Compose zawiodło, jego jednolinijkowy błąd zaraportowano jako
 ostrzeżenie `pg_restore`, a odtwarzanie **nie zrobiło zupełnie nic**, podczas gdy
-każda kontrola po nim przechodziła na danych, których po prostu nikt nie tknął.
+każda kontrola po nim przechodziła na danych, których nikt nawet nie tknął.
 
 `restore.sh` liczy teraz tabele po fakcie i odmawia zgłoszenia sukcesu na pustej
 bazie. Ale prawdziwym testem jest ten, który to wyłapał: **najpierw coś zmień**,

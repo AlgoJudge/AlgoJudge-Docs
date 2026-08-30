@@ -1,6 +1,6 @@
 ---
 title: Wysyłanie rozwiązania
-description: Trzy typy zadań proszą o trzy różne rzeczy, a formularz sprawdza kilka rzeczy, zanim cokolwiek opuści przeglądarkę.
+description: Trzy typy zadań, trzy formularze — i co jest sprawdzane, zanim cokolwiek opuści przeglądarkę.
 source: en/client/participant/submitting.mdx
 sourceSha256: 5d22148cf3b2aaf0e538ee2971d29afd8978d44d72841b0cd7c59c173e6f4a32
 ---
@@ -11,8 +11,9 @@ Formularz jest pod **Wyślij zgłoszenie** w nawigacji, na przycisku przy każdy
 zadaniu na liście, na przycisku u góry treści zadania oraz pod **Wyślij** w
 panelu zgłoszeń w rogu.
 
-Otwarcie **Wyślij zgłoszenie** bez wybranego zadania daje listę wyboru. Są na
-niej tylko zadania z rund, które są **otwarte**, bo tylko one cokolwiek przyjmą.
+Kiedy otworzysz **Wyślij zgłoszenie** bez wybranego zadania, zobaczysz listę do
+wyboru. Są na niej tylko zadania z rund, które są **otwarte**, bo tylko one
+cokolwiek przyjmą.
 
 ## Trzy typy zadań, trzy formularze
 
@@ -33,7 +34,7 @@ formularz bez edytora albo bez pola języka nie jest zepsuty.
 - **Tylko edytor.** Nie ma pola na plik: archiwum przyjmuje kod źródłowy i nic
   poza nim.
 - **Trzeba wybrać język.**
-- **Nad polami stoją dwa komunikaty i są tam po to, żeby przeczytać je przed
+- **Nad polami są dwa komunikaty i są tam po to, żeby je przeczytać przed
   wysłaniem:**
 
   > To rozwiązanie zostanie wysłane do onlinejudge.org, tam ocenione i tam
@@ -68,10 +69,10 @@ Napisz coś w edytorze, a pole na plik będzie zablokowane; dołącz plik, a edy
 przejdzie w tryb tylko do odczytu i napisze *Dołączono plik, więc edytor jest
 zablokowany*. Usuń plik, żeby odzyskać edytor.
 
-Zgłoszenie nigdy nie niesie dwóch źródeł, więc nic nie musi zgadywać, o które Ci
+Zgłoszenie nigdy nie zawiera dwóch źródeł, więc nic nie musi zgadywać, o które Ci
 chodziło.
 
-## Co jest sprawdzane, zanim cokolwiek zostanie wysłane
+## Co formularz sprawdza, zanim cokolwiek wyśle
 
 Formularz odmawia — komunikatem na czerwono nad przyciskiem — gdy:
 
@@ -86,9 +87,9 @@ Formularz odmawia — komunikatem na czerwono nad przyciskiem — gdy:
 
 W tym momencie nic jeszcze nie opuściło Twojej przeglądarki.
 
-Gdy przejdzie, tutaj liczona jest **suma SHA-256 dokładnie tego, co jest
-wysyłane**, i jedzie razem z nim. Server przelicza ją i odrzuca niezgodność, więc
-ucięta wysyłka kończy się błędem, a nie oceną.
+Kiedy formularz to przepuści, tu, w przeglądarce, liczona jest **suma SHA-256
+dokładnie tego, co wysyłasz**, i jedzie razem ze zgłoszeniem. Server przelicza ją
+i odrzuca niezgodność, więc ucięta wysyłka kończy się błędem, a nie oceną.
 
 ## Runda, która nic nie przyjmuje
 
@@ -114,9 +115,9 @@ limitu. W grupie limit należy do grupy.
 
 ## Co potem
 
-Wysłanie przenosi Cię prosto na ekran zgłoszenia, więc stan *W kolejce* widzisz,
-zamiast go szukać. Zobacz
+Po wysłaniu trafiasz prosto na ekran zgłoszenia, więc stan *W kolejce* od razu
+widzisz, zamiast go szukać. Zobacz
 [Co się stało z moim zgłoszeniem](/pl/client/participant/results).
 
-Wysłanie z panelu w rogu zostawia Cię tam, gdzie byłeś, a panel pokazuje nowy
-wiersz.
+Jeżeli wyślesz z panelu w rogu, zostajesz tam, gdzie byłeś, a w panelu pojawia
+się nowy wiersz.

@@ -12,10 +12,10 @@ repozytorium, `AlgoJudge-Ops`: klonujesz je, konfigurujesz przez plik `.env`
 i uruchamiasz.
 
 **To repozytorium nie zawiera kodu aplikacji i niczego nie buduje.** Każdy obraz
-jest pobierany z GHCR po tagu i właśnie dlatego aktualizacja to `docker compose
-pull`, a wycofanie — digest. Pliki Compose, które budują ze źródeł, leżą
-w repozytoriach produktowych i są tam oznaczone jako deweloperskie; to nie jest
-to samo.
+pobieramy z GHCR po tagu i właśnie dlatego aktualizacja sprowadza się do `docker
+compose pull`, a wycofanie do wskazania digestu. Pliki Compose, które budują ze
+źródeł, leżą w repozytoriach produktowych i są tam oznaczone jako deweloperskie;
+to co innego.
 
 <Callout type="warn" title="Nie wydano jeszcze żadnej wersji">
 `ghcr.io/algojudge` jest puste. Żadne repozytorium produktowe nie ma tagu `v*`,
@@ -23,14 +23,14 @@ więc nie istnieje ani jeden z siedmiu obrazów wymienionych w `compose.yaml`,
 a szybki start nie zadziała z czystego klona. Dziś ten stos działa wyłącznie na
 obrazach, które sam zbudujesz z repozytoriów produktowych i otagujesz tak, jakby
 były opublikowane — [Pierwsza instalacja](/pl/install/first-install) mówi jak.
-Każda instrukcja `docker pull` w tej sekcji opisuje zamierzoną drogę, a nie taką,
+Każda instrukcja `docker pull` w tej sekcji opisuje drogę zamierzoną, a nie taką,
 którą można dziś przejść.
 </Callout>
 
 ## Usługi
 
-Pięć usług i sześć nazw profili — Server i Client noszą po dwie, co pozwala
-podnieść jedną połowę bez drugiej.
+Pięć usług i sześć nazw profili — Server i Client mają po dwie, dzięki czemu
+można podnieść jedną połowę bez drugiej.
 
 | Usługa | Profile | Czym jest |
 |---|---|---|
@@ -42,18 +42,19 @@ podnieść jedną połowę bez drugiej.
 
 Sieci Compose są trzy — `edge`, `backend` i `runner` — żeby baza nie była
 osiągalna z krawędzi, a ruch oceniania dał się oddzielić od HTTP. PostgreSQL
-stoi wyłącznie na `backend`. **Port do sieci publikuje tylko nginx**; dwie
-publikacje na pętli zwrotnej powyżej istnieją dla `curl` i dla własnego proxy.
+jest wyłącznie w sieci `backend`. **Port do sieci publikuje tylko nginx**; dwie
+publikacje na pętli zwrotnej wymienione wyżej są po to, żeby dało się użyć
+`curl` i podstawić własne proxy.
 
-Sieć `edge` ma jawnie zapisaną podsieć, domyślnie `172.28.0.0/24`. To nie jest
-porządkowanie: Server odmawia startu, dopóki nie powiesz mu, czyjemu słowu ma
-wierzyć w sprawie adresu odwiedzającego, a podsieci wylosowanej przez Dockera nie
-dałoby się nazwać.
+Sieć `edge` ma jawnie zapisaną podsieć, domyślnie `172.28.0.0/24`. Nie chodzi
+o porządek: Server odmawia startu, dopóki nie wskażesz mu, czyim informacjom
+o adresie odwiedzającego ma wierzyć, a podsieci wylosowanej przez Dockera nie
+dałoby się w ten sposób nazwać.
 
 ## Cztery układy
 
-Wybierane przez `COMPOSE_PROFILES` w `.env`. Żaden z nich nie wymaga edycji
-pliku Compose.
+Wybierasz je przez `COMPOSE_PROFILES` w `.env`. Żaden nie wymaga edycji pliku
+Compose.
 
 | | `COMPOSE_PROFILES` | |
 |---|---|---|
@@ -62,7 +63,7 @@ pliku Compose.
 | **T3** | `app,data` | [własne reverse proxy](/pl/install/reverse-proxy) z przodu |
 | — | `client,server,data` | po jednej połowie, do debugowania i etapowych aktualizacji |
 
-## Runner może stać na zupełnie innej maszynie
+## Runner może działać na zupełnie innej maszynie
 
 Każdy host z Runnerem klonuje to samo repozytorium i uruchamia
 `COMPOSE_PROFILES=runner` z trzema wartościami w swoim `.env`:
@@ -73,22 +74,22 @@ RUNNER_NAME=runner-lab-a       # inna na każdym hoście
 RUNNER_WORK_DIR=/srv/algojudge/runner-work
 ```
 
-**To Runner nawiązuje każde połączenie.** Nie potrzebuje portu przychodzącego
-i działa zza domowego routera, bez własnego adresu. W `compose.yaml` celowo nie
+**Każde połączenie nawiązuje sam Runner.** Nie potrzebuje portu przychodzącego
+i pracuje zza domowego routera, bez własnego adresu. W `compose.yaml` celowo nie
 ma `depends_on` na Server: na hoście z samym Runnerem nie ma usługi Server, na
-której można by polegać — Runner ponawia własne połączenie.
+której można by polegać — Runner sam ponawia próby połączenia.
 
 Każdy Runner rejestruje się osobno i każdy wymaga osobnego zatwierdzenia.
 
 <Callout type="warn" title="Dla instalacji publicznej zalecany jest układ T2">
-Dostęp do gniazda Dockera jest równoważny rootowi na hoście, a Runner potrzebuje
-tego gniazda, żeby uruchamiać kontenery zadań. W T1 ten sam host trzyma bazę,
-więc ktokolwiek wyjdzie z kontenera zadania, jest na maszynie z każdym
-zgłoszeniem i każdym hashem hasła. Na hoście z samym Runnerem najgorszy przypadek
-to maszyna, która nie trzyma niczego.
+Dostęp do gniazda Dockera daje na hoście uprawnienia roota, a Runner potrzebuje
+tego gniazda, żeby uruchamiać kontenery zadań. W T1 na tym samym hoście stoi
+baza, więc kto wyrwie się z kontenera zadania, ląduje na maszynie ze wszystkimi
+zgłoszeniami i wszystkimi hashami haseł. Na hoście z samym Runnerem w najgorszym
+razie dostaje maszynę, na której nic nie ma.
 </Callout>
 
-## Co stoi obok stosu, a nie w nim
+## Co działa obok stosu, a nie w nim
 
 Instalacja potrzebuje dostawcy OIDC i **żadne z dwóch wspieranych wdrożeń
 tożsamości nie jest usługą w `compose.yaml`**. Działa obok tego stosu, pod
@@ -101,12 +102,12 @@ i rejestracji dostawcy.
 |---|---|
 | [Czego wymaga host](/pl/install/requirements) | Docker, cgroup v2, dysk, logi |
 | [Pierwsza instalacja](/pl/install/first-install) | od pustego katalogu do werdyktu |
-| [Prekonfiguracja](/pl/install/preconfiguration) | postawienie instalacji bez klikania w panelu |
+| [Prekonfiguracja](/pl/install/preconfiguration) | jak postawić instalację bez klikania w panelu |
 | [Tożsamość](/pl/install/identity) | Keycloak albo Authentik i jak zarejestrować dostawcę |
-| [Przerwa techniczna](/pl/install/maintenance) | wyłączenie z ruchu bez zatrzymywania |
-| [Kopie zapasowe](/pl/install/backup) | co obejmuje zrzut i co teraz niesie |
+| [Przerwa techniczna](/pl/install/maintenance) | jak wyłączyć instalację z ruchu, nie zatrzymując jej |
+| [Kopie zapasowe](/pl/install/backup) | co obejmuje zrzut i co doszło do niego teraz |
 | [Odtwarzanie](/pl/install/restore) | jak wgrać kopię z powrotem |
 | [Aktualizacja i wycofanie](/pl/install/update) | i czego wycofanie nie cofa |
-| [Praca rutynowa i harmonogram](/pl/install/schedule) | sprzątanie, cron i to, o czym nikt nie powie |
+| [Praca rutynowa i harmonogram](/pl/install/schedule) | sprzątanie, cron i to, czego nikt nie mówi |
 | [Własne reverse proxy](/pl/install/reverse-proxy) | pięć reguł |
 | [Kiedy coś nie działa](/pl/install/troubleshooting) | awarie, które wyglądają na inne problemy |

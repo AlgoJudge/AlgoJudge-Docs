@@ -1,6 +1,6 @@
 ---
 title: Praca rutynowa i harmonogram
-description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nie zostanie powiadomiony.
+description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
 sourceSha256: bafda18f20cab0dca37fde40a354da9be1aba862037dd98f219574e78e6a6bce
 ---
@@ -13,21 +13,21 @@ import { Callout } from "fumadocs-ui/components/callout";
 ./scripts/gc.sh
 ```
 
-Cztery rzeczy, każda ograniczona do tej instalacji:
+Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
 
 - **katalogi robocze** starsze niż `GC_TMP_RETENTION_DAYS` (domyślnie 7). Runner
   zabity w trakcie oceniania nie posprząta po sobie, a zlecenie, które robił,
   wraca do kolejki przez dzierżawę — więc pozostałości są normalne, a nie usterką;
 - **zakończone kontenery zadań**, których nic nie zbierze. Runner zamiata własne
-  kontenery siostrzane przy restarcie; to wyłapuje przypadek, którego nie umie —
-  Runnera usuniętego, a nie zrestartowanego;
-- **obrazy**, filtrowane po etykiecie, którą niesie każdy obraz AlgoJudge. Obraz
-  bez niej należy do kogoś innego i zostaje nietknięty;
+  kontenery siostrzane przy restarcie; to wyłapuje przypadek, z którym sam sobie
+  nie poradzi: Runnera usuniętego, a nie zrestartowanego;
+- **obrazy**, filtrowane po etykiecie, którą ma każdy obraz AlgoJudge. Obraz bez
+  niej należy do kogoś innego i zostaje nietknięty;
 - **własne logi tego repozytorium** w `/var/log/algojudge/`, rotowane po 32 MB.
 
 <Callout type="warn" title="Nigdy globalny prune">
-`docker system prune` i `docker volume prune` nie wiedzą, że host może uruchamiać
-inne rzeczy. Nic w `gc.sh` nie działa bez filtra.
+`docker system prune` i `docker volume prune` nie wiedzą, że na hoście może
+działać coś jeszcze. Nic w `gc.sh` nie działa bez filtra.
 </Callout>
 
 **`VACUUM` i `REINDEX` są celowo nieobecne.** Inne ryzyko, inny czas działania —
@@ -63,13 +63,12 @@ drugie uruchomienie je zastępuje, a nie dopisuje duplikat.
 faktycznych godzin ciszy organizacji, a nie w stałym przesunięciu, które
 dwa razy w roku od nich odjeżdża.
 
-- **`CRON_TZ` honorują Vixie cron i cronie, i nie jest przenośne na każdą
-  implementację.** `install-cron.sh` sprawdza to, instalując prawdziwy crontab
-  i wycofując się bez tej linii, z ostrzeżeniem, zamiast po cichu planować wedle
-  innego zegara. Nie sonduje: `crontab <plik>` zastępuje cały crontab, więc
-  jednolinijkowa sonda zniszczyłaby wszystko inne na hoście tylko po to, żeby się
-  dowiedzieć.
-- **Przyjęte to nie to samo co honorowane.** Implementacja, która tę linię
+- **`CRON_TZ` respektują Vixie cron i cronie, ale nie każda implementacja.**
+  `install-cron.sh` sprawdza to, instalując prawdziwy crontab i wycofując się bez
+  tej linii, z ostrzeżeniem, zamiast po cichu planować wedle innego zegara. Nie
+  sonduje: `crontab <plik>` zastępuje cały crontab, więc jednolinijkowa sonda
+  zniszczyłaby wszystko inne na hoście tylko po to, żeby się dowiedzieć.
+- **Przyjęte to nie to samo co respektowane.** Implementacja, która tę linię
   ignoruje, przyjmuje ją bez słowa, a sprawdzić tego nie da się inaczej niż
   czekając do czwartej rano. Potwierdź raz, że pierwsza kopia wypada o 04:00
   lokalnie.
@@ -81,8 +80,8 @@ dwa razy w roku od nich odjeżdża.
 ### 06:00 tutaj to nie 06:00 Servera
 
 Własny kolektor plików Servera jest zakotwiczony w **UTC**
-(`Files:CollectAtHourUtc`), więc w Warszawie te dwie godziny dzielą dwie godziny
-zimą i trzy latem. Nieszkodliwe i warte wiedzy, zanim ktoś założy, że jeden
+(`Files:CollectAtHourUtc`), więc w Warszawie dzieli je dwie godziny zimą i trzy
+latem. Nie szkodzi, ale warto o tym wiedzieć, zanim ktoś założy, że jeden
 harmonogram rządzi obydwoma.
 
 ### Nic nie powiadamia o nieudanym uruchomieniu
@@ -110,5 +109,5 @@ Jeśli pid 1234 naprawdę działa, poczekaj. Jeśli nie, następne uruchomienie 
 przejmie blokadę i to powie — blokada nigdy nie zostaje zakleszczona na stałe.
 Żeby wyczyścić ją ręcznie, usuń `state/algojudge.lock.d`.
 
-To także trzyma z dala od siebie długą kopię i wpis aktualizacji, gdy oba są
+Dzięki temu długa kopia i wpis aktualizacji nie wejdą sobie w drogę, gdy oba są
 zaplanowane.

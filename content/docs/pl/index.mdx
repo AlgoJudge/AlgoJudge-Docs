@@ -8,8 +8,8 @@ sourceSha256: e586b97bb3f85ef7a297dc9e8d9fe8728efa4f418469e5878293b616977c511a
 AlgoJudge to otwarte, samodzielnie hostowane oprogramowanie do konkursów i
 kursów programistycznych, z automatyczną oceną nadsyłanych rozwiązań.
 
-Uruchamiasz je u siebie. Nikt inny nie trzyma kont Twoich uczestników, Twoich
-zadań ani Twoich wyników.
+Uruchamiasz je u siebie. Nikt poza Tobą nie przechowuje kont uczestników, zadań
+ani wyników.
 
 ## Od czego zacząć
 
@@ -18,28 +18,30 @@ zadań ani Twoich wyników.
 | bierzesz udział w konkursie albo kursie | [Dla uczestnika](/pl/client/participant) |
 | prowadzisz konkurs albo kurs | [Dla menedżera](/pl/client/manager) |
 | instalujesz AlgoJudge na własnej maszynie | [Instalacja i utrzymanie](/pl/install) |
-| piszesz coś przeciwko API | [Server](/pl/server) — po angielsku |
+| piszesz coś, co korzysta z API | [Server](/pl/server) — po angielsku |
 | uruchamiasz maszynę oceniającą | [Runner](/pl/runner) — po angielsku |
+| piszesz własnego Runnera | [Protokół](/pl/protocol) — po angielsku |
 
-## Jak to się składa
+## Z czego się składa
 
-Trzy programy i każdy odmawia wykonywania pracy pozostałych:
+Trzy programy, a każdy z nich odmawia robienia tego, co należy do pozostałych:
 
-- **Client** to to, na co patrzą ludzie. Rysuje aktywności, zadania, formularze
+- **Client** to część, którą widzą ludzie. Rysuje aktywności, zadania, formularze
   i wyniki.
-- **Server** trzyma wszystko trwałe — konta, zadania, zgłoszenia, wyniki — i
-  decyduje, kto co może. **Nigdy nie kompiluje ani nie uruchamia nadesłanego
-  rozwiązania** i nie rozumie, co znaczy konkretny rodzaj zadania.
-- **Runner** uruchamia. Bierze zlecenie, ocenia je w izolacji i raportuje. To
-  Runner nawiązuje połączenie, więc może stać za domowym routerem bez własnego
-  adresu.
+- **Server** przechowuje wszystko, co ma przetrwać — konta, zadania, zgłoszenia,
+  wyniki — i decyduje, kto co może zrobić. **Nigdy nie kompiluje ani nie
+  uruchamia nadesłanego rozwiązania** i nie rozumie, co znaczy konkretny rodzaj
+  zadania.
+- Uruchamianiem zajmuje się **Runner**. Pobiera zlecenie, ocenia je w izolacji
+  i odsyła wynik. Połączenie zawsze nawiązuje Runner, więc może pracować za
+  domowym routerem, bez własnego adresu.
 
-Konsekwencja warta poznania od razu: **dodanie nowego rodzaju zadania nie
+Warto od razu wiedzieć, co z tego wynika: **dodanie nowego rodzaju zadania nie
 wymaga zmiany w Serverze.** Client uczy się go rysować, a Runner oceniać.
 
 ## Słowo o wersjach
 
-AlgoJudge jest w fazie `0.x`, a **wydanie `0.x` nie obiecuje zgodności
-wstecznej.** Każde wydanie minor niesie notatkę, co się zepsuło i co z tym
-zrobić. Dokumentacja starszych wersji nie jest nigdy usuwana, bo dla instalacji,
-która się nie zaktualizowała, jest jedyną działającą dokumentacją.
+AlgoJudge jest w fazie `0.x`, a **wydanie `0.x` nie daje żadnej obietnicy
+zgodności wstecznej.** Do każdego wydania minor dołączamy notatkę: co się zepsuło
+i co z tym zrobić. Dokumentacji starszych wersji nigdy nie usuwamy — dla
+instalacji, której nikt nie zaktualizował, jest jedyną, która działa.

@@ -14,16 +14,16 @@ aktywności.
 
 Filtruj po aktywności, potem po serii wewnątrz niej, po stanie albo szukając po
 użytkowniku lub zadaniu. **Filtry są w adresie**, więc *spójrz na próby tego
-uczestnika w zadaniu B* jest linkiem, który można wkleić w wiadomość.
+uczestnika w zadaniu B* jest linkiem, który wkleisz w wiadomość.
 
 Lista pokazuje stan, werdykt, punkty, liczbę prób oraz plakietkę przy wszystkim,
 co jest **nie liczone**.
 
-## Co niesie jedno zgłoszenie
+## Co zawiera jedno zgłoszenie
 
-Po otwarciu masz kod źródłowy — tylko do odczytu, z sumą kontrolną — każdą
-**próbę**, jaką miało, wraz z Runnerem, który ją wykonał, oraz, dla każdej próby,
-wynik narysowany tym samym komponentem, który dostaje uczestnik, i log oceny.
+Otwórz zgłoszenie, a zobaczysz kod źródłowy — tylko do odczytu, z sumą kontrolną
+— każdą **próbę**, jaką miało, wraz z Runnerem, który ją wykonał, a przy każdej
+próbie wynik narysowany tym samym komponentem co u uczestnika oraz log oceny.
 
 Prowadzący widzi każdy załącznik, jaki wytworzyła próba, cokolwiek mówi tabela
 widoczności w aktywności. Tamta tabela decyduje o tym, co dociera do
@@ -36,7 +36,7 @@ Trzy fakty, o ile Server jeszcze je ma:
 | | |
 |---|---|
 | adres | adres, z którego przyszło zgłoszenie |
-| przeglądarka | przeglądarka powiedziała, że jest tą |
+| przeglądarka | przeglądarka podała się za tę |
 | sesja | sesja przeglądarki, w której je wysłano |
 
 Każdy z nich znika na własnych warunkach — adres i przeglądarka po upływie okna
@@ -55,7 +55,7 @@ oferuje też ponowną ocenę całej serii i mówi, ile zgłoszeń zakolejkowano.
 
 **Ponowna ocena dokłada próbę; nigdy nie nadpisuje tej, którą już pokazano.**
 Wcześniejsza próba zachowuje swój wynik i log, i obie zostają na ekranie.
-Niezakończoną próbę można anulować; zakończonej nie.
+Niezakończoną próbę możesz anulować; zakończonej nie.
 
 Ponowna ocena to `submission:rejudge`, anulowanie to `submission:cancel`. Oba są
 w dostarczanym szablonie `manager`.
@@ -68,9 +68,9 @@ która okazała się cudza, przebieg względem paczki, która była zła.
 Prosi o **powód**, bo o powód tu chodzi — sędzia czytający ten wiersz za miesiąc
 musi wiedzieć, dlaczego.
 
-<Callout type="warn" title="Powód nie jest prywatny dla prowadzących">
-Widzą go prowadzący, ale jest też częścią eksportu danych samego uczestnika.
-Pisz go jako coś, co ta osoba może przeczytać.
+<Callout type="warn" title="Powodu nie widzą tylko prowadzący">
+Widzą go prowadzący, ale trafia też do eksportu danych samego uczestnika. Pisz go
+tak, żeby ta osoba mogła go przeczytać.
 </Callout>
 
 Co orzeczenie robi, a czego nie:
@@ -81,10 +81,10 @@ Co orzeczenie robi, a czego nie:
 | miejsce na liście i swoje próby | najlepszy wynik uczestnika |
 | **pulę, którą wydało** | ocenę wysyłaną do LMS |
 
-**Wyłączenie nie jest zwrotem.** Zgłoszenie nadal liczy się do limitu zgłoszeń.
-Prowadzący, który chce oddać próbę, podnosi limit — widocznie i jako osobną
-czynność. Zwrot tutaj byłby drugim sposobem ruszania sufitu, i to takim, którego
-nikt nie widzi.
+**Wyłączenie nie zwraca próby.** Zgłoszenie nadal liczy się do limitu zgłoszeń.
+Jeśli chcesz oddać próbę, podnieś limit — widocznie i osobną czynnością. Zwrot w
+tym miejscu byłby drugim sposobem ruszania sufitu, i to takim, którego nikt nie
+widzi.
 
 **Licz ponownie** cofa orzeczenie i kasuje razem z nim powód: zdanie tłumaczące
 stan, który już nie obowiązuje, jest gorsze niż jego brak.
@@ -96,16 +96,16 @@ wynik ręcznie, a instalacja może oddać pierwsze bez drugiego.
 ### Co widzi uczestnik
 
 Jego zgłoszenie nadal tam jest, z werdyktem i próbami, i jest **oznaczone** — bez
-oznaczenia jego ekran i ranking opisywałyby jedno zgłoszenie różnie, bez
-możliwości dowiedzenia się, dlaczego. Powodu nie ma na jego ekranie, ale jest w
+tego oznaczenia jego ekran i ranking opisywałyby jedno zgłoszenie różnie i nie
+sposób byłoby dociec, dlaczego. Powodu nie ma na jego ekranie, ale jest w
 eksporcie jego własnych danych.
 
 Zmienia się każde miejsce, w którym liczy się klasyfikacja: najlepszy wynik i
-status na stronie zadania oraz na liście rundy, i tablica. Tablicy, którą ktoś ma
-już otwartą, każe się pobrać dane na nowo, zamiast wysyłać poprawkę, bo scalanie
-nie potrafi usuwać wiersza.
+status na stronie zadania oraz na liście rundy, i tablica. Tablica, którą ktoś ma
+już otwartą, dostaje polecenie pobrania danych na nowo, a nie poprawkę, bo
+scalanie nie potrafi usunąć wiersza.
 
-Ocena wysyłana do platformy kursowej jest poprawiana o jeden przebieg
-synchronizacji później, a nie w chwili kliknięcia. Zawodnik, który przestaje
-zdobywać punkty, jest wnoszony z powrotem z **zerem**: pominięcie go w
-obliczeniu zostawiłoby platformę ze starą oceną na zawsze.
+Ocenę wysyłaną do platformy kursowej poprawia dopiero następny przebieg
+synchronizacji, a nie samo kliknięcie. Zawodnik, który przestaje zdobywać punkty,
+wraca do obliczenia z **zerem**: gdyby go pominąć, platforma trzymałaby starą
+ocenę na zawsze.

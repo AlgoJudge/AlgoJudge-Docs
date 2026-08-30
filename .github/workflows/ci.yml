@@ -51,6 +51,9 @@ jobs:
       - name: No Polish page has drifted from its English source
         run: npm run check:translations
 
+      - name: A translation has the same shape as its source
+        run: npm run check:structure
+
       - name: Polish uses the interface's own words
         run: npm run check:glossary
 

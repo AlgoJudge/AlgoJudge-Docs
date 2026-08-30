@@ -1,15 +1,15 @@
 ---
 title: Logowania zewnętrzne i platformy LTI
-description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od niego.
+description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
 sourceSha256: 5eb223d18ed3c977f7f6577346b136b91986d4cbcca9cd3a32b906e3bc52e240
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-Dwa obszary, jedno uprawnienie — `provider:manage` — bo rejestracja platformy LTI
-zapisuje wiersz dostawcy: to ta sama decyzja o tym, komu ta instalacja ufa, że
-poświadczy, kim ktoś jest.
+Dwa obszary, jedno uprawnienie — `provider:manage` — bo gdy rejestrujesz
+platformę LTI, powstaje wiersz dostawcy: to ta sama decyzja o tym, komu ta
+instalacja ufa, że poświadczy, kim ktoś jest.
 
 Po `system:administrator` jest to najniebezpieczniejszy klucz w panelu i nie ma
 go w dostarczanym szablonie `manager`.
@@ -17,7 +17,7 @@ go w dostarczanym szablonie `manager`.
 ## Logowania zewnętrzne
 
 Których dostawców tożsamości ta instalacja przyjmuje i ile wart jest tu token od
-nich.
+każdego z nich.
 
 ### Rejestracja
 
@@ -32,10 +32,10 @@ nich.
 | Gdzie ludzie usuwają konto u dostawcy | oferowane obok przycisku usuwającego konto tutaj. Puste — link nie jest pokazywany |
 
 Ekran wypisuje **adres powrotny do wpisania u dostawcy**, z przyciskiem
-kopiowania. Pomyłka wychodzi na końcu czyjegoś pierwszego logowania, komunikatem
-od dostawcy, a nie stąd.
+kopiowania. Pomyłka wyjdzie dopiero na końcu czyjegoś pierwszego logowania, i to
+komunikatem od dostawcy, a nie stąd.
 
-Puste pole sekretu nie oznacza straty. Oznacza *zostaw przechowany bez zmian*, a
+Puste pole sekretu niczego nie kasuje. Znaczy *zostaw przechowany bez zmian*, a
 opis mówi, w którym z dwóch stanów jesteś.
 
 ### Mapowanie
@@ -56,17 +56,17 @@ uprawnienie dopisuje do szablonu potem.
 </Callout>
 
 Nadanie z mapowania jest **przepisywane przy każdym logowaniu**, co tnie w obie
-strony: edycja szablonu dosięgnie tych osób przy ich następnym logowaniu, a
-edycja ich nadania ręcznie nie dosięgnie ich wcale. Lista Nadań oznacza taki
-wiersz dostawcą, od którego przyszedł, i odmawia jego edycji. Zobacz
-[Uprawnienia i nadania](/pl/client/manager/permissions).
+strony: gdy zmienisz szablon, dosięgniesz tych osób przy ich następnym logowaniu,
+a gdy poprawisz ich nadanie ręcznie, nie dosięgniesz ich wcale. Lista Nadań
+oznacza taki wiersz dostawcą, od którego przyszedł, i nie pozwala go edytować.
+Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
 
 ### Kolejka usunięć kont
 
 Obok dostawców jest kolejka kont zgłoszonych do usunięcia — w większości przez
-kanał zwrotny dostawcy, i dlatego mieszka razem z dostawcą, który go otworzył.
+kanał zwrotny dostawcy, i dlatego stoi razem z dostawcą, który go otworzył.
 
-- **Oczekuje** mieści się w swoich dwudziestu czterech godzinach i można to
+- **Oczekuje** mieści się w swoich dwudziestu czterech godzinach i możesz to
   zatrzymać.
 - **Ma uprawnienia systemowe** to ten wpis, który ktoś musi przeczytać:
   powiązanie zostało zdjęte, a konta **nie** opróżniono. Webhook zdolny uciszyć
@@ -80,14 +80,14 @@ sekret.
 Platformy kursowe, które mogą otwierać aktywności swoim studentom. AlgoJudge
 implementuje LTI 1.3; **nie jest certyfikowany przez 1EdTech**, i ekran to mówi.
 
-Rejestracja jest **ręczna, z decyzji** — jedyne ustawienie, które naprawdę się
-liczy, nie jest czymś, co platforma może nadać sobie sama.
+Platformę rejestrujesz **ręcznie, świadomą decyzją** — jedynego ustawienia, które
+naprawdę się liczy, platforma nie może nadać sobie sama.
 
 | | |
 |---|---|
 | Issuer, client id, deployment id | **nie da się ich potem zmienić**: wisi na nich każde uruchomienie i każde powiązanie tożsamości |
 | Adresy zestawu kluczy, tokenu i autoryzacji | należą do platformy |
-| Przyjmuj uruchomienia | odwracalny przełącznik. Usunięcie platformy jest odmawiane, dopóki jakikolwiek kurs ma z niej aktywność |
+| Przyjmuj uruchomienia | odwracalny przełącznik. Platformy nie usuniesz, dopóki jakikolwiek kurs ma z niej aktywność |
 
 **Nie ma tu żadnego sekretu**, a jego brak nie jest luką: LTI uwierzytelnia
 narzędzie podpisem, a klucz prywatny narzędzia nigdy nie opuszcza Servera. **Co
@@ -96,42 +96,43 @@ narzędzia zewnętrznego oraz parametry własne, bez których uruchomienie nie p
 stwierdzić, kto przyszedł.
 
 <Callout type="warn" title="Orzekanie o tożsamości to ten niebezpieczny przełącznik">
-Gdy *ta platforma może orzekać, kim ktoś jest* jest włączone, uruchomienie wiąże
-się z kontem AlgoJudge o nazwie użytkownika, którą przysyła platforma — więc
-przejęty Moodle staje się drogą do tych kont. Domyślnie jest wyłączone. Zostaw je
-wyłączone, chyba że obie strony administrują ci sami ludzie.
+Gdy włączysz *ta platforma może orzekać, kim ktoś jest*, uruchomienie łączy się z
+kontem AlgoJudge o nazwie użytkownika, którą przysyła platforma — więc przejęty
+Moodle staje się drogą do tych kont. Domyślnie przełącznik jest wyłączony. Zostaw
+go tak, chyba że obie strony administrują ci sami ludzie.
 
-Zawęża je slug dostawcy tożsamości: kont, które nie przyszły przez tego dostawcę
+Zawęża go slug dostawcy tożsamości: kont, które nie przyszły przez tego dostawcę
 — lokalnych i administratorskich — nie da się w ten sposób przejąć.
 </Callout>
 
 ### Oczekiwane rejestracje
 
 Platforma może zarejestrować się sama, jeśli ktoś tutaj na nią czeka. Utwórz
-oczekiwanie z notatką mówiącą, co to jest, przekaż adres osobie administrującej
-platformą — działa **raz, przez pół godziny**. Można je odwołać, zanim zostanie
-użyte.
+oczekiwanie z notatką, co to jest, i przekaż adres osobie administrującej
+platformą — działa **raz, przez pół godziny**. Możesz je odwołać, zanim ktoś go
+użyje.
 
 ### Podpięcia w kursach
 
-Skąd kursy sięgają po aktywności tej instalacji. Jedna aktywność może być
+Stąd kursy sięgają po aktywności tej instalacji. Jedna aktywność może być
 podpięta w więcej niż jednym kursie, a uruchomienie **czeka, aż ktoś się na to
-zgodzi** — zgoda oznacza, że aktywność zasila oba dzienniki ocen. Nie da się tego
-stąd cofnąć: wysłane już oceny zostają tam, gdzie je wysłano, więc podpięcie
-usuwa się w kursie.
+zgodzi** — zgoda oznacza, że aktywność zasila oba dzienniki ocen. Nie cofniesz
+tego stąd: wysłane już oceny zostają tam, gdzie je wysłano, więc podpięcie
+usuwasz w kursie.
 
-Dla kursu, który nie powinien niczego współdzielić, **daj mu własną kopię** robi
-kopię tak samo jak [kopiowanie aktywności](/pl/client/manager/copying).
+Kursowi, który nie powinien niczego współdzielić, **daj mu własną kopię** —
+powstaje ona tak samo jak przy [kopiowaniu
+aktywności](/pl/client/manager/copying).
 
 **Kto jest w kursie** czyta listę uczestników platformy na żądanie — nic tutaj
-nie odświeża się samo — i pokazuje, ilu z nich ma konto tutaj. Dopasowanie idzie
-po nazwie użytkownika przysyłanej przez platformę; **adres e-mail nigdy do tego
-nie służy**, a platforma, która nie wysyła nazw użytkowników, nie dopasuje
-nikogo. Zapisanie ich do aktywności daje każdemu powiązanie wstępne, dopóki sam
-jej nie otworzy.
+nie odświeża się samo — i pokazuje, ilu z nich ma konto tutaj. Dopasowuje po
+nazwie użytkownika przysyłanej przez platformę; **adres e-mail nigdy do tego nie
+służy**, a platforma, która nie wysyła nazw użytkowników, nie dopasuje nikogo.
+Gdy zapiszesz ich do aktywności, każdy dostaje powiązanie wstępne, dopóki sam jej
+nie otworzy.
 
-## Gdzie jest połowa administratora
+## Czym zajmuje się administrator
 
 Sam dostawca tożsamości nie jest częścią tego stosu. Działa obok niego, pod
-własną nazwą hosta, a wybór, instalacja i konfiguracja jednego z nich to
+własną nazwą hosta, a wybór, instalacja i konfiguracja takiego dostawcy to
 [Instalacja i utrzymanie](/pl/install).

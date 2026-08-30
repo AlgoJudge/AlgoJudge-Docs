@@ -19,32 +19,32 @@ Lista pokazuje je osobno, a zwinięcie ich w jeden „status” ukryłoby oba:
 - **połączony, ale niezatwierdzony** nie ocenia niczego.
 
 Runner jest w jednym z trzech stanów: czeka na zatwierdzenie, zatwierdzony albo
-odwołany. **Zatwierdź** go wpuszcza. **Odwołanie** unieważnia klucz; Runner musi
-zarejestrować się ponownie. Odwołany może zostać całkiem zapomniany.
+odwołany. **Zatwierdź** wpuszcza go do pracy. Odwołanie unieważnia klucz; Runner
+musi zarejestrować się od nowa. Odwołanego można zapomnieć całkiem.
 
 ## Co pokazuje ekran i kto to powiedział
 
 Wszystko poza tagami jest **własnym raportem Runnera**: produkt i wersja, typy
 zadań, które przyjmuje, adres, odcisk i klucz publiczny, maszyna, liczba
-wykonanych zadań i kiedy był ostatnio widziany. Ekran wyświetla raport i nigdy
-nie uzupełnia w nim luki — Runner, który nigdy się nie połączył, nie ma maszyny, i
-powiedzenie tego jest uczciwą odpowiedzią.
+wykonanych zadań i kiedy był ostatnio widziany. Ekran wyświetla raport i nigdy nie
+uzupełnia w nim luk — Runner, który nigdy się nie połączył, nie ma maszyny, i
+uczciwiej jest tak właśnie napisać.
 
-Odcisk jest do odczytania na głos przy zatwierdzaniu; sam klucz jest tym, czym
-diagnozuje się niezgodność.
+Odcisk odczytujesz na głos przy zatwierdzaniu; samym kluczem diagnozuje się
+niezgodność.
 
 Pliki tekstowe, które Runner o sobie wgrywa, pojawiają się jako zakładki obok
 **Ogólne** i są pobierane dopiero po otwarciu.
 
-## Tagi i to, co naprawdę robią
+## Tagi i co naprawdę robią
 
 <Callout type="warn" title="Runner dostaje pracę, gdy obie listy tagów mają co najmniej jeden wspólny">
-Nie *wszystkie* — **którykolwiek**. Dodanie tagu do aktywności **poszerza**
+Nie *wszystkie* — **którykolwiek**. Gdy dodasz tag do aktywności, **poszerzasz**
 zbiór Runnerów, które mogą wziąć jej pracę.
 </Callout>
 
-Pusta lista, po każdej ze stron, jest czytana jako `default`. Ta jedna reguła
-jest całą wyłącznością:
+Pusta lista, po każdej ze stron, jest czytana jako `default`. Na tej jednej
+regule opiera się cała wyłączność:
 
 | Tagi Runnera | Tagi pracy | |
 |---|---|---|
@@ -56,20 +56,19 @@ jest całą wyłącznością:
 | puste | puste | oceniane — zachowanie sprzed całej tej mechaniki |
 
 Czwarty wiersz przeczytaj dwa razy. **Otagowanie Runnera wyjmuje go z puli
-ogólnej równie pewnie, jak wstawia do zarezerwowanej.** Tak ma być: rezerwacja
-maszyn w pracowni musi uczynić je niedostępnymi dla wszystkiego innego, bo
-inaczej zarezerwowane maszyny nadal byłyby wciągane do ogólnej kolejki w
+ogólnej równie pewnie, jak wstawia do zarezerwowanej.** Tak ma być: skoro
+rezerwujesz maszyny w pracowni, muszą stać się niedostępne dla wszystkiego innego
+— inaczej zarezerwowane maszyny nadal wciągałaby ogólna kolejka, i to w
 najgorszym momencie.
 
-`default` to zwykły tekst, który każdy może wpisać, i znaczy dokładnie to samo co
-zostawienie pola pustego. To właśnie pozwala wyciągnąć jedną rundę z kursu
-przypiętego do pracowni i pozwala maszynie służyć jednocześnie puli ogólnej *i*
-zarezerwowanej.
+`default` to zwykły tekst, który każdy może wpisać, i znaczy dokładnie to samo,
+co puste pole. Dzięki temu wyciągniesz jedną rundę z kursu przypiętego do
+pracowni, a maszyna może służyć naraz puli ogólnej *i* zarezerwowanej.
 
 Tagi są przycinane, sprowadzane do małych liter i odduplikowane. Bez małych liter
-`Lab-A` na maszynie i `lab-a` w aktywności byłyby dwiema pulami czytającymi się
-jak jedna, a awarią byłaby kolejka, która nigdy się nie opróżnia, i żaden ekran
-nie powiedziałby dlaczego.
+`Lab-A` na maszynie i `lab-a` w aktywności byłyby dwiema pulami, które czyta się
+jak jedną, a objawiłoby się to kolejką, która nigdy się nie opróżnia, i żaden
+ekran nie powiedziałby dlaczego.
 
 ### Skąd biorą się tagi zadania
 
@@ -79,12 +78,12 @@ dziedziczenie od nadpisania, bo puste nadpisanie i odziedziczona lista wygląda�
 identycznie. Runda, która chce ogólnych maszyn, gdy jej kurs jest przypięty,
 wpisuje `default`.
 
-Tag zwykle należy do rundy, a nie do kursu: przypięcie całego kursu wysyła do
-pracowni także jego prace domowe.
+Tag zwykle należy do rundy, a nie do kursu: jeśli przypniesz cały kurs, do
+pracowni pojadą także jego prace domowe.
 
-Oba ekrany liczą to za ciebie — *Pasujące Runnery: N*. **Zero warto potraktować
-poważnie**: zgłoszenia są przyjmowane, kolejkowane i nigdy nieoceniane. Formularz
-tego nie odmawia, bo tagi wpisuje się często zanim maszyny zostaną zatwierdzone.
+Oba ekrany liczą to za ciebie — *Pasujące Runnery: N*. **Na zero zareaguj**:
+zgłoszenia są przyjmowane, kolejkowane i nigdy nieoceniane. Formularz tego nie
+odmawia, bo tagi wpisuje się często, zanim maszyny zostaną zatwierdzone.
 
 ### Czyj jest tag
 
@@ -101,8 +100,8 @@ maszyna *umie*, a nie decyzję, którą ktoś podejmuje we wtorek.
 
 ## Uprawnienia
 
-Widzenie tego obszaru to `runner:read`, zatwierdzanie to `runner:approve`,
-odwoływanie `runner:revoke`, a zmiana tagów `runner:update`. Żadnego z nich nie
-ma w dostarczanym szablonie `manager` — są ogólnoinstalacyjne, tak jak same
+Ten obszar otwiera `runner:read`, zatwierdzasz z `runner:approve`, odwołujesz z
+`runner:revoke`, a tagi zmieniasz z `runner:update`. Żadnego z nich nie ma w
+dostarczanym szablonie `manager` — dotyczą całej instalacji, tak jak same
 maszyny. Instalacja i uruchomienie Runnera to [Instalacja i
 utrzymanie](/pl/install).

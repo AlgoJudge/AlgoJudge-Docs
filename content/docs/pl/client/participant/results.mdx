@@ -7,12 +7,12 @@ sourceSha256: 88d6aa2614efbef34c7dae5470fafa83fb9507a61fd8bb664110e76d452a35f2
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-## Jak je znaleźć
+## Gdzie ich szukać
 
 **Moje zgłoszenia** wypisują wszystko, co wysłałeś w tej aktywności, po
 dziesięć na stronę, w kolumnach **Data wysłania**, **Zadanie**, **Język**,
-**Status** i **Wynik**. Filtrujesz po zadaniu, po serii i po statusie. Kliknięcie
-wiersza otwiera zgłoszenie.
+**Status** i **Wynik**. Filtrujesz po zadaniu, po serii i po statusie. Kliknij
+wiersz, żeby otworzyć zgłoszenie.
 
 Wiersze same się aktualizują, gdy przychodzą werdykty — po to jest ten ekran. Tak
 samo panel w prawym dolnym rogu, który trzyma ostatnich kilkanaście zgłoszeń w
@@ -34,8 +34,8 @@ plakietka pokazuje **werdykt** — krótką etykietę od Runnera, na przykład
 
 **Kolor bierze się z punktów, nigdy z treści werdyktu.** Komplet jest zielony,
 część żółta, zero czerwone. Werdykt to napis należący do typu zadania, a
-dopasowywanie się do słowa „Accepted” działałoby dla jednego typu i po cichu
-myliło przy innym.
+dopasowywanie do słowa „Accepted” działałoby dla jednego typu i po cichu myliło
+przy innym.
 
 ## Nagłówek
 
@@ -48,15 +48,15 @@ myliło przy innym.
 | **Wynik** | `punkty / maksimum` albo `—`, dopóki punktów nie ma |
 | **Status** | plakietka opisana wyżej |
 
-Wyprowadzają z niego dwa przyciski: **Zadanie**, z powrotem do treści, i **Kod
+Prowadzą z niego dalej dwa przyciski: **Zadanie**, z powrotem do treści, i **Kod
 źródłowy**, do [tego, co wysłałeś](/pl/client/participant/source-code).
 
 ## Kiedy jeszcze trwa ocena
 
-Zamiast pustej tabeli dostajesz niebieski panel z kręciołkiem: *Czekamy, aż
+Zamiast pustej tabeli dostajesz niebieski panel z kółkiem ładowania: *Czekamy, aż
 runner podejmie zgłoszenie* dla stanu *W kolejce* i *Runner sprawdza to
-zgłoszenie* dla *Sprawdzane*. Sam zastępuje się wynikiem, gdy ten przyjdzie. Nie
-musisz przeładowywać.
+zgłoszenie* dla *Sprawdzane*. Gdy wynik przyjdzie, panel sam ustąpi mu miejsca.
+Nie musisz przeładowywać.
 
 ## Tabela testów
 
@@ -118,8 +118,8 @@ Dwa przypadki szczególne:
 
 Karta **Log oceny** pojawia się pod wynikiem, gdy jest co pokazać. O tym, czy
 możesz go czytać, decyduje aktywność: Server albo przysyła plik, albo nie. Gdy go
-nie ma, karty po prostu nie ma i nie jest rozróżniane, czy „nic nie zalogowano”,
-czy „to nie dla Ciebie”.
+nie ma, nie ma też karty i nic nie rozróżnia „nic nie zalogowano” od „to nie dla
+Ciebie”.
 
 ## Próby
 
@@ -127,15 +127,15 @@ Zgłoszenie jest oceniane więcej niż raz, gdy zostanie przesłane do ponownej
 oceny. Kod źródłowy to te same bajty; każde uruchomienie jest osobną **próbą**.
 
 Rozwijana sekcja **Próby oceny** pojawia się, gdy prób jest więcej niż jedna, i
-niesie numer każdej próby, kiedy się zaczęła, jej stan i werdykt oraz punkty. Od
-najnowszej. Wynik narysowany nad sekcją należy do najnowszej próby.
+podaje numer każdej próby, godzinę jej startu, jej stan i werdykt oraz punkty. Od
+najnowszej. Wynik pokazany nad sekcją należy do najnowszej próby.
 
 ## Wykluczone zgłoszenie
 
 <Callout type="warn" title="Osądzone, ale nieliczone">
 Pomarańczowy komunikat *To zgłoszenie nie jest liczone do rankingu. Nadal liczy
-się do Twojego limitu zgłoszeń.* oznacza, że menedżer orzekł, że to zgłoszenie
-nie liczy się do żadnej klasyfikacji.
+się do Twojego limitu zgłoszeń.* znaczy, że menedżer wyłączył to zgłoszenie z
+każdej klasyfikacji.
 </Callout>
 
 **Punkty powyżej zostają takie, jakie były.** Wykluczenie rozstrzyga o tym, do
@@ -143,6 +143,6 @@ czego zgłoszenie się liczy, a nie o tym, co powiedziała sprawdzarka — dlate
 ekran mówi to wprost. Inaczej ten ekran i ranking opisywałyby jedno zgłoszenie
 inaczej i nie byłoby jak się dowiedzieć dlaczego.
 
-Wiersz w panelu w rogu niesie z tego samego powodu pomarańczową plakietkę *Nie
-liczone*. Powód wykluczenia nie jest tu pokazany; jest na ekranie menedżera i w
-Twoim własnym eksporcie danych.
+Z tego samego powodu wiersz w panelu w rogu ma pomarańczową plakietkę *Nie
+liczone*. Powodu wykluczenia tu nie ma; jest na ekranie menedżera i w Twoim
+własnym eksporcie danych.
