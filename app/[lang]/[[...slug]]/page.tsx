@@ -8,10 +8,12 @@ import { notFound } from "next/navigation";
 import { ArchiveBanner } from "@/components/archive-banner";
 import { FallbackNotice } from "@/components/fallback-notice";
 import { getMDXComponents } from "@/components/mdx";
+import { LicenceNote } from "@/components/licence-note";
 import { OpenAPIPage } from "@/components/api-page";
 import { i18nConfig, type Locale } from "@/lib/i18n";
 import { hreflang, ogLocale, OG_IMAGE, site, SITE_NAME } from "@/lib/site";
 import { loadSchemas, narrow, type OperationRef } from "@/lib/openapi-preload";
+import { sectionIndex } from "@/lib/sections";
 import { archiveState } from "@/lib/versions";
 import { source } from "@/lib/source";
 
@@ -64,6 +66,10 @@ export default async function Page(props: { params: Promise<Params> }) {
     const schemas = await loadSchemas(page.data);
     const archived = await archiveState(slug);
 
+    // Only on a section's front page. Every page under it is about the same
+    // software, and repeating the sentence 116 times would make it furniture.
+    const front = sectionIndex(slug);
+
     return (
         <DocsPage toc={page.data.toc} full={page.data.full}>
             <DocsTitle>{page.data.title}</DocsTitle>
@@ -79,6 +85,7 @@ export default async function Page(props: { params: Promise<Params> }) {
                     })}
                 />
                 </div>
+                {front ? <LicenceNote section={front} locale={lang} /> : null}
             </DocsBody>
         </DocsPage>
     );

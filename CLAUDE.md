@@ -72,6 +72,11 @@ is `sha256`, never `hash`; in prose, SHA-256.
   `npm run check:versions` refuses it.
 - Generated content is not committed: the REST reference under
   `content/docs/en/server/rest/` and everything in `.sources/` are build output.
+- **A section's front page ends with the licence of the software it describes**,
+  rendered from `lib/sections.ts` by `components/licence-note.tsx` - not written
+  into a page, and not repeated on the pages below it. `licence` is a repository
+  for every section including `protocol`, which is where it differs from
+  `repository`.
 - **A section links its own repository from the foot of its sidebar**, written as
   an `external:` entry last in its `meta.json`. Which repository is
   `lib/sections.ts`, not the `meta.json` — a section that documents no

@@ -34,6 +34,18 @@ export interface Section {
      * rather than by omission.
      */
     readonly repository: string | null;
+    /**
+     * **The repository whose `LICENSE` this section points at.** Always a
+     * repository, never `null` - which is where it parts company with
+     * `repository` above.
+     *
+     * A reader wants the terms of the software the section describes, and every
+     * section describes some. `protocol` is the one where the two fields differ:
+     * it links no repository in its sidebar, because the repository that
+     * versions it holds internal documents - but the contract it describes is
+     * served by a Server, and that is software somebody runs under a licence.
+     */
+    readonly licence: string;
     readonly title: Readonly<Record<"en" | "pl", string>>;
     readonly description: Readonly<Record<"en" | "pl", string>>;
 }
@@ -44,6 +56,7 @@ export const sections: readonly Section[] = [
         owner: "AlgoJudge-Ops",
         polish: true,
         repository: "AlgoJudge-Ops",
+        licence: "AlgoJudge-Ops",
         title: { en: "Install and operate", pl: "Instalacja i utrzymanie" },
         description: {
             en: "Standing up an installation, keeping it running, and getting it back.",
@@ -55,6 +68,7 @@ export const sections: readonly Section[] = [
         owner: "AlgoJudge-Client",
         polish: true,
         repository: "AlgoJudge-Client",
+        licence: "AlgoJudge-Client",
         title: { en: "Using AlgoJudge", pl: "Korzystanie z AlgoJudge" },
         description: {
             en: "The application itself, for the people who compete in it and the people who run it.",
@@ -66,6 +80,7 @@ export const sections: readonly Section[] = [
         owner: "AlgoJudge-Server",
         polish: false,
         repository: "AlgoJudge-Server",
+        licence: "AlgoJudge-Server",
         title: { en: "Server", pl: "Server" },
         description: {
             en: "The domain model, the permission model, and the REST reference.",
@@ -77,6 +92,7 @@ export const sections: readonly Section[] = [
         owner: "AlgoJudge-Runner",
         polish: false,
         repository: "AlgoJudge-Runner",
+        licence: "AlgoJudge-Runner",
         title: { en: "Runner", pl: "Runner" },
         description: {
             en: "The machines that evaluate submissions, and how to run one.",
@@ -88,6 +104,7 @@ export const sections: readonly Section[] = [
         owner: "AlgoJudge-Design",
         polish: false,
         repository: null,
+        licence: "AlgoJudge-Server",
         title: { en: "Protocol", pl: "Protokół" },
         description: {
             en: "The contract between a Server and a Runner.",
@@ -102,6 +119,25 @@ export const sectionSlugs = sections.map((section) => section.slug);
 export const ORGANISATION = "https://github.com/AlgoJudge";
 
 export const repositoryUrl = (name: string) => `${ORGANISATION}/${name}`;
+
+/** The licence file itself, on the default branch, so the link opens the text. */
+export const licenceUrl = (name: string) => `${repositoryUrl(name)}/blob/main/LICENSE`;
+
+const VERSION = /^v\d+\.\d+$/;
+
+/**
+ * The section this path is the front page of, or `null` when it is not one.
+ *
+ * `/en/install` today and `/en/install/v0.1` once a version is cut - the version
+ * segment sits inside the section, so a snapshot has a front page of its own.
+ * Anything deeper belongs to the section without being its front page.
+ */
+export function sectionIndex(slug: readonly string[] | undefined): Section | null {
+    if (!slug?.length) return null;
+    const rest = slug.length > 1 && VERSION.test(slug[1]) ? slug.slice(2) : slug.slice(1);
+    if (rest.length > 0) return null;
+    return sections.find((section) => section.slug === slug[0]) ?? null;
+}
 
 /** The sections Polish is authored for, by their Polish names. */
 export const polishSections = sections.filter((section) => section.polish);
