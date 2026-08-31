@@ -1,16 +1,21 @@
 ---
-title: Forwarding to onlinejudge.org
-description: The Runner that judges nothing — what it does instead, and the two switches that stop its queue while everything looks healthy.
+title: Forwarding to an external judge
+description: The Runner that judges nothing — what it does instead, the one judging system it can talk to, and the two switches that stop its queue while everything looks healthy.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-`AlgoJudge-Runner-UVa` is a second Runner implementation that **evaluates
-nothing**. It takes `uva@1` submissions, forwards them to
-[onlinejudge.org](https://onlinejudge.org), waits for the archive to decide, and
-reports the archive's verdict back to the installation.
+`AlgoJudge-External-Runner` is a second Runner implementation that **evaluates
+nothing**. It claims jobs of an external problem type, hands the solution to the
+judging system that owns that type, waits for that system to decide, and reports
+its verdict back to the installation.
 
 It runs no code, has no sandbox, and measures nothing.
+
+**One judging system is built into it: UVa Online Judge**, serving the problem
+type `uva@1` against [onlinejudge.org](https://onlinejudge.org). Everything below
+that is not marked as UVa's applies to the Runner whichever judge it is pointed
+at.
 
 <Callout type="warn" title="The verdict is somebody else's opinion">
 Nothing about a `uva@1` result was decided by your installation. The compilers,
@@ -72,35 +77,50 @@ to whom, and under what terms belongs in the installation's privacy notice. The
 product states the fact and cannot write the notice.
 </Callout>
 
+## One process, one judge
+
+The configuration below holds **one endpoint and one account**. Two judging
+systems are two deployments of this Runner, each with its own problem types and
+its own pools — which is how Runners already scale, and the same answer as
+running two sandboxing Runners on two machines.
+
 ## Configuration
 
-The same `AJ_` convention as everywhere else. Two values are secrets and have no
-defaults.
+The same `AJ_` convention as everywhere else, in two halves. `AJ_Server__*`,
+`AJ_Runner__*` and `AJ_Lease__*` are the Runner's own and mean the same thing
+whatever it forwards to; `AJ_External__*` is the judging system it forwards to.
+Two values are secrets and have no defaults.
 
 | Variable | Default | |
 |---|---|---|
 | `AJ_Server__BaseUrl` | **required** | including `/api/v1` |
-| `AJ_Runner__Name` | `$HOSTNAME`, else `algojudge-runner-uva` | |
-| `AJ_Runner__ProblemTypes` | `uva@1` | |
+| `AJ_Runner__Name` | `$HOSTNAME`, else `algojudge-external-runner` | |
+| `AJ_Runner__ProblemTypes` | the judge's own | leave it unset unless you are narrowing or widening that deliberately |
 | `AJ_Runner__Tags` | empty | pools, seeded at the first registration only |
-| `AJ_Runner__KeyPath` | `/var/lib/algojudge-runner-uva/identity.key` | |
-| `AJ_Uva__Username` | **required, secret** | the robot account submissions are made under |
-| `AJ_Uva__Password` | **required, secret** | |
-| `AJ_Uva__UserId` | resolved from the username | the archive's own numeric id |
-| `AJ_Uva__BaseUrl` | `https://onlinejudge.org/` | |
-| `AJ_Uva__UhuntBaseUrl` | `https://uhunt.onlinejudge.org/` | |
-| `AJ_Uva__PollMinSeconds` | `20` | **also the floor.** Below it the Runner refuses to start |
-| `AJ_Uva__PollMaxSeconds` | `60` | |
-| `AJ_Uva__PollEscalateAfterSeconds` | `120` | |
-| `AJ_Uva__SubmitMinIntervalSeconds` | `5` | |
-| `AJ_Uva__PendingTimeoutSeconds` | `900` | how long to wait for the archive |
-| `AJ_Uva__MaxPending` | `20` | submissions in flight. Zero is refused |
-| `AJ_Uva__LongPollEnabled` | `true` | accepted; the trigger behind it is not built |
+| `AJ_Runner__KeyPath` | `/var/lib/algojudge-external-runner/identity.key` | |
+| `AJ_External__Judge` | `uva` | which judging system. An unknown one is refused at start-up, by name, with the list of what the build knows |
+| `AJ_External__Username` | **required, secret** | the robot account submissions are made under |
+| `AJ_External__Password` | **required, secret** | |
+| `AJ_External__UserId` | resolved from the username | the judge's own numeric id for the account |
+| `AJ_External__BaseUrl` | `https://onlinejudge.org/` | where submissions are posted |
+| `AJ_External__ApiBaseUrl` | `https://uhunt.onlinejudge.org/` | where answers are read, when that is a different service |
+| `AJ_External__PollMinSeconds` | `20` | **also the floor.** Below it the Runner refuses to start |
+| `AJ_External__PollMaxSeconds` | `60` | |
+| `AJ_External__PollEscalateAfterSeconds` | `120` | |
+| `AJ_External__SubmitMinIntervalSeconds` | `5` | |
+| `AJ_External__PendingTimeoutSeconds` | `900` | how long to wait for the judge |
+| `AJ_External__MaxPending` | `20` | submissions in flight. Zero is refused |
+| `AJ_External__LongPollEnabled` | `true` | accepted; the trigger behind it is not built |
 | `AJ_Lease__RequestSeconds` | `1200` | |
 
-`AJ_Uva__PollMinSeconds` cannot go below twenty. The Runner refuses to start if
-it does: onlinejudge.org publishes no rate limit at all, so this one is not
-lowered. A politeness limit a deployment can silently disable is not a limit.
+The two addresses both default to UVa's, because `uva` is the judge the Runner
+selects when nothing says otherwise. They are settings rather than constants so
+that a judge which moves does not need a release.
+
+`AJ_External__PollMinSeconds` cannot go below twenty. The Runner refuses to start
+if it does: onlinejudge.org publishes no rate limit at all, and a judging system
+may publish none, so this one is not lowered. A politeness limit a deployment can
+silently disable is not a limit.
 
 Every submission is made under one robot account, and **every real submission
 stays on that account for ever**. That is a decision for whoever owns it.
@@ -110,25 +130,34 @@ stays on that account for ever**. That is a decision for whoever owns it.
 Both failures happen far from their cause, and both end the same way: **the same
 solution is sent to somebody else's site twice**.
 
-**`AJ_Lease__RequestSeconds` must exceed `AJ_Uva__PendingTimeoutSeconds`.**
+**`AJ_Lease__RequestSeconds` must exceed `AJ_External__PendingTimeoutSeconds`.**
 Otherwise the Server reclaims the job while this Runner is still waiting on the
-archive, the job returns to the queue, and the next Runner to claim it submits
+judge, the job returns to the queue, and the next Runner to claim it submits
 again. The defaults — a twenty-minute lease against a fifteen-minute wait —
 satisfy this; a lease left at the sandboxing Runner's ten-minute default would
 not.
 
-**`AJ_Uva__PollMaxSeconds` must fit four times inside the lease.** A held lease is
-renewed at the top of the same cycle that asks the archive, so slowing the polling
-down to be polite to uHunt slows the renewing down with it. Four, so that three
-renewals fit inside every lease and two may fail in a row with the deadline still
-ahead.
+**`AJ_External__PollMaxSeconds` must fit four times inside the lease.** A held
+lease is renewed at the top of the same cycle that asks the judge, so slowing the
+polling down to be polite to somebody else's service slows the renewing down with
+it. Four, so that three renewals fit inside every lease and two may fail in a row
+with the deadline still ahead.
 
 That second one is the well-meant change that would have cost a double
 submission, which is exactly why it is refused at start-up rather than discovered
 an hour later. Note the ceiling it implies: the Server clamps a lease at 3600
 seconds, so the poll interval cannot exceed 900.
 
-## The six languages
+## UVa Online Judge
+
+The one integration there is. The two headings under this one are its own; the
+sections after them are the Runner's again.
+
+It is two services rather than one: submissions are posted to `onlinejudge.org`
+as a web form, and verdicts are read from uHunt as an API. That is why the
+configuration above has both a `BaseUrl` and an `ApiBaseUrl`.
+
+### The six languages
 
 The archive's own list, defined by the problem type rather than by each problem.
 
@@ -152,7 +181,7 @@ Runner](/en/runner/languages) it is a compiler this project pins with its own.
 Showing the same label in both places would tell a participant the two were built
 by the same compiler.
 
-## What a `uva@1` problem carries
+### What a `uva@1` problem carries
 
 There is no package. The whole of the configuration is documents the Server
 already carries and does not read:
@@ -172,21 +201,21 @@ allowlist of hosts the installation configures.
 
 ## Not judged, and not a wrong answer
 
-The archive can fail to form an opinion — a submission error, or a problem it
-holds no tests for. **Neither is a verdict and neither is scored.** They are
-reported as infrastructure failures, and the Server refuses to score one, because
-marking somebody down for a third party's outage would be a lie about their
-solution.
+A judge can fail to form an opinion — a submission error, or a problem it holds
+no tests for. **Neither is a verdict and neither is scored.** They are reported
+as infrastructure failures, and the Server refuses to score one, because marking
+somebody down for a third party's outage would be a lie about their solution.
 
-A verdict id the Runner does not recognise is treated as *not judged yet* rather
-than guessed at: a number nobody has seen before is not evidence that a person
+A verdict the Runner does not recognise is treated as *not judged yet* rather
+than guessed at: an answer nobody has seen before is not evidence that a person
 was wrong.
 
 A submission the activity's rules refuse — a language the manager excluded — is
 reported as `PolicyViolation`, the same word `standard-io@1` uses, and **nothing
-is sent to the archive at all**.
+is sent to the judge at all**.
 
-## One known gap
+## The long-poll flag is accepted and does nothing
 
-The long-poll trigger is not built, and the Runner says so at every start.
-Verdicts arrive on the polling interval alone, which is slower but not wrong.
+`AJ_External__LongPollEnabled` is read and the Runner says at every start that
+the trigger behind it is not built. Verdicts arrive on the polling interval
+alone, which is slower but not wrong.

@@ -86,8 +86,8 @@ examination's pool with nobody having approved that — and approval, the trust
 gate, happened before the tags existed.
 
 Both Runner implementations carry the seed:
-[`AlgoJudge-Runner-UVa`](/en/runner/uva) reads the same variable, and is the one
-an installation is most likely to want in a pool of its own.
+[`AlgoJudge-External-Runner`](/en/runner/external) reads the same variable, and is
+the one an installation is most likely to want in a pool of its own.
 
 ## Where the work's tags come from
 
@@ -124,7 +124,9 @@ apart, and neither can its log.** Work through them in this order:
    nothing can be judged. A number above zero promises nothing — it counts tags
    and neither problem types nor `external`.
 3. Does the Runner declare the problem's **type**?
-   `AJ_Runner__ProblemTypes` defaults to `standard-io@1` alone.
+   `AJ_Runner__ProblemTypes` defaults to `standard-io@1` alone here. On the
+   forwarding Runner it may be left unset, and then declares the problem type
+   of whichever judging system that one is configured for.
 4. Is the problem **external**? Then it needs an external Runner, and the
    installation's external judging switch on. See
-   [Forwarding to onlinejudge.org](/en/runner/uva).
+   [Forwarding to an external judge](/en/runner/external).

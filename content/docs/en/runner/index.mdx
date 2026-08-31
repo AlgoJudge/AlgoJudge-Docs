@@ -91,8 +91,8 @@ An empty queue is also the answer while the Server is [draining for
 maintenance](/en/protocol/availability), and the answer when the queue holds work
 this Runner is not eligible for. **A Runner cannot tell those cases apart**, and
 that is the single most common reason for a queue that looks stuck — see [Tags
-and routing](/en/runner/routing) and [Forwarding to
-onlinejudge.org](/en/runner/uva).
+and routing](/en/runner/routing) and [Forwarding to an external
+judge](/en/runner/external).
 
 ## What a Runner needs from the host it runs on
 
@@ -116,7 +116,7 @@ host](/en/runner/isolation):
 | [Languages](/en/runner/languages) | the toolchains that ship, and how they are named |
 | [The policy profile](/en/runner/policy) | what a Runner refuses to compile, and why |
 | [Problem types](/en/runner/problem-types) | what this Runner evaluates |
-| [Forwarding to onlinejudge.org](/en/runner/uva) | the Runner that judges nothing |
+| [Forwarding to an external judge](/en/runner/external) | the Runner that judges nothing |
 
 Somebody writing a Runner of their own wants [Protocol](/en/protocol) instead:
 this section describes the implementation that ships, that one describes the

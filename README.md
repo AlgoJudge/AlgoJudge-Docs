@@ -13,8 +13,8 @@ It documents the five runtime repositories:
 [`AlgoJudge-Server`](https://github.com/AlgoJudge/AlgoJudge-Server),
 [`AlgoJudge-Client`](https://github.com/AlgoJudge/AlgoJudge-Client),
 [`AlgoJudge-Runner`](https://github.com/AlgoJudge/AlgoJudge-Runner),
-[`AlgoJudge-Runner-UVa`](https://github.com/AlgoJudge/AlgoJudge-Runner-UVa) and
-[`AlgoJudge-Ops`](https://github.com/AlgoJudge/AlgoJudge-Ops).
+[`AlgoJudge-External-Runner`](https://github.com/AlgoJudge/AlgoJudge-External-Runner)
+and [`AlgoJudge-Ops`](https://github.com/AlgoJudge/AlgoJudge-Ops).
 
 It is **not** `AlgoJudge-Design`. That repository holds internal working
 documents with statuses, and a document does not appear here because it exists
@@ -169,7 +169,7 @@ operator stands up serve it too.
 | [`AlgoJudge-Server`](https://github.com/AlgoJudge/AlgoJudge-Server) | the domain model, the permission model, and `openapi.json`, from which the REST reference is generated at build time |
 | [`AlgoJudge-Client`](https://github.com/AlgoJudge/AlgoJudge-Client) | every screen the `/client/` section describes, and the Polish glossary the Polish pages are checked against |
 | [`AlgoJudge-Runner`](https://github.com/AlgoJudge/AlgoJudge-Runner) | what a Runner is, what it needs, and how it is isolated |
-| [`AlgoJudge-Runner-UVa`](https://github.com/AlgoJudge/AlgoJudge-Runner-UVa) | the forwarding Runner, and why its verdict is somebody else's |
+| [`AlgoJudge-External-Runner`](https://github.com/AlgoJudge/AlgoJudge-External-Runner) | the forwarding Runner, and why its verdict is somebody else's |
 | [`AlgoJudge-Ops`](https://github.com/AlgoJudge/AlgoJudge-Ops) | everything in `/install/`. Ops is the subject of that section, not the host of this site |
 | `AlgoJudge-Design` | the accepted Server–Runner contract, which prevails over `/protocol/` on any divergence |
 
