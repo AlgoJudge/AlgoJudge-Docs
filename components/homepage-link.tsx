@@ -20,9 +20,9 @@ export function HomepageLink({ locale }: { locale: string }) {
     return (
         <a
             href={HOMEPAGE}
-            className="-order-1 mb-2 flex items-center gap-2 rounded-lg border bg-fd-secondary/50 px-2.5 py-2 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
+            className="-order-1 mb-2 flex items-center gap-2 px-2 text-sm text-fd-muted-foreground transition-colors hover:text-fd-foreground"
         >
-            <ExternalLink className="size-4.5 shrink-0" />
+            <ExternalLink className="size-4 shrink-0" />
             {text[locale] ?? text.en}
         </a>
     );
