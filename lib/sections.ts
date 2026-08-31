@@ -23,6 +23,17 @@ export interface Section {
     readonly owner: string;
     /** Whether Polish is authored here, per the language policy of 2026-08-09. */
     readonly polish: boolean;
+    /**
+     * **The repository this section documents, linked from its own sidebar.**
+     *
+     * Usually the owner, and for four sections it is exactly the owner. It is a
+     * separate field because one section's owner is not a repository a reader
+     * should be sent to: `protocol` is versioned by `AlgoJudge-Design`, which
+     * holds internal working documents with statuses, and this site exists in
+     * order not to be that. So `protocol` links nowhere, and says so here
+     * rather than by omission.
+     */
+    readonly repository: string | null;
     readonly title: Readonly<Record<"en" | "pl", string>>;
     readonly description: Readonly<Record<"en" | "pl", string>>;
 }
@@ -32,6 +43,7 @@ export const sections: readonly Section[] = [
         slug: "install",
         owner: "AlgoJudge-Ops",
         polish: true,
+        repository: "AlgoJudge-Ops",
         title: { en: "Install and operate", pl: "Instalacja i utrzymanie" },
         description: {
             en: "Standing up an installation, keeping it running, and getting it back.",
@@ -42,6 +54,7 @@ export const sections: readonly Section[] = [
         slug: "client",
         owner: "AlgoJudge-Client",
         polish: true,
+        repository: "AlgoJudge-Client",
         title: { en: "Using AlgoJudge", pl: "Korzystanie z AlgoJudge" },
         description: {
             en: "The application itself, for the people who compete in it and the people who run it.",
@@ -52,6 +65,7 @@ export const sections: readonly Section[] = [
         slug: "server",
         owner: "AlgoJudge-Server",
         polish: false,
+        repository: "AlgoJudge-Server",
         title: { en: "Server", pl: "Server" },
         description: {
             en: "The domain model, the permission model, and the REST reference.",
@@ -62,6 +76,7 @@ export const sections: readonly Section[] = [
         slug: "runner",
         owner: "AlgoJudge-Runner",
         polish: false,
+        repository: "AlgoJudge-Runner",
         title: { en: "Runner", pl: "Runner" },
         description: {
             en: "The machines that evaluate submissions, and how to run one.",
@@ -72,6 +87,7 @@ export const sections: readonly Section[] = [
         slug: "protocol",
         owner: "AlgoJudge-Design",
         polish: false,
+        repository: null,
         title: { en: "Protocol", pl: "Protokół" },
         description: {
             en: "The contract between a Server and a Runner.",
@@ -81,6 +97,11 @@ export const sections: readonly Section[] = [
 ] as const;
 
 export const sectionSlugs = sections.map((section) => section.slug);
+
+/** Where a repository lives. The organisation holds every one of them. */
+export const ORGANISATION = "https://github.com/AlgoJudge";
+
+export const repositoryUrl = (name: string) => `${ORGANISATION}/${name}`;
 
 /** The sections Polish is authored for, by their Polish names. */
 export const polishSections = sections.filter((section) => section.polish);

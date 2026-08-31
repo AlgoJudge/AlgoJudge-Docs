@@ -16,7 +16,8 @@
     "check:glossary": "node scripts/check-glossary.mjs",
     "snapshot": "node scripts/snapshot.mjs",
     "check:no-playground": "node scripts/check-no-playground.mjs",
-    "og": "node scripts/generate-og.mjs"
+    "og": "node scripts/generate-og.mjs",
+    "check:section-links": "node scripts/check-section-links.mjs"
   },
   "dependencies": {
     "fumadocs-core": "16.15.4",

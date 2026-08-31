@@ -182,3 +182,29 @@ had assigned the nginx rules to Ops; owner, 2026-08-30.
 record, and `AlgoJudge-Design/specifications/docs/URL_CONTRACT.md` is the URL
 contract in full. Both carry the corrections made when this repository was built
 and the specification met the code.
+
+## Licence
+
+**Two licences, because this repository holds two different things.**
+
+| What | Licence | File |
+|---|---|---|
+| The site's own source — the application, the scripts, the checks, the deployment files | MIT | `LICENSE` |
+| The documentation itself: every page under `content/docs/`, in both languages | CC BY 4.0 | `LICENSE-DOCS` |
+| Code shown inside a page — a command, a compose fragment, a configuration sample | MIT | `LICENSE` |
+
+CC BY 4.0 is the prose equivalent of MIT: copy it, change it, put it in something
+you sell, and the only condition is that you say where it came from. It is not
+CC BY-SA, which would make attribution contagious the way the GPL does, and not
+CC0, which would drop the attribution MIT itself asks for.
+
+The code samples are MIT rather than CC BY so that pasting a command out of a
+page carries no attribution obligation. That split is the usual one, and it is
+the reason the third row exists.
+
+Attribute as: **AlgoJudge documentation, © 2026 The AlgoJudge Authors, CC BY 4.0**,
+with a link to <https://docs.algojudge.pl>.
+
+`LICENSE-DOCS` is the legal code exactly as Creative Commons publishes it at
+<https://creativecommons.org/licenses/by/4.0/legalcode.txt>, byte for byte, so a
+copy of this repository carries the terms rather than a link to them.

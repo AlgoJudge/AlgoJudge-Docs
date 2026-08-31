@@ -2,5 +2,10 @@
   "title": "Using AlgoJudge",
   "description": "The application itself, for the people who compete in it and the people who run it.",
   "root": true,
-  "pages": ["index", "participant", "manager"]
+  "pages": [
+    "index",
+    "participant",
+    "manager",
+    "external:[AlgoJudge-Client](https://github.com/AlgoJudge/AlgoJudge-Client)"
+  ]
 }

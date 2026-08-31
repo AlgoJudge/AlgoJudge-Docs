@@ -72,6 +72,11 @@ is `sha256`, never `hash`; in prose, SHA-256.
   `npm run check:versions` refuses it.
 - Generated content is not committed: the REST reference under
   `content/docs/en/server/rest/` and everything in `.sources/` are build output.
+- **A section links its own repository from the foot of its sidebar**, written as
+  an `external:` entry last in its `meta.json`. Which repository is
+  `lib/sections.ts`, not the `meta.json` — a section that documents no
+  repository a reader should open declares `repository: null` and links nothing.
+  `npm run check:section-links` holds the two halves together.
 
 ## Before a pull request
 
@@ -79,10 +84,18 @@ is `sha256`, never `hash`; in prose, SHA-256.
 npm run lint && npm run typecheck && npm run build
 npm run check:links && npm run check:versions
 npm run check:translations && npm run check:structure && npm run check:glossary
+npm run check:section-links && npm run check:no-playground
 ```
 
 **A new check is not trusted until it has been shown to fail.** Break the thing
 it is meant to catch, watch it go red, put it back.
+
+## Licence
+
+**The code is MIT and the pages are CC BY 4.0**, and `README.md` has the table
+that says which is which. A page carries prose under CC BY and its samples under
+MIT, so a reader pasting a command owes nobody a credit. `LICENSE-DOCS` is
+Creative Commons' own legal code, byte for byte — do not edit it.
 
 ## Versions and dependencies
 

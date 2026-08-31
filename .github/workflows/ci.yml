@@ -57,6 +57,9 @@ jobs:
       - name: Polish uses the interface's own words
         run: npm run check:glossary
 
+      - name: Each section links the repository it documents
+        run: npm run check:section-links
+
       # Reads `out/`, so it has to follow the build.
       - name: The site contacts no installation
         run: npm run check:no-playground

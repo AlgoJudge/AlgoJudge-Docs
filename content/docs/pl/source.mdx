@@ -1,0 +1,60 @@
+---
+title: Kod źródłowy
+description: Gdzie powstaje każda część AlgoJudge i co wolno zrobić z tymi stronami.
+source: en/source.mdx
+sourceSha256: e38d5b0f58878f48ba2b0187f022aa210df5e2be40a769852b0aea971cb54102
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { AppWindow, Boxes, Cpu, Server } from "lucide-react";
+
+AlgoJudge jest otwartoźródłowe. Trzy programy opisane w tej dokumentacji
+powstają jawnie, każdy w osobnym repozytorium.
+
+<Cards>
+  <Card
+    icon={<AppWindow />}
+    href="https://github.com/AlgoJudge/AlgoJudge-Client"
+    title="AlgoJudge-Client"
+    description="Wszystkie ekrany opisane w Korzystaniu z AlgoJudge. React i TypeScript."
+  />
+  <Card
+    icon={<Server />}
+    href="https://github.com/AlgoJudge/AlgoJudge-Server"
+    title="AlgoJudge-Server"
+    description="REST API i wszystko, co ma przetrwać. ASP.NET Core i PostgreSQL. Nigdy nie uruchamia nadesłanego rozwiązania."
+  />
+  <Card
+    icon={<Cpu />}
+    href="https://github.com/AlgoJudge/AlgoJudge-Runner"
+    title="AlgoJudge-Runner"
+    description="Maszyny oceniające zgłoszenia i obrazy językowe, w których je oceniają."
+  />
+  <Card
+    icon={<Boxes />}
+    href="https://github.com/AlgoJudge"
+    title="Organizacja AlgoJudge"
+    description="Te trzy i wszystko inne, co powstaje w projekcie."
+  />
+</Cards>
+
+Każda sekcja tej witryny ma też odnośnik do własnego repozytorium na końcu
+paska bocznego. Stos instalacyjny ma osobne repozytorium, podlinkowane
+z [Instalacji i utrzymania](/pl/install) — czyli z sekcji, która go opisuje.
+
+## Co wolno z tym zrobić
+
+**Kod jest na MIT, a te strony na CC BY 4.0.** Obie licencje pozwalają kopiować,
+zmieniać i sprzedawać; obie wymagają tylko zachowania informacji o pochodzeniu.
+
+| Co | Licencja |
+|---|---|
+| Powyższe programy i kod samej witryny | MIT |
+| Tekst tych stron, w obu językach | CC BY 4.0 |
+| Polecenie, fragment compose albo przykład konfiguracji pokazany na stronie | MIT |
+
+Przykłady są na MIT, a nie na CC BY, i to celowo: wklejenie polecenia ze strony
+nie powinno zobowiązywać do podania źródła.
+
+Jak podać źródło stron: **AlgoJudge documentation, © 2026 The AlgoJudge Authors,
+CC BY 4.0**, z odnośnikiem do `https://docs.algojudge.pl`.

@@ -9,6 +9,7 @@
     "identity",
     "api",
     "events",
-    "..."
+    "...",
+    "external:[AlgoJudge-Server](https://github.com/AlgoJudge/AlgoJudge-Server)"
   ]
 }
