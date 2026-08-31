@@ -1,23 +1,26 @@
-// **The repository link in a section's sidebar, against the one source that
-// says which repository that is.**
+// **The two links at the foot of a section's sidebar, against the one source
+// that says what they are.**
 //
-// Fumadocs builds a sidebar from `meta.json`, so the link has to be written
-// there - once per section per language, six files today. `lib/sections.ts`
-// already carries the mapping, and a mapping written twice is a mapping that
-// drifts. This is the check that stops it: the entry must be present, must
-// name the declared repository, and must be last, because a link that leaves
-// the site does not belong in the middle of a page list.
+// Fumadocs builds a sidebar from `meta.json`, so both links have to be written
+// there - twelve entries across six files today. `lib/sections.ts` already
+// carries the repository and the licence, and a fact written twice is a fact
+// that drifts. This is the check that stops it: the pair must be present, must
+// name what is declared, must be in that order, and must be the last two
+// entries, because links that leave the site do not belong in the middle of a
+// page list.
 //
 // A section may also declare no repository. `protocol` does, on purpose - it is
 // versioned by `AlgoJudge-Design`, which holds internal working documents, and
-// this site exists in order not to send a reader there. So the absence is
-// checked too: an `external:` entry in a section that declares none is a link
-// somebody added without deciding what it means.
+// this site exists in order not to send a reader there; it describes a contract
+// between two programs rather than one program, so there is no single
+// repository to name. So the absence is checked too, and it is the absence of
+// **both**: a licence link with no repository beside it would be a licence
+// belonging to nothing.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { i18nConfig } from "../lib/i18n.ts";
-import { repositoryUrl, sections } from "../lib/sections.ts";
+import { licenceLabel, licenceUrl, repositoryUrl, sections } from "../lib/sections.ts";
 
 const ROOT = "content/docs";
 
@@ -51,27 +54,31 @@ for (const section of sections) {
             continue;
         }
 
-        const want = `external:[${section.repository}](${repositoryUrl(section.repository)})`;
+        const want = [
+            `external:[${section.repository}](${repositoryUrl(section.repository)})`,
+            `external:[${licenceLabel[locale] ?? licenceLabel.en}](${licenceUrl(section.licence)})`,
+        ];
 
-        if (links.length !== 1) {
-            fail(where, `expected exactly one external link, found ${links.length}`);
-            console.error(`         it should be ${want}`);
+        if (links.length !== want.length) {
+            fail(where, `expected ${want.length} external link(s), found ${links.length}`);
+            for (const one of want) console.error(`         want: ${one}`);
             continue;
         }
 
-        if (links[0] !== want) {
-            fail(where, "the repository link does not match lib/sections.ts");
-            console.error(`         meta.json     : ${links[0]}`);
-            console.error(`         lib/sections.ts: ${want}`);
+        const wrong = want.findIndex((one, index) => links[index] !== one);
+        if (wrong !== -1) {
+            fail(where, "the repository and licence links do not match lib/sections.ts, or are the wrong way round");
+            console.error(`         meta.json      : ${links[wrong]}`);
+            console.error(`         lib/sections.ts: ${want[wrong]}`);
             continue;
         }
 
-        if (pages.at(-1) !== want) {
-            fail(where, "the repository link is not the last entry");
-            console.error(`         a link that leaves the site belongs at the end of the page list`);
+        if (JSON.stringify(pages.slice(-want.length)) !== JSON.stringify(want)) {
+            fail(where, "the repository and licence links are not the last two entries");
+            console.error(`         links that leave the site belong at the end of the page list`);
         }
     }
 }
 
 if (failed) process.exit(1);
-console.log(`  ok   ${checked} section navigation(s) link the repository lib/sections.ts declares`);
+console.log(`  ok   ${checked} section navigation(s) carry the links lib/sections.ts declares`);

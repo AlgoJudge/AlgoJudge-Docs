@@ -15,6 +15,7 @@
     "schedule",
     "reverse-proxy",
     "troubleshooting",
-    "external:[AlgoJudge-Ops](https://github.com/AlgoJudge/AlgoJudge-Ops)"
+    "external:[AlgoJudge-Ops](https://github.com/AlgoJudge/AlgoJudge-Ops)",
+    "external:[Licence](https://github.com/AlgoJudge/AlgoJudge-Ops/blob/main/LICENSE)"
   ]
 }

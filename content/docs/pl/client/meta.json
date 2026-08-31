@@ -6,6 +6,7 @@
     "index",
     "participant",
     "manager",
-    "external:[AlgoJudge-Client](https://github.com/AlgoJudge/AlgoJudge-Client)"
+    "external:[AlgoJudge-Client](https://github.com/AlgoJudge/AlgoJudge-Client)",
+    "external:[Licencja](https://github.com/AlgoJudge/AlgoJudge-Client/blob/main/LICENSE)"
   ]
 }

@@ -11,6 +11,7 @@
     "policy",
     "problem-types",
     "uva",
-    "external:[AlgoJudge-Runner](https://github.com/AlgoJudge/AlgoJudge-Runner)"
+    "external:[AlgoJudge-Runner](https://github.com/AlgoJudge/AlgoJudge-Runner)",
+    "external:[Licence](https://github.com/AlgoJudge/AlgoJudge-Runner/blob/main/LICENSE)"
   ]
 }

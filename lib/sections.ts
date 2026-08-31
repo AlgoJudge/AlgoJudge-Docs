@@ -120,6 +120,12 @@ export const ORGANISATION = "https://github.com/AlgoJudge";
 
 export const repositoryUrl = (name: string) => `${ORGANISATION}/${name}`;
 
+/**
+ * What the sidebar calls the licence link. The file is `LICENSE` because that is
+ * the conventional name; this is prose beside a page list, so it is a word.
+ */
+export const licenceLabel: Record<string, string> = { en: "Licence", pl: "Licencja" };
+
 /** The licence file itself, on the default branch, so the link opens the text. */
 export const licenceUrl = (name: string) => `${repositoryUrl(name)}/blob/main/LICENSE`;
 

@@ -72,16 +72,20 @@ is `sha256`, never `hash`; in prose, SHA-256.
   `npm run check:versions` refuses it.
 - Generated content is not committed: the REST reference under
   `content/docs/en/server/rest/` and everything in `.sources/` are build output.
-- **A section's front page ends with the licence of the software it describes**,
-  rendered from `lib/sections.ts` by `components/licence-note.tsx` - not written
-  into a page, and not repeated on the pages below it. `licence` is a repository
-  for every section including `protocol`, which is where it differs from
-  `repository`.
-- **A section links its own repository from the foot of its sidebar**, written as
-  an `external:` entry last in its `meta.json`. Which repository is
-  `lib/sections.ts`, not the `meta.json` — a section that documents no
-  repository a reader should open declares `repository: null` and links nothing.
-  `npm run check:section-links` holds the two halves together.
+- **A section's front page ends with where its software lives and on what
+  terms**, rendered from `lib/sections.ts` by `components/licence-note.tsx` —
+  not written into a page, and not repeated on the pages below it. `licence` is
+  a repository for every section including `protocol`, which is where it differs
+  from `repository`; the *source is in* sentence is skipped where `repository`
+  is `null`, because a section describing a contract between two programs has no
+  one repository to name.
+- **The same two facts are the last two entries of a section's sidebar**, as
+  `external:` entries in its `meta.json`: the repository, then the licence.
+  Which repository, which licence and what the licence link is called in each
+  language are all `lib/sections.ts`, never the `meta.json`. A section that
+  documents no repository a reader should open declares `repository: null` and
+  carries **neither** link. `npm run check:section-links` holds the halves
+  together, order included.
 
 ## Before a pull request
 
