@@ -1,16 +1,11 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 import { i18nConfig, type Locale } from "@/lib/i18n";
-import { documented, HOMEPAGE } from "@/lib/site";
+import { documented } from "@/lib/site";
 
 const tagline: Record<Locale, string> = {
     en: "AlgoJudge documentation",
     pl: "Dokumentacja AlgoJudge",
-};
-
-const homepage: Record<Locale, string> = {
-    en: "The project",
-    pl: "Strona projektu",
 };
 
 export function baseOptions(locale: string): BaseLayoutProps {
@@ -34,11 +29,12 @@ export function baseOptions(locale: string): BaseLayoutProps {
             ),
             url: `/${language}`,
         },
-        // **No section links, deliberately.** Every section is a root folder, so
-        // the sidebar already carries a switcher for them at the top; listing
+        // **No links at all here, deliberately.** Every section is a root folder,
+        // so the sidebar already carries a switcher for them at the top; listing
         // the same five again put two navigations for one thing side by side.
-        // What is not duplicated is the way back out of the documentation.
-        links: [{ text: homepage[language], url: HOMEPAGE, external: true }],
+        // The one link that is not a duplicate — the way back out to the project
+        // — sits in the sidebar footer instead, above the language picker:
+        // `components/homepage-link.tsx`.
         githubUrl: "https://github.com/AlgoJudge",
     };
 }
