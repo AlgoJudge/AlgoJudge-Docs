@@ -16,10 +16,10 @@ It documents the five runtime repositories:
 [`AlgoJudge-External-Runner`](https://github.com/AlgoJudge/AlgoJudge-External-Runner)
 and [`AlgoJudge-Ops`](https://github.com/AlgoJudge/AlgoJudge-Ops).
 
-It is **not** `AlgoJudge-Design`. That repository holds internal working
-documents with statuses, and a document does not appear here because it exists
-there. Public documentation addresses a different reader in a different
-register.
+**Public documentation is written here**, for a reader who does not have the
+source open. That is a different register from an internal working document, and
+nothing is published because it was written somewhere else — a page says what
+the code does.
 
 ## Addresses
 
@@ -69,8 +69,7 @@ to be able to find the button it names.
 **Retention is total: nothing is deleted.** Under incompatible `0.x` releases,
 old documentation is the only documentation that works for an existing
 installation. Archived versions are served `noindex` with a banner naming the
-current one, and **no `canonical`** — an older page is not the same page, and
-pointing a reader at a newer procedure would be actively harmful.
+current one, and **no `canonical`** — an older page is not the same page.
 
 **There are no version directories yet**, because no product repository carries
 a `v*` tag. Today each section's content lives at its version-less path, which
@@ -78,11 +77,9 @@ a `v*` tag. Today each section's content lives at its version-less path, which
 section to `v0.1/` and the version-less path becomes a 302 to the newest. There
 is **no backfill**: a version directory is created on release day or not at all.
 
-A snapshot writes three things, and **all three are committed**: the copied
-pages, `versions.json` — which the build reads to decide what is archived — and
-`deploy/redirects.conf`, which the image's nginx includes. It also rewrites the
-copies' links and translation fingerprints to point inside the snapshot, so an
-archive stops moving the moment it is cut.
+A snapshot writes three things and **all three are committed**: the copied
+pages, `versions.json` and `deploy/redirects.conf`, which the image's nginx
+includes.
 
 ## Building it
 
@@ -111,6 +108,10 @@ output is not source.
 | `npm run og` | Regenerate the Open Graph card from the wordmark |
 | `npm run snapshot` | The release-day version snapshot |
 
+The theme is Fumadocs' **ocean**. The favicon is the square mark `algojudge.pl`
+already uses and `public/og.png` is generated from the wordmark;
+[BRANDING.md](BRANDING.md) says where both came from and how to check the copies.
+
 ### Two dependencies are deliberately not the newest
 
 Both are the newest version that **works**, which is not the same thing:
@@ -125,27 +126,6 @@ Both are the newest version that **works**, which is not the same thing:
 Raise either only after checking that the other half of the toolchain has caught
 up. Everything else here is the current release.
 
-## How it presents itself
-
-`https://docs.algojudge.pl` is written into `lib/site.ts` as a constant, not read
-from the environment: a static export bakes `canonical`, `og:url` and the
-sitemap in at build time, and a build that guessed the wrong host would publish
-links to a site nobody serves. There is one deployment, so a variable would
-suggest a choice it does not have.
-
-Every page carries a description, a canonical address, Open Graph and Twitter
-card tags, and `hreflang` alternates **only for languages that really have the
-page** — a fallback is the English text at a Polish address, so advertising it
-as a translation would be a lie to a crawler. Those, and archived versions,
-carry `noindex` and stay out of `sitemap.xml`.
-
-Page titles append the site: *Backup | AlgoJudge Docs*. The two landing pages
-opt out, or they would say it twice.
-
-The theme is Fumadocs' **ocean**. The favicon is the square mark
-`algojudge.pl` already uses, and `public/og.png` is generated from the wordmark
-— see `BRANDING.md` for where both came from and how to check the copies.
-
 ## Deploying it
 
 ```bash
@@ -155,7 +135,10 @@ docker compose up -d
 
 The image serves **HTTP only**, and the host it runs on terminates TLS — the
 same arrangement as the `algojudge-client` image. This site is deployed to
-`docs.algojudge.pl` and nowhere else.
+`docs.algojudge.pl` and nowhere else, which is why that address is a constant in
+`lib/site.ts` rather than an environment variable: a static export bakes
+`canonical`, `og:url` and the sitemap in at build time, so a build that guessed
+the wrong host would publish links to a site nobody serves.
 
 **`AlgoJudge-Ops` does not serve it.** Ops is an *installation's* stack: one
 certificate, one site, `server_name _`, and the hostname taken from the request.
@@ -171,13 +154,6 @@ operator stands up serve it too.
 | [`AlgoJudge-Runner`](https://github.com/AlgoJudge/AlgoJudge-Runner) | what a Runner is, what it needs, and how it is isolated |
 | [`AlgoJudge-External-Runner`](https://github.com/AlgoJudge/AlgoJudge-External-Runner) | the forwarding Runner, and why its verdict is somebody else's |
 | [`AlgoJudge-Ops`](https://github.com/AlgoJudge/AlgoJudge-Ops) | everything in `/install/`. Ops is the subject of that section, not the host of this site |
-| `AlgoJudge-Design` | the accepted Server–Runner contract, which prevails over `/protocol/` on any divergence |
-
-## Where the decisions are
-
-`AlgoJudge-Design/adr/DOCUMENTATION_SITE_2026-08-09.md` is the accepted decision
-record, and `AlgoJudge-Design/specifications/docs/URL_CONTRACT.md` is the URL
-contract in full.
 
 ## Contributing
 
