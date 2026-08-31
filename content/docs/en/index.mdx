@@ -38,10 +38,24 @@ The consequence worth knowing early: **adding a new kind of problem does not
 require a change to the Server.** The Client learns to draw it and a Runner
 learns to judge it.
 
-## A word on versions
+## Which version this is
+
+**Nothing has been released yet**, so this describes what is on `main` — which
+is why the name at the top says *unreleased* rather than a number. The first
+release cuts `v0.1`, and from then on the address carries it:
+`/en/install/v0.1/backup`.
+
+**Each section is versioned by its own source.** `/install/` moves when
+`AlgoJudge-Ops` releases, `/server/` when the Server does, `/protocol/` when the
+contract changes. There is no single version of this site, because the products
+do not release together — which is why the version sits inside the section
+rather than in front of it.
+
+Granularity is **minor**. A patch release updates its directory in place, and if
+that would change documented behaviour it was not a patch.
 
 AlgoJudge is `0.x`, and **a `0.x` release carries no promise of backward
 compatibility.** Every minor release comes with a note saying what broke and
-what to do about it. Documentation for older versions is never deleted, because
-for an installation that has not upgraded it is the only documentation that
-works.
+what to do about it. **Documentation for older versions is never deleted**, and
+never written after the fact: it is cut on release day or not at all. For an
+installation that has not upgraded, the old page is the only one that works.

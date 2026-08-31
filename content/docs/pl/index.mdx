@@ -1,12 +1,12 @@
 ---
 title: Dokumentacja AlgoJudge
-description: Samodzielnie hostowane oprogramowanie do konkursów i kursów programistycznych, z automatyczną oceną nadsyłanych rozwiązań.
+description: Otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.
 source: en/index.mdx
-sourceSha256: e586b97bb3f85ef7a297dc9e8d9fe8728efa4f418469e5878293b616977c511a
+sourceSha256: c1904637bd75210d108a37c589ae10736518beb8e74dab458d76f7db7e0224f0
 ---
 
-AlgoJudge to otwarte, samodzielnie hostowane oprogramowanie do konkursów i
-kursów programistycznych, z automatyczną oceną nadsyłanych rozwiązań.
+AlgoJudge to otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów
+i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.
 
 Uruchamiasz je u siebie. Nikt poza Tobą nie przechowuje kont uczestników, zadań
 ani wyników.
@@ -20,7 +20,7 @@ ani wyników.
 | instalujesz AlgoJudge na własnej maszynie | [Instalacja i utrzymanie](/pl/install) |
 | piszesz coś, co korzysta z API | [Server](/pl/server) — po angielsku |
 | uruchamiasz maszynę oceniającą | [Runner](/pl/runner) — po angielsku |
-| piszesz własnego Runnera | [Protokół](/pl/protocol) — po angielsku |
+| piszesz własnego Runnera | [Protocol](/pl/protocol) — po angielsku |
 
 ## Z czego się składa
 
@@ -37,11 +37,27 @@ Trzy programy, a każdy z nich odmawia robienia tego, co należy do pozostałych
   domowym routerem, bez własnego adresu.
 
 Warto od razu wiedzieć, co z tego wynika: **dodanie nowego rodzaju zadania nie
-wymaga zmiany w Serverze.** Client uczy się go rysować, a Runner oceniać.
+wymaga zmiany w Serverze.** Wystarczy, że Client nauczy się go wyświetlać,
+a Runner — oceniać rozwiązania.
 
-## Słowo o wersjach
+## Której wersji dotyczy
+
+**Nic jeszcze nie zostało wydane**, więc ta dokumentacja opisuje stan gałęzi
+`main` — dlatego przy nazwie u góry stoi *przed wydaniem*, a nie numer. Pierwsze
+wydanie utworzy `v0.1` i od tej pory numer będzie w adresie:
+`/pl/install/v0.1/backup`.
+
+**Każda sekcja ma własne wersjonowanie.** `/install/` zmienia się przy wydaniu
+`AlgoJudge-Ops`, `/server/` przy wydaniu Servera, `/protocol/` przy zmianie
+kontraktu. Nie ma jednej wersji całej witryny, bo produkty nie wydają się razem
+— i dlatego numer stoi wewnątrz sekcji, a nie przed nią.
+
+Wersjonujemy z dokładnością do **minor**. Wydanie patch aktualizuje swój katalog
+w miejscu, a jeżeli miałoby zmienić opisane zachowanie, to nie było wydanie
+patch.
 
 AlgoJudge jest w fazie `0.x`, a **wydanie `0.x` nie daje żadnej obietnicy
 zgodności wstecznej.** Do każdego wydania minor dołączamy notatkę: co się zepsuło
-i co z tym zrobić. Dokumentacji starszych wersji nigdy nie usuwamy — dla
-instalacji, której nikt nie zaktualizował, jest jedyną, która działa.
+i co z tym zrobić. **Dokumentacji starszych wersji nigdy nie usuwamy** i nigdy
+nie dopisujemy jej po fakcie — powstaje w dniu wydania albo wcale. Dla
+instalacji, której nikt nie zaktualizował, stara strona jest jedyną działającą.

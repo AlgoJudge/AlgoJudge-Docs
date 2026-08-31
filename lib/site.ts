@@ -13,6 +13,28 @@ export const SITE_URL = "https://docs.algojudge.pl";
 
 export const SITE_NAME = "AlgoJudge";
 
+/** The project's own site. The documentation is a subdomain of it, not a rival. */
+export const HOMEPAGE = "https://algojudge.pl/";
+
+/**
+ * **Which version of the product this documentation describes.**
+ *
+ * `released` is `null` until the first release, and that is the honest state:
+ * no product repository carries a `v*` tag, so there is no version to name.
+ * The accepted decision of 2026-08-09 says a version directory is created on
+ * release day and never retroactively, so until then the site documents what is
+ * on `main` and says so rather than implying a version exists.
+ *
+ * On the day `v0.1.0` is cut, `npm run snapshot -- v0.1` makes the directory and
+ * this becomes `"0.1"`.
+ */
+export const documented: { released: string | null; label: Record<Locale, string> } = {
+    released: null,
+    // Short enough to sit on one line beside the name; "przed wydaniem" wrapped
+    // and pushed the title onto two.
+    label: { en: "unreleased", pl: "przed 0.1" },
+};
+
 /**
  * Appended to every page title. **Not `SITE_NAME`**: that one names the product,
  * and is what `applicationName` and the card's alt text say. This names the
@@ -32,7 +54,7 @@ export const site: Record<Locale, { name: string; description: string }> = {
     pl: {
         name: "Dokumentacja AlgoJudge",
         description:
-            "AlgoJudge to otwarte, samodzielnie hostowane oprogramowanie do konkursów i kursów programistycznych, z automatyczną oceną nadsyłanych rozwiązań. Instalacja, prowadzenie konkursu i praca z API.",
+            "AlgoJudge to otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.",
     },
 };
 
