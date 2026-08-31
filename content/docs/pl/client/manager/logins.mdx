@@ -1,0 +1,138 @@
+---
+title: Logowania zewnętrzne i platformy LTI
+description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
+source: en/client/manager/logins.mdx
+sourceSha256: 5eb223d18ed3c977f7f6577346b136b91986d4cbcca9cd3a32b906e3bc52e240
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Dwa obszary, jedno uprawnienie — `provider:manage` — bo gdy rejestrujesz
+platformę LTI, powstaje wiersz dostawcy: to ta sama decyzja o tym, komu ta
+instalacja ufa, że poświadczy, kim ktoś jest.
+
+Po `system:administrator` jest to najniebezpieczniejszy klucz w panelu i nie ma
+go w dostarczanym szablonie `manager`.
+
+## Logowania zewnętrzne
+
+Których dostawców tożsamości ta instalacja przyjmuje i ile wart jest tu token od
+każdego z nich.
+
+### Rejestracja
+
+| Pole | |
+|---|---|
+| Nazwa | to, co pisze przycisk logowania |
+| Slug | pojawia się w adresie logowania. Zmiana psuje adres powrotny |
+| Issuer | stąd discovery znajduje endpointy i klucze. HTTPS, poza pętlą zwrotną |
+| Client id, client secret | sekret jest przechowywany i **nigdy nie odczytywany z powrotem** |
+| Ścieżka claimu | nazwy po kropkach, `groups` albo `realm_access.roles` |
+| Gdzie ludzie zarządzają swoimi danymi | konta należącego do dostawcy nie da się edytować tutaj, więc ekran odsyła ich tam |
+| Gdzie ludzie usuwają konto u dostawcy | oferowane obok przycisku usuwającego konto tutaj. Puste — link nie jest pokazywany |
+
+Ekran wypisuje **adres powrotny do wpisania u dostawcy**, z przyciskiem
+kopiowania. Pomyłka wyjdzie dopiero na końcu czyjegoś pierwszego logowania, i to
+komunikatem od dostawcy, a nie stąd.
+
+Puste pole sekretu niczego nie kasuje. Znaczy *zostaw przechowany bez zmian*, a
+opis mówi, w którym z dwóch stanów jesteś.
+
+### Mapowanie
+
+Reguła mapowania to **wartość ze ścieżki claimu** i **szablon uprawnień**, który
+ona nadaje. To cały język: ścieżka po kropkach i wartość, nigdy wyrażenie —
+wyrażenie w konfiguracji dostawcy jest kodem wykonywanym na zawartości tokenu.
+
+**Gdy nic nie pasuje** — wybierasz między odmową logowania a nadaniem zestawu
+domyślnego. Dotyczy zarówno pierwszego logowania, jak i kogoś, kto wypadł z
+grupy.
+
+<Callout type="warn" title="Dwie reguły są egzekwowane i nie da się ich wyłączyć">
+`system:administrator` nigdy nie może zostać nadany przez claim, a nikt nie
+zmapuje uprawnienia, którego sam nie ma. Obu pilnuje Server w każdej
+konfiguracji — łącznie z drogą na odwrót, gdzie regułę pisze się najpierw, a
+uprawnienie dopisuje do szablonu potem.
+</Callout>
+
+Nadanie z mapowania jest **przepisywane przy każdym logowaniu**, co tnie w obie
+strony: gdy zmienisz szablon, dosięgniesz tych osób przy ich następnym logowaniu,
+a gdy poprawisz ich nadanie ręcznie, nie dosięgniesz ich wcale. Lista Nadań
+oznacza taki wiersz dostawcą, od którego przyszedł, i nie pozwala go edytować.
+Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
+
+### Kolejka usunięć kont
+
+Obok dostawców jest kolejka kont zgłoszonych do usunięcia — w większości przez
+kanał zwrotny dostawcy, i dlatego stoi razem z dostawcą, który go otworzył.
+
+- **Oczekuje** mieści się w swoich dwudziestu czterech godzinach i możesz to
+  zatrzymać.
+- **Ma uprawnienia systemowe** to ten wpis, który ktoś musi przeczytać:
+  powiązanie zostało zdjęte, a konta **nie** opróżniono. Webhook zdolny uciszyć
+  administratora jest wektorem ataku, a nie funkcją.
+
+Dostawca zgłasza usunięcia tylko wtedy, gdy włączysz mu ten kanał i ustawisz jego
+sekret.
+
+## Platformy LTI
+
+Platformy kursowe, które mogą otwierać aktywności swoim studentom. AlgoJudge
+implementuje LTI 1.3; **nie jest certyfikowany przez 1EdTech**, i ekran to mówi.
+
+Platformę rejestrujesz **ręcznie, świadomą decyzją** — jedynego ustawienia, które
+naprawdę się liczy, platforma nie może nadać sobie sama.
+
+| | |
+|---|---|
+| Issuer, client id, deployment id | **nie da się ich potem zmienić**: wisi na nich każde uruchomienie i każde powiązanie tożsamości |
+| Adresy zestawu kluczy, tokenu i autoryzacji | należą do platformy |
+| Przyjmuj uruchomienia | odwracalny przełącznik. Platformy nie usuniesz, dopóki jakikolwiek kurs ma z niej aktywność |
+
+**Nie ma tu żadnego sekretu**, a jego brak nie jest luką: LTI uwierzytelnia
+narzędzie podpisem, a klucz prywatny narzędzia nigdy nie opuszcza Servera. **Co
+wpisać w platformie** wypisuje cztery adresy do wklejenia w konfigurację
+narzędzia zewnętrznego oraz parametry własne, bez których uruchomienie nie potrafi
+stwierdzić, kto przyszedł.
+
+<Callout type="warn" title="Orzekanie o tożsamości to ten niebezpieczny przełącznik">
+Gdy włączysz *ta platforma może orzekać, kim ktoś jest*, uruchomienie łączy się z
+kontem AlgoJudge o nazwie użytkownika, którą przysyła platforma — więc przejęty
+Moodle staje się drogą do tych kont. Domyślnie przełącznik jest wyłączony. Zostaw
+go tak, chyba że obie strony administrują ci sami ludzie.
+
+Zawęża go slug dostawcy tożsamości: kont, które nie przyszły przez tego dostawcę
+— lokalnych i administratorskich — nie da się w ten sposób przejąć.
+</Callout>
+
+### Oczekiwane rejestracje
+
+Platforma może zarejestrować się sama, jeśli ktoś tutaj na nią czeka. Utwórz
+oczekiwanie z notatką, co to jest, i przekaż adres osobie administrującej
+platformą — działa **raz, przez pół godziny**. Możesz je odwołać, zanim ktoś go
+użyje.
+
+### Podpięcia w kursach
+
+Stąd kursy sięgają po aktywności tej instalacji. Jedna aktywność może być
+podpięta w więcej niż jednym kursie, a uruchomienie **czeka, aż ktoś się na to
+zgodzi** — zgoda oznacza, że aktywność zasila oba dzienniki ocen. Nie cofniesz
+tego stąd: wysłane już oceny zostają tam, gdzie je wysłano, więc podpięcie
+usuwasz w kursie.
+
+Kursowi, który nie powinien niczego współdzielić, **daj mu własną kopię** —
+powstaje ona tak samo jak przy [kopiowaniu
+aktywności](/pl/client/manager/copying).
+
+**Kto jest w kursie** czyta listę uczestników platformy na żądanie — nic tutaj
+nie odświeża się samo — i pokazuje, ilu z nich ma konto tutaj. Dopasowuje po
+nazwie użytkownika przysyłanej przez platformę; **adres e-mail nigdy do tego nie
+służy**, a platforma, która nie wysyła nazw użytkowników, nie dopasuje nikogo.
+Gdy zapiszesz ich do aktywności, każdy dostaje powiązanie wstępne, dopóki sam jej
+nie otworzy.
+
+## Czym zajmuje się administrator
+
+Sam dostawca tożsamości nie jest częścią tego stosu. Działa obok niego, pod
+własną nazwą hosta, a wybór, instalacja i konfiguracja takiego dostawcy to
+[Instalacja i utrzymanie](/pl/install).

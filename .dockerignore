@@ -1,0 +1,26 @@
+# **`COPY . .` copies whatever is in the working tree, and `.gitignore` does not
+# apply to it.** Without this file the build copied the host's `node_modules`
+# over the `linux-musl` tree `npm ci` had just installed — on a Windows
+# workstation that means win32 binaries and `.bin` shims in a Linux image — and
+# dragged 96 MB of `out/` into the build context for no reason. It also made the
+# build non-hermetic: the result depended on what the host happened to be
+# carrying, including an `.env` that Git ignores and Docker does not.
+
+.git
+.gitignore
+.github
+
+node_modules
+.next
+.source
+.sources
+out
+
+.env
+.env.*
+!.env.example
+
+*.tsbuildinfo
+npm-debug.log*
+.DS_Store
+Thumbs.db

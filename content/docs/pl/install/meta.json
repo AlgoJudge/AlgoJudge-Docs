@@ -1,0 +1,21 @@
+{
+  "title": "Instalacja i utrzymanie",
+  "description": "Postawienie instalacji, utrzymanie jej i odzyskanie po awarii.",
+  "root": true,
+  "pages": [
+    "index",
+    "requirements",
+    "first-install",
+    "preconfiguration",
+    "identity",
+    "maintenance",
+    "backup",
+    "restore",
+    "update",
+    "schedule",
+    "reverse-proxy",
+    "troubleshooting",
+    "external:[AlgoJudge-Ops](https://github.com/AlgoJudge/AlgoJudge-Ops)",
+    "external:[Licencja](https://github.com/AlgoJudge/AlgoJudge-Ops/blob/main/LICENSE)"
+  ]
+}

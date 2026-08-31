@@ -1,0 +1,100 @@
+---
+title: Problems
+description: The list, your standing on each one, the statement, and why Submit is sometimes greyed out.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**Problems** in the navigation lists everything in the activity, grouped by
+series. Each row is `[slug] Name`, a status badge, and a **Submit** button.
+
+The slug is the short label — `A`, `P1`, `knapsack` — and it is what appears in
+the address. It is unique across the whole activity, not only within its round.
+
+## Your standing on a problem
+
+The badge on the right of each row is yours alone, not a global figure. It
+carries up to three things:
+
+| Part | Meaning |
+|---|---|
+| `12 / 100` | your **best score** that counts, against the maximum |
+| `Attempts: 3` | how many submissions you have made |
+| the badge itself | *solved*, *partial*, *attempted* or *untouched* |
+
+Best score is the score that counts under the activity's rules, so an
+[excluded submission](/en/client/participant/results) is not in it. Where you
+compete in a group, both figures are the group's.
+
+The same badge sits at the top of the statement, because the statement is where
+you sit while waiting for a verdict — and it moves there as verdicts arrive.
+
+## Why Submit is greyed out
+
+<Callout type="warn" title="A disabled button, not a missing one">
+The button stays where it has always been and says it is shut rather than
+vanishing. It is disabled whenever the round holding the problem is not
+accepting: it has **ended**, a manager has **paused** it, or it has not started.
+</Callout>
+
+The statement screen also carries a badge saying which of the two it is — *The
+series is paused* in orange, *The series has ended* in grey — so you can read the
+reason where you are looking at the button.
+
+The submit form itself repeats it in a sentence before you write anything. See
+[Rounds, weeks and classes](/en/client/participant/series) for the full table.
+
+## The statement
+
+Opening a problem gives you its title as `[slug] Name`, your status badge, and
+whatever the assignment states about limits and your remaining submissions.
+
+### More than one language
+
+Where the author wrote translations, a switcher appears above the statement:
+**Default statement** plus one entry per language. It changes the statement
+alone, not the interface — wanting the English statement in a Polish interface
+is an ordinary thing to want.
+
+You get the statement in your interface language where the author wrote one, and
+what they wrote first otherwise. A missing translation falls back; it is never an
+error.
+
+Statements are normally Markdown. A problem imported from an archive may carry a
+PDF instead, and it is drawn in a viewer on the page rather than handed to you as
+a download link.
+
+### Limits
+
+Two badges beside the title — a time and a memory figure — are the assignment's
+own pair, before anything narrows it.
+
+Below the statement there may be **two tables**, and they are two rather than one
+on purpose:
+
+- **Per test group** — the same for every language.
+- **Per language** — the same for every group.
+
+There is never a value on both at once, and a group's own limits win over a
+language override rather than combining with it. Rows a language override does
+not reach are marked with an asterisk. A single table would have to invent the
+cell where the two cross.
+
+**Nothing shown means the assignment overrode nothing** — not "no limit". A
+package's own numbers are not published to participants, so the screen says
+nothing rather than guessing.
+
+### Attachments
+
+A **Attachments** card lists every file scoped to you, with its size. The
+statement's own files are not in it; everything else the author attached is.
+
+Where the problem carries sample tests, a line under the statement says they are
+also available as separate files.
+
+### Submissions left
+
+Where the activity sets an allowance, a badge says how many you have left. Below
+three, the submit form raises it to a warning. Absent means unlimited.
+
+In a group the allowance is the group's, spent by whoever sends.

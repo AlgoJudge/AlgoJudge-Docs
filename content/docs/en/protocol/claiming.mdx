@@ -1,0 +1,205 @@
+---
+title: Claiming and the lease
+description: How work is taken, what a claimed job carries, and why the lease is what makes a late report refusable rather than an overwrite.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**The accepted specification prevails.** This page describes **version 1.1** of
+the contract; on any divergence, the specification is right and this page is
+wrong.
+
+## Claiming
+
+```http
+POST /api/v1/runner/jobs/claim          { "leaseSeconds": 600 }
+```
+
+Answers a job, or **`204 No Content`** when the queue holds nothing **for this
+Runner**.
+
+Claiming is `SELECT … FOR UPDATE SKIP LOCKED` over queued jobs. Two Runners
+claiming at the same instant take **different** jobs; neither waits for the
+other.
+
+### `204` asks three questions and answers with one word
+
+A job is offered only if all three hold, and **a Runner cannot tell which of them
+left the queue empty**:
+
+- the problem's type is one this Runner declared, by string equality;
+- the problem's `external` flag **equals** this Runner's, in both directions;
+- the work's pools and this Runner's **share at least one tag**, where an empty
+  list on either side means `default`.
+
+Only the third is set by an operator, and it is what reserves a room of machines
+for one contest. The work's pools are the round's where it has any and its
+activity's otherwise, read **at claim time** — so retagging redirects work that
+is already waiting.
+
+<Callout type="warn" title="204 is a normal state, and it is also what a draining Server answers">
+An empty queue is the ordinary condition of a Runner. It is not an error, it is
+not a reason to back off aggressively, and it is not a reason to exit.
+
+It is also, deliberately, the answer while the Server is
+[draining](/en/protocol/availability): `204` is what every Runner already treats
+as an empty queue, so one that has been taught nothing about maintenance keeps
+behaving correctly. A `503` there would be correct and noisier for no gain.
+</Callout>
+
+## What a claimed job carries
+
+```json
+{
+  "jobId": "…", "submissionId": "…", "attempt": 1,
+  "leaseToken": "…", "leaseExpiresAt": "…",
+  "problemType": "standard-io@1", "problemVersionId": "…",
+  "packageFileId": "…", "packageSha256": "…",
+  "files": [{ "name": "source", "fileName": "main.py",
+              "fileId": "…", "sha256": "…", "sizeBytes": 42 }],
+  "props": { "type": "standard-io@1", "language": "python3" },
+  "problemVersionProps": null,
+  "config": { "type": "standard-io@1", "languages": ["python3"],
+              "limits": { "timeMs": 1000, "memoryBytes": 268435456 } }
+}
+```
+
+### The three opaque documents
+
+**The Server reads none of them.** It checked that each is an object under 256 kB
+when a manager or a participant wrote it, and that is the whole of its
+involvement. What is inside belongs to the problem type.
+
+| | What it is | Whose it is |
+|---|---|---|
+| `props` | what the **participant** declared beside the bytes. For `standard-io@1`, the language | the submission's |
+| `problemVersionProps` | what the type needs to know about the **pinned version** — an external archive's problem number, say. **Identity, not settings** | the problem version's |
+| `config` | what the **assignment** states, to be laid over the package's own | the assignment's |
+
+Three consequences an implementation has to get right:
+
+- **The configuration chain is two layers, not three.** The Server merges
+  nothing; the Runner performs the only merge there is — the package's own
+  configuration with `config` over it. `problemVersionProps` is *not* that layer
+  under another name.
+- **A missing `props` is an infrastructure failure, not a guess.** A Runner that
+  finds no language refuses the job as infrastructure: the job arrived
+  incomplete, and the submission stays rejudgeable. Guessing a default would mean
+  reporting a compilation error in a language nobody chose.
+- **A language the assignment excludes is refused by the Runner, as a verdict.**
+  The Server used to refuse it and cannot any more, because the language is one
+  member of a document it does not read. The participant chose it, their code may
+  be perfect, and what they broke is a rule of the activity.
+
+### Files, and two members worth naming
+
+`fileName` is what the submission is called, and it is **load-bearing rather than
+cosmetic**: a Runner may refuse a file whose extension the chosen toolchain does
+not accept. The Server no longer names pasted source, because it no longer knows
+the language — the Client sends the name.
+
+`packageFileId` and `packageSha256` are the **empty string, not absent**, when
+the problem version carries no package. Treat that as an infrastructure failure
+rather than fetching an empty id: there is nothing to judge against, and it is
+not the solution's fault.
+
+<Callout type="warn" title="A file entry may still carry a `language` member; do not read it">
+The reference implementation's `SubmissionFile` declares an optional `language`
+and never reads it. **The language lives in `props`**, and that is where
+`standard-io@1` looks for it.
+
+An implementation reading the file's member instead would work against a Server
+that still populates it and fail silently against one that does not.
+</Callout>
+
+## The lease
+
+`leaseSeconds` on the claim is a **request, not an instruction**. The Server
+clamps it to `[60, 3600]` and answers with `leaseExpiresAt`, the deadline it
+actually granted.
+
+The floor exists because a lease that could be shortened below what a real
+evaluation takes would hand the same job to a second Runner while the first was
+still working.
+
+<Callout type="warn" title="leaseExpiresAt is authoritative, and is not to be compared exactly">
+Never compute a deadline locally from `leaseSeconds` — the Server may have
+clamped it. Configure two hours, be granted one, and a local bound of two hours
+outlives the lease it was meant to track.
+
+And do not compare the instant exactly. The deadline a claim answers with comes
+from the Server's clock, which keeps hundred-nanosecond ticks; the same deadline
+read back afterwards has been through PostgreSQL, which stores microseconds. The
+two differ in their last digits with nothing having moved. **Compare to the
+millisecond.**
+</Callout>
+
+A note on clocks worth stealing from the reference implementation: it renews on a
+**timer**, at a quarter of the granted lease, and does no deadline arithmetic at
+all. Three renewals therefore fit inside every lease and two may fail in a row
+with the deadline still ahead. Comparing `leaseExpiresAt` against the local clock
+would make every deadline a function of how well two machines agree about the
+time, and a Runner is explicitly allowed to be a machine nobody administers
+closely. A duration is immune to skew; an instant is not.
+
+### The lease is the whole recovery story
+
+A Runner that dies holds a job nobody will finish. The Server's reaper returns it
+to the queue when the lease expires. Each delivery is counted, and past a cap the
+job is **failed with a reason** rather than retried for ever — retrying for ever
+is how one bad package stops an installation.
+
+There is no "give this job back" call. A Runner that genuinely wants to give a
+job up does so by **going quiet and letting the lease expire**.
+
+### Renewing
+
+```http
+POST /api/v1/runner/jobs/{jobId}/lease      { "leaseToken": "…", "leaseSeconds": 600 }
+```
+
+**Renewing never shortens.** The Server keeps the later of the deadline already
+granted and the one now asked for.
+
+That was not always true, and the failure it caused is instructive: while a
+renewal replaced the deadline outright, a Runner that claimed for ten minutes and
+then renewed asking for one moved its own deadline eight minutes *closer* — and
+the obvious implementation, a short ping on a short interval, left itself a
+permanent sixty-second margin. One pause longer than that hands the job to a
+second Runner while the first is still computing.
+
+```http
+POST /api/v1/runner/jobs/{jobId}/progress
+```
+
+reports progress and **renews nothing**. A Runner still working says so with a
+lease call.
+
+| Refusal | Code |
+|---|---|
+| The token names another Runner's lease | `runner.lease.foreign` |
+| The lease has already been reclaimed | `runner.lease.stale` |
+| The token is not a token | `runner.lease.malformed` |
+| The job is not in a state that allows this | `job.state` |
+
+## Why the lease token matters twice
+
+The `leaseToken` is not a job id under another name. It does two jobs, and both
+are load-bearing.
+
+**It makes a late report refusable rather than an overwrite.** A Runner that woke
+up after its lease expired holds a token the Server has already retired. Its
+report is refused with `runner.lease.stale` instead of landing on top of a result
+somebody else computed in the meantime. Without that, the recovery mechanism
+would be worse than no recovery: two Runners judging the same submission, and the
+slower one winning.
+
+**It makes reporting idempotent.** The Server keys the stored result on the lease
+token, so a report resent after a lost connection answers the same result rather
+than creating a second one. [Reporting](/en/protocol/reporting) says what that
+looks like.
+
+An implementation should therefore carry the lease token from the claim through
+to the last retry of the report, and treat a refusal naming a stale or foreign
+lease as **"this job is no longer mine"** — drop it silently, report nothing, and
+go back to claiming.

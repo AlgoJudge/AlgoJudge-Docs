@@ -1,0 +1,106 @@
+---
+title: Submission
+description: What a participant sent — and the one thing it deliberately does not carry.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A `Submission` is what a participant sent. It belongs to a
+[`SeriesProblem`](/en/server/concepts/assignment) rather than to a bare
+[problem](/en/server/concepts/problem), because the languages and limits it was
+judged under are properties of the assignment.
+
+<Callout type="warn" title="A submission does not carry a verdict">
+There is no verdict, score or state column on this row. Each attempt at
+evaluating it is an [`EvaluationJob`](/en/server/concepts/evaluation), the full
+attempt history is retained, and a **rejudge adds an attempt** rather than
+overwriting anything.
+</Callout>
+
+## What was sent
+
+| Field | Meaning |
+|---|---|
+| `CreatedDate` | when it arrived |
+| `UserId` | the submitting participant |
+| `SeriesProblemId` | the assignment it was sent against |
+| `Files` | the source, or the archive, under the name `source` |
+| `Props` | what the participant declared beside the bytes — the language, and whatever else the problem type asks. `jsonb`, opaque, handed to the Runner unread |
+| `Jobs` | every attempt at evaluating it |
+
+The files hang off the submission rather than off an attempt, because they are
+what somebody did once and every rejudge reads the same bytes. A Runner's log
+hangs off the attempt instead.
+
+`Props` is opaque: the Server stores it and never reads it. **The language is in
+there**, and nothing on this side validates it — the allowed set lives in the
+assignment's `Config`, and the Runner refuses what the assignment excluded.
+
+A column the Server understood would mean **a Server release for every new
+language**, against the guardrail saying a problem type must not need one.
+
+Null means none; never `{}`.
+
+## Competing as a group
+
+`GroupId` is the [group](/en/server/concepts/group) this was sent as, or null
+when it was sent by a person competing as themselves.
+
+It is **stamped by the Server from the submitter's grant, never taken from the
+request**. "If the user is in a group, sending as the group is compulsory" is a
+rule about what happens, not a default the form is asked to keep — deriving it
+server-side is what makes it unforgeable.
+
+**And never rewritten.** A manager may move somebody to another group
+mid-contest; this row keeps the group it was sent under, so a ranking from an
+hour ago still reconciles with the ranking now. Deriving the group through the
+grant at read time would move points that were already scored.
+
+## Where it came from
+
+| Field | Meaning |
+|---|---|
+| `IpAddress` | a PostgreSQL `inet`, normalised before it is stored |
+| `SessionId` | the browser session, or null |
+| `DeviceId` | the name the browser gave itself |
+
+The question `IpAddress` exists to answer is **was this sent from outside the
+examination room**, which is containment in a network rather than equality with
+an address — hence `inet` rather than text.
+
+It is stored here rather than reached through the session for two reasons that
+both matter. It rides `submission:read:all`, which is already scoped per
+activity, so a judge sees their own contest and no other — the session list
+answers to a system-scope permission. And it is evidence in a contest, so it
+outlives the session's own thirty-day window by design.
+
+`SessionId` is null on the first authenticated request a brand-new browser
+makes, because the session cookie is minted after the response. In practice a
+dozen requests precede a submission.
+
+<Callout type="warn" title="`DeviceId` is not evidence">
+A page writes it, so whoever is using the browser can read, change or clear it,
+and a room of machines imaged from one disk reports one id for all of them. What
+it answers is *the same browser, two accounts*. Nothing may describe it as a
+security control.
+</Callout>
+
+## Exclusion
+
+| Field | Meaning |
+|---|---|
+| `ExcludedAt` | when a manager ruled that this does not count. One column, so there is nothing to disagree with |
+| `ExcludedByUserId` | who ruled |
+| `ExclusionReason` | why, in a manager's own words |
+
+**It rules on a result and retracts nothing.** The verdict, the attempts, the
+files and the place in every list all stay — and so does the submission
+allowance it spent. Giving an attempt back means raising the limit.
+
+What it leaves is the best-of calculation, the board, the socket, and the LTI
+gradebook.
+
+`ExclusionReason` is not on the participant's screen, and is not withheld from
+them either: it is writing about them, so their data export carries it. It is
+cleared on erasure while `ExcludedAt` stays — the ruling is contest history,
+free text naming somebody is not.

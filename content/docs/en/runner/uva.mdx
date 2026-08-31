@@ -1,0 +1,192 @@
+---
+title: Forwarding to onlinejudge.org
+description: The Runner that judges nothing — what it does instead, and the two switches that stop its queue while everything looks healthy.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`AlgoJudge-Runner-UVa` is a second Runner implementation that **evaluates
+nothing**. It takes `uva@1` submissions, forwards them to
+[onlinejudge.org](https://onlinejudge.org), waits for the archive to decide, and
+reports the archive's verdict back to the installation.
+
+It runs no code, has no sandbox, and measures nothing.
+
+<Callout type="warn" title="The verdict is somebody else's opinion">
+Nothing about a `uva@1` result was decided by your installation. The compilers,
+the tests, the limits and the judgement belong to onlinejudge.org, and the
+compilers there are pinned at the archive's own versions rather than at yours.
+
+Every screen that shows such a result says so, and this page says it here for the
+same reason.
+</Callout>
+
+## How it differs from the sandboxing Runner
+
+| | `AlgoJudge-Runner` | this one |
+|---|---|---|
+| Where work is judged | in a sandbox it starts | on a service it does not run |
+| How long a job is held | seconds to minutes | up to fifteen minutes, waiting |
+| Registers as | `external: false` | **`external: true`** |
+| Trials | measures them | refuses them |
+| Container runtime socket | required | **not held at all** |
+| State it keeps | the identity key and a package cache | the identity key |
+
+Because it starts nothing, it needs no socket, no cgroups, no scratch directory
+and no package cache for problem packages. The image is smaller for that reason
+rather than by tuning. Its only state is the identity key — put it on a volume;
+losing it costs a re-registration and an administrator's approval.
+
+## `external: true` is not a detail
+
+The Server pairs a problem with a Runner on two booleans — the problem's
+`external` flag and the Runner's — **by equality, in both directions**.
+
+- An external problem goes only to a Runner that forwards.
+- A local problem goes only to a Runner that does not. That half is the one worth
+  stating: a local problem reaching a forwarding Runner would send somebody's
+  work out of the building with nobody having chosen that.
+
+**A Runner that forwards and does not declare it is handed nothing at all**, and
+from a log that is indistinguishable from an empty queue. It is one of the three
+filters on [routing](/en/runner/routing); the Server reads no problem type to
+decide any of them.
+
+## The two switches that stop the queue while everything looks healthy
+
+Neither produces an error. Both produce an empty queue.
+
+<Callout type="warn" title="External judging ships off, and the Runner still needs approving">
+**The installation's external judging switch is off by default.** That is a
+decision, not an accident of defaulting: sending somebody's submission to a third
+party is a thing an operator chooses. While it is off, no job from an external
+problem is handed out to anybody — the Runner is given an empty queue, the same
+answer a draining Server gives. Nothing is refused, revoked or failed, and the
+work waits. Turning it on later loses nothing: the queue drains.
+
+**And this Runner still has to be approved**, like any other. That is the trust
+decision the whole design rests on, and no configuration substitutes for it.
+
+An operator turning external judging on takes on a disclosure duty: what leaves,
+to whom, and under what terms belongs in the installation's privacy notice. The
+product states the fact and cannot write the notice.
+</Callout>
+
+## Configuration
+
+The same `AJ_` convention as everywhere else. Two values are secrets and have no
+defaults.
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Server__BaseUrl` | **required** | including `/api/v1` |
+| `AJ_Runner__Name` | `$HOSTNAME`, else `algojudge-runner-uva` | |
+| `AJ_Runner__ProblemTypes` | `uva@1` | |
+| `AJ_Runner__Tags` | empty | pools, seeded at the first registration only |
+| `AJ_Runner__KeyPath` | `/var/lib/algojudge-runner-uva/identity.key` | |
+| `AJ_Uva__Username` | **required, secret** | the robot account submissions are made under |
+| `AJ_Uva__Password` | **required, secret** | |
+| `AJ_Uva__UserId` | resolved from the username | the archive's own numeric id |
+| `AJ_Uva__BaseUrl` | `https://onlinejudge.org/` | |
+| `AJ_Uva__UhuntBaseUrl` | `https://uhunt.onlinejudge.org/` | |
+| `AJ_Uva__PollMinSeconds` | `20` | **also the floor.** Below it the Runner refuses to start |
+| `AJ_Uva__PollMaxSeconds` | `60` | |
+| `AJ_Uva__PollEscalateAfterSeconds` | `120` | |
+| `AJ_Uva__SubmitMinIntervalSeconds` | `5` | |
+| `AJ_Uva__PendingTimeoutSeconds` | `900` | how long to wait for the archive |
+| `AJ_Uva__MaxPending` | `20` | submissions in flight. Zero is refused |
+| `AJ_Uva__LongPollEnabled` | `true` | accepted; the trigger behind it is not built |
+| `AJ_Lease__RequestSeconds` | `1200` | |
+
+`AJ_Uva__PollMinSeconds` cannot go below twenty. The Runner refuses to start if
+it does: onlinejudge.org publishes no rate limit at all, so this one is not
+lowered. A politeness limit a deployment can silently disable is not a limit.
+
+Every submission is made under one robot account, and **every real submission
+stays on that account for ever**. That is a decision for whoever owns it.
+
+## Two numbers checked against each other at start-up
+
+Both failures happen far from their cause, and both end the same way: **the same
+solution is sent to somebody else's site twice**.
+
+**`AJ_Lease__RequestSeconds` must exceed `AJ_Uva__PendingTimeoutSeconds`.**
+Otherwise the Server reclaims the job while this Runner is still waiting on the
+archive, the job returns to the queue, and the next Runner to claim it submits
+again. The defaults — a twenty-minute lease against a fifteen-minute wait —
+satisfy this; a lease left at the sandboxing Runner's ten-minute default would
+not.
+
+**`AJ_Uva__PollMaxSeconds` must fit four times inside the lease.** A held lease is
+renewed at the top of the same cycle that asks the archive, so slowing the polling
+down to be polite to uHunt slows the renewing down with it. Four, so that three
+renewals fit inside every lease and two may fail in a row with the deadline still
+ahead.
+
+That second one is the well-meant change that would have cost a double
+submission, which is exactly why it is refused at start-up rather than discovered
+an hour later. Note the ceiling it implies: the Server clamps a lease at 3600
+seconds, so the poll interval cannot exceed 900.
+
+## The six languages
+
+The archive's own list, defined by the problem type rather than by each problem.
+
+| Id | Label | The archive's own |
+|---|---|---|
+| `c89-gcc` | C89 / ANSI C (GCC 5.3.0) | ANSI C 5.3.0 |
+| `java8` | Java 8 (OpenJDK 1.8.0) | JAVA 1.8.0 |
+| `cpp98-gcc` | C++98 (GCC 5.3.0) | C++ 5.3.0 |
+| `pascal-fpc` | Pascal (Free Pascal 3.0.0) | PASCAL 3.0.0 |
+| `cpp11-gcc` | C++11 (GCC 5.3.0) | C++11 5.3.0 |
+| `python3` | Python 3 (CPython 3.5.1) | PYTH3 3.5.1 |
+
+Three of these ids are the same ids `standard-io@1` uses — deliberately, so one
+screen can resolve a label whichever type produced a submission. The three that
+are not name toolchains this project does not run itself; that is the point of
+forwarding.
+
+**The labels are not `standard-io@1`'s, and must not be.** `cpp11-gcc` here is
+GCC 5.3.0 with the archive's flags, and [in the sandboxing
+Runner](/en/runner/languages) it is a compiler this project pins with its own.
+Showing the same label in both places would tell a participant the two were built
+by the same compiler.
+
+## What a `uva@1` problem carries
+
+There is no package. The whole of the configuration is documents the Server
+already carries and does not read:
+
+- **the version's `props`** says *which problem this is* — the archive's number.
+  Identity rather than settings, written once at import, inherited by every
+  assignment. Without it the Runner refuses the job **before anything leaves**,
+  and says so by name.
+- **the assignment's `config`** says *how this course judges it* — which of the
+  archive's verdicts count as solved, and which of the six languages are allowed.
+  A course can accept a presentation error where a contest counts only an
+  accepted answer, on the same imported problem.
+
+Statements are fetched through the Server rather than by the manager's browser,
+because the archive sends no cross-origin header. That fetch is governed by an
+allowlist of hosts the installation configures.
+
+## Not judged, and not a wrong answer
+
+The archive can fail to form an opinion — a submission error, or a problem it
+holds no tests for. **Neither is a verdict and neither is scored.** They are
+reported as infrastructure failures, and the Server refuses to score one, because
+marking somebody down for a third party's outage would be a lie about their
+solution.
+
+A verdict id the Runner does not recognise is treated as *not judged yet* rather
+than guessed at: a number nobody has seen before is not evidence that a person
+was wrong.
+
+A submission the activity's rules refuse — a language the manager excluded — is
+reported as `PolicyViolation`, the same word `standard-io@1` uses, and **nothing
+is sent to the archive at all**.
+
+## One known gap
+
+The long-poll trigger is not built, and the Runner says so at every start.
+Verdicts arrive on the polling interval alone, which is slower but not wrong.

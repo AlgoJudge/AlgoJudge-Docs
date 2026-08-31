@@ -1,0 +1,129 @@
+---
+title: Availability
+description: The heartbeat, and what a Runner must do when the Server is up and declining to serve.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**The accepted specification prevails**, and unavailability is its §9. A Runner
+that has no notion of a Server which is up and declining to serve will treat one
+as a fault — and the fault it most resembles is *"this submission failed"*.
+
+## The heartbeat
+
+```http
+POST /api/v1/runner/heartbeat
+```
+
+Says the Runner is alive and holding nothing in particular. It is what makes
+"last seen" mean anything, and what lets the panel show a Runner as gone without
+waiting for a job to expire.
+
+A Runner holding a job does not need it: renewing a lease says the same thing
+more precisely. The reference implementation sends one only when it has nothing
+to do, on an interval.
+
+A heartbeat refused during a maintenance window is expected rather than worth a
+warning: the Server has withdrawn and already knows.
+
+## Three levels, travelled in one direction
+
+An installation can be taken out of service without being stopped, so that a
+database can be backed up or a machine shut down cleanly.
+
+| Level | What answers | What does not |
+|---|---|---|
+| `open` | everything | — |
+| `draining` | `/health`; a Runner's lease, progress, report, file read, upload and attach | the participant API, submissions, **new claims** |
+| `closed` | `/health` | everything else |
+
+`draining` is entered immediately when an operator asks. `closed` follows only
+when no job and no trial is still running, or after a timeout if something will
+not finish. Nothing is lost either way: a forced close leaves the lease to
+requeue the job.
+
+Coming back is immediate.
+
+## What a Runner sees
+
+- **A refusal is `503` with `Retry-After` and the code `server.maintenance`.**
+  **The code is what to switch on** — the status alone may also come from an edge
+  proxy that has never heard of this product.
+- **Claiming is not refused. It answers `204`.** Deliberately: that is what every
+  Runner already treats as an empty queue, so one that has been taught nothing
+  about maintenance keeps working correctly at `draining` by doing what it always
+  did.
+- **`GET /api/v1/health` answers `200` at every level**, anonymously, and names
+  the level:
+
+  ```json
+  { "status": "ok",
+    "maintenance": { "level": "draining", "since": "…", "reason": "nightly backup" } }
+  ```
+
+  `maintenance` is **absent while open**, so a Runner built before any of this
+  existed reads exactly the document it always read.
+
+Health is the one call that is never gated, and both halves of that matter. A
+Runner whose token expired during a window cannot shake hands again — the
+handshake is refused with everything else at the deepest level — so a call that
+needed a token would be the door locking behind it. And it is the only request
+that answers `200` throughout, which is what makes waiting for a window to end
+distinguishable from waiting for a Server that is never coming back.
+
+<Callout type="warn" title="Read `level` by comparison, never by parsing">
+It is a string. A level a newer Server invents must read as **"not open"** rather
+than as a parse failure — an implementation that deserialises it into a closed
+enumeration will treat an unfamiliar level as *the Server is broken*, which is the
+opposite of what it means.
+</Callout>
+
+## What a Runner must do
+
+Three requirements, and the second is the one that costs a participant their
+submission when it is got wrong.
+
+### 1. Wait rather than exit
+
+`503` and `429` are transient. A Runner that treats either as fatal exits into
+whatever restarts it and comes back harder, against a Server that is deliberately
+trying to be down.
+
+`Retry-After` is **advice**: honour it where it asks for **longer** than the
+Runner's own backoff, and never let it shorten one. A proxy answering
+`Retry-After: 0` must not turn a retry into a spin.
+
+### 2. A window mid-job is not a verdict
+
+<Callout type="warn" title="Report nothing and abandon the job to its lease">
+If a claimed job cannot be finished because the Server stopped answering — the
+package could not be downloaded, the source could not be fetched — the Runner
+**reports nothing at all**.
+
+The lease expires, the job returns to the queue, and it is judged properly
+afterwards. Reporting an infrastructure failure here would close somebody's
+attempt over an outage they had nothing to do with.
+</Callout>
+
+### 3. An answer already computed outlives the window
+
+Reporting is idempotent on the lease token, so a Runner that finished judging and
+found the Server away **holds the result and keeps trying** — bounded by the
+lease, not by a small number of attempts.
+
+Throwing it away means the same work is done twice and the participant waits out
+a lease for a verdict that already existed.
+
+## The conformance case worth copying
+
+With the Server put into a window while a job is claimed, the submission is
+**requeued and judged**, never recorded as failed, and the Runner returns on its
+own once the window ends **without being restarted**.
+
+If an implementation passes only one test from this page, make it that one.
+
+## There is still no socket
+
+`maintenanceChanged` is broadcast on the **Client's** WebSocket. A Runner has
+none and polls `/health` instead — see [what is not
+specified](/en/protocol/not-specified).

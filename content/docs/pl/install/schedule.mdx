@@ -1,0 +1,113 @@
+---
+title: Praca rutynowa i harmonogram
+description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
+source: en/install/schedule.mdx
+sourceSha256: bafda18f20cab0dca37fde40a354da9be1aba862037dd98f219574e78e6a6bce
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Sprzątanie
+
+```bash
+./scripts/gc.sh
+```
+
+Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
+
+- **katalogi robocze** starsze niż `GC_TMP_RETENTION_DAYS` (domyślnie 7). Runner
+  zabity w trakcie oceniania nie posprząta po sobie, a zlecenie, które robił,
+  wraca do kolejki przez dzierżawę — więc pozostałości są normalne, a nie usterką;
+- **zakończone kontenery zadań**, których nic nie zbierze. Runner zamiata własne
+  kontenery siostrzane przy restarcie; to wyłapuje przypadek, z którym sam sobie
+  nie poradzi: Runnera usuniętego, a nie zrestartowanego;
+- **obrazy**, filtrowane po etykiecie, którą ma każdy obraz AlgoJudge. Obraz bez
+  niej należy do kogoś innego i zostaje nietknięty;
+- **własne logi tego repozytorium** w `/var/log/algojudge/`, rotowane po 32 MB.
+
+<Callout type="warn" title="Nigdy globalny prune">
+`docker system prune` i `docker volume prune` nie wiedzą, że na hoście może
+działać coś jeszcze. Nic w `gc.sh` nie działa bez filtra.
+</Callout>
+
+**`VACUUM` i `REINDEX` są celowo nieobecne.** Inne ryzyko, inny czas działania —
+`REINDEX` trzyma blokady, które konkurs zauważy — a autovacuum robi już rutynową
+część. Wstawienie ich do nocnego zadania jest osobną decyzją i nikt jej nie
+podjął.
+
+`gc.sh` nie rotuje katalogu kopii zapasowych. Rotacja należy do skryptu, który
+te zrzuty pisze, a katalog, do którego nikt nic nie dokłada, nie jest tym, od
+którego zaczyna się kasowanie.
+
+## Harmonogram
+
+`cron/algojudge.cron`, instalowany wyłącznie na życzenie:
+
+```bash
+./scripts/install-cron.sh --print     # co by zainstalował
+./scripts/install-cron.sh
+```
+
+Nic nie planuje się samo. Kopia chodzi o 04:00 czasu lokalnego, sprzątanie
+o 06:00, a **wpis aktualizacji jest zakomentowany**.
+
+Skrypt przepisuje ścieżkę i strefę czasową na to, czym ta instalacja naprawdę
+jest, i **scala zamiast zastępować**: crontab jest dzielony ze wszystkim innym na
+hoście, a instalowanie swojego przez nadpisanie to sposób, w jaki ktoś traci
+zadanie, które miał od sześciu lat. Nasze linie są otoczone znacznikami, więc
+drugie uruchomienie je zastępuje, a nie dopisuje duplikat.
+
+### Zakotwiczone w czasie lokalnym hosta, nie w UTC
+
+04:00 znaczy 04:00 dla tego, kto obsługuje maszynę, co utrzymuje pracę wewnątrz
+faktycznych godzin ciszy organizacji, a nie w stałym przesunięciu, które
+dwa razy w roku od nich odjeżdża.
+
+- **`CRON_TZ` respektują Vixie cron i cronie, ale nie każda implementacja.**
+  `install-cron.sh` sprawdza to, instalując prawdziwy crontab i wycofując się bez
+  tej linii, z ostrzeżeniem, zamiast po cichu planować wedle innego zegara. Nie
+  sonduje: `crontab <plik>` zastępuje cały crontab, więc jednolinijkowa sonda
+  zniszczyłaby wszystko inne na hoście tylko po to, żeby się dowiedzieć.
+- **Przyjęte to nie to samo co respektowane.** Implementacja, która tę linię
+  ignoruje, przyjmuje ją bez słowa, a sprawdzić tego nie da się inaczej niż
+  czekając do czwartej rano. Potwierdź raz, że pierwsza kopia wypada o 04:00
+  lokalnie.
+- **04:00 i 06:00 są bezpieczne w UE**, gdzie zmiana następuje o 01:00 UTC, więc
+  żadna z tych godzin nie jest pomijana ani powtarzana. **To się nie
+  uogólnia** — niektóre strefy zmieniają czas o północy. Sprawdź swoją, zanim je
+  przesuniesz.
+
+### 06:00 tutaj to nie 06:00 Servera
+
+Własny kolektor plików Servera jest zakotwiczony w **UTC**
+(`Files:CollectAtHourUtc`), więc w Warszawie dzieli je dwie godziny zimą i trzy
+latem. Nie szkodzi, ale warto o tym wiedzieć, zanim ktoś założy, że jeden
+harmonogram rządzi obydwoma.
+
+### Nic nie powiadamia o nieudanym uruchomieniu
+
+<Callout type="warn" title="To największe otwarte pytanie w repozytorium wdrożeniowym">
+**Nic nie powiadamia nikogo, gdy skrypt crona zakończy się kodem niezerowym.**
+Kopia, która nie udaje się od trzech tygodni, wychodzi na jaw w trakcie awarii,
+którą miała pozwolić przeżyć.
+
+Skieruj `MAILTO` na kogoś, kto to czyta, albo podaj `/var/log/algojudge/*.log`
+do tego, co Twoja organizacja już obserwuje. Wybranie kanału za Ciebie byłoby
+wymyślaniem polityki.
+</Callout>
+
+## Jeden skrypt naraz
+
+Każdy z tych skryptów bierze blokadę. Jeśli któryś działa, dowiesz się który, po
+pidzie:
+
+```
+another AlgoJudge maintenance script is running (pid 1234, lock: …/state/algojudge.lock.d)
+```
+
+Jeśli pid 1234 naprawdę działa, poczekaj. Jeśli nie, następne uruchomienie samo
+przejmie blokadę i to powie — blokada nigdy nie zostaje zakleszczona na stałe.
+Żeby wyczyścić ją ręcznie, usuń `state/algojudge.lock.d`.
+
+Dzięki temu długa kopia i wpis aktualizacji nie wejdą sobie w drogę, gdy oba są
+zaplanowane.

@@ -1,0 +1,94 @@
+---
+title: AlgoJudge documentation
+description: Self-hosted software for programming contests and courses, with automatic evaluation of submitted solutions.
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { BookOpen, Cable, Cpu, Send, Server, Settings } from "lucide-react";
+
+AlgoJudge is open-source, self-hosted software for programming contests and
+courses, with automatic evaluation of submitted solutions.
+
+You run it yourself. Nobody else holds your participants' accounts, your
+problems or your results.
+
+## Where to start
+
+<Cards>
+  <Card
+    icon={<Send />}
+    href="/en/client/participant"
+    title="For a participant"
+    description="Enter an activity, read a problem, send a solution, and find out what happened to it."
+  />
+  <Card
+    icon={<BookOpen />}
+    href="/en/client/manager"
+    title="For a manager"
+    description="Build activities and rounds, keep the problem library, answer questions, decide who may do what."
+  />
+  <Card
+    icon={<Settings />}
+    href="/en/install"
+    title="Install and operate"
+    description="Stand an installation up on a machine you own, keep it running, and get it back."
+  />
+  <Card
+    icon={<Server />}
+    href="/en/server"
+    title="Server"
+    description="The domain model, the permission model, and the REST reference generated from the API itself."
+  />
+  <Card
+    icon={<Cpu />}
+    href="/en/runner"
+    title="Runner"
+    description="The machines that evaluate submissions: what one needs, how it is isolated, and which work it is given."
+  />
+  <Card
+    icon={<Cable />}
+    href="/en/protocol"
+    title="Protocol"
+    description="The contract between a Server and a Runner, for somebody writing a Runner of their own."
+  />
+</Cards>
+
+## How the parts fit together
+
+Three programs, and each one refuses to do the others' work:
+
+- The **Client** is what people look at. It draws activities, problems, forms
+  and results.
+- The **Server** holds everything durable — accounts, problems, submissions,
+  results — and decides who may do what. **It never compiles or runs a submitted
+  solution**, and it does not understand what any particular kind of problem
+  means.
+- A **Runner** does the running. It takes a job, evaluates it in isolation, and
+  reports back. A Runner always opens the connection, so it can sit behind a
+  domestic router with no address of its own.
+
+The consequence worth knowing early: **adding a new kind of problem does not
+require a change to the Server.** The Client learns to draw it and a Runner
+learns to judge it.
+
+## Which version this is
+
+**Nothing has been released yet**, so this describes what is on `main` — which
+is why the name at the top says *unreleased* rather than a number. The first
+release cuts `v0.1`, and from then on the address carries it:
+`/en/install/v0.1/backup`.
+
+**Each section is versioned by its own source.** `/install/` moves when
+`AlgoJudge-Ops` releases, `/server/` when the Server does, `/protocol/` when the
+contract changes. There is no single version of this site, because the products
+do not release together — which is why the version sits inside the section
+rather than in front of it.
+
+Granularity is **minor**. A patch release updates its directory in place, and if
+that would change documented behaviour it was not a patch.
+
+AlgoJudge is `0.x`, and **a `0.x` release carries no promise of backward
+compatibility.** Every minor release comes with a note saying what broke and
+what to do about it. **Documentation for older versions is never deleted**, and
+never written after the fact: it is cut on release day or not at all. For an
+installation that has not upgraded, the old page is the only one that works.

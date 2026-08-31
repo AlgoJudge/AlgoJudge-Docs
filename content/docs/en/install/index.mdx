@@ -1,0 +1,109 @@
+---
+title: What an installation is
+description: Five services, four arrangements, and one Compose file that chooses between them.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An AlgoJudge installation is a Docker Compose stack. It is delivered as its own
+repository, `AlgoJudge-Ops`, which you clone, configure through a `.env` file,
+and run.
+
+**That repository holds no application code and builds nothing.** Every image is
+pulled by tag from GHCR, which is what makes an update `docker compose pull` and
+a rollback a digest. The Compose files that build from source live in the
+product repositories and are labelled as development there; they are not this.
+
+<Callout type="warn" title="No release has been cut yet">
+`ghcr.io/algojudge` is empty. No product repository carries a `v*` tag, so none
+of the seven images named in `compose.yaml` exists, and the quick start does not
+work from a clean clone. Today the stack runs only against images you build from
+the product repositories and tag as published — [First
+install](/en/install/first-install) says how. Every `docker pull` instruction in
+this section describes the intended path, not one you can follow today.
+</Callout>
+
+## The services
+
+Five services, and six profile names — the Server and the Client each carry two,
+which is what lets one half be brought up without the other.
+
+| Service | Profiles | What it is |
+|---|---|---|
+| `postgres` | `data` | PostgreSQL 18. **No host port, in any arrangement** |
+| `server` | `app`, `server` | the API at `/api/v1`, published on `127.0.0.1:8080` |
+| `client` | `app`, `client` | the browser application, published on `127.0.0.1:8082` |
+| `nginx` | `edge` | TLS, one origin for both halves, ports 80 and 443 |
+| `runner` | `runner` | evaluates submissions in sibling containers |
+
+There are three Compose networks — `edge`, `backend` and `runner` — so that the
+database is not reachable from the edge and evaluation traffic is separable from
+HTTP. PostgreSQL sits on `backend` alone. **Only nginx publishes a port to the
+network**; the two loopback publications above exist for `curl` and for a proxy
+of your own.
+
+The `edge` network is declared with an explicit subnet, `172.28.0.0/24` by
+default. That is not tidiness: the Server refuses to start until it has been told
+whose word to take for a visitor's address, and a subnet Docker picked at random
+could not be named.
+
+## The four arrangements
+
+Chosen with `COMPOSE_PROFILES` in `.env`. No Compose file is edited for any of
+them.
+
+| | `COMPOSE_PROFILES` | |
+|---|---|---|
+| **T1** | `edge,app,data,runner` | one host, the whole product. The default |
+| **T2** | `edge,app,data`, plus `runner` elsewhere | Runners on their own machines |
+| **T3** | `app,data` | [your own reverse proxy](/en/install/reverse-proxy) in front |
+| — | `client,server,data` | one half at a time, for debugging and staged updates |
+
+## A Runner may live on another machine entirely
+
+Each Runner host clones the same repository and runs `COMPOSE_PROFILES=runner`
+with three values in its `.env`:
+
+```ini
+SERVER_URL=https://your.domain
+RUNNER_NAME=runner-lab-a       # different on every host
+RUNNER_WORK_DIR=/srv/algojudge/runner-work
+```
+
+**The Runner opens every connection itself.** It needs no inbound port and works
+from behind a domestic router with no address of its own. It has no `depends_on`
+on the Server in `compose.yaml`, deliberately, because on a Runner-only host
+there is no Server service to depend on — it retries its own connection instead.
+
+Each Runner registers separately and each needs its own approval.
+
+<Callout type="warn" title="T2 is the recommended arrangement for a public installation">
+Access to the Docker socket is equivalent to root on the host, and the Runner
+needs that socket to start job containers. In T1 the same host also holds the
+database, so anybody who escapes a job container is on the machine holding every
+submission and every password hash. On a Runner-only host the worst case is a
+machine that holds nothing.
+</Callout>
+
+## What runs beside the stack, not inside it
+
+An installation needs an OIDC provider, and **neither supported identity
+deployment is a service in `compose.yaml`**. It runs beside this stack, at its
+own hostname. [Identity](/en/install/identity) is the chapter for choosing and
+registering one.
+
+## Where to go next
+
+| | |
+|---|---|
+| [What the host needs](/en/install/requirements) | Docker, cgroup v2, disk, logs |
+| [First install](/en/install/first-install) | from an empty directory to a verdict |
+| [Pre-configuration](/en/install/preconfiguration) | standing one up without clicking through the panel |
+| [Identity](/en/install/identity) | Keycloak or Authentik, and how to register one |
+| [Maintenance mode](/en/install/maintenance) | taking it out of service without stopping it |
+| [Backup](/en/install/backup) | what a dump covers, and what it now carries |
+| [Restore](/en/install/restore) | putting one back |
+| [Update and rollback](/en/install/update) | and what a rollback cannot undo |
+| [Routine work and the schedule](/en/install/schedule) | garbage collection, cron, and what nobody tells you |
+| [Your own reverse proxy](/en/install/reverse-proxy) | the five rules |
+| [When something does not work](/en/install/troubleshooting) | the failure modes that look like other problems |

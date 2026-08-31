@@ -1,0 +1,30 @@
+# `docs.algojudge.pl`, and nothing else.
+#
+# **This is not part of an installation.** `AlgoJudge-Ops` assembles what an
+# operator installs; this serves our own public documentation and is deployed to
+# one host. Neither file belongs in the other.
+
+name: algojudge-docs
+
+services:
+  docs:
+    image: ${DOCS_IMAGE:-ghcr.io/algojudge/algojudge-docs:latest}
+    restart: unless-stopped
+
+    # Loopback by default. The host terminates TLS and proxies to this; binding
+    # it to every interface would publish a plain-HTTP copy of the site beside
+    # the real one.
+    ports:
+      - "${DOCS_BIND:-127.0.0.1}:${DOCS_PORT:-8083}:8080"
+
+    # The image creates and owns what nginx writes, so the only thing a
+    # read-only root needs is somewhere for it to put it. `uid`/`gid` 101 is
+    # `nginx` in the base image; without them the mount belongs to root and
+    # nginx cannot start.
+    read_only: true
+    tmpfs:
+      - /tmp:uid=101,gid=101
+      - /var/cache/nginx:uid=101,gid=101
+      - /run:uid=101,gid=101
+    security_opt:
+      - no-new-privileges:true

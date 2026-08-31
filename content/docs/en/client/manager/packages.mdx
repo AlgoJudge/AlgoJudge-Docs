@@ -1,0 +1,103 @@
+---
+title: Packages
+description: What a Runner is given, and where a problem's tests and limits come from.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A package is everything a Runner needs to judge a submission, and nothing else:
+tests, expected output or a checker, limits, scoring, and optionally a model
+solution.
+
+**The statement is not in it.** It travels as a participant-scoped attachment,
+and the Runner — the one component that must never disclose it — never receives
+it. The package itself is the other way round: it is stored with Runner scope,
+and a participant never receives that.
+
+The **Package** tab of a problem builds one. Nothing there uploads on its own; a
+package belongs to a version, and the version is published whole.
+
+## What is inside
+
+```
+package.zip
+├── config.yml
+├── tests/
+│   ├── 0a.in    0a.out         group 0: the examples
+│   ├── 1a.in    1a.out
+│   └── 2a.in    2a.out
+├── checker/                     optional
+└── solutions/                   optional
+```
+
+`config.yml` is YAML, and it is the one file in the product where a comment is
+worth having — a note saying why group 3 has a longer limit survives inside the
+package.
+
+| In `config.yml` | What it says |
+|---|---|
+| `type` | which format this is. A Runner that does not know the version refuses the package rather than guessing |
+| `limits.timeMs` | milliseconds |
+| `limits.memoryBytes` | **bytes, everywhere.** There is no second memory unit anywhere in the product |
+| `languages` | which toolchains may be submitted. Empty means the package does not say, which allows everything the Runner can build |
+| `overrideLimits` | per language, keyed by a family (`cpp`, `python`) or one toolchain (`pypy3`). Python is slower; this is where that is said |
+| `groups` | the scoring groups, their points, and optionally their own limits |
+| `checker` | absent means the `.out` files decide |
+| `modelSolution` | used to calibrate limits, never to judge |
+
+A group's own limits replace the global ones for that group's tests alone;
+absent, they inherit. The editor takes milliseconds or seconds, and bytes, KiB
+or MiB, and converts — nobody types 268435456 to mean 256 MiB.
+
+## Building one
+
+The tab takes loose files and pairs them by name: **`1a.in` goes with `1a.out`.
+The number is the group, the letter the test.** A test can also be typed in by
+hand. Files it does not recognise are listed rather than silently dropped.
+
+The **Groups** table is where the points live, and where one group is marked as
+**examples**. Those tests are cut into a separate archive and published to
+participants as `examples.zip` — from the same files, so the sample in the
+statement and the sample in the download cannot differ. No group marked as
+examples means the participant receives none.
+
+The archive is assembled in your browser, because its layout is a property of
+the problem type and the Server is not allowed to know one type from another.
+You can download the built package and the samples to inspect them, and you can
+open an existing package to edit it.
+
+The validator refuses to let a broken package be published, and the button says
+so rather than failing after the click.
+
+<Callout type="warn" title="A package cannot be added to a version that exists">
+Change the package and it is published with the **next** version, along with the
+statement and the attachments. That is what makes a pinned version a promise:
+what was judged against it cannot be edited afterwards.
+</Callout>
+
+## Calibrating the limits
+
+If the package carries a model solution, **measure the model solution** runs it
+on a real Runner and reports what it measured, per group. It needs `trial:run`,
+which is deliberately outside the participant template — a trial spends a
+Runner.
+
+A calibration rule turns a measurement into a limit: a multiplier, a constant to
+add, and a value to round up to. The suggestion is taken from the **slowest
+language measured**, because a group's limit has to fit every language the
+activity accepts. Apply one group's suggestion or all of them.
+
+The measurement happens once, on request, and the number is written into the
+package. Judging never runs the model solution: a limit has to be a number every
+submission was held to, not one recomputed per run.
+
+## How a problem gets its tests and limits
+
+1. The package carries the tests and the default limits.
+2. A group inside it may state its own.
+3. The assignment's **configuration** document is laid over the package's own —
+   that is where an activity narrows the languages or lifts a limit for its own
+   use.
+
+Time and memory are never set on the activity. They only become knowable while a
+solution runs, and they belong to the problem.

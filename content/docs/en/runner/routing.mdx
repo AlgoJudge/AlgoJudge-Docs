@@ -1,0 +1,130 @@
+---
+title: Tags and routing
+description: Which Runner is given which work, why one shared tag is enough, and why tagging a machine also removes it from the general pool.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A queued job is offered to a Runner only if **three independent filters** all
+hold. None of them reads what a problem type *means*.
+
+| Filter | How it is compared | Who sets it |
+|---|---|---|
+| the Runner's problem types against the problem's type | string equality | the Runner, on every registration |
+| the Runner's `external` flag against the problem's | boolean equality, **both directions** | the Runner, on every registration |
+| the Runner's tags against the work's | **intersection, non-empty** | the **operator**, in the manager panel |
+
+The first two say what a machine is *able* to do. Only the third is a decision
+somebody takes on a Tuesday, and that separation is why tags could be pools
+rather than requirements.
+
+## The rule: share at least one
+
+**A Runner is given work when the two tag lists share at least one entry.**
+
+This is deliberately **not** GitLab's rule, where a runner must hold every tag a
+job asks for. There, tags are requirements, because a runner's capabilities are
+not described anywhere else. Here they already are, by the two filters above, so
+a tag is free to mean a *place*.
+
+The practical difference: adding a tag to an activity **widens** the set of
+Runners that may take its work. Under GitLab's rule it would narrow it.
+
+## Empty means `default`, on both sides
+
+Both lists are normalised — trimmed, lowercased, de-duplicated, blanks dropped —
+and an **empty list is read as `["default"]`**.
+
+| Runner | Work | |
+|---|---|---|
+| `[lab-a]` | `[lab-a]` | judged |
+| `[lab-a, gpu]` | `[lab-a]` | judged |
+| `[gpu]` | `[lab-a, gpu]` | judged — one shared tag is enough |
+| `[lab-a]` | `[]` → `[default]` | **not** judged |
+| `[]` → `[default]` | `[lab-a]` | **not** judged |
+| `[]` → `[default]` | `[]` → `[default]` | judged — the behaviour before tags existed |
+
+<Callout type="warn" title="Tagging a Runner takes it out of the general pool as surely as it puts it into a reserved one">
+Rows four and five are the whole of the exclusivity, and they are the same rule
+read in two directions.
+
+This is the feature, not a side effect. A contest has to be pinnable to the
+Runners in a designated laboratory, and in the same movement those Runners must
+become unavailable to everything else — a tag expressing only a preference would
+leave the reserved machines drawn into the general queue at the worst possible
+moment.
+
+The consequence for an operator: a machine that has been given a tag stops taking
+ordinary coursework. If it should serve both, give it both tags — `default` is
+ordinary text anybody may type, and typing it means exactly what leaving the
+field empty means.
+</Callout>
+
+The lowercasing is load-bearing. Without it `Lab-A` on a Runner and `lab-a` on an
+activity are two pools that read as one, and the failure is a queue that never
+drains with nothing on any screen to say why. A Runner lowercases
+`AJ_Runner__Tags` itself before sending it, so its start-up log says what will
+actually be stored rather than what somebody typed.
+
+## `AJ_Runner__Tags` is a seed, read once
+
+A Runner may name its pools in its own configuration:
+
+```ini
+AJ_Runner__Tags=lab-a,exam-hall
+```
+
+**The Server takes that at the first registration and never again.** It exists so
+a room of thirty machines can be deployed from one Compose file rather than
+tagged one at a time. From then on the operator owns the value, on the manager's
+surface, and changing the variable changes nothing.
+
+That asymmetry is the security half of the design. Registering again is how a
+Runner reports a restart, and **every other reported field is refreshed then**. A
+Runner that could re-declare its tags on restart would put itself into an
+examination's pool with nobody having approved that — and approval, the trust
+gate, happened before the tags existed.
+
+Both Runner implementations carry the seed:
+[`AlgoJudge-Runner-UVa`](/en/runner/uva) reads the same variable, and is the one
+an installation is most likely to want in a pool of its own.
+
+## Where the work's tags come from
+
+The round's tags where the round has any, and the activity's otherwise. A round
+that states nothing inherits; there is no third state.
+
+**The round is usually where the tag belongs.** An examination is a round, not a
+course. Pinning a whole course sends its homework to the laboratory's machines
+too — including whatever is submitted from home at night, while those machines
+are off.
+
+The pools are evaluated **at claim time**, against live rows. Retagging therefore
+redirects work that is already queued. The opposite is just as defensible and
+somebody will assume it: a stamp taken at submission time would leave yesterday's
+queue going to yesterday's Runners with nothing on any screen to say so.
+
+## Two things this does not do
+
+- **No weights, no capacity, no preference order.** Among the Runners that match,
+  the queue is first-come.
+- **No rule a Runner evaluates.** The Server decides who is given what. A Runner
+  that filtered its own queue would be a second place for the decision to live.
+
+## When the queue looks stuck
+
+The claim endpoint answers `204` for all three filters failing, for a Server
+under maintenance, and for a genuinely empty queue. **A Runner cannot tell them
+apart, and neither can its log.** Work through them in this order:
+
+1. Is the Runner **approved**? An unapproved one never reaches the queue at all,
+   and says so at every attempt.
+2. Do the **tags** intersect? The manager panel counts the approved Runners a
+   set of tags reaches, beside where the tags are typed. Zero there promises that
+   nothing can be judged. A number above zero promises nothing — it counts tags
+   and neither problem types nor `external`.
+3. Does the Runner declare the problem's **type**?
+   `AJ_Runner__ProblemTypes` defaults to `standard-io@1` alone.
+4. Is the problem **external**? Then it needs an external Runner, and the
+   installation's external judging switch on. See
+   [Forwarding to onlinejudge.org](/en/runner/uva).

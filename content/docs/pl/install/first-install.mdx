@@ -1,0 +1,185 @@
+---
+title: Pierwsza instalacja
+description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
+source: en/install/first-install.mdx
+sourceSha256: 8707071bdd21455bd87883eb4028d95743cb25fd991b3ffe8f12d3e00004f414
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+<Callout type="warn" title="Ustaw AJ_ADMIN_TOKEN przed pierwszym `up`">
+Dopóki ta wartość jest pusta, `/api/v1/admin/**` jest zamknięte — a to obejmuje
+endpoint, który ustawia hasło administratora. Hasło konta `admin`, zakładanego
+przy pierwszym starcie, to dwadzieścia losowych znaków, które nigdy nie
+trafiają do logu, na ekran ani w żadne czytelne miejsce.
+
+**Instalacja uruchomiona bez tego tokenu nie ma administratora, na którego konto
+ktokolwiek mógłby wejść, a jedyne wyjście to skasować bazę i zacząć od nowa.**
+</Callout>
+
+<Callout type="warn" title="Tej procedury nie da się dziś przejść do końca">
+Nie wydano żadnej wersji. `ghcr.io/algojudge` jest puste, nie istnieje żaden
+z siedmiu pakietów — `algojudge-server`, `algojudge-client`,
+`algojudge-runner`, `lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy` —
+a `docker compose pull` niczego nie znajdzie. Do pierwszego wydania zbuduj
+obrazy samodzielnie i otaguj je tak, jakby były opublikowane: patrz [Praca na
+obrazach zbudowanych lokalnie](#praca-na-obrazach-zbudowanych-lokalnie) na końcu
+tej strony.
+</Callout>
+
+## Raz, ręcznie: pakiety muszą być publiczne
+
+Pakiet GHCR utworzony pierwszym pushem jest **prywatny**. Dopóki każdy z siedmiu
+nie zostanie raz przestawiony na publiczny, `docker pull` wymaga tokenu, a wtedy
+nie ma już znaczenia, że ta instrukcja nigdzie nie każe logować się do rejestru.
+Workflow wydania tego nie zrobi; musi to zrobić ktoś z dostępem do pakietów
+organizacji.
+
+Na razie nie ma tu nic do zrobienia — żaden z siedmiu nie istnieje.
+
+## 1. Klon i konfiguracja
+
+```bash
+git clone https://github.com/AlgoJudge/AlgoJudge-Ops.git /opt/algojudge-ops
+cd /opt/algojudge-ops
+cp .env.example .env
+chmod 600 .env
+```
+
+**Trzy wartości nie mają domyślnych** i bez nich stos nie wystartuje. Każdy
+sekret generuj osobno: jeśli ten sam trafi w dwa miejsca, jeden wyciek
+kompromituje oba.
+
+```ini
+AJ_ADMIN_TOKEN=          # openssl rand -base64 36
+POSTGRES_PASSWORD=       # openssl rand -base64 36, inny
+RUNNER_WORK_DIR=         # BEZWZGLĘDNA ścieżka na hoście, np. /srv/algojudge/runner-work
+```
+
+`RUNNER_WORK_DIR` musi być bezwzględna, bo Runner podaje ten napis demonowi
+Dockera, a **ścieżka, której demon nie potrafi otworzyć, staje się pustym
+katalogiem, nie błędem**. Każde zgłoszenie ocenia się wtedy na pustce i żaden
+test nie zawodzi w widoczny sposób. Właśnie dlatego `preflight.sh` odrzuca
+ścieżkę względną.
+
+Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
+
+- **`TRUSTED_PROXY_NETWORKS`** decyduje, czyim informacjom o adresie
+  odwiedzającego Server ma wierzyć, a bez tego Server nie wystartuje. Domyślnie
+  wskazuje sieć Compose, w której stoi dołączony nginx. Musi to być adres
+  **sieci**: `172.28.0.5/24` odrzucamy przy starcie, podając nazwę zmiennej
+  i adres, który powinien się tam znaleźć. Za własnym proxy wpisz sieć tego
+  proxy; jeśli proxy nie ma w ogóle, `none` jest pełną odpowiedzią.
+- **`DOCKER_GID`** to grupa, do której należy gniazdo demona; `preflight.sh`
+  powie, jeśli u Ciebie jest zła. Patrz [Czego wymaga
+  host](/pl/install/requirements).
+
+## 2. Certyfikat
+
+Umieść `fullchain.pem` i `privkey.pem` w `certs/`. Montujemy je tylko do
+odczytu; nic tutaj nie wystawia certyfikatu, a odnawianiem zajmuje się nadal to,
+czego już używasz.
+
+`/.well-known/acme-challenge/` jest serwowane na **obu** portach, więc wyzwanie
+HTTP-01 nigdy nie zostanie przekierowane. Po odnowieniu:
+
+```bash
+docker compose exec nginx nginx -s reload
+```
+
+Jeśli nie masz certyfikatu, a chcesz tylko rzucić okiem:
+
+```bash
+./scripts/render-tls.sh twoja.domena
+```
+
+**Samopodpisany, i każda przeglądarka to powie.** Jest po to, żeby pierwszy
+start dał działającą instancję z ostrzeżeniem, a nie nginx, który nie wstaje,
+i błąd, którego nikt nie powiąże z brakującym certyfikatem. Skrypt odmawia nadpisania
+certyfikatu, który już tam leży.
+
+## 3. Start
+
+```bash
+./scripts/preflight.sh
+docker compose up -d --wait
+```
+
+`preflight.sh` odmawia od razu i jednym zdaniem, zamiast w połowie podnoszenia
+stosu: puste hasło, brakujący lub zbyt krótki token, CIDR z bitami hosta,
+względny katalog pracy, `DOCKER_GID` niezgodny z gniazdem, `.env` śledzony przez
+Git albo bez trybu 600. `make up` uruchamia go najpierw, więc zwykłą drogę
+sprawdzamy niezależnie od tego, czy ktoś pamięta, że ten skrypt istnieje.
+
+## 4. Administrator
+
+```bash
+docker compose exec -it server aj-admin password
+```
+
+Potem zaloguj się na `https://twoja.domena/` jako **`admin`**.
+
+Narzędzie prosi o hasło bez wyświetlania go i **nigdy nie przyjmuje go jako
+argumentu** — argumenty widzi przez `ps` każdy inny proces, a do tego lądują
+w historii powłoki. W skrypcie narzędzie czyta pierwszą linię standardowego
+wejścia:
+
+```bash
+printf '%s' "$NEW_PASSWORD" | docker compose exec -T server aj-admin password
+```
+
+Obowiązuje polityka haseł, minimum dwanaście znaków, a **odmowa niczego nie
+zmienia** — stare hasło dalej działa, więc literówka nie zostawi instalacji bez
+wejścia. Komenda zdejmuje też blokadę konta: dziesięć nietrafionych prób to
+zwykle właśnie to, co poprzedza sięgnięcie po nią.
+
+`aj-admin` działa wewnątrz kontenera Servera i czyta token ze środowiska tego
+kontenera, więc token nigdy nie trafia do Twojej historii powłoki. To jedyna
+wspierana droga do powierzchni operatora: `/api/v1/admin/**` odpowiada na
+własnym interfejsie pętli zwrotnej Servera, a żądanie przez nginx — **albo przez
+opublikowane `127.0.0.1:8080`** — dociera jako brama mostka i dostaje 404. To
+zachowanie zmierzone, nie domysł.
+
+## 5. Zatwierdź Runnera
+
+**Nowy Runner rejestruje się i czeka.** To nie jest usterka i nie ma limitu
+czasu. Nic nie zostanie ocenione, dopóki administrator go nie zatwierdzi — i to
+właśnie powstrzymuje kogoś przed podpięciem własnej maszyny do Twojej
+instalacji.
+
+W panelu: **Runnery**, i zatwierdź ten, który się pojawił. Dopóki tego nie
+zrobisz, jego log powtarza `waiting: this Runner has not been approved yet`, za
+każdym razem z dłuższą przerwą — bo cała pracownia Runnerów zarejestrowanych
+naraz zasypywałaby inaczej Server jedną falą pytań przez cały czas, którego ktoś
+potrzebuje, żeby dojść do panelu.
+
+Potem wyślij coś i zobacz, jak dostaje werdykt. **Dopóki to się raz nie
+wydarzy, nie wiadomo, czy instalacja działa.**
+
+## 6. Opcjonalnie: harmonogram
+
+```bash
+./scripts/install-cron.sh --print     # co by zainstalował
+./scripts/install-cron.sh
+```
+
+Nic nie planuje się samo. Co skrypt instaluje, a co celowo zostawia
+zakomentowane, opisuje [Praca rutynowa i harmonogram](/pl/install/schedule).
+
+## Praca na obrazach zbudowanych lokalnie
+
+Dopóki nie ma wydania, zbuduj trzy repozytoria produktowe i otaguj je tak, jakby
+były opublikowane. `compose.yaml` zadziała bez zmian.
+
+```bash
+docker build -f AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
+docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
+docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
+for lang in gcc clang python pypy; do
+    docker build -t "ghcr.io/algojudge/lang-$lang:1" "AlgoJudge-Runner/images/$lang"
+done
+```
+
+`update.sh` wciąż potrzebuje rejestru, z którego pobiera. Aktualizację
+i wycofanie ćwiczymy bez opublikowanego rejestru na lokalnym `registry:2`,
+z `REGISTRY=localhost:5000/algojudge`.

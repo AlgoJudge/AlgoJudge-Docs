@@ -1,0 +1,22 @@
+{
+  "$comment": [
+    "Artefacts other repositories own, pinned so that a build is reproducible and",
+    "so that a page can say which version of the Server it describes.",
+    "",
+    "The accepted decision of 2026-08-09 says the REST reference is generated from",
+    "an openapi.json 'pinned to a release tag'. No repository carries a v* tag yet,",
+    "so the pin is a commit today and becomes a tag when there is one. `ref` is what",
+    "changes; nothing else about the build does.",
+    "",
+    "`sha256` is checked after the download. A pinned ref that quietly served",
+    "different bytes would be the one failure this arrangement exists to prevent."
+  ],
+  "openapi": {
+    "repository": "AlgoJudge/AlgoJudge-Server",
+    "path": "openapi.json",
+    "ref": "0655d23d98ee6a4418deb93305ef8ee58884e695",
+    "refKind": "commit",
+    "refDate": "2026-08-30",
+    "sha256": "4972b64437dadf8ab2ab69e246e4f5371b5bb815ed124a656df5a358fdf03be4"
+  }
+}

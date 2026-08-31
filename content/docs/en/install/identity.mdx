@@ -1,0 +1,204 @@
+---
+title: Identity
+description: Two supported OIDC deployments, how to choose between them, and how to register one in AlgoJudge.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An installation needs an OIDC provider. AlgoJudge keeps its own accounts
+permanently — the administrator, local accounts and temporary ones — but the
+people who take part sign in through a directory you run.
+
+**Two deployments are supported: Keycloak and Authentik.** Neither is a fallback
+for the other and neither supersedes the other. They are two suggested
+solutions, each a repository of configuration you clone and run beside the
+AlgoJudge stack rather than inside it; **neither is a service in
+`compose.yaml`**. An installation runs one.
+
+AlgoJudge cannot tell them apart. It sees a plain OIDC provider in both cases,
+and there is no field, branch or discriminator anywhere in its model for which
+product is behind a registration. What differs between them is operational.
+
+## Start with Keycloak
+
+**Keycloak is the suggested option for an installation with no reason to prefer
+the other.** Read the next two sections before deciding; if neither says
+anything about your situation, run Keycloak.
+
+`auth.algojudge.app` itself runs the Keycloak deployment. That settles one
+installation's choice and archives nothing.
+
+## The comparison
+
+| | Keycloak | Authentik |
+|---|---|---|
+| Containers | **2** — Keycloak, PostgreSQL | 4 — server, worker, PostgreSQL, Redis |
+| Licence | Apache-2.0 throughout; a CNCF project | open core: MIT core, a proprietary `enterprise/` directory in the same repository |
+| Audit log with before/after, and log export | included | an Enterprise feature |
+| Configuration re-applied on its own | **no** — an import establishes a realm and skips one that exists; drift is *reported* by `scripts/check-realm.py` | **yes** — blueprints are re-applied on a schedule |
+| Reporting a deleted account back to AlgoJudge | yes, an **Event Listener SPI provider** | yes, an event matcher and a webhook transport |
+| A report that survives a restart of the identity server | **no** — retried in memory, then an `ERROR` to replay by hand | yes, a queue in its database |
+| Serving the directory over **LDAP** | **not possible** — Keycloak consumes LDAP, it does not serve it | yes, through an LDAP outpost |
+| Restricting the language list | configuration | CSS reaching into a shadow root |
+| Per-locale wording of our own strings | real translations | one field carrying both languages |
+
+## Why Keycloak suits an institution
+
+**The licence.** Keycloak is Apache-2.0 throughout and a CNCF project.
+Authentik is an open core: an MIT core with a proprietary `enterprise/`
+directory in the same repository, and **the audit log with before and after
+values, and log export, are Enterprise features**. For software a public body
+installs, that is a bad property to accept — the record of who changed which
+account, and the ability to get that record out of the product, are exactly what
+an audit asks for.
+
+**The common institutional shape is an existing LDAP directory and no OIDC
+endpoint.** For that, **Keycloak with LDAP user federation is the ordinary
+answer**: it consumes the directory you already have and puts a standards
+OIDC front on it, which is the thing AlgoJudge needs and the thing your
+directory does not offer.
+
+Two containers rather than four is not the argument, but it is not nothing
+either — it is one database to back up and one process to upgrade.
+
+## What Keycloak costs
+
+A comparison that lists only one side's weaknesses is an advertisement. Three
+things are worse here, and one of them may decide it for you.
+
+**It cannot record which version of the terms somebody accepted.** Keycloak's
+own terms action records **that** they were accepted and when, not which text
+was in force, and a user-profile attribute filled in on a form is whatever the
+browser sends. The acceptance and its timestamp travel as `terms_accepted_at`;
+which text that was is read from the deployment repository's history, where the
+terms link is versioned. The Authentik deployment writes the version server-side,
+inside a policy, deliberately beyond the browser's reach. That is stronger.
+
+**A deletion report does not survive a restart of the identity server.** Both
+deployments report a deleted account back to AlgoJudge. Authentik hands its
+webhook to a worker with a queue in its database, while the Keycloak extension
+retries in memory for about ninety seconds and then prints one `ERROR` carrying
+everything needed to replay it by hand. If nobody reads that log line, that deletion is not
+reported.
+
+**It cannot serve LDAP.** Keycloak consumes a directory; it does not publish
+one. This matters to an installation whose LMS authenticates against a directory
+— the reference Moodle stack depends on that view, which is why the Authentik
+deployment is not retired.
+
+<Callout type="warn" title="If something in your installation reads LDAP, that decides it">
+An LMS, a lab-machine login or a mail system that authenticates against a
+directory served by your identity deployment cannot be pointed at Keycloak.
+Authentik serves LDAP through an outpost; Keycloak has no way to do it.
+</Callout>
+
+## Registering a provider in AlgoJudge
+
+Three steps, in the manager panel, behind the `provider:manage` permission.
+
+1. **Register the provider**, and copy the **redirect URI** the screen shows
+   into the provider's own allowlist. AlgoJudge computes and returns that path;
+   you do not invent it.
+2. **Write the mapping** — which of the directory's groups become which
+   permission template. Start with `deny`, which admits nobody the mapping does
+   not name.
+3. **If the provider can report deletions**, set a back-channel secret and turn
+   the channel on.
+
+### The fields
+
+| Field | Notes |
+|---|---|
+| `slug` | appears in the sign-in path and the redirect URI; expensive to change |
+| `issuer` | discovery finds the endpoints and keys. **HTTPS, except on loopback** |
+| `clientId`, `clientSecret` | the secret is **write-only** |
+| `scopes` | `openid` is requested whether or not it is listed |
+| `claimPath` | a dotted path — `groups`, `realm_access.roles`. **Never an expression** |
+| `unmappedBehavior` | `deny` *(default)* or `defaultTemplate` |
+| `accountUrl` | configuration, not discovery: OIDC standardises no such URL |
+| `deletionChannelEnabled`, `deletionSecret` | the back channel, per provider |
+| `callbackPath` | **computed and returned**, for pasting into the provider |
+
+**`claimPath` is a dotted path and never an expression.** An expression in
+provider configuration is code executed against the contents of a token.
+Two claim shapes are read, so an installation does not have to know which it
+has: several claims of the same name, and one claim holding a JSON array or
+object.
+
+A mapping rule is a claim **value** and a permission template **name**, matched
+by exact string equality. There are no patterns, because a wildcard in an
+allowlist is how an allowlist stops being one. Two guards are enforced and
+cannot be turned off: **`system:administrator` is unreachable through a
+mapping** in every configuration, and **nobody may map onto a permission they do
+not themselves hold**.
+
+### The secret is write-only
+
+The projection AlgoJudge returns for a provider has **no field for a secret** —
+that is the enforcement, not a filter somewhere. The panel gets
+`hasClientSecret` instead, because a form showing an empty box where a value
+exists reads as a loss. On an update, an absent secret means "leave the stored
+one alone".
+
+<Callout type="warn" title="A database backup carries a usable provider credential">
+The client secret is stored in plaintext, by decision. Encryption would relocate
+the secret rather than remove it — the key must live outside the database, or a
+backup carries both halves — so the exposure is stated instead of engineered
+around. Handle a dump as you would handle the credential itself. See
+[Backup](/en/install/backup), where the same is true of the key ring.
+</Callout>
+
+## What a sign-in does
+
+A federated identity is keyed on **issuer plus `sub`**, never on the email
+address. An address is something a person changes at their provider, and a
+federation keyed on one hands the account to whoever inherits the address.
+
+Two consequences surprise people, and both are deliberate:
+
+- **A provider never inherits an existing account by name or address.** A
+  colliding username is decorated with a short hash of the subject; a colliding
+  address is dropped and the account is provisioned without one.
+- **Two providers vouching for one person are two accounts today.** One person,
+  one account, whichever door they came through, is a requirement the product has
+  taken and not yet built.
+
+The order at every sign-in is: validate, resolve the mapping, apply the
+permission change, then decide whether to admit. It matters most in one case:
+**a known subject that maps to nothing under `deny` has its contribution
+withdrawn and is then refused.** A refusal that left yesterday's contribution in
+place would keep somebody staff for ever by the simple method of never signing in
+again.
+
+A **disabled** provider is the opposite case and also deliberate: nothing is
+written and nobody is demoted. Turning a provider off to reconfigure it is a
+statement about the registration, not about anybody's permissions.
+
+An account provisioned through a provider is approved on arrival and has **no
+password**, which is what makes it not a local account. An account holding both
+a link and a password stays local: somebody deliberately gave it a credential of
+its own.
+
+## The deletion back channel
+
+The provider posts `{ subject, requestedAt, requestId }` to AlgoJudge with a
+per-provider secret, and the request is **idempotent on `requestId`** — a
+webhook is retried on any hiccup, and three deliveries must remove one account
+once. It answers **404 to everything it refuses**, a wrong secret and an unknown
+subject alike, so a provider cannot learn who has an account here by asking about
+people one at a time.
+
+It opens a **24-hour window** an administrator can halt. `requestedAt` is
+recorded and deliberately not used to compute that window: a clock this
+installation does not own must not be able to shorten an administrator's day to
+nothing.
+
+<Callout type="warn" title="Authentik needs `sub_mode = user_id` for the channel to resolve anybody">
+Its deletion webhook carries the account's primary key, while its `sub` is a
+hash of that key unless the provider is configured this way. Under the default
+the two never match, every report resolves to nobody, and nothing anywhere says
+so. Keycloak's `sub` is already the account's own stable id, so there is no
+equivalent setting to get wrong.
+</Callout>
+
+Where you do not control the provider, leave its channel off.

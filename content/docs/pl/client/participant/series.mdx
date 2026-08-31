@@ -1,0 +1,81 @@
+---
+title: Rundy, tygodnie i zajęcia
+description: Skąd bierze się nazwa serii, co pokazują jej cztery stany i które z nich przyjmują zgłoszenia.
+source: en/client/participant/series.mdx
+sourceSha256: 810533fb34703c3d3fde944a1bf09bc0ef95ee3c8c3e32a120ab30af5c5eb711
+---
+
+**Seria** to grupa zadań wewnątrz aktywności. W zawodach nazywa się ją **rundą**,
+na zajęciach **tygodniem** albo **zajęciami**.
+
+## Skąd bierze się nazwa
+
+Nazwa, którą widzisz — *Runda 1*, *Tydzień 3* — jest zapisana na serii i osoba
+prowadząca aktywność może ją zmienić. **Typ aktywności** podaje wartość
+domyślną przy tworzeniu serii i decyduje o jednej rzeczy na Twoim ekranie:
+
+| Typ aktywności | Obok nagłówka serii |
+|---|---|
+| `contest@1` | **Start** i odliczanie do niego, dopóki seria jest zamknięta |
+| `course@1` | **Termin** |
+| cokolwiek innego | jedno i drugie |
+
+**Aktywność z jedną serią nie jest dzielona.** Nie ma nagłówka ani grupowania —
+zadania są wypisane jedno pod drugim.
+
+## Cztery stany
+
+Co seria pokazuje i co przyjmuje to dwa różne pytania. Na drugie nigdy nie
+odpowiada ekran — decyduje Server, bo odmowa wykonana wyłącznie po stronie
+Clienta nie byłaby żadną odmową.
+
+| Stan | Zadania | Zgłoszenia |
+|---|---|---|
+| **nierozpoczęta** | ukryte | nie |
+| **otwarta** | widoczne | tak |
+| **wstrzymana** | widoczne, chyba że prowadzący je zabrał, wstrzymując serię | nie |
+| **zakończona** | widoczne, na zawsze | nie |
+
+Warto powiedzieć wprost, co z tego wynika:
+
+- **Zakończona runda dalej jest do czytania.** Skończyła się, ale nie stała się
+  tajna — możesz wrócić do tego, co rozwiązywałeś. Organizator, który za rok
+  użyje tych samych zadań, może zamknąć zakończoną rundę — wtedy ukrywa zadania
+  tak jak runda, która się nie zaczęła, a panel mówi, o który przypadek chodzi.
+- **Adres treści zadania niczego nie omija.** Link do zadania w rundzie, która się
+  nie zaczęła, albo w takiej, której treści prowadzący właśnie ukrył, jest odrzucany
+  tak samo jak wszystko inne.
+
+## Co pokazuje zamknięta runda
+
+Nad miejscem, w którym byłyby zadania, panel mówi, o który przypadek chodzi:
+
+- **Jeszcze się nie rozpoczęła** — albo, jeżeli organizator pozwala pokazać
+  liczbę, `Zadania: 5` i rozmyte wiersze-zaślepki za panelem. Te wiersze nie mają
+  nazw: za rozmyciem nic nie jest ukryte, bo zadań naprawdę nie ma w tym, co
+  przysłał Server.
+- **Seria jest wstrzymana** — prowadzący ją zatrzymał.
+- **Seria się zakończyła.**
+- **Zablokowane przez: …** — trwa runda o wyższej randze.
+
+Jeżeli runda się nie zaczęła i ma godzinę startu, panel pokazuje też tę godzinę i
+odliczanie na żywo. Gdy odliczanie dojdzie do zera, strona pyta Server jeszcze
+raz, więc zadania pojawiają się bez przeładowywania.
+
+## Wstrzymanie
+
+Wstrzymana seria nie przyjmuje żadnego zgłoszenia, a zegar staje. Kiedy trwa
+wstrzymanie:
+
+- runda ma pomarańczową plakietkę **Wstrzymana** na liście zadań,
+- zegar w nagłówku pisze **Wstrzymana** zamiast odliczać,
+- formularz wysyłki blokuje przycisk i podaje powód.
+
+O tym, czy wstrzymanie zabiera też treści zadań, decyduje prowadzący w momencie
+wstrzymywania.
+
+## Ekran sam się aktualizuje
+
+Kiedy runda się otwiera, zamyka, zostaje wstrzymana, wznowiona albo przesunięta,
+przychodzi zdarzenie i strona przerysowuje się sama. Tak samo Twój status na
+zadaniu. Nie musisz siedzieć i odświeżać w sekundzie, w której runda się zaczyna.

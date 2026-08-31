@@ -1,0 +1,115 @@
+---
+title: What the host needs
+description: Docker with Compose v2, cgroup v2, five shell tools, disk for backups, and a log driver that stops.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Docker with Compose v2 or later
+
+The stack is one `compose.yaml` with profiles. Everything in this section is
+`docker compose`, the plugin, not the older `docker-compose` script.
+
+## cgroup v2, and it is not optional
+
+The Runner asks the container runtime for its cgroup version at startup and
+**refuses to start on v1**.
+
+This is not about whether the sandbox holds: **v1 enforces the limits perfectly
+well.** A job container over its memory limit is killed and reported as
+`OOMKilled`, and the whole adversarial test suite passes.
+
+What v1 cannot do is **report honestly**. `memory.peak` and `cpu.stat` are v2
+interfaces, and there is no v1 equivalent that tells the truth about a process
+that has already exited. The Runner's refusal says exactly this:
+
+> the limits are enforced on v1, but peak memory and CPU time cannot be measured
+> honestly, and a number shown to a participant beside their verdict has to be
+> right
+
+That is the whole reason. Those numbers are printed next to a verdict, and a
+participant tuning a solution against a memory limit is acting on them.
+
+There is an override, `AJ_Sandbox__AllowCgroupV1`. It exists because a
+developer's machine is often Docker Desktop, which may still report v1, and the
+alternative is a development stack that cannot start at all. When it is set the
+Runner logs on every start, at `ERROR`:
+
+```
+STARTING BELOW SPECIFICATION — … Times and memory reported beside a verdict
+on this host are not to be trusted.
+```
+
+<Callout type="warn" title="The override cannot be reported to the panel">
+`MachineDto` is a closed shape and drops anything it does not name, so a Runner
+running below specification looks exactly like any other Runner in the manager
+panel. The only place it says so is its own log. Do not set this on an
+installation anybody else uses.
+</Callout>
+
+### Peak memory also needs the `cgroupfs` driver
+
+Even on v2, the Runner measures a peak by creating a cgroup of its own, starting
+each job container underneath it with `--cgroup-parent`, and reading the parent
+after the child is gone — because the runtime API reports no peak for a
+container whose cgroup was destroyed the moment it exited.
+
+Two things can stop that working, and neither stops evaluation:
+
+- **the `systemd` cgroup driver**, where a cgroup parent is a slice name rather
+  than a path. The Runner logs `peak memory will not be measured: a cgroup
+  parent is only a path under the cgroupfs driver`;
+- **a cgroup filesystem it cannot write to**. Creating a directory under a
+  mounted `cgroup2` needs write permission. The Runner logs `peak memory will
+  not be measured: this Runner cannot create a cgroup`.
+
+In both cases the run proceeds and the verdict is correct; the peak is absent.
+
+## Five shell tools
+
+`bash`, `openssl`, `find`, `du`, `df`. The scripts in `AlgoJudge-Ops` use
+nothing else. Add `crontab` if you want the schedule installed for you.
+
+## Disk for backups, ideally not the database's
+
+**Put the backup directory on a different filesystem from the PostgreSQL
+volume.** On one filesystem no reserve setting can guarantee that a backup will
+not starve the database it is backing up.
+
+`preflight.sh` writes `BACKUP_MAX_TOTAL_GB` for you if it is empty — 25% of the
+filesystem the backups live on, never more than 50% — so that a count policy,
+which does not bound disk usage at all, is not the only thing standing between
+the backup directory and a full disk.
+
+## A bounded container log driver
+
+<Callout type="warn" title="The default log driver is unbounded">
+Docker's default is a JSON file with no size limit, and it is the commonest way
+one of these hosts fills its disk.
+</Callout>
+
+In `/etc/docker/daemon.json`:
+
+```json
+{ "log-driver": "json-file", "log-opts": { "max-size": "50m", "max-file": "5" } }
+```
+
+Then restart the daemon. `gc.sh` rotates the scripts' own logs under
+`/var/log/algojudge/`, but container logs are the daemon's business and only the
+daemon can bound them.
+
+## The group that owns the Docker socket
+
+On a host running a Runner, `DOCKER_GID` must be the group that owns
+`/var/run/docker.sock`. The Runner image runs unprivileged and reaches the daemon
+only through that group.
+
+```bash
+getent group docker | cut -d: -f3
+```
+
+On Docker Desktop the socket is `root:root`, so it is `0`. `preflight.sh` reads
+the real number — by asking a container, because on Docker Desktop and under WSL
+the socket this shell can see is not the one the daemon serves — and refuses if
+yours disagrees. A wrong value produces `Permission denied (os error 13)` from
+deep inside an HTTP client, naming neither the socket nor the group.

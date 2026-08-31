@@ -1,0 +1,47 @@
+{
+  "name": "algojudge-docs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "fumadocs-mdx",
+    "dev": "node scripts/sync-sources.mjs && node scripts/generate-openapi.mjs && next dev",
+    "build": "node scripts/sync-sources.mjs && node scripts/generate-openapi.mjs && next build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check:links": "node scripts/check-links.mjs",
+    "check:versions": "node scripts/check-versions.mjs",
+    "check:translations": "node scripts/check-translations.mjs",
+    "check:structure": "node scripts/check-structure.mjs",
+    "check:glossary": "node scripts/check-glossary.mjs",
+    "snapshot": "node scripts/snapshot.mjs",
+    "check:no-playground": "node scripts/check-no-playground.mjs",
+    "og": "node scripts/generate-og.mjs",
+    "check:section-links": "node scripts/check-section-links.mjs"
+  },
+  "dependencies": {
+    "fumadocs-core": "16.15.4",
+    "fumadocs-mdx": "15.4.0",
+    "fumadocs-openapi": "11.3.5",
+    "fumadocs-ui": "16.15.4",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/mdx": "2.0.14",
+    "@types/node": "26.4.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.3",
+    "postcss": "8.5.26",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "sharp": "0.35.4"
+  },
+  "overrides": {
+    "postcss": "8.5.26"
+  }
+}

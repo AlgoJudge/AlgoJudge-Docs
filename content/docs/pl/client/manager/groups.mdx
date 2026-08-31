@@ -1,0 +1,72 @@
+---
+title: Grupy
+description: Gdy zawodnikiem jest zespół, a nie osoba.
+source: en/client/manager/groups.mdx
+sourceSha256: 2286a64e6c9b9fec19a43c3fb07e464fe390673c8b1563936eb6b34aeb65d61a
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Grupami zarządzasz nad listą uczestników w zakładce **Uczestnicy**: dodaj grupę
+po nazwie, a potem ustaw ją w wierszu każdej osoby.
+
+## Czym jest grupa
+
+Kilka osób, które startują jako **jeden** zawodnik, wewnątrz jednej aktywności.
+Grupa zgłasza, wydaje **jedną** pulę zgłoszeń, ma **jeden** wiersz w rankingu, a
+jej ocena idzie do każdego członka.
+
+Jej członkowie nie są osobnymi zawodnikami. Kto startuje w grupie, nie ma
+własnego wiersza — wiersz na członka policzyłby te same punkty dwa razy w jednej
+tabeli — a jego wierszem na tablicy jest wiersz grupy.
+
+**Grupa jednoosobowa jest jak najbardziej na miejscu.** Tak właśnie nadaje się
+jednej osobie nazwę i opis w rankingu.
+
+## Reguły, które z tego wynikają
+
+- Osoba jest w **co najwyżej jednej grupie** w danej aktywności. Trzyma to jej
+  członkostwo, a nie konto, więc ta sama osoba może być tu w grupie, a obok
+  startować samodzielnie.
+- **Kto jest w grupie, ten wysyła jako grupa, i nie ma wyboru.** Przy zgłoszeniu
+  nikt o to nie pyta; Server ustala to z członkostwa.
+- Prowadzących się nie grupuje. Kontrolka jest wyłączona dla nadania, które
+  prowadzi aktywność — z tego samego powodu, dla którego ranking ich pomija.
+
+<Callout type="warn" title="Przeniesiesz osobę, nie przeniesiesz jej zgłoszeń">
+Zgłoszenie stempluje swoją grupę w chwili wysłania i przy niej zostaje. Każdego
+możesz przenieść do innej grupy w dowolnej chwili — zmieni to, co będzie
+dalej, i nic z tego, co już się wydarzyło. Tablica przeczytana godzinę temu
+nadal zgadza się z tą, którą widzisz teraz.
+</Callout>
+
+## Pula zgłoszeń
+
+Limit wiąże **zawodnika**, a nie osobę.
+
+- W grupie liczy zgłoszenia tej grupy.
+- Poza grupą liczy to, co osoba wysłała **będąc poza grupą**.
+
+Warto znać zwłaszcza tę drugą połowę: gdyby limit liczył wszystko, co ktoś
+kiedykolwiek wysłał, obciążyłby go wydatkami dawnej grupy, a gdyby liczył same
+zgłoszenia grupy, wyjście z niej stałoby się sposobem na obejście limitu.
+
+## Wymienianie składu na tablicy
+
+W ustawieniach aktywności: **wymieniaj skład grupy w rankingu**. Włączone — pod
+nazwą grupy zobaczysz jej skład; wyłączone — samą nazwę. W aktywności, w której
+nikt nie startuje grupowo, nie zmienia niczego.
+
+## Grupa systemowa
+
+Grupę możesz oznaczyć jako systemową. Nie wnosi wtedy zawodnika ani wyników — to
+ta sama reguła, która trzyma prowadzących poza rankingiem, tylko poziom wyżej —
+a **nadal zgłasza i nadal wydaje swoją pulę**. Dzięki temu sprawdzisz aktywność
+od środka, gdy ta trwa.
+
+## Usuwanie
+
+Gdy usuniesz grupę, ludzie z niej zostają i znów startują samodzielnie. Grupy,
+która ma zgłoszenia, nie usuniesz w ogóle: ten stempel jest zapisem tego, co
+startowało. Oznacz ją zamiast tego jako systemową — tak wycofuje się grupę z
+użycia.

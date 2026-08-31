@@ -1,0 +1,186 @@
+---
+title: Pre-configuration
+description: Standing an installation up from files on disk instead of clicking through the panel.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Everything an installation says about itself — its name, how it admits people,
+its welcome page, its privacy policy, its mark, its colours — lives in the
+database. Pre-configuration is how it gets there from files rather than from
+somebody clicking.
+
+`AlgoJudge-Ops` mounts its own `preconfig/` directory read-only at
+`/etc/algojudge/preconfig` and points `AJ_Preconfiguration__Path` at it. The
+directory is committed so the mount never fails; everything an installation puts
+in it is git-ignored, because what an organisation configures is theirs. With
+the setting unset the feature is off and the endpoints refuse, naming it.
+
+`AlgoJudge-Server/preconfig.example/` is a filled-in directory to copy from.
+
+## Read once, at the first start of an empty database
+
+Fill `preconfig/` in **before** the first `docker compose up` and the
+installation comes up already configured.
+
+"Fresh" is two conditions, read before the seeder runs: **no `Instance` row and
+no user.** Two rather than one because a database restored from a dump older
+than the `Instance` table has no row either — and it does have users.
+
+**Nothing is applied by a boot after that, ever.** Re-reading the files on every
+start would silently undo whatever an administrator changed in the panel since,
+at the moment least likely to be watched. The second time is somebody asking:
+
+```bash
+docker compose exec -T server aj-admin config status   # what would change
+docker compose exec -T server aj-admin config apply
+```
+
+`status` writes nothing, so it is safe to run at any time; `apply` performs
+exactly what `status` listed, from the same walk. `apply` takes no confirmation
+word — it adds, never withdraws, and nothing it does is unreadable afterwards.
+
+Both commands are behind `/admin`: the Server's own loopback interface and the
+configured token, with one 404 for every refusal. It is deliberately **not** a
+permission — this reconfigures the installation from a file only somebody
+standing on the machine can put there, and it should not be reachable by a
+stolen administrator session.
+
+<Callout type="warn" title="A first start it cannot read does not happen">
+A directory that fails validation stops the deployment rather than bringing up a
+half-configured installation. The only start on which that can occur is one
+somebody is watching; every later restart reads nothing at all.
+</Callout>
+
+## It adds and never withdraws
+
+- A setting the file does not state is **left alone**, never reset to a default.
+  An explicit `null` means the same; there is no third meaning.
+- A document the directory does not carry **stays published**.
+- **Unpublish** is a panel act, done by somebody who chose it.
+
+Publishing a document **adds a revision** rather than replacing one, so that
+"which policy was in force on the third of August" stays answerable. An apply
+that republished whatever it found would grow that history by one entry per run
+and destroy the thing versioning exists for — so the comparison is by
+**SHA-256**, each file on disk against what is currently published. Equal, and
+nothing happens. Applying twice does not grow a policy's revision history.
+
+Nothing records what was applied. There is no state table and no stored digest:
+the answer is derived from what the database actually holds, so it cannot drift
+away from it.
+
+## The directory
+
+```
+preconfig/
+├── algojudge.yml
+├── theme.yml
+├── fonts/
+├── pages/
+└── logo.svg
+```
+
+### algojudge.yml
+
+```yaml
+format: algojudge-preconfiguration
+version: 1
+
+instance:
+  name: "Wydział Matematyki i Informatyki"
+  localRegistrationEnabled: false
+  requireEmail: false
+  requireConfirmedEmail: false
+  showLogo: true
+  showLocalSignIn: true
+  accountDeletionEnabled: true
+  externalJudgingEnabled: false
+  seriesRestrictionsEnabled: true
+  externalFetchHosts:
+    - onlinejudge.org
+```
+
+- `format` and `version` are **required**, and a version this Server does not
+  know is refused rather than guessed at: a later version may mean something
+  different by a key this one recognises.
+- Every key under `instance:` is optional. Absent means leave alone.
+- **An unknown key is refused and named**, with the accepted ones listed. A typo
+  quietly ignored is how a configuration file comes to claim something that is
+  not in force.
+- `externalFetchHosts` is the **whole list**, replaced rather than added to. An
+  empty list means this installation fetches nothing.
+
+String values expand a `${VARIABLE}` reference from the Server's own
+environment, and nothing cleverer — no defaults, no nesting. **An unresolved
+variable refuses the apply** rather than storing the text of its own name: an
+installation whose settings look configured and are not is worse than one that
+will not start.
+
+### pages/
+
+The six kinds an **instance** publishes:
+
+`welcome` · `home` · `terms` · `privacy` · `cookies` · `accessibility`
+
+`rules` is not among them. It belongs to an activity, not to the installation.
+
+A stem that is not one of the six is refused, naming the six that are. Naming
+follows the same convention as a problem statement: `welcome.md` is the default
+and `welcome-en.md` a translation with a BCP-47 subtag, split on the **first**
+hyphen so `welcome-pt-BR.md` survives whole.
+
+**Front matter is a warning, not a refusal.** A page whose front matter states no
+`version` will not render in the Client, and you should hear that while somebody
+is watching — but the page is still published.
+
+### The mark
+
+`logo.svg`, `logo.png` or `logo.webp` beside `algojudge.yml`, with a
+`logo-<language>` name for one per language. Published as an instance mark,
+exactly as the panel does it.
+
+### theme.yml
+
+The colours and typeface, its own document with its own `format` of
+`algojudge-theme` and `version: 1`. It is **byte for byte the file the manager
+panel publishes**, so a theme exported from the panel drops in here and a theme
+written here reads back in the panel — which is also what lets the checksum
+comparison work on it unchanged.
+
+```yaml
+format: algojudge-theme
+version: 1
+
+light:
+  primary: "#6b4c9a"
+dark:
+  primary: "#a98cd8"
+```
+
+- **Every key is optional and absent means the product's default** — not black,
+  not empty. A theme stating two keys changes two things.
+- A colour is six hexadecimal digits after a hash and nothing else: not a
+  keyword, not `rgb()`, not `var()`. These values are written into a stylesheet,
+  and a field that took anything else would let this file carry CSS.
+- The dark scheme is stated in full rather than derived from the light one. A
+  dark scheme worked out from a light colour fails a contrast floor
+  unpredictably.
+- A typeface is a **file this installation stores**, not a name it hopes the
+  reader's machine has. Put the `.woff2` faces in `fonts/` beside the theme and
+  declare them there. Naming a family with no face is refused; the four generic
+  names — `system-ui`, `sans-serif`, `serif`, `monospace` — are the exception.
+
+## What it does not carry
+
+**Identity providers and permission templates are deliberately out.** A provider
+registered from a file is a sign-in path configured by whoever can write to a
+mount, and a permission template from a file is privilege from a file. Both
+belong to a decision of their own. Register a provider in the panel:
+[Identity](/en/install/identity).
+
+Pre-configuration is also **not the environment**. The `AJ_*` variables
+configure what the process needs in order to start — the database, storage,
+trusted proxies, the key ring, the admin token. This file configures what the
+database holds. Two files, two lifetimes, two owners, and no setting appears in
+both.

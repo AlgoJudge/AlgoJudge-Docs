@@ -1,0 +1,60 @@
+---
+title: Twoje konto
+description: Dane, hasło, kopia wszystkiego, co o Tobie przechowujemy, i odejście.
+source: en/client/participant/account.mdx
+sourceSha256: f7c986c6de64ed4ad3f10b1efdb7de34f3972f857d6720965217421564362a5a
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**Moje konto** jest w menu pod Twoją nazwą, w prawym górnym rogu. Trzy zakładki:
+**Dane**, **Hasło** i **Moje dane**.
+
+Konto, które przyszło od dostawcy tożsamości, ma obok tytułu plakietkę **SSO** i
+komunikat *To konto prowadzi dostawca tożsamości. Imię, nazwisko, login, adres i
+hasło zmienia się tam.* Zarówno pola danych, jak i zakładka hasła są dla niego
+zablokowane. Tożsamość należy do dostawcy.
+
+## Dane
+
+**Imię** i **Nazwisko** są opcjonalne. **Login** jest wymagany — pod nim się
+logujesz i **to jego widzą inni, gdy nie podasz imienia i nazwiska**, w rankingu
+również.
+
+Kiedy zmienisz **Email**, adres znowu jest niepotwierdzony.
+
+## Hasło
+
+Obecne hasło, a potem nowe dwa razy. **Co najmniej 12 znaków.**
+
+Nigdzie w produkcie nie ma samoobsługowego resetu. Zapomniane hasło wydaje na
+nowo administrator.
+
+## Moje dane
+
+### Eksport
+
+**Pobierz moje dane** zapisuje wszystko, co o Tobie przechowujemy, w pliku,
+który zostaje u Ciebie.
+
+### Usunięcie konta
+
+<Callout type="warn" title="Natychmiastowe i nieodwracalne">
+Twoje zgłoszenia i wyniki **zostają**, pod identyfikatorem, który już Cię nie
+nazywa.
+</Callout>
+
+To, co proponuje ekran, zależy od tego, skąd pochodzi Twoje konto.
+
+**Konto lokalne.** Wpisz `DELETE` w polu potwierdzenia, podaj hasło i naciśnij
+**Usuń konto**. Przycisk jest zablokowany, dopóki jedno i drugie nie będzie
+poprawne.
+
+**Konto od dostawcy.** To inna czynność i inaczej się nazywa: **Usuń moje konto**
+usuwa Twoje powiązanie z dostawcą tożsamości, a okno dialogowe pyta raz, zanim to
+nastąpi. Jeżeli logujesz się wyłącznie przez to powiązanie, konto zostaje
+wyczyszczone — natychmiast, na warunkach opisanych wyżej.
+
+**Twoje konto u dostawcy zostaje.** Tam, gdzie dostawca publikuje sposób na jego
+usunięcie, ekran pokazuje na to drugi, osobny odnośnik. Jeżeli zrobisz tylko to
+pierwsze, u dostawcy nadal jesteś zalogowany i wejdziesz z powrotem od ręki.

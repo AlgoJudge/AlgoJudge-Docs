@@ -1,0 +1,170 @@
+---
+title: Isolation and the host
+description: What contains a submission, what the arrangement deliberately does not buy, and what a host must provide before it can mark anybody's work.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Every submission is untrusted and assumed hostile: attempts to read system files
+and secrets, write outside the working directory, spawn processes, fork-bomb,
+exhaust memory or CPU, produce unbounded output, reach the network, survive past
+the end of a test, or interfere with another job.
+
+## Sibling containers
+
+The Runner starts each step of the pipeline in **its own container**, through the
+container runtime's API. Those containers are **siblings** of the Runner, not
+children of it.
+
+**The Runner holds the container runtime's socket; the containers that run
+submissions never do.** That is one line for a code review, and it is the whole
+of the model: the socket goes to the Runner and to nothing the Runner starts.
+
+Because job containers are siblings, they outlive the process that made them. The
+Runner labels every container it starts and sweeps orphans at start-up; without
+that, a crash-loop would fill the evaluation host with dead sandboxes until it
+ran out of disk.
+
+## What is applied to every step that runs a submission
+
+| | |
+|---|---|
+| `--network=none` | no route anywhere |
+| `--cap-drop=ALL` | no capabilities |
+| `--security-opt=no-new-privileges` | and none may be gained |
+| read-only root filesystem | writes go to a tmpfs or nowhere |
+| tmpfs `rw,noexec,nosuid` | scratch that cannot be executed from |
+| `--user 65534:65534` | never root, even inside |
+| `--memory` with `--memory-swap` **equal** | without the second the limit means nothing — the process swaps instead of being killed |
+| `--pids-limit` | a fork bomb hits a wall |
+| `--cpus` **and** `--cpuset-cpus` | capping CPU is not pinning it; without a pinned core, threads buy wall-clock time the single-thread rule does not give them |
+| wall clock = the problem's limit **plus one second** | something outside the process has to reap one stuck in an uninterruptible syscall |
+| an output cap enforced **while it runs** | read afterwards, a flooding program fills the host's disk first |
+
+Every row has a test that asserts two things: the program was stopped correctly,
+**and the host is unchanged afterwards**. A sandbox that contains a program by
+leaking a process has not contained it.
+
+## One container per test, never reused
+
+Four rules define what one test is:
+
+1. **One test, one container, never reused.** A fresh container is the only
+   answer that does not depend on cleanup having been written correctly.
+2. **The program is given its own test's input and nothing else** — one file,
+   mounted read-only. Mounting the whole test directory would put the expected
+   answer inside the submission's own container.
+3. **Nothing a program writes reaches the next test**, for the scratch tmpfs and
+   for `/dev/shm`.
+4. **A package-supplied checker is contained on the same terms.** It comes from a
+   problem author rather than from the platform, runs with its own limits and no
+   network, and never in the Runner's process. A checker stopped by a limit is
+   reported as a **broken checker**, never as a wrong answer.
+
+Two consequences that are easy to get backwards:
+
+- **`/dev/shm` is writable** and the profile does not ask for it. The runtime
+  mounts a small tmpfs there in every container and a read-only root does not
+  cover it. It breaks none of the four rules — it is new with the container, and
+  tmpfs pages are charged to the memory limit — but it is a surface nobody
+  declared, which is why rule 3 names it explicitly.
+- **The input is a mounted file, not a pipe.** A pipe would be marginally
+  stricter and is deliberately not used: it is not seekable, so a solution that
+  reads its input twice would work on its author's machine and fail here.
+
+The build step gets **no writable host path**. It writes to its own container
+layer and the artefact is read back through the runtime API. The alternative was
+opening a directory to every user on the host.
+
+## cgroup v2 is required, and is checked at start
+
+The Runner asks the **container runtime**, not the filesystem:
+
+```bash
+docker info --format '{{.CgroupVersion}}'
+```
+
+It must print `2`. Asking the daemon is deliberate: the Runner may itself be in a
+container, and what *it* sees is a different question from what the containers
+*it starts* will get.
+
+**The limits are enforced on cgroup v1** — measured, not assumed: a container
+over its memory limit is OOM-killed there and reported as such. What v1 cannot do
+is **measure honestly**. `memory.peak` and `cpu.stat` are v2 interfaces, and
+those two numbers are shown to a participant beside their verdict. A number that
+is sometimes wrong is worse than no number.
+
+### What a host must satisfy
+
+| | Required | How to check |
+|---|---|---|
+| Kernel | cgroup v2 compiled in | `grep cgroup2 /proc/filesystems` |
+| Kernel | **≥ 5.19** for peak memory | `memory.peak` arrived in 5.19 |
+| Hierarchy | **unified, not hybrid** | `cat /sys/fs/cgroup/cgroup.controllers` must be non-empty |
+| Controllers | `cpu`, `cpuset`, `memory`, `pids` | one per limit the sandbox sets. A missing controller does not error — the limit is simply not applied |
+| Delegation | switched on for children | `cat /sys/fs/cgroup/cgroup.subtree_control` must list them |
+| Docker | ≥ 20.10 | earlier versions have no cgroup v2 support at all |
+
+Unified is the default on Ubuntu 21.10+, Debian 11+, Fedora 31+ and RHEL 9+. An
+older host boots hybrid and needs the kernel parameter
+`systemd.unified_cgroup_hierarchy=1` and a reboot — which makes "enable v2" a
+maintenance window rather than a command.
+
+<Callout type="warn" title="Test the content of cgroup.controllers, not its size">
+A cgroup pseudo-file reports a size of zero however much it holds, so a size test
+calls every host v1. Read the file and check that it is not empty.
+</Callout>
+
+`AJ_Sandbox__AllowCgroupV1` starts anyway, for a development machine whose Docker
+still reports v1. It shouts at `ERROR` on every start, and
+[Configuration](/en/runner/configuration) records the trap in how it is read.
+
+## `linux/amd64` only
+
+That is not an oversight. cgroup v2 on amd64 is what the measurement rests on,
+and a submission's container has to match the architecture of the host running
+it — an arm64 language image could not be used by any Runner that exists.
+
+## What this does not buy — read this part
+
+<Callout type="warn" title="Anything that can reach the container runtime's socket is root on the host">
+The Runner holds that socket. It can start a privileged container that mounts
+`/`. That is not a flaw in the arrangement; it **is** the arrangement.
+
+- **Mounting the socket read-only restricts nothing that matters.** The flag
+  applies to the socket *file*, not to the API spoken over it.
+- **A bug in the Runner is a host compromise**, not a container compromise.
+- **This is reducible, not safe.** The path can be proxied, scoped, moved to
+  rootless Podman, or pushed onto a separate machine. Each narrows it. None
+  removes the rule below.
+</Callout>
+
+**Treat the evaluation host as compromised.** As a deployment instruction, not a
+slogan:
+
+- **No secrets on it.** No Server credentials, no registry tokens, no keys for
+  anything but the Runner's own identity.
+- **Nothing else on it.** Not the Server, not the database, not a reverse proxy
+  for something you care about.
+- **Reproducible.** You should be able to destroy and rebuild it without
+  thinking, because that is the response to any suspicion.
+- **No lateral reach.** It initiates one outbound connection, to the Server, and
+  nothing else.
+
+[Install and operate](/en/install) is where a whole installation's arrangement of
+hosts is chosen.
+
+### Two arrangements that are rejected
+
+- **Privileged Docker-in-Docker.** The privilege the *infrastructure* needs
+  becomes the privilege available to anyone who escapes the inner sandbox.
+- **Passing the socket into the submission container.** This hands untrusted code
+  the host directly. It is not a weaker version of the sibling model; it is a
+  different mistake.
+
+## The policy dictionary is not part of this
+
+[The policy profile](/en/runner/policy) refuses to compile certain source. It is
+a **policy** control, every rule in it is expected to be bypassable, and a
+submission that gets past it is still contained by everything above. A document
+suggesting otherwise would be teaching a false sense of safety.

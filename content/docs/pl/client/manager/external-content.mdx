@@ -1,0 +1,91 @@
+---
+title: Zasoby zewnętrzne
+description: Skąd instalacja może pobierać dokumenty i czy w ogóle może.
+source: en/client/manager/external-content.mdx
+sourceSha256: a06851810b2961c9e0499560f3d30a16e3874e043c538eb9d7e3e72a684f6e3d
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Żeby zaimportować zadanie skądinąd, trzeba pobrać jego treść, a hosta, który nie
+wysyła nagłówka `Access-Control-Allow-Origin`, przeglądarka nie odczyta — choćby
+prowadzący bardzo chciał. Pobiera więc **Server** — i wyłącznie z hostów
+wymienionych na tym ekranie.
+
+## Przełącznika nie ma na tym ekranie
+
+<Callout type="warn" title="Lista hostów wygląda jak zgoda, a drzwi są zamknięte">
+O tym, czy cokolwiek z tego się dzieje, decyduje *zezwól na ocenianie przez
+usługi, których ta instalacja nie prowadzi*, na ekranie [ustawień
+instancji](/pl/client/manager/instance). Domyślnie jest **wyłączone**. Dopóki
+jest wyłączone, nic stąd nie jest pobierane i żadne takie zadanie nie jest
+wydawane — praca czeka w kolejce — więc włączysz je później i nic nie stracisz.
+</Callout>
+
+Strona mówi to na górze, gdy przełącznik jest wyłączony, zanim pokaże ci listę.
+
+## Lista hostów
+
+Dodaj hosta po nazwie, usuń go przyciskiem obok. Instalacja przechowuje listę
+nazw, a dopasowanie jest celowo wąskie:
+
+- porównywane po **całym hoście**, więc nazwa, która jedynie kończy się tak samo,
+  nie pasuje;
+- **wyłącznie HTTPS** i wyłącznie **port domyślny**;
+- usuń wszystko, a ta instalacja nie pobierze niczego.
+
+Zmiana listy zapisuje się od razu. Obszar otwiera `instance:update`, więc ta sama
+osoba, która może włączyć przełącznik, decyduje, dokąd wolno sięgać.
+
+## Import z UVa Online Judge
+
+Dwie drogi do środka, dalej jedna wspólna.
+
+**Wklej numery zadań**, oddzielone przecinkami lub spacjami. Server odszukuje
+każdy numer w publicznym katalogu, żeby poznać tytuł, pobiera treść i zakłada
+osobne zadanie — nazwane tak, jak nazywa je archiwum, i widoczne dla całej
+instalacji, bo zaimportowane zadanie jest wpisem w bibliotece, a nie czyimś
+szkicem.
+
+**Przeglądaj archiwum** otwiera zamiast tego przeglądarkę zadań. Podaje ona
+numer, tytuł i adres treści, więc o nic nie trzeba dopytywać.
+
+Każdy numer dostaje własny wiersz w odpowiedzi. Partia, która zadziałała w
+połowie, jest przypadkiem zwykłym, a nie błędem: te, które weszły, są już
+zadaniami.
+
+| Co może powiedzieć wiersz | |
+|---|---|
+| zaimportowano jako `UVa-100` | jest w bibliotece |
+| archiwum nie zna zadania o tym numerze | |
+| już zaimportowane | slug jest zajęty, co rozstrzyga Server, a nie zgadujący ekran |
+| treści nie udało się pobrać | zadanie mogło zostać wycofane z archiwum |
+
+**To, czy treść nadal istnieje, rozstrzyga się przez jej pobranie**, a nie przez
+odczytanie pola statusu w cudzym katalogu.
+
+Slug ma zarezerwowany prefiks, a żeby założyć zadanie w zarezerwowanej
+przestrzeni nazw, trzeba mieć `problem:import:external`. To właśnie powstrzymuje
+kogoś przed ręcznym zrobieniem drugiego `UVa-100` obok zaimportowanego — dwa
+zadania o tej samej nazwie, jedno zaimportowane i jedno wpisane, to pomyłka,
+której potem nikt nie odkręci.
+
+### Klucz do archiwum
+
+Instalacja może mieć klucz do archiwum; ustawisz go wśród **kluczy dostępu** na
+ekranie instancji. Server prosi o niego dopiero wtedy, gdy otwierasz przeglądarkę
+zadań — ekran, którego nikt nie otworzył, nie wydał ani jednego z tokenów
+archiwum.
+
+Wyniki są trzy, nie dwa:
+
+- klucz otwiera archiwum z prywatnymi metadanymi tej instalacji;
+- **brak klucza otwiera archiwum publiczne**, a strona mówi, że przeglądasz to,
+  co archiwum udostępnia wszystkim. Instalacja, która nie ma żadnego, wybrała
+  przeglądanie anonimowe — to pełnoprawny tryb pracy;
+- wszystko inne jest odmową i mówi jaką: klucz odrzucony, adres tej instalacji
+  odrzucony, archiwum nie ma teraz wolnego poświadczenia albo nie dało się do
+  niego dotrzeć. Dwa pierwsze naprawia administrator; trzeci mija sam.
+
+Server celowo nie schodzi po cichu do trybu anonimowego — ukryłby zepsutą
+konfigurację za przeglądarką, która wygląda jedynie na ubogą w metadane.

@@ -1,0 +1,96 @@
+---
+title: Dokumentacja AlgoJudge
+description: Otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.
+source: en/index.mdx
+sourceSha256: c7f8c51b4bd2942817142d2bb597bafb93129cd81a2e71e5f8fe5f8133c8e11d
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { BookOpen, Cable, Cpu, Send, Server, Settings } from "lucide-react";
+
+AlgoJudge to otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów
+i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.
+
+Uruchamiasz je u siebie. Nikt poza Tobą nie przechowuje kont uczestników, zadań
+ani wyników.
+
+## Od czego zacząć
+
+<Cards>
+  <Card
+    icon={<Send />}
+    href="/pl/client/participant"
+    title="Dla uczestnika"
+    description="Wejdź do aktywności, przeczytaj zadanie, wyślij rozwiązanie i sprawdź, co się z nim stało."
+  />
+  <Card
+    icon={<BookOpen />}
+    href="/pl/client/manager"
+    title="Dla prowadzącego"
+    description="Buduj aktywności i serie, prowadź bibliotekę zadań, odpowiadaj na pytania, decyduj kto co może."
+  />
+  <Card
+    icon={<Settings />}
+    href="/pl/install"
+    title="Instalacja i utrzymanie"
+    description="Postaw instalację na własnej maszynie, utrzymaj ją i odzyskaj po awarii."
+  />
+  <Card
+    icon={<Server />}
+    href="/pl/server"
+    title="Server"
+    description="Model dziedziny, model uprawnień i referencja REST generowana z samego API. Po angielsku."
+  />
+  <Card
+    icon={<Cpu />}
+    href="/pl/runner"
+    title="Runner"
+    description="Maszyny oceniające zgłoszenia: czego wymagają, jak są izolowane i jaką pracę dostają. Po angielsku."
+  />
+  <Card
+    icon={<Cable />}
+    href="/pl/protocol"
+    title="Protocol"
+    description="Kontrakt między Serverem a Runnerem, dla kogoś, kto pisze własnego Runnera. Po angielsku."
+  />
+</Cards>
+
+## Z czego się składa
+
+Trzy programy, a każdy z nich odmawia robienia tego, co należy do pozostałych:
+
+- **Client** to część, którą widzą ludzie. Rysuje aktywności, zadania, formularze
+  i wyniki.
+- **Server** przechowuje wszystko, co ma przetrwać — konta, zadania, zgłoszenia,
+  wyniki — i decyduje, kto co może zrobić. **Nigdy nie kompiluje ani nie
+  uruchamia nadesłanego rozwiązania** i nie rozumie, co znaczy konkretny rodzaj
+  zadania.
+- Uruchamianiem zajmuje się **Runner**. Pobiera zlecenie, ocenia je w izolacji
+  i odsyła wynik. Połączenie zawsze nawiązuje Runner, więc może pracować za
+  domowym routerem, bez własnego adresu.
+
+Warto od razu wiedzieć, co z tego wynika: **dodanie nowego rodzaju zadania nie
+wymaga zmiany w Serverze.** Wystarczy, że Client nauczy się go wyświetlać,
+a Runner — oceniać rozwiązania.
+
+## Której wersji dotyczy
+
+**Nic jeszcze nie zostało wydane**, więc ta dokumentacja opisuje stan gałęzi
+`main` — dlatego przy nazwie u góry stoi *przed wydaniem*, a nie numer. Pierwsze
+wydanie utworzy `v0.1` i od tej pory numer będzie w adresie:
+`/pl/install/v0.1/backup`.
+
+**Każda sekcja ma własne wersjonowanie.** `/install/` zmienia się przy wydaniu
+`AlgoJudge-Ops`, `/server/` przy wydaniu Servera, `/protocol/` przy zmianie
+kontraktu. Nie ma jednej wersji całej witryny, bo produkty nie wydają się razem
+— i dlatego numer stoi wewnątrz sekcji, a nie przed nią.
+
+Wersjonujemy z dokładnością do **minor**. Wydanie patch aktualizuje swój katalog
+w miejscu, a jeżeli miałoby zmienić opisane zachowanie, to nie było wydanie
+patch.
+
+AlgoJudge jest w fazie `0.x`, a **wydanie `0.x` nie daje żadnej obietnicy
+zgodności wstecznej.** Do każdego wydania minor dołączamy notatkę: co się zepsuło
+i co z tym zrobić. **Dokumentacji starszych wersji nigdy nie usuwamy** i nigdy
+nie dopisujemy jej po fakcie — powstaje w dniu wydania albo wcale. Dla
+instalacji, której nikt nie zaktualizował, stara strona jest jedyną działającą.

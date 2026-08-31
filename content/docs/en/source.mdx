@@ -1,0 +1,58 @@
+---
+title: Source code
+description: Where each part of AlgoJudge is developed, and what you may do with these pages.
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { AppWindow, Boxes, Cpu, Server } from "lucide-react";
+
+AlgoJudge is open source. The three programs this documentation describes are
+developed in the open, one repository each.
+
+<Cards>
+  <Card
+    icon={<AppWindow />}
+    href="https://github.com/AlgoJudge/AlgoJudge-Client"
+    title="AlgoJudge-Client"
+    description="Every screen described under Using AlgoJudge. React and TypeScript."
+  />
+  <Card
+    icon={<Server />}
+    href="https://github.com/AlgoJudge/AlgoJudge-Server"
+    title="AlgoJudge-Server"
+    description="The REST API and everything durable. ASP.NET Core and PostgreSQL. It never runs a submitted solution."
+  />
+  <Card
+    icon={<Cpu />}
+    href="https://github.com/AlgoJudge/AlgoJudge-Runner"
+    title="AlgoJudge-Runner"
+    description="The machines that evaluate submissions, and the language images they evaluate them in."
+  />
+  <Card
+    icon={<Boxes />}
+    href="https://github.com/AlgoJudge"
+    title="The AlgoJudge organisation"
+    description="These three, and everything else the project builds."
+  />
+</Cards>
+
+Each section of this site also links its own repository at the foot of its
+sidebar. The installation stack has a repository of its own, linked from
+[Install and operate](/en/install), which is the section that documents it.
+
+## What you may do with this
+
+**The code is MIT and these pages are CC BY 4.0.** Both let you copy, change and
+sell; both ask only that you keep the notice saying where it came from.
+
+| What | Licence |
+|---|---|
+| The programs above, and this site's own source | MIT |
+| The text of these pages, in both languages | CC BY 4.0 |
+| A command, a compose fragment or a configuration sample shown on a page | MIT |
+
+The samples are MIT rather than CC BY on purpose: pasting a command out of a
+page should not oblige you to credit anybody.
+
+To credit the pages: **AlgoJudge documentation, © 2026 The AlgoJudge Authors,
+CC BY 4.0**, linking to `https://docs.algojudge.pl`.

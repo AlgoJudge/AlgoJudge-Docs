@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint, typecheck, build and the content checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Read from `.nvmrc`, never written here: a literal `node-version` beside
+      # a file that also states one is a pair that drifts.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # This is also what fetches the Server's `openapi.json` from the commit
+      # pinned in `content-sources.json` and generates the REST reference. A
+      # pinned ref that has started serving different bytes fails here.
+      - name: Build
+        run: npm run build
+
+      - name: Every internal link resolves, and carries a locale
+        run: npm run check:links
+
+      - name: No page is named like a version
+        run: npm run check:versions
+
+      - name: No Polish page has drifted from its English source
+        run: npm run check:translations
+
+      - name: A translation has the same shape as its source
+        run: npm run check:structure
+
+      - name: Polish uses the interface's own words
+        run: npm run check:glossary
+
+      - name: Each section links the repository it documents
+        run: npm run check:section-links
+
+      # Reads `out/`, so it has to follow the build.
+      - name: The site contacts no installation
+        run: npm run check:no-playground
+
+  image:
+    name: The image builds and serves the site
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: docker build -t algojudge-docs:ci .
+
+      # **Started and asked, not merely built.** A configuration error in nginx
+      # is invisible to `docker build` and fatal at run time, and the
+      # trailing-slash rule is exactly the kind of thing that only fails when
+      # something asks for a page.
+      - name: Serve it and ask for pages
+        run: |
+          docker run -d --name docs-ci -p 8080:8080 algojudge-docs:ci
+          for i in $(seq 1 30); do
+            if curl -sS -o /dev/null http://localhost:8080/healthz; then break; fi
+            sleep 1
+          done
+          curl -sS -o /dev/null -w 'healthz %{http_code}\n' http://localhost:8080/healthz
+          for path in /en/ /pl/ /en/install/ /pl/install/ /en/server/rest/ /api/search/en /api/search/pl; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
+            echo "$path $code"
+            [ "$code" = "200" ] || { echo "expected 200 at $path" >&2; docker logs docs-ci >&2; exit 1; }
+          done
+          # `/` is a redirect, not a page: the URL contract's one standing rule.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          echo "/ $code"
+          [ "$code" = "302" ] || { echo "expected 302 at /" >&2; exit 1; }
+
+          # **A header set in one `location` cancels every header inherited from
+          # the server block.** That is nginx's rule, it is silent, and it took
+          # the whole policy off every script and stylesheet on the site once.
+          asset=$(curl -sS http://localhost:8080/en/ | grep -o '/_next/static/chunks/[^"]*\.js' | head -1)
+          echo "asset $asset"
+          for header in content-security-policy x-content-type-options x-frame-options; do
+            curl -sSI "http://localhost:8080$asset" | grep -qi "^$header:" || { echo "$header missing on $asset" >&2; exit 1; }
+          done
+          echo "security headers reach static assets"
+
+          docker stop docs-ci

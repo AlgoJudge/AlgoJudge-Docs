@@ -1,0 +1,58 @@
+---
+title: The manager panel
+description: Twelve areas, and why you see only some of them.
+---
+
+The panel lives at `/manager`. Its landing screen lists what you may open and
+nothing else: *everything you may administer here — what you may not is not
+listed*.
+
+That is not decoration. The sidebar, the landing screen and the guard on every
+route all read one table, so a card cannot offer you a screen that then answers
+403, and a screen you can reach cannot be missing from the menu.
+
+## The twelve areas
+
+Holding **any one** of the permissions in the last column opens the area.
+
+| Area | What it is for | Any one of these admits |
+|---|---|---|
+| [Users](/en/client/manager/enrolment) | Accounts, temporary logins in bulk, blocking and notes. | `user:read:all` |
+| [Grants](/en/client/manager/permissions) | Who may do what, in the system and in each activity. | `grant:read:all` |
+| [Permission templates](/en/client/manager/permissions) | The sets a grant starts from, and the ones that ship. | `template:read` |
+| [Problems](/en/client/manager/problems) | The library: statements, attachments, packages and versions. | `problem:read:own`, `problem:read:all` |
+| [Activities](/en/client/manager/activities) | Contests and courses: series, assignments, times and enrolment. | `activity:create`, `activity:update`, `activity:archive` |
+| [Submissions](/en/client/manager/submissions) | Every submission, its source, its attempts and a rejudge. | `submission:read:all` |
+| [Questions and announcements](/en/client/manager/questions) | Answering, publishing an answer to everyone, announcing. | `question:read:all`, `question:answer` |
+| [Runners](/en/client/manager/runners) | The machines that evaluate: approval, tags and their reports. | `runner:read` |
+| [Instance](/en/client/manager/instance) | What this installation is called, the mark it shows, and the documents it publishes. | `instance:update` |
+| [External logins](/en/client/manager/logins) | Identity providers, what a claim from one grants, and the accounts asked to go. | `provider:manage` |
+| [LTI platforms](/en/client/manager/logins) | Course platforms that may open activities for their students. | `provider:manage` |
+| [External content](/en/client/manager/external-content) | Where this installation may fetch documents from, and whether it may at all. | `instance:update` |
+
+Hold none of them and the panel has nothing in it for you: neither the entry in
+the navigation nor the landing screen appears.
+
+## What "you hold it" means here
+
+An area is offered when you hold its permission **anywhere** — in one activity
+is enough. Somebody who runs a single course still needs the panel that course
+lives in.
+
+The screens themselves are stricter. Inside an activity, what you may hand out
+is what you hold *in that activity*, which is not the same set as your rights
+across the installation. See [Permissions and
+grants](/en/client/manager/permissions).
+
+## Where the manager's job stops
+
+Seven of the twelve areas are about the installation rather than about any one
+activity: Users, Permission templates, Runners, Instance, External logins, LTI
+platforms and External content. Between them they need five permissions —
+`user:read:all`, `template:read`, `runner:read`, `instance:update` and
+`provider:manage` — and **none of the five is in the shipped `manager`
+template**. Running an activity is not running the installation it lives in.
+
+Beyond even those is a third reader. Installing AlgoJudge, backing it up,
+updating it and getting it back after a failure is not done from this panel at
+all; it is [Install and operate](/en/install).

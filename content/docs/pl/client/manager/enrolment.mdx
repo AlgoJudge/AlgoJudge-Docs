@@ -1,0 +1,94 @@
+---
+title: Zapisy
+description: Nadanie w aktywności jest członkostwem. Obok niego nie ma żadnej listy.
+source: en/client/manager/enrolment.mdx
+sourceSha256: 670792a726556b131d3edcc799d62c58dee57433e01a986f291539c7dbcea9dd
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+W zakładce **Uczestnicy** zapisujesz ludzi do aktywności. Dodajesz kogoś i
+mówisz, co może, w jednej czynności, bo to jeden fakt.
+
+<Callout type="warn" title="Nadanie w aktywności jest członkostwem">
+Obok nadań nie ma żadnej tabeli członkostwa. Mieć nadanie w aktywności **znaczy**
+być w niej, a gdy je odbierzesz, usuwasz stamtąd tę osobę. Dwie tabele
+odpowiadające na pytanie *czy ta osoba jest w tej aktywności* mogą się poróżnić;
+jedna nie może.
+</Callout>
+
+Dlatego, gdy kogoś zapisujesz, otwiera się edytor uprawnień, a nie pole wyboru,
+i dlatego te same wiersze zobaczysz w
+[Nadaniach](/pl/client/manager/permissions) przefiltrowanych do tej aktywności.
+
+## Zapisanie jednej osoby
+
+**Zapisz osobę** pyta o:
+
+1. **użytkownika** — konto, które już istnieje i nie jest jeszcze zapisane;
+2. **szablon**, od którego zacząć: wypełnia zestaw i zostaje zapomniany;
+3. sam **zestaw uprawnień**, który możesz dowolnie edytować.
+
+Edytor oferuje to, co **ty** masz w tej aktywności, a nie to, co masz w całej
+instalacji. Nikt nie nada uprawnienia, którego sam nie ma; okno mówi to wprost,
+a Server odmawia niezależnie od tego, co zrobił ekran.
+
+### Członkostwo systemowe
+
+Jeden przełącznik w tym samym oknie: *wysyła zgłoszenia jak każdy, nie liczy się
+jak nikt* — nie ma go ani w liczbie uczestników, ani w rankingu.
+
+Włącza się **sam** przy nadaniu, które daje cokolwiek ponad zestaw zwykłego
+uczestnika. Członek jury w rankingu obok studentów to błąd, a nie preferencja,
+więc Server wylicza to przy każdym zapisie i nigdy nie przyjmuje z ekranu. Przy
+zwykłym członkostwie decydujesz sam: konto testowe albo to, na którym puszczasz
+rozwiązanie wzorcowe, jest dokładnie tym, do czego ten przełącznik służy.
+
+## Nadanie zaproponowane, ale nieprzyjęte
+
+Nadanie jest *aktywne* albo *zaproszony*. Nadanie w stanie zaproszenia nie daje
+niczego — to dopiero oferta, a osoba nie jest w aktywności, dopóki jej nie
+przyjmie.
+
+## Gdy ludzie mają zapisywać się sami
+
+W zakładce ustawień aktywności, **kto może dołączyć**:
+
+| Polityka | Co się dzieje |
+|---|---|
+| zamknięta | nikt nie zapisuje się sam. Zapisuje prowadzący |
+| na hasło | każdy, kto ma konto i kod zapisu, zapisuje się sam |
+| otwarta | każdy, kto ma konto, zapisuje się sam |
+
+Obie polityki, które dopuszczają samodzielny zapis, dają ci **link do
+rozdania**. Gdy ustawisz hasło zapisu, jedzie ono we fragmencie linku, a nie w
+parametrze zapytania — fragmentu przeglądarka nie wysyła do serwera, więc nie
+trafi on do żadnego logu dostępu, proxy ani nagłówka referrer.
+
+Aktywność zamknięta i tak nie pokazuje się na listach osobom, których w niej nie
+ma. Pozostałe dwie też możesz ukryć — zostają wtedy dostępne pod swoim adresem,
+a po to właśnie jest link.
+
+Prowadzący zawsze może zapisać kogoś ręcznie, cokolwiek mówi polityka.
+
+## Klasa, która nie ma jeszcze kont
+
+**Konta tymczasowe** zakłada konta hurtem i zapisuje je tutaj w miarę
+powstawania. Przycisk pojawia się tylko wtedy, gdy możesz zrobić obie połowy:
+`activity:enroll` **w tej aktywności**, bo nadanie dotyczy jednej aktywności,
+oraz `user:create:temporary` gdziekolwiek, bo zakładanie kont nie jest zawężone
+do aktywności, w której konta wylądują.
+
+Hasła, które dostajesz z powrotem, są jedyną kopią, jaka kiedykolwiek będzie, a
+kartka do wydruku wskazuje na tę aktywność, a nie na stronę główną, od której
+ktoś musiałby zacząć szukać.
+
+## Same konta to inny ekran
+
+Obszar **Użytkownicy** to lista kont: tam je zakładasz, edytujesz, blokujesz,
+resetujesz hasło, oglądasz sesje i przenosisz dorobek jednego konta na drugie.
+
+Blokada w ogóle nie pozwala się zalogować — kończy istniejące sesje i nie
+dopuszcza nowych. To, co ktoś może wewnątrz aktywności, opisuje nadanie, i jedno
+nie zastępuje drugiego: blokujesz na poziomie całej instalacji i potrzebujesz do
+tego `user:block`, którego nie ma w dostarczanym szablonie `manager`.

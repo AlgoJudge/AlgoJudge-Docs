@@ -1,0 +1,123 @@
+---
+title: Wysyłanie rozwiązania
+description: Trzy typy zadań, trzy formularze — i co jest sprawdzane, zanim cokolwiek opuści przeglądarkę.
+source: en/client/participant/submitting.mdx
+sourceSha256: 5d22148cf3b2aaf0e538ee2971d29afd8978d44d72841b0cd7c59c173e6f4a32
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Formularz jest pod **Wyślij zgłoszenie** w nawigacji, na przycisku przy każdym
+zadaniu na liście, na przycisku u góry treści zadania oraz pod **Wyślij** w
+panelu zgłoszeń w rogu.
+
+Kiedy otworzysz **Wyślij zgłoszenie** bez wybranego zadania, zobaczysz listę do
+wyboru. Są na niej tylko zadania z rund, które są **otwarte**, bo tylko one
+cokolwiek przyjmą.
+
+## Trzy typy zadań, trzy formularze
+
+<Callout type="warn" title="Spotkasz dokładnie jeden z nich">
+O tym, jakie pola ma formularz, decyduje typ zadania. Nie da się tego wybrać, a
+formularz bez edytora albo bez pola języka nie jest zepsuty.
+</Callout>
+
+### `standard-io@1` — program czytający wejście i piszący wyjście
+
+- **Trzeba wybrać język.** Lista pochodzi z przypisania; jeżeli nie wymienia
+  żadnego, formularz proponuje wszystkie języki, które zna ta wersja.
+- **Edytor albo plik**, nie oba naraz. Pole **Plik z rozwiązaniem** przyjmuje
+  `.cpp`, `.cc`, `.py` i `.txt`.
+
+### `uva@1` — oceniane w UVa Online Judge
+
+- **Tylko edytor.** Nie ma pola na plik: archiwum przyjmuje kod źródłowy i nic
+  poza nim.
+- **Trzeba wybrać język.**
+- **Nad polami są dwa komunikaty i są tam po to, żeby je przeczytać przed
+  wysłaniem:**
+
+  > To rozwiązanie zostanie wysłane do onlinejudge.org, tam ocenione i tam
+  > przechowywane.
+
+  > Program musi zwrócić 0 do powłoki, inaczej archiwum zgłosi błąd wykonania
+  > niezależnie od tego, co wypisał.
+
+  Pierwszy to najważniejsza właściwość tego typu, a nie szczegół techniczny:
+  Twoja praca opuszcza tę instalację i zostaje u kogoś innego. Drugi jest
+  prawdziwą niespodzianką dla kogoś przyzwyczajonego do lokalnej sprawdzarki —
+  poprawny program kończący się kodem różnym od zera jest raportowany jako błąd
+  wykonania.
+
+### `output-only@1` — same odpowiedzi, bez programu
+
+- **Nie ma edytora w ogóle.** Wysyłasz odpowiedzi, które wyliczyłeś, obojętnie
+  czym je wyliczyłeś.
+- **Plik** — pole **Answer file** (plik z odpowiedziami) przyjmuje `.zip`, `.out`
+  i `.txt`: jedno archiwum z odpowiedzią na test albo pojedynczy plik dla zadania
+  z jednym testem.
+- **Nie ma języka**, bo nic nie jest kompilowane i nic nie jest uruchamiane.
+  Pytanie o język byłoby pytaniem o program, którego nie ma.
+
+Zadanie typu, którego ta wersja nie zna, i tak dostaje użyteczny formularz —
+edytor, pole na plik i pole języka — na podstawie tego, co deklaruje Server.
+
+## Pierwsze pole wygrywa
+
+Tam, gdzie są i edytor, i pole na plik, wypełnienie jednego blokuje drugie.
+Napisz coś w edytorze, a pole na plik będzie zablokowane; dołącz plik, a edytor
+przejdzie w tryb tylko do odczytu i napisze *Dołączono plik, więc edytor jest
+zablokowany*. Usuń plik, żeby odzyskać edytor.
+
+Zgłoszenie nigdy nie zawiera dwóch źródeł, więc nic nie musi zgadywać, o które Ci
+chodziło.
+
+## Co formularz sprawdza, zanim cokolwiek wyśle
+
+Formularz odmawia — komunikatem na czerwono nad przyciskiem — gdy:
+
+| Komunikat | Dlaczego |
+|---|---|
+| *Wybierz język programowania* | typ go wymaga, a żaden nie jest zaznaczony |
+| *Podaj rozwiązanie: wklej kod albo dołącz plik* | oba są puste |
+| *Wybrany plik jest pusty* | zero bajtów |
+| *Plik przekracza limit …* | ponad limit wysyłki ustawiony w aktywności |
+| *Rozwiązanie przekracza limit …* | to samo, dla wklejonego kodu |
+| *Dozwolone rozszerzenia: …* | rozszerzenie nie jest na liście typu |
+
+W tym momencie nic jeszcze nie opuściło Twojej przeglądarki.
+
+Kiedy formularz to przepuści, tu, w przeglądarce, liczona jest **suma SHA-256
+dokładnie tego, co wysyłasz**, i jedzie razem ze zgłoszeniem. Server przelicza ją
+i odrzuca niezgodność, więc ucięta wysyłka kończy się błędem, a nie oceną.
+
+## Runda, która nic nie przyjmuje
+
+Przycisk jest zablokowany, a pomarańczowy komunikat podaje powód **zanim**
+napiszesz odpowiedź, a nie po tym, jak ją skończysz:
+
+| Stan | Co pisze |
+|---|---|
+| wstrzymana | *Ta seria jest wstrzymana. Nic nie zostanie przyjęte, dopóki nie ruszy ponownie.* |
+| zakończona | *Ta seria się zakończyła. Treści pozostają do czytania, nic więcej nie zostanie przyjęte.* |
+| nierozpoczęta | *Ta seria jeszcze się nie rozpoczęła.* |
+
+Server też je odrzuca. Formularz mówi Ci to wcześniej, a nie decyduje.
+
+## Twój limit
+
+Tam, gdzie aktywność ustawia limit, plakietka **Pozostało zgłoszeń** jest przy
+treści zadania, a formularz podnosi to do żółtego ostrzeżenia, gdy zostaną trzy
+albo mniej. Brak plakietki oznacza brak limitu.
+
+[Wykluczone](/pl/client/participant/results) zgłoszenie nadal liczy się do
+limitu. W grupie limit należy do grupy.
+
+## Co potem
+
+Po wysłaniu trafiasz prosto na ekran zgłoszenia, więc stan *W kolejce* od razu
+widzisz, zamiast go szukać. Zobacz
+[Co się stało z moim zgłoszeniem](/pl/client/participant/results).
+
+Jeżeli wyślesz z panelu w rogu, zostajesz tam, gdzie byłeś, a w panelu pojawia
+się nowy wiersz.

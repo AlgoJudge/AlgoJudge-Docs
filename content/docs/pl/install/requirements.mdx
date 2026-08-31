@@ -1,0 +1,118 @@
+---
+title: Czego wymaga host
+description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
+source: en/install/requirements.mdx
+sourceSha256: f66b94746709ea2a91e1936018a07970c6e17b70b4b7261def5f1d2ae9424fcf
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Docker z Compose v2 lub nowszym
+
+Cały stos to jeden `compose.yaml` z profilami. Wszystko w tej sekcji to `docker
+compose` — wtyczka, nie starszy skrypt `docker-compose`.
+
+## cgroup v2, obowiązkowo
+
+Runner przy starcie pyta środowisko uruchomieniowe kontenerów o wersję cgroup
+i **odmawia uruchomienia na v1**.
+
+Nie chodzi o szczelność sandboxa: **v1 egzekwuje limity całkowicie poprawnie.**
+Kontener zadania, który przekroczy limit pamięci, zostaje zabity i zgłoszony
+jako `OOMKilled`, a cały zestaw testów adwersaryjnych przechodzi.
+
+v1 nie potrafi natomiast **uczciwie raportować**. `memory.peak` i `cpu.stat` to
+interfejsy v2, a w v1 nie ma odpowiednika, który powiedziałby prawdę o procesie,
+który już się zakończył. Odmowa Runnera brzmi dokładnie tak:
+
+> limity są egzekwowane na v1, ale szczytu pamięci i czasu procesora nie da się
+> zmierzyć uczciwie, a liczba pokazywana uczestnikowi obok werdyktu musi być
+> prawdziwa
+
+To cały powód. Te liczby pokazujemy obok werdyktu, a uczestnik, który dopasowuje
+rozwiązanie do limitu pamięci, właśnie na nich się opiera.
+
+Jest obejście: `AJ_Sandbox__AllowCgroupV1`. Powstało, bo maszyna programisty to
+często Docker Desktop, który wciąż może raportować v1, a inaczej stos
+deweloperski w ogóle by nie wstał. Gdy je ustawisz, Runner przy każdym starcie
+loguje na poziomie `ERROR`:
+
+```
+STARTING BELOW SPECIFICATION — … Times and memory reported beside a verdict
+on this host are not to be trusted.
+```
+
+<Callout type="warn" title="Tego obejścia nie da się zgłosić do panelu">
+`MachineDto` to struktura zamknięta i pomija każde pole, którego sama nie
+wymienia, więc Runner działający poniżej specyfikacji wygląda w panelu Zarządzanie
+dokładnie jak każdy inny. Mówi o tym wyłącznie jego własny log. Nie ustawiaj
+tego w instalacji, z której korzysta ktokolwiek poza Tobą.
+</Callout>
+
+### Szczyt pamięci wymaga jeszcze sterownika `cgroupfs`
+
+Nawet na v2 Runner mierzy szczyt okrężnie: tworzy własną cgroup, uruchamia w
+niej każdy kontener zadania przez `--cgroup-parent` i odczytuje rodzica, kiedy
+dziecko już zniknęło — bo API środowiska uruchomieniowego nie raportuje szczytu
+dla kontenera, którego cgroup zniknęła w chwili wyjścia.
+
+Zepsuć to mogą dwie sytuacje i żadna nie zatrzymuje oceniania:
+
+- **sterownik cgroup `systemd`**, gdzie rodzic cgroup jest nazwą slice’a, a nie
+  ścieżką. Runner loguje `peak memory will not be measured: a cgroup parent is
+  only a path under the cgroupfs driver`;
+- **system plików cgroup bez prawa zapisu**. Utworzenie katalogu w zamontowanym
+  `cgroup2` wymaga prawa zapisu. Runner loguje `peak memory will not be
+  measured: this Runner cannot create a cgroup`.
+
+W obu przypadkach ocenianie idzie dalej, a werdykt jest poprawny; brakuje samego
+szczytu.
+
+## Pięć narzędzi powłoki
+
+`bash`, `openssl`, `find`, `du`, `df`. Skrypty w `AlgoJudge-Ops` nie używają
+niczego więcej. Dołóż `crontab`, jeśli chcesz, żeby zainstalowały harmonogram.
+
+## Dysk na kopie, najlepiej nie ten od bazy
+
+**Umieść katalog kopii zapasowych na innym systemie plików niż wolumen
+PostgreSQL.** Na jednym systemie plików żadne ustawienie rezerwy nie zagwarantuje,
+że kopia nie zagłodzi bazy, którą właśnie kopiuje.
+
+`preflight.sh` zapisze za Ciebie `BACKUP_MAX_TOTAL_GB`, jeśli jest puste — 25%
+systemu plików, na którym leżą kopie, i nigdy więcej niż 50% — żeby katalogu
+kopii przed zapełnieniem dysku nie chroniła sama polityka ilościowa, która
+zużycia dysku wcale nie ogranicza.
+
+## Ograniczony sterownik logów kontenerów
+
+<Callout type="warn" title="Domyślny sterownik logów nie ma żadnego limitu">
+Domyślnie Docker pisze do pliku JSON bez limitu rozmiaru i tak właśnie taki host
+najczęściej zapełnia sobie dysk.
+</Callout>
+
+W `/etc/docker/daemon.json`:
+
+```json
+{ "log-driver": "json-file", "log-opts": { "max-size": "50m", "max-file": "5" } }
+```
+
+Potem zrestartuj demona. `gc.sh` rotuje własne logi skryptów w
+`/var/log/algojudge/`, ale logi kontenerów należą do demona i tylko demon może je
+ograniczyć.
+
+## Grupa, do której należy gniazdo Dockera
+
+Na hoście z Runnerem `DOCKER_GID` musi być grupą, która jest właścicielem
+`/var/run/docker.sock`. Obraz Runnera działa nieuprzywilejowany i sięga do
+demona wyłącznie przez tę grupę.
+
+```bash
+getent group docker | cut -d: -f3
+```
+
+Na Docker Desktop gniazdo należy do `root:root`, więc jest to `0`.
+`preflight.sh` odczytuje prawdziwy numer — pytając kontener, bo na Docker Desktop
+i pod WSL gniazdo widziane przez tę powłokę nie jest tym, które obsługuje demon —
+i odmawia, jeśli Twój się nie zgadza. Zła wartość daje `Permission denied (os
+error 13)` z głębi klienta HTTP, nie nazywając ani gniazda, ani grupy.

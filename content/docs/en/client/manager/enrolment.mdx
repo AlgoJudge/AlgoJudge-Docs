@@ -1,0 +1,92 @@
+---
+title: Enrolment
+description: A grant in an activity is the membership. There is no roster beside it.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The **Participants** tab of an activity is where people are put into it. Adding
+somebody and saying what they may do is one act, because it is one fact.
+
+<Callout type="warn" title="A grant in an activity is the membership">
+There is no membership table beside the grants. Holding a grant in an activity
+**is** being in it, and revoking it is removing them. Two tables that both
+answer *is this person in this activity* can disagree; one cannot.
+</Callout>
+
+That is why enrolling somebody opens a permission editor rather than a
+checkbox, and why the same rows appear under
+[Grants](/en/client/manager/permissions) filtered to this activity.
+
+## Enrolling one person
+
+**Enrol someone** asks for:
+
+1. the **user** — an account that already exists, and one not already enrolled;
+2. a **template** to start from, which fills the set in and is then forgotten;
+3. the **permission set** itself, which you may edit freely.
+
+What the editor offers is what **you** hold in this activity, not what you hold
+across the installation. Nobody may grant a permission they do not hold
+themselves; the dialog says so, and the Server refuses it whatever the screen
+did.
+
+### Systemic membership
+
+One switch on the same dialog: *submits like anybody, counts as nobody* — absent
+from the participant count and from the ranking.
+
+It is **forced on** for a grant carrying anything beyond an ordinary
+participant's set. A jury member in the ranking beside the students is a bug,
+not a preference, so the Server computes this on every write and never accepts
+it from the screen. For an ordinary membership it is yours to choose: a test
+account, or the one running the reference solution, is exactly what it is for.
+
+## A grant that has been offered but not accepted
+
+A grant is *active* or *invited*. An invited grant confers nothing — it is an
+offer, and the person is not in the activity until they accept it.
+
+## Letting people enrol themselves
+
+On the activity's settings tab, **who may join**:
+
+| Policy | What happens |
+|---|---|
+| closed | nobody enrols themselves. A manager puts them in |
+| password | anybody with an account and the join code enrols themselves |
+| open | anybody with an account enrols themselves |
+
+Both policies that admit self-enrolment offer a **link to hand out**. Where a
+join code is set, it rides in the link's fragment rather than in a query
+parameter — a fragment is not sent to a server, so it reaches no access log, no
+proxy and no referrer header.
+
+A closed activity is hidden from the lists of people who are not in it either
+way. The other two can be hidden as well and stay reachable by their address,
+which is what a link is for.
+
+A manager may always enrol somebody by hand, whatever the policy says.
+
+## A class that has no accounts yet
+
+**Temporary accounts** creates accounts in bulk and enrols them here as they are
+made. The button appears only if you may do both halves: `activity:enroll` **in
+this activity**, because a grant is per activity, and `user:create:temporary`
+anywhere, because creating accounts is not scoped to the activity they end up
+in.
+
+The passwords it hands back are the only copy there will ever be, and the
+printable slip points at this activity rather than at a front page somebody would
+have to search from.
+
+## Accounts themselves are a different screen
+
+The **Users** area is the account list: creating one, editing it, blocking it,
+resetting a password, reading its sessions, and merging one account's work onto
+another.
+
+Blocking stops somebody signing in at all — it ends their sessions and stops new
+ones. What they may do once inside an activity is a grant, and the two are not
+substitutes: blocking is an installation-wide act and needs `user:block`, which
+is not in the shipped `manager` template.

@@ -1,0 +1,114 @@
+---
+title: Copying and importing
+description: A copy is a shape, not a history - within an installation and between two.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Three things can be copied, and the same dialog makes all three: an activity, a
+round, a problem. Every one of them tells you what travels and what does not
+**before** you commit.
+
+<Callout type="warn" title="A copy is a shape, not a history">
+No copy carries submissions, results, or anybody's rights. That is the point of
+one, and it is stated on the dialog rather than discovered next term.
+</Callout>
+
+## Copy an activity for a new run
+
+From the activity list, **copy for a new run**. You give it a name of its own
+and say **when the first round starts**.
+
+- It carries the rounds, the problems and the settings.
+- It carries nothing that happened: no submissions, no results, nobody's rights.
+- **Every date moves** so that the first round starts when you say.
+- It arrives unpublished. Nothing opens and nobody but you reaches it until you
+  publish it.
+
+## Copy a round
+
+From the series, **copy this round**. You choose which activity it goes into —
+including **this one**, which is how a second sitting of the same round is made.
+
+- It carries the problems assigned to the round, their pinned versions and their
+  settings, its ranking dates, its importance and the addresses it may be reached
+  from.
+- It arrives closed and holds nobody's work: no submissions, no results, nothing
+  announced.
+- The problems are the library's own. A copy **points at the same ones** rather
+  than duplicating them.
+- Where a problem slug is already taken in the target activity, the copy is given
+  a free one.
+
+Archived activities are not offered as a target, because the Server refuses them.
+
+## Duplicate a problem
+
+From the library, **duplicate**.
+
+- The copy carries the **newest version only** — its statement, its files and its
+  package.
+- The history does not travel: notes about changes that never happened to this
+  copy would be somebody else's past.
+- It arrives private and owned by you, whatever the original was, and attached to
+  nothing. Its slug is derived from the original's.
+
+## Between two installations
+
+**Export to a file** and **import from a file** carry the same definition of a
+copy across installations. A bundle is a zip holding a manifest and every byte
+named by its own checksum; a problem, a round or a whole activity can be one.
+
+Nothing inside is referenced by an id — an assignment names its problem by the
+bundle's own slug, because an id means nothing in another installation. A figure
+two problems share is stored once.
+
+### What travels, and what does not
+
+Exactly what a copy carries, minus what belongs to an installation. **Never**:
+submissions, results, questions, grants, enrolments, groups, the join password,
+whether it was published or archived, a round's state, and a problem's owner or
+share list.
+
+Two things are carried differently rather than dropped:
+
+- **A pinned version does not travel.** A version id is the exporting
+  installation's, and a bundle carries one version anyway — so the importer pins
+  to the version that arrived.
+- **Activity documents do travel** — the rules page and the front pages, newest
+  revision per language. A course's rules are part of its shape.
+
+### Importing is two steps, and the first writes nothing
+
+Open the archive and you are shown a plan: which problems are new, which are
+already here, and which the bundle and your library **disagree** about. A slug
+that matches with different bytes is a question, never a silent substitution —
+attaching somebody else's `zadanie-1` to an imported round would set the wrong
+work to a whole cohort, and nothing on any screen would say so afterwards.
+
+An activity bundle asks for a slug and a start date before anything is written,
+for the same reason a copy does: an import that quietly kept last term's
+deadlines is the failure the feature exists to prevent.
+
+The reader refuses an archive that is not a bundle, a manifest it cannot parse, a
+format it does not know, a manifest naming a file the archive lacks, and a file
+whose bytes do not match its checksum. The last one is not redundant: a flipped
+byte in a stored entry unzips cleanly and silently, and the checksum is what
+catches it — before anything is uploaded.
+
+A **ZawodyWeb** export is read too. It is converted into a bundle first, so
+everything after that point is the same code path, and whatever the conversion
+could not carry is listed before you commit.
+
+### The size ceiling
+
+Everything passes through browser memory. A bundle over **64 MB** warns, and one
+over **256 MB** is refused with the heaviest problems named — export by round
+instead.
+
+## Importing from another judge
+
+Problems can also be pulled in from a service this installation does not run —
+today, the UVa archive. That is [External
+content](/en/client/manager/external-content), and it is off until somebody
+holding `instance:update` turns it on.

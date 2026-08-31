@@ -1,0 +1,16 @@
+{
+  "title": "Server",
+  "description": "The domain model, the permission model, and the REST reference.",
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "permissions",
+    "identity",
+    "api",
+    "events",
+    "...",
+    "external:[AlgoJudge-Server](https://github.com/AlgoJudge/AlgoJudge-Server)",
+    "external:[Licence](https://github.com/AlgoJudge/AlgoJudge-Server/blob/main/LICENSE)"
+  ]
+}

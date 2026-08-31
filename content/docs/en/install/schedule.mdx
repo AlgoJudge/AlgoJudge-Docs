@@ -1,0 +1,111 @@
+---
+title: Routine work and the schedule
+description: Garbage collection, the suggested crontab, the clock it runs on, and the thing nobody is told.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Garbage collection
+
+```bash
+./scripts/gc.sh
+```
+
+Four things, and each one filtered to this installation:
+
+- **work directories** older than `GC_TMP_RETENTION_DAYS` (7 by default). A
+  Runner killed mid-evaluation cannot clean up after itself, and the job it was
+  doing goes back on the queue by lease — so strays are normal, not a defect;
+- **exited job containers** nothing will collect. The Runner sweeps its own
+  siblings when it restarts; this catches the case it cannot, a Runner that was
+  removed rather than restarted;
+- **images**, filtered to the label every AlgoJudge image carries. An image
+  without it belongs to somebody else and is left alone;
+- **this repository's own logs** under `/var/log/algojudge/`, rotated past 32 MB.
+
+<Callout type="warn" title="Never a global prune">
+`docker system prune` and `docker volume prune` do not know that the host may
+run other things. Nothing in `gc.sh` runs unfiltered.
+</Callout>
+
+**`VACUUM` and `REINDEX` are deliberately absent.** Different risk, different
+runtime — a `REINDEX` holds locks a contest would notice — and autovacuum
+already does the routine part. Putting them in a nightly job is its own decision,
+and nobody has taken it.
+
+`gc.sh` does not rotate the backup directory. Rotation belongs to the script that
+writes the dumps, and a directory nobody is adding to is not the thing to start
+deleting from.
+
+## The schedule
+
+`cron/algojudge.cron`, installed only by asking:
+
+```bash
+./scripts/install-cron.sh --print     # what it would install
+./scripts/install-cron.sh
+```
+
+Nothing schedules itself. The backup runs at 04:00 local, garbage collection at
+06:00, and **the update entry is commented out**.
+
+The script rewrites the path and the timezone to what this installation actually
+is, and **merges rather than replaces**: a crontab is shared with everything else
+on the host, and installing yours by overwriting it is how somebody loses a job
+they have had for six years. The lines are delimited by markers so a second run
+replaces them instead of appending a duplicate.
+
+### Anchored to this host's local time, not UTC
+
+04:00 means 04:00 to whoever operates the machine, which keeps the work inside
+the organisation's actual quiet hours rather than a fixed offset that drifts
+against them twice a year.
+
+- **`CRON_TZ` is honoured by Vixie cron and cronie and is not portable to every
+  implementation.** `install-cron.sh` finds out by installing the real crontab
+  and falling back without the line, with a warning, rather than silently
+  scheduling against a different clock. It does not probe: `crontab <file>`
+  replaces the whole crontab, so a one-line probe would destroy everything else
+  on the host in order to find out.
+- **Accepted is not the same as honoured.** An implementation that ignores the
+  line accepts it silently, and there is no way to check that without waiting
+  until four in the morning. Confirm once that the first backup lands at 04:00
+  local.
+- **04:00 and 06:00 are safe in the EU**, where the change happens at 01:00 UTC,
+  so neither hour is ever skipped or repeated. **This does not generalise** —
+  some zones switch at midnight. Check your own before moving them.
+
+### 06:00 here is not the Server's 06:00
+
+The Server's own file collector is anchored to **UTC**
+(`Files:CollectAtHourUtc`), so in Warsaw the two are two hours apart in winter
+and three in summer. Harmless, and worth knowing before somebody assumes one
+schedule governs both.
+
+### Nothing tells anybody when a run fails
+
+<Callout type="warn" title="This is the largest open question in the deployment repository">
+**Nothing notifies anybody when a cron script exits non-zero.** A backup that has
+been failing for three weeks surfaces during the incident it was meant to
+survive.
+
+Point `MAILTO` at somebody who reads it, or feed `/var/log/algojudge/*.log` into
+whatever your organisation already watches. Choosing a channel for you would be
+inventing policy.
+</Callout>
+
+## One script at a time
+
+Every one of these scripts takes a lock. If one is running you are told which,
+by pid:
+
+```
+another AlgoJudge maintenance script is running (pid 1234, lock: …/state/algojudge.lock.d)
+```
+
+If that pid is genuinely running, wait. If it is not, the next run takes the lock
+over by itself and says so — a lock is never permanently stuck. To clear one by
+hand, remove `state/algojudge.lock.d`.
+
+This is also what keeps a long backup and the update entry from overlapping when
+both are scheduled.

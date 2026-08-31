@@ -1,0 +1,112 @@
+---
+title: The Server–Runner contract
+description: What a Runner is on the wire, where the authority for this section lies, and the shape of every call.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+This section is for somebody implementing a **Runner of their own**: a program
+that registers with an AlgoJudge Server, is approved, claims work, and reports
+results. It is not a description of the Runner that ships — that is
+[Runner](/en/runner).
+
+<Callout type="warn" title="The accepted specification prevails">
+This section describes **version 1.1** of the contract. It is written here for a
+reader, and the accepted specification is what a Server is built to: on any
+divergence, **the specification is right and this section is wrong**.
+</Callout>
+
+## What a Runner is, on the wire
+
+Three properties, and everything else follows from them.
+
+- **The Runner initiates every connection.** The Server never calls a Runner.
+  There is no callback URL, no inbound port, and nothing to register but a key.
+- **The Runner is stateless apart from a cache.** One that dies mid-evaluation
+  resumes nothing and nobody comes back for that work. The Server's **lease** is
+  the whole recovery story, which is why it is a correctness mechanism rather
+  than a safety net.
+- **The Server never parses a problem type.** It is matched by string equality
+  and nothing else. Adding a problem type is not a Server change, and a Runner
+  may implement a type the Server has never heard of.
+
+A Runner holds an **Ed25519 key pair** it generates once. The Server knows it by
+the fingerprint of that key.
+
+## The lifecycle
+
+```
+        register            approve             challenge + token
+anonymous ────────> pendingApproval ────────> approved ──────────────> holding a token
+                            │                     │                          │
+                            │                     │ revoke                   │ claim
+                            ▼                     ▼                          ▼
+                        (refused a token)      revoked ──> forget        holding a job
+```
+
+A Runner may register at any time and evaluates nothing until a manager approves
+it. **Revocation is permanent**: there is no rotation, so a leaked key means a
+new configuration, a new key and a new registration.
+
+## Every call
+
+Everything is JSON over HTTP, under `/api/v1`.
+
+| | Path | Auth |
+|---|---|---|
+| Health | `GET /api/v1/health` | anonymous |
+| Register | `POST /api/v1/runner/register` | anonymous |
+| Challenge | `POST /api/v1/runner/auth/challenge` | anonymous |
+| Token | `POST /api/v1/runner/auth/token` | anonymous |
+| Claim a job | `POST /api/v1/runner/jobs/claim` | bearer |
+| Renew a lease | `POST /api/v1/runner/jobs/{jobId}/lease` | bearer |
+| Report progress | `POST /api/v1/runner/jobs/{jobId}/progress` | bearer |
+| Report a result | `POST /api/v1/runner/jobs/{jobId}/report` | bearer |
+| Read a file | `GET /api/v1/runner/files/{id}` | bearer |
+| Upload a file | `POST /api/v1/runner/files` | bearer |
+| Attach to an attempt | `POST /api/v1/runner/jobs/{jobId}/files` | bearer |
+| Attach to the Runner | `POST /api/v1/runner/files/attach` | bearer |
+| Heartbeat | `POST /api/v1/runner/heartbeat` | bearer |
+
+The token goes in `Authorization: Bearer`. It has a lifetime, and it authorizes
+this Runner's own surface and nothing a manager may do.
+
+## Two conventions that govern every document
+
+Both come from the Server's serializer rather than from taste, and the
+implementation is the clearest statement of them —
+`crates/aj-protocol/src/wire.rs` in `AlgoJudge-Runner` is the reference
+implementation of every shape in this section.
+
+- **camelCase**, everywhere.
+- **Absent, never `null`.** An optional value the Server does not have is simply
+  not in the document. A client must treat a missing member as absent rather
+  than expecting an explicit `null`, and must not send one either.
+
+## Refusals carry a code
+
+An error answer carries a machine-readable code, and **the code is what to switch
+on**. The HTTP status alone is not enough: a `503` may equally come from an edge
+proxy that has never heard of this product.
+
+The codes are listed on the page for the call that produces them.
+
+## The rest of this section
+
+| | |
+|---|---|
+| [Registration and authentication](/en/protocol/registration) | the key, approval, and the challenge-response handshake |
+| [Claiming and the lease](/en/protocol/claiming) | how work is taken, and what makes a late report refusable |
+| [Reporting](/en/protocol/reporting) | results, idempotency, and the failure that is not a verdict |
+| [Files](/en/protocol/files) | transfer, `sha256`, and attachments |
+| [Availability](/en/protocol/availability) | the heartbeat, and a Server that is up and declining to serve |
+| [What is not specified](/en/protocol/not-specified) | including two documents that are history, not standards |
+
+## Conformance
+
+The Server carries a conformance suite that exercises the contract against a real
+database on every pull request. A second implementation should pass the same
+sequence: register, be refused a token before approval, be approved,
+authenticate, be refused a replayed nonce, claim, read only its own package,
+report, resend the report and receive the same result, and lose a job to lease
+expiry.

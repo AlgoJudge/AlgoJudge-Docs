@@ -1,0 +1,105 @@
+---
+title: Ranking
+description: Kiedy tablica w ogóle jest, co obejmuje i co oznacza zamrożona kolumna.
+source: en/client/participant/ranking.mdx
+sourceSha256: e01a86d46ea88cf094dccda6f1b1c4d16440b7801cdf36fe3e94dea31fa1880c
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Czy ranking w ogóle jest
+
+Czy w nawigacji jest wpis **Ranking**, zależy od jednego ustawienia — kto może
+widzieć punkty.
+
+| Ustawienie | Co dostajesz |
+|---|---|
+| wszyscy | całą tablicę, z miejscami |
+| tylko uczestnik | **swój własny wiersz, bez miejsca** |
+| tylko prowadzący | żadnego wpisu **Ranking** |
+
+Środkowy przypadek warto powiedzieć wprost. Jeżeli nie możesz widzieć cudzych
+punktów, ekran i tak dostajesz i widzisz na nim swoje punkty — ale bez miejsca,
+bo pozycja wśród ludzi, których punktów nie widzisz, nie jest żadną pozycją.
+
+## Co obejmuje tablica
+
+Przełącznik u góry oferuje **Zbiorczy** oraz **każdą rundę, która się
+rozpoczęła**. Runda, której nikt nie otworzył, nie ma klasyfikacji, więc nie ma
+jej na liście: obiecywałaby tabelę, która nie może jeszcze istnieć.
+
+Na tablicę zbiorczą patrzysz, gdy chcesz zobaczyć całe zawody: są na niej
+zarówno zadania, jak i sumy.
+
+## Kiedy można ją czytać
+
+Każda runda ma własne okno — organizator publikuje tablicę pierwszej rundy, gdy
+druga jest jeszcze rozgrywana. Poza oknem wpis zostaje w nawigacji, a strona mówi
+kiedy:
+
+- *Ranking będzie dostępny od …*
+- *Ranking był dostępny do …*
+- *Ranking nie jest dostępny.*
+
+Gdyby wpis zniknął, wyglądałoby to na usterkę, a zdanie, że tablica otwiera się o
+szóstej, to konkretna informacja.
+
+## Dwa kształty
+
+Który z nich dostajesz, ustawia aktywność. To dwie różne tabele, a nie dwa
+sortowania jednej.
+
+### Punktowa
+
+Kolumny: **Miejsce**, **Uczestnik**, **Rozwiązane**, **Suma**, a potem kolumna na
+rundę. Kliknij nagłówek rundy, a rozwinie się w kolumnę na zadanie; po wejściu
+rozwinięta jest ostatnia runda.
+
+Nie liczy się ani czas wysłania, ani czas wykonania.
+
+### ICPC
+
+Kolumny: **Miejsce**, **Uczestnik**, **Rozwiązane**, **Czas karny**, a potem
+kolumna na zadanie.
+
+Rozwiązana komórka pokazuje czas zaakceptowanego zgłoszenia jako zegar — `1:58`,
+a nie `118` minut — a pod spodem `+2` za odrzucone próby, które były wcześniej.
+Nierozwiązana komórka z próbami pokazuje myślnik i ich liczbę. Czas karny też
+jest zegarem, a powyżej doby dalej liczy godziny, zamiast zaczynać liczyć dni:
+te liczby porównuje się między sobą.
+
+## Zamrożona tablica
+
+<Callout type="warn" title="Zamrożone znaczy, że liczby stanęły, a nie że są zerami">
+Gdy runda jest zamrożona, niebieski baner pisze *Ranking jest zamrożony* oraz
+*Wyniki są ukryte do …* albo *Wyniki są ukryte do momentu odmrożenia rankingu
+przez organizatorów*. Jej kolumny są oznaczone gwiazdką, a komórka, której wynik
+jest wstrzymany, pokazuje `?`, a nie zero.
+</Callout>
+
+O to właśnie chodzi w tym rozróżnieniu: `?` znaczy *próbował i jeszcze nie wolno
+Ci wiedzieć*, co jest czym innym niż *nie próbował*. Suma, która wciąż się
+zmienia, nie może wyglądać na ustaloną.
+
+## Znajdź mnie
+
+**Znajdź mnie** przewija do Twojego wiersza i go podświetla. Przycisk jest
+zablokowany, gdy nie masz wiersza na pokazywanej tablicy.
+
+Przy dwudziestu kolumnach tablica przewija się w bok. Kolumny **Miejsce** i
+**Uczestnik** stoją nieruchomo, a reszta przesuwa się pod nimi, więc wiersz nigdy
+nie traci nazwy.
+
+## Grupy na tablicy
+
+Wiersz należy do **uczestnika**: osoby startującej samodzielnie albo grupy. W
+wierszu grupy jest jej nazwa i krótki opis, a tam, gdzie aktywność każe to
+wypisać, także skład — pod nazwą.
+
+Członkowie nigdy nie dostają własnych wierszy. Zobacz
+[Start w grupie](/pl/client/participant/groups).
+
+## Pusta tablica
+
+*Brak wyników* to normalny stan: aktywność, która się nie zaczęła, albo taka, w
+której nic jeszcze nie zostało rozwiązane. To nie jest błąd.
