@@ -20,6 +20,14 @@ export const GLOSSARY: Record<string, string> = {
     Verdict: "Werdykt",
     Group: "Grupa",
     Ranking: "Ranking",
+
+    // **The two words for the person who runs a contest.** `Manager` is the
+    // navigation item and `Staff` is the role. Neither was here on 2026-08-30,
+    // and the omission cost something: the interface settled on *prowadzący*
+    // while the documentation went on saying *menedżer* in twenty-six places,
+    // and nothing noticed until somebody read both.
+    Manager: "Zarządzanie",
+    Staff: "Prowadzący",
 };
 
 /**
@@ -27,6 +35,10 @@ export const GLOSSARY: Record<string, string> = {
  * page must then contain. Stems rather than words, because Polish inflects.
  */
 export const TERMS = [
+    // `expect` names the word the failure message should print, where it
+    // differs from the catalogue value: in prose the role reads *prowadzący*,
+    // while the navigation item itself is *Zarządzanie*.
+    { key: "Staff", english: /\bmanagers?\b/i, polish: /prowadząc|Zarządzanie/, expect: "prowadzący, or the panel's own name Zarządzanie" },
     { key: "Problem", english: /\bproblems?\b/i, polish: /zadani/i },
     { key: "Submission", english: /\bsubmissions?\b/i, polish: /zgłoszen/i },
     { key: "Activity", english: /\bactivit(y|ies)\b/i, polish: /aktywno/i },

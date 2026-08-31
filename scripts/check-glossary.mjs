@@ -82,6 +82,20 @@ async function pages(directory) {
 /** Front matter is metadata, not prose; `source:` names an English path. */
 const body = (text) => text.replace(/^---\r?\n[\s\S]*?\r?\n---/, "");
 
+/**
+ * Prose only: no code, and **no link targets**.
+ *
+ * A path is not a word. `/en/client/manager/problems` contains both *manager*
+ * and *problems*, and matching a term inside one would ask the Polish page to
+ * translate a URL - which it must not, because the locale is the only part of
+ * an address that changes.
+ */
+const prose = (text) =>
+    body(text)
+        .replace(/^```[\s\S]*?^```/gm, "")
+        .replace(/`[^`\n]*`/g, "")
+        .replace(/\]\([^)]*\)/g, "]");
+
 let checked = 0;
 
 for (const path of await pages(join(ROOT, "pl"))) {
@@ -104,10 +118,10 @@ for (const path of await pages(join(ROOT, "pl"))) {
     if (english === null) continue;
 
     for (const term of TERMS) {
-        if (!term.english.test(body(english))) continue;
+        if (!term.english.test(prose(english))) continue;
         if (term.polish.test(polish)) continue;
 
-        console.error(`  FAIL ${shown}: the English page uses "${term.key}" and this one never says "${GLOSSARY[term.key]}"`);
+        console.error(`  FAIL ${shown}: the English page uses "${term.key}" and this one never says "${term.expect ?? GLOSSARY[term.key]}"`);
         failed = true;
     }
 }
