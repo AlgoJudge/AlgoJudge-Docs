@@ -78,7 +78,13 @@ is `sha256`, never `hash`; in prose, SHA-256.
   a repository for every section including `protocol`, which is where it differs
   from `repository`; the *source is in* sentence is skipped where `repository`
   is `null`, because a section describing a contract between two programs has no
-  one repository to name.
+  one repository to name. **A third sentence says the pages themselves are CC BY
+  4.0**, unconditionally, and links `/{locale}/source` rather than the Creative
+  Commons deed — the deed cannot state the carve-out that puts code samples back
+  under MIT, and a reader pasting a command needs that half.
+- **An address a component links and no page contains is named in `lib/site.ts`**
+  (`linkedFromCode`). `check:links` reads `.mdx` files, so without that it is the
+  one internal link nothing would notice breaking.
 - **The same two facts are the last two entries of a section's sidebar**, as
   `external:` entries in its `meta.json`: the repository, then the licence.
   Which repository, which licence and what the licence link is called in each

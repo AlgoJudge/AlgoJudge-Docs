@@ -19,6 +19,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 import { i18nConfig } from "../lib/i18n.ts";
+import { linkedFromCode } from "../lib/site.ts";
 
 const ROOT = "content/docs";
 
@@ -96,8 +97,23 @@ for (const locale of i18nConfig.languages) {
     }
 }
 
+// **The links the application makes for itself.** Everything above came out of
+// a `.mdx` file; these come out of a component, so no page contains them and
+// nothing else here would notice one breaking.
+let fromCode = 0;
+for (const locale of i18nConfig.languages) {
+    for (const target of linkedFromCode(locale)) {
+        fromCode += 1;
+        if (known.has(target.replace(/\/$/, ""))) continue;
+        console.error(`  FAIL lib/site.ts: nothing is served at ${target}`);
+        console.error(`         a component links it, so no page mentions it and no other check reaches it`);
+        failed = true;
+    }
+}
+
 if (failed) process.exit(1);
 console.log(`  ok   ${checked} internal link(s) resolve, and all carry a locale`);
+console.log(`  ok   ${fromCode} address(es) linked from code resolve too`);
 if (!generated) {
     console.log(`  --   ${skipped} link(s) into the REST reference were not checked: run \`npm run build\` to generate it`);
 }

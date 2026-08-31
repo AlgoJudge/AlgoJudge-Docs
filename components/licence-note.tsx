@@ -1,14 +1,20 @@
 import { licenceUrl, repositoryUrl, type Section } from "@/lib/sections";
+import { linkedFromCode } from "@/lib/site";
 
 /**
  * **Where the software a section describes lives, and on what terms**, at the
  * foot of that section's front page.
  *
- * It names the code, not this page: the pages are CC BY 4.0 and the whole split
- * is set out on `/{locale}/source`. Here a reader is being told about the thing
- * the section is about, which is the question somebody asks on arriving at
- * `/en/runner` - and the answer differs by section, so one statement in a site
- * footer would be the wrong shape.
+ * Two of the three sentences are about the software the section describes,
+ * which is the question somebody asks on arriving at `/en/runner` - and the
+ * answer differs by section, so one statement in a site footer would be the
+ * wrong shape. The third is about the page being read, and does not.
+ *
+ * **The CC BY sentence links `/{locale}/source`, not the Creative Commons
+ * deed.** The deed states CC BY and can state nothing else; the split accepted
+ * on 2026-08-31 carves the code samples back out to MIT, so the deed alone
+ * would claim more of a page than we do. That carve-out is the part a reader
+ * pasting a command needs, and only our own page carries it.
  *
  * **The first sentence is skipped where a section has no repository of its
  * own.** `protocol` is that section: it describes a contract between two
@@ -16,14 +22,22 @@ import { licenceUrl, repositoryUrl, type Section } from "@/lib/sections";
  * one of them. Its licence link still resolves, because the contract is served
  * by a Server and that Server is software somebody runs under a licence.
  */
-const text: Record<string, { source: [string, string]; licence: [string, string] }> = {
+interface Words {
+    source: [string, string];
+    licence: [string, string];
+    pages: [string, string, string];
+}
+
+const text: Record<string, Words> = {
     en: {
         source: ["The source is in ", ". "],
-        licence: ["This project is licensed under MIT. See ", "."],
+        licence: ["This project is licensed under MIT. See ", ". "],
+        pages: ["This documentation is ", "CC BY 4.0", "."],
     },
     pl: {
         source: ["Kod źródłowy jest w ", ". "],
-        licence: ["Ten projekt jest na licencji MIT. Zobacz plik ", "."],
+        licence: ["Ten projekt jest na licencji MIT. Zobacz plik ", ". "],
+        pages: ["Ta dokumentacja jest na licencji ", "CC BY 4.0", "."],
     },
 };
 
@@ -48,6 +62,11 @@ export function LicenceNote({ section, locale }: { section: Section; locale: str
                 LICENSE
             </a>
             {words.licence[1]}
+            {words.pages[0]}
+            <a href={linkedFromCode(locale)[0]} className={link}>
+                {words.pages[1]}
+            </a>
+            {words.pages[2]}
         </p>
     );
 }
