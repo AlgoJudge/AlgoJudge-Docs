@@ -7,15 +7,14 @@ This repository is the **public documentation site** for it, published at
 `docs.algojudge.pl`. It is a Fumadocs static export, served by nginx from an
 image this repository builds.
 
-**Status: not yet published.** `docs.algojudge.pl` has no DNS record, and no
-product repository has cut a release, so nothing here is versioned yet — see
-*Versions* below for what that means and what changes on release day.
-
 ## What is here, and what is not
 
-It documents the five runtime repositories: `AlgoJudge-Server`,
-`AlgoJudge-Client`, `AlgoJudge-Runner`, `AlgoJudge-Runner-UVa` and
-`AlgoJudge-Ops`.
+It documents the five runtime repositories:
+[`AlgoJudge-Server`](https://github.com/AlgoJudge/AlgoJudge-Server),
+[`AlgoJudge-Client`](https://github.com/AlgoJudge/AlgoJudge-Client),
+[`AlgoJudge-Runner`](https://github.com/AlgoJudge/AlgoJudge-Runner),
+[`AlgoJudge-Runner-UVa`](https://github.com/AlgoJudge/AlgoJudge-Runner-UVa) and
+[`AlgoJudge-Ops`](https://github.com/AlgoJudge/AlgoJudge-Ops).
 
 It is **not** `AlgoJudge-Design`. That repository holds internal working
 documents with statuses, and a document does not appear here because it exists
@@ -48,7 +47,7 @@ releases.** A section without an owner has no honest version axis.
 
 English covers every section. **Polish covers `/client/` and `/install/`** —
 the two a participant, a manager and an administrator actually read — and is
-versioned on the same axes. Accepted 2026-08-09.
+versioned on the same axes.
 
 A Polish address in any other section renders the English page **with a visible
 notice saying so**, its body marked `lang="en"` for anything reading the page
@@ -114,8 +113,7 @@ output is not source.
 
 ### Two dependencies are deliberately not the newest
 
-Both are the newest version that **works**, which is not the same thing, and
-both were measured on 2026-08-30 rather than assumed:
+Both are the newest version that **works**, which is not the same thing:
 
 - **TypeScript 6.0.3, not 7.0.2.** `typescript-eslint@8.68.0` — pulled in by
   `eslint-config-next` — declares `typescript >=4.8.4 <6.1.0` and refuses TS 7
@@ -162,49 +160,39 @@ same arrangement as the `algojudge-client` image. This site is deployed to
 **`AlgoJudge-Ops` does not serve it.** Ops is an *installation's* stack: one
 certificate, one site, `server_name _`, and the hostname taken from the request.
 Putting our public documentation inside it would make every installation an
-operator stands up serve it too. This changed the decision of 2026-08-09, which
-had assigned the nginx rules to Ops; owner, 2026-08-30.
+operator stands up serve it too.
 
 ## Related repositories
 
 | Repository | What this site takes from it |
 |---|---|
-| `AlgoJudge-Server` | the domain model, the permission model, and `openapi.json`, from which the REST reference is generated at build time |
-| `AlgoJudge-Client` | every screen the `/client/` section describes, and the Polish glossary the Polish pages are checked against |
-| `AlgoJudge-Runner` | what a Runner is, what it needs, and how it is isolated |
-| `AlgoJudge-Runner-UVa` | the forwarding Runner, and why its verdict is somebody else's |
-| `AlgoJudge-Ops` | everything in `/install/`. Ops is the subject of that section, not the host of this site |
+| [`AlgoJudge-Server`](https://github.com/AlgoJudge/AlgoJudge-Server) | the domain model, the permission model, and `openapi.json`, from which the REST reference is generated at build time |
+| [`AlgoJudge-Client`](https://github.com/AlgoJudge/AlgoJudge-Client) | every screen the `/client/` section describes, and the Polish glossary the Polish pages are checked against |
+| [`AlgoJudge-Runner`](https://github.com/AlgoJudge/AlgoJudge-Runner) | what a Runner is, what it needs, and how it is isolated |
+| [`AlgoJudge-Runner-UVa`](https://github.com/AlgoJudge/AlgoJudge-Runner-UVa) | the forwarding Runner, and why its verdict is somebody else's |
+| [`AlgoJudge-Ops`](https://github.com/AlgoJudge/AlgoJudge-Ops) | everything in `/install/`. Ops is the subject of that section, not the host of this site |
 | `AlgoJudge-Design` | the accepted Server–Runner contract, which prevails over `/protocol/` on any divergence |
 
 ## Where the decisions are
 
 `AlgoJudge-Design/adr/DOCUMENTATION_SITE_2026-08-09.md` is the accepted decision
 record, and `AlgoJudge-Design/specifications/docs/URL_CONTRACT.md` is the URL
-contract in full. Both carry the corrections made when this repository was built
-and the specification met the code.
+contract in full.
 
-## Licence
+## Contributing
 
-**Two licences, because this repository holds two different things.**
+Open an issue saying what you expected, what happened, and how to reproduce it.
+Or open a pull request against `main`: one subject per pull request, with a note
+on what changes and why.
 
-| What | Licence | File |
-|---|---|---|
-| The site's own source — the application, the scripts, the checks, the deployment files | MIT | `LICENSE` |
-| The documentation itself: every page under `content/docs/`, in both languages | CC BY 4.0 | `LICENSE-DOCS` |
-| Code shown inside a page — a command, a compose fragment, a configuration sample | MIT | `LICENSE` |
+By contributing you agree that your work is licensed under the terms below.
 
-CC BY 4.0 is the prose equivalent of MIT: copy it, change it, put it in something
-you sell, and the only condition is that you say where it came from. It is not
-CC BY-SA, which would make attribution contagious the way the GPL does, and not
-CC0, which would drop the attribution MIT itself asks for.
+## License
 
-The code samples are MIT rather than CC BY so that pasting a command out of a
-page carries no attribution obligation. That split is the usual one, and it is
-the reason the third row exists.
+This project's code is licensed under the MIT License.
+See LICENSE.
 
-Attribute as: **AlgoJudge documentation, © 2026 The AlgoJudge Authors, CC BY 4.0**,
-with a link to <https://docs.algojudge.pl>.
+The documentation is licensed under CC BY 4.0.
+See LICENSE-DOCS.
 
-`LICENSE-DOCS` is the legal code exactly as Creative Commons publishes it at
-<https://creativecommons.org/licenses/by/4.0/legalcode.txt>, byte for byte, so a
-copy of this repository carries the terms rather than a link to them.
+Authors are listed in AUTHORS.txt.
