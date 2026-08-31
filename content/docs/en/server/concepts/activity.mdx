@@ -75,6 +75,29 @@ An [assignment](/en/server/concepts/assignment) may narrow all three. Time and
 memory limits are **not** here: they are the Runner's, and they only become
 knowable while the solution is running.
 
+### A limit is checked when it is set
+
+Since 2026-08-31 the Server refuses a limit that cannot work, on all four write
+paths — the activity created, the activity edited, the assignment attached, the
+assignment edited. Before that the values were stored, shown back to the manager,
+and only discovered to be impossible by whoever tried to submit.
+
+| Refused | Code |
+|---|---|
+| `maxUploadBytes` of zero or less — it accepts nothing at all | `maxUploadBytes.invalid` |
+| `maxUploadBytes` above the 8 MiB this Server accepts — nothing would ever reach it | `maxUploadBytes.tooLarge` |
+| a negative `maxAttachments` | `maxAttachments.invalid` |
+| `maxSubmissions` of zero or less — it lets nobody submit | `maxSubmissions.invalid` |
+
+The codes are prefixed `activity.` or `assignment.` by the path that refused.
+
+**Zero attachments is legal and zero submissions is not**, which looks
+inconsistent and is not. A problem that accepts no attachments is a problem
+somebody meant to configure. A limit of zero submissions closes the problem
+while telling every participant they have no submissions left — a state nobody
+chooses on purpose, and one `null` already expresses properly. `null` means
+*inherit*, or *no limit*, and is always accepted.
+
 ## Visibility
 
 | Field | Meaning |

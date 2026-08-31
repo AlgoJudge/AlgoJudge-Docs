@@ -10,9 +10,9 @@ file does not repeat them.
 open.** It documents five repositories: Server, Client, Runner,
 External-Runner and Ops.
 
-It is not `AlgoJudge-Design`. Design holds internal working documents that carry
-a status; a `Draft` there is not a fact here. **Nothing is published here
-because it exists there.**
+It is not the internal document repository. That one holds working documents
+which carry a status; a `Draft` there is not a fact here. **Nothing is published
+here because it exists there.**
 
 ## The rule that matters most
 

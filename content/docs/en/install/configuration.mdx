@@ -1,0 +1,113 @@
+---
+title: Every setting in `.env`
+description: The whole of an installation's configuration in one table, what each key defaults to, and the three that have no default at all.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+One file configures an installation: `.env`, beside `compose.yaml`. **No Compose
+file is edited for any supported arrangement.**
+
+The pages around this one explain the settings in the order somebody meets them.
+This one is the reference: every key, in one place, so that a value you find in
+somebody's `.env` can be looked up.
+
+<Callout type="warn" title="Three keys have no default and the stack will not start without them">
+`AJ_ADMIN_TOKEN`, `POSTGRES_PASSWORD` and `RUNNER_WORK_DIR`. Compose refuses to
+start rather than substituting an empty string, which is deliberate: an
+administrator token that quietly defaulted to nothing would leave `/admin`
+closed and the administrator's password unreachable.
+</Callout>
+
+## What runs, and from where
+
+| Key | Default | |
+|---|---|---|
+| `COMPOSE_PROFILES` | `edge,app,data,runner` | which services run. See [the four arrangements](/en/install) |
+| `TZ` | `Europe/Warsaw` | anchors the [scheduled work](/en/install/schedule) to local time |
+| `REGISTRY` | `ghcr.io/algojudge` | where the images are pulled from |
+| `SERVER_TAG` | `1` | a **moving major**, and no `v`. See [Updating](/en/install/update) |
+| `CLIENT_TAG` | `1` | |
+| `RUNNER_TAG` | `1` | the Runner **and** its four `lang-*` images |
+| `POSTGRES_TAG` | `18` | the major is pinned on purpose — 18 moved the data directory |
+| `NGINX_TAG` | `1.27-alpine` | |
+
+## The database
+
+| Key | Default | |
+|---|---|---|
+| `POSTGRES_DB` | `algojudge` | |
+| `POSTGRES_USER` | `algojudge` | |
+| `POSTGRES_PASSWORD` | **required** | |
+| `MIGRATE_ON_START` | `true` | becomes the Server's `AJ_Database__MigrateOnStart`, which is `false` on its own. Ops turns it on because [it backs up first](/en/install/backup) |
+
+## The network
+
+| Key | Default | |
+|---|---|---|
+| `HTTP_PORT` | `80` | what the bundled nginx publishes |
+| `HTTPS_PORT` | `443` | |
+| `SERVER_PORT` | `8080` | published on loopback only |
+| `CLIENT_PORT` | `8082` | published on loopback only |
+| `API_BASE_URL` | `/` | the Server's address as a **browser** reaches it. `/` when one origin serves both. See [Behind your own proxy](/en/install/reverse-proxy) |
+| `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | whose word to take for a visitor's address. A **network**, not an address; `none` for a Server reached directly |
+| `EDGE_SUBNET` | `172.28.0.0/24` | the Compose network the bundled nginx sits on |
+
+**`EDGE_SUBNET` and `TRUSTED_PROXY_NETWORKS` must agree.** The default pair does.
+Changing one without the other means the Server stops believing the proxy in
+front of it, and every visitor is recorded as arriving from that proxy.
+
+## Storage and the operator surface
+
+| Key | Default | |
+|---|---|---|
+| `STORAGE_KIND` | `postgres` | `postgres`, `filesystem` or `s3`. **Only `postgres` makes the database dump the whole of the installation's state** |
+| `AJ_ADMIN_TOKEN` | **required** | becomes `AJ_Admin__Token`. Set it before the first start |
+
+## The Runner
+
+| Key | Default | |
+|---|---|---|
+| `RUNNER_WORK_DIR` | **required** | an **absolute host path**. A path the daemon cannot open becomes an empty directory rather than an error |
+| `RUNNER_NAME` | `runner-1` | what the manager panel shows |
+| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | what this Runner offers to evaluate |
+| `RUNNER_TAGS` | empty | pools. **Read at the first registration only**; naming one takes the Runner out of the general queue |
+| `RUNNER_STOP_GRACE` | `300s` | how long a Runner is given to finish a job when the stack goes down |
+| `RUNNER_LOG` | `info` | becomes `RUST_LOG` |
+| `DOCKER_GID` | `999` | the group that owns the daemon's socket. `0` on Docker Desktop |
+| `SERVER_URL` | `http://server:8080` | only for a Runner on its own machine; `/api/v1` is appended |
+
+## Backups
+
+Covered in full on [Backup](/en/install/backup); this is the key list.
+
+| Key | Default | |
+|---|---|---|
+| `BACKUP_DIR` | `./backups` | |
+| `BACKUP_PRESET` | `standard` | `minimal`, `standard` or `extended` |
+| `BACKUP_KEEP_DAILY` | from the preset | overrides one part of it |
+| `BACKUP_KEEP_WEEKLY` | from the preset | |
+| `BACKUP_KEEP_MONTHLY` | from the preset | |
+| `BACKUP_MIN_KEEP` | `2` | never dropped, whatever the size budget says |
+| `BACKUP_MAX_TOTAL_GB` | written by `preflight.sh` | 25% of the filesystem, never more than 50% |
+| `BACKUP_FREE_SPACE_RESERVE_GB` | `10` | the margin left free after a dump |
+| `BACKUP_VERIFY_FULL` | `false` | read every block back. Costs a full decompression pass on every backup |
+
+## Collecting rubbish
+
+| Key | Default | |
+|---|---|---|
+| `GC_TMP_RETENTION_DAYS` | `7` | how old a work directory must be before it is collected |
+| `GC_PRUNE_IMAGES` | `true` | prune this project's images. Only this project's |
+
+## What is not in `.env`
+
+Some settings are written into `compose.yaml` because an installation has no
+reason to change them: the environment the Server runs as, the default storage
+id, where pre-configuration is mounted, the Runner's own work path inside its
+container, and the four language images, which are built from `REGISTRY` and
+`RUNNER_TAG`.
+
+The Server reads a good deal more than the keys above — the whole of it is on
+[Server configuration](/en/server/configuration). Ops sets what an installation
+needs and leaves the rest at the Server's own defaults.

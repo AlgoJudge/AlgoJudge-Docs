@@ -284,7 +284,7 @@ the same as being able to make oneself an administrator.
 | `runner:update` | global | rename, retag, add a note |
 | `instance:update` | global | what the installation is called, the mark it shows, the documents it publishes |
 | `provider:manage` | global | register identity providers, edit their claim mapping, enable and disable them |
-| `system:administrator` | global | bypasses every check and cannot be trimmed |
+| `system:administrator` | global | bypasses every check and cannot be trimmed. **Refused outright in an activity grant** — see below |
 
 `provider:manage` is the most dangerous key here after `system:administrator`,
 because a mapping rule decides what a token buys. Its two guards are described
@@ -293,6 +293,18 @@ documented.
 
 `instance:update` is not in the manager template: running an activity is not
 running the installation it lives in.
+
+### `system:administrator` is refused in an activity grant
+
+It is a bypass **only** in a system-scoped grant, and since 2026-08-31 writing it
+into an activity grant is refused outright rather than stored and ignored — the
+code is `grant.permission.scope`, and the message says the key is
+installation-wide and means nothing in an activity.
+
+The refusal is narrow on purpose. Several `problem:*` keys are declared global
+too and are equally inert in an activity grant, and they are **not** refused,
+because the shipped `manager` template contains them: a rule that refused every
+global key would refuse the template this installation hands out.
 
 ## Archiving versus deletion
 

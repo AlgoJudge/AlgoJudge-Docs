@@ -2,7 +2,7 @@
 title: Kopie zapasowe
 description: Co obejmuje zrzut, co się w nim teraz znalazło i dwie granice, przez które katalog kopii sam nie stanie się awarią.
 source: en/install/backup.mdx
-sourceSha256: c7058177d27c1acdc76c6e1b61347fe248585c1f45c58c88945e1b10c541b9cf
+sourceSha256: a3922a59b240a595c3d43e4a5eb3f2ca996d525cfc33008d82145c420794edf8
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -163,9 +163,9 @@ reguła, kasujemy.
 
 | Reguła | Zachowuje |
 |---|---|
-| `KEEP_DAILY` | najnowszy zrzut z każdego z ostatnich N **dni, w których zrzut istnieje** |
-| `KEEP_WEEKLY` | najnowszy z każdego z ostatnich N tygodni ISO |
-| `KEEP_MONTHLY` | najnowszy z każdego z ostatnich N miesięcy |
+| `BACKUP_KEEP_DAILY` | najnowszy zrzut z każdego z ostatnich N **dni, w których zrzut istnieje** |
+| `BACKUP_KEEP_WEEKLY` | najnowszy z każdego z ostatnich N tygodni ISO |
+| `BACKUP_KEEP_MONTHLY` | najnowszy z każdego z ostatnich N miesięcy |
 
 To **suma mnogościowa, nie suma liczb**. Jeden plik może spełniać wszystkie trzy
 i leży wtedy w katalogu raz. Zmierzone na sześćdziesięciodniowym zestawie

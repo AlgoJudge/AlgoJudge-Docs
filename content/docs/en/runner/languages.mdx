@@ -98,15 +98,19 @@ running them.
 
 ## Four images, and a Runner without them judges nothing
 
-| Image key | Default tag | Variable |
-|---|---|---|
-| GCC | `algojudge/lang-gcc:local` | `AJ_Sandbox__Image__Gcc` |
-| Clang | `algojudge/lang-clang:local` | `AJ_Sandbox__Image__Clang` |
-| CPython | `algojudge/lang-python:local` | `AJ_Sandbox__Image__Python` |
-| PyPy | `algojudge/lang-pypy:local` | `AJ_Sandbox__Image__Pypy` |
+| Image key | Variable |
+|---|---|
+| GCC | `AJ_Sandbox__Image__Gcc` |
+| Clang | `AJ_Sandbox__Image__Clang` |
+| CPython | `AJ_Sandbox__Image__Python` |
+| PyPy | `AJ_Sandbox__Image__Pypy` |
 
 Eighteen toolchains share four images because every C and C++ standard is a
 `-std` flag rather than an image of its own.
+
+The defaults, and the older `AJ_Sandbox__Image__Cpp` spelling that is still read,
+are on [Configuration](/en/runner/configuration) — stated once, so that the two
+pages cannot drift apart.
 
 <Callout type="warn" title="The language images are pulled separately from the Runner, and a Runner without them judges nothing">
 The Runner image contains no compiler. Every submission is built and run inside

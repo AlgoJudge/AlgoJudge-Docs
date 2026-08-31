@@ -40,7 +40,7 @@ products release independently. There is no single version of this site.
 code: a static export runs no middleware.
 
 **Every section has exactly one owning source and is versioned by that source's
-releases.** A section without an owner has no honest version axis.
+releases.** A section without one has no honest version axis.
 `lib/sections.ts` is the one place that records which is which.
 
 ## Languages

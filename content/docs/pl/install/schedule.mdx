@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: bafda18f20cab0dca37fde40a354da9be1aba862037dd98f219574e78e6a6bce
+sourceSha256: 77c8072a33c35dc741aa7edd62740e7cb184310c6c248db07d2fa488f9145dc2
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -63,6 +63,9 @@ drugie uruchomienie je zastępuje, a nie dopisuje duplikat.
 faktycznych godzin ciszy organizacji, a nie w stałym przesunięciu, które
 dwa razy w roku od nich odjeżdża.
 
+- **Strefa bierze się z `TZ` w `.env`**, domyślnie `Europe/Warsaw`. To ten klucz
+  ustawia operator; `install-cron.sh` wstawia go do linii `CRON_TZ` w samym
+  crontabie, bo stamtąd czyta go cron.
 - **`CRON_TZ` respektują Vixie cron i cronie, ale nie każda implementacja.**
   `install-cron.sh` sprawdza to, instalując prawdziwy crontab i wycofując się bez
   tej linii, z ostrzeżeniem, zamiast po cichu planować wedle innego zegara. Nie

@@ -35,12 +35,22 @@ same reason.
 | Registers as | `external: false` | **`external: true`** |
 | Trials | measures them | refuses them |
 | Container runtime socket | required | **not held at all** |
-| State it keeps | the identity key and a package cache | the identity key |
+| State it keeps | the identity key and a package cache | the identity key and a source cache |
 
-Because it starts nothing, it needs no socket, no cgroups, no scratch directory
-and no package cache for problem packages. The image is smaller for that reason
-rather than by tuning. Its only state is the identity key — put it on a volume;
-losing it costs a re-registration and an administrator's approval.
+Because it starts nothing, it needs no socket, no cgroups and no scratch
+directory. The image is smaller for that reason rather than by tuning.
+
+**There is no *package* cache, and there is a source cache** — the two are worth
+keeping apart. An external problem has no package, because its whole
+configuration travels on the job; but the participant's own file is fetched on
+every job and needs somewhere to live. Conflating the two shipped an image
+without the cache directory, and every job failed on it.
+
+So there are two directories, and they differ in what losing them costs. The
+identity key is in `/var/lib/algojudge-external-runner` and is meant to be a
+volume: losing it costs a re-registration and an administrator's approval. The
+source cache is in `/var/cache/algojudge-external-runner`, and losing it costs
+one download.
 
 ## `external: true` is not a detail
 
@@ -110,7 +120,9 @@ Two values are secrets and have no defaults.
 | `AJ_External__SubmitMinIntervalSeconds` | `5` | |
 | `AJ_External__PendingTimeoutSeconds` | `900` | how long to wait for the judge |
 | `AJ_External__MaxPending` | `20` | submissions in flight. Zero is refused |
-| `AJ_External__LongPollEnabled` | `true` | accepted; the trigger behind it is not built |
+| `AJ_External__LongPollEnabled` | `false` | accepted; the trigger behind it is not built |
+| `AJ_Cache__Path` | `/var/cache/algojudge-external-runner` | where a submission's source is cached on its way to the judge |
+| `AJ_Cache__MaxBytes` | `268435456` (256 MiB) | the cache ceiling. Plain bytes only |
 | `AJ_Lease__RequestSeconds` | `1200` | |
 
 The two addresses both default to UVa's, because `uva` is the judge the Runner
@@ -125,10 +137,17 @@ silently disable is not a limit.
 Every submission is made under one robot account, and **every real submission
 stays on that account for ever**. That is a decision for whoever owns it.
 
-## Two numbers checked against each other at start-up
+## Three numbers checked against each other at start-up
 
-Both failures happen far from their cause, and both end the same way: **the same
-solution is sent to somebody else's site twice**.
+All three failures happen far from their cause, and all three end the same way:
+**the same solution is sent to somebody else's site twice**.
+
+**`AJ_Lease__RequestSeconds` may not exceed 3600.** The Server clamps what it
+grants, so a larger request is a deadline of this Runner's own invention: it
+would renew against a lease it does not have and hold a job past the real one.
+This is checked first, because it bounds the variable the next rule tells you to
+raise — pushing `AJ_External__PendingTimeoutSeconds` up eventually leaves no
+legal lease above it, and the refusal says so.
 
 **`AJ_Lease__RequestSeconds` must exceed `AJ_External__PendingTimeoutSeconds`.**
 Otherwise the Server reclaims the job while this Runner is still waiting on the
@@ -143,10 +162,15 @@ polling down to be polite to somebody else's service slows the renewing down wit
 it. Four, so that three renewals fit inside every lease and two may fail in a row
 with the deadline still ahead.
 
-That second one is the well-meant change that would have cost a double
+That last one is the well-meant change that would have cost a double
 submission, which is exactly why it is refused at start-up rather than discovered
-an hour later. Note the ceiling it implies: the Server clamps a lease at 3600
-seconds, so the poll interval cannot exceed 900.
+an hour later. Note the ceiling it implies: with a lease clamped at 3600 seconds,
+the poll interval cannot exceed 900.
+
+These are the three an operator meets while tuning. The start-up check refuses
+six configurations in all — the other three are a poll floor below twenty, a poll
+ceiling below the floor, and `AJ_External__MaxPending` at zero, which would claim
+no job at all.
 
 ## UVa Online Judge
 
@@ -216,6 +240,14 @@ is sent to the judge at all**.
 
 ## The long-poll flag is accepted and does nothing
 
-`AJ_External__LongPollEnabled` is read and the Runner says at every start that
-the trigger behind it is not built. Verdicts arrive on the polling interval
-alone, which is slower but not wrong.
+**Setting it changes nothing at all today**, and that is the honest sentence
+rather than a description of what it would do. The loop hands the scheduler a
+literal `false` and always has, so the flag has never reached the polling
+behaviour from configuration. What it does reach is **one warning at start-up**,
+saying the trigger behind it is not built.
+
+It defaults to `false`, and defaulted to `true` until 2026-08-31. That old
+default cost nothing — it could not, given the above — but it described the
+Runner as doing something it has never done.
+
+Verdicts arrive on the polling interval alone, which is slower but not wrong.
