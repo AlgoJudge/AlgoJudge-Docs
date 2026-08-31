@@ -7,8 +7,8 @@ file does not repeat them.
 ## What this repository is for
 
 **Public documentation, addressed to a reader who does not have the source
-open.** It documents five repositories: Server, Client, Runner, Runner-UVa and
-Ops.
+open.** It documents five repositories: Server, Client, Runner,
+External-Runner and Ops.
 
 It is not `AlgoJudge-Design`. Design holds internal working documents that carry
 a status; a `Draft` there is not a fact here. **Nothing is published here
