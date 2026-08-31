@@ -1,0 +1,117 @@
+---
+title: Wszystkie ustawienia w `.env`
+description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i trzy klucze, które domyślnej nie mają wcale.
+source: en/install/configuration.mdx
+sourceSha256: 0abf9725fb225c3e1257dff553ed1d7539c332bb251a0f5720851bed15b3dece
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Instalację konfiguruje jeden plik: `.env`, obok `compose.yaml`. **Żaden plik
+Compose nie jest edytowany w żadnym ze wspieranych układów.**
+
+Sąsiednie strony tłumaczą ustawienia w kolejności, w jakiej się je napotyka. Ta
+jest referencją: wszystkie klucze w jednym miejscu, żeby dało się sprawdzić
+wartość znalezioną w cudzym `.env`.
+
+<Callout type="warn" title="Trzy klucze nie mają wartości domyślnej i bez nich stos nie wstanie">
+`AJ_ADMIN_TOKEN`, `POSTGRES_PASSWORD` i `RUNNER_WORK_DIR`. Compose odmawia
+startu, zamiast podstawić pusty łańcuch, i jest to zamierzone: token
+administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/admin`
+— a razem z nim jedyną drogę do ustawienia hasła administratora.
+</Callout>
+
+## Co działa i skąd
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `COMPOSE_PROFILES` | `edge,app,data,runner` | które usługi działają. Zobacz [cztery układy](/pl/install) |
+| `TZ` | `Europe/Warsaw` | kotwiczy [pracę z harmonogramu](/pl/install/schedule) w czasie lokalnym |
+| `REGISTRY` | `ghcr.io/algojudge` | skąd pobierane są obrazy |
+| `SERVER_TAG` | `1` | **ruchomy major**, bez `v`. Zobacz [Aktualizacja](/pl/install/update) |
+| `CLIENT_TAG` | `1` | |
+| `RUNNER_TAG` | `1` | Runner **oraz** jego cztery obrazy `lang-*` |
+| `POSTGRES_TAG` | `18` | major przypięty celowo — 18 przeniósł katalog danych |
+| `NGINX_TAG` | `1.27-alpine` | |
+
+## Baza danych
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `POSTGRES_DB` | `algojudge` | |
+| `POSTGRES_USER` | `algojudge` | |
+| `POSTGRES_PASSWORD` | **wymagane** | |
+| `MIGRATE_ON_START` | `true` | staje się `AJ_Database__MigrateOnStart` Servera, które samo z siebie jest `false`. Ops je włącza, bo [najpierw robi kopię](/pl/install/backup) |
+
+## Sieć
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `HTTP_PORT` | `80` | co publikuje dołączony nginx |
+| `HTTPS_PORT` | `443` | |
+| `SERVER_PORT` | `8080` | publikowany wyłącznie na pętli zwrotnej |
+| `CLIENT_PORT` | `8082` | publikowany wyłącznie na pętli zwrotnej |
+| `API_BASE_URL` | `/` | adres Servera tak, jak sięga do niego **przeglądarka**. `/`, gdy jedno origin obsługuje obie połowy. Zobacz [Za własnym proxy](/pl/install/reverse-proxy) |
+| `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | czyjemu słowu wierzyć w sprawie adresu odwiedzającego. **Sieć**, nie adres; `none`, gdy Server stoi bez proxy |
+| `EDGE_SUBNET` | `172.28.0.0/24` | sieć Compose, w której stoi dołączony nginx |
+
+**`EDGE_SUBNET` i `TRUSTED_PROXY_NETWORKS` muszą się zgadzać.** Domyślna para
+się zgadza. Zmiana jednego bez drugiego oznacza, że Server przestaje wierzyć
+proxy stojącemu przed nim, i każdy odwiedzający jest zapisywany jako przychodzący
+z tego proxy.
+
+## Przechowywanie i powierzchnia operatora
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `STORAGE_KIND` | `postgres` | `postgres`, `filesystem` albo `s3`. **Tylko przy `postgres` zrzut bazy jest całym stanem instalacji** |
+| `AJ_ADMIN_TOKEN` | **wymagane** | staje się `AJ_Admin__Token`. Ustaw przed pierwszym startem |
+
+## Runner
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `RUNNER_WORK_DIR` | **wymagane** | **bezwzględna ścieżka na hoście**. Ścieżka, której demon nie potrafi otworzyć, staje się pustym katalogiem, a nie błędem |
+| `RUNNER_NAME` | `runner-1` | to, co pokazuje panel Zarządzanie |
+| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | co ten Runner oferuje do oceny |
+| `RUNNER_TAGS` | puste | pule. **Czytane wyłącznie przy pierwszej rejestracji**; nazwanie puli zabiera Runnera z kolejki ogólnej |
+| `RUNNER_STOP_GRACE` | `300s` | ile czasu Runner dostaje na dokończenie zadania, gdy stos jest zatrzymywany |
+| `RUNNER_LOG` | `info` | staje się `RUST_LOG` |
+| `DOCKER_GID` | `999` | grupa właściciela gniazda demona. `0` na Docker Desktop |
+| `SERVER_URL` | `http://server:8080` | tylko dla Runnera na własnej maszynie; `/api/v1` jest dopisywane |
+
+## Kopie zapasowe
+
+W całości opisane na stronie [Kopie zapasowe](/pl/install/backup); tutaj jest
+sama lista kluczy.
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `BACKUP_DIR` | `./backups` | |
+| `BACKUP_PRESET` | `standard` | `minimal`, `standard` albo `extended` |
+| `BACKUP_KEEP_DAILY` | z presetu | nadpisuje jego jedną część |
+| `BACKUP_KEEP_WEEKLY` | z presetu | |
+| `BACKUP_KEEP_MONTHLY` | z presetu | |
+| `BACKUP_MIN_KEEP` | `2` | nigdy nieusuwane, cokolwiek mówi budżet rozmiaru |
+| `BACKUP_MAX_TOTAL_GB` | wpisywane przez `preflight.sh` | 25% systemu plików, nigdy więcej niż 50% |
+| `BACKUP_FREE_SPACE_RESERVE_GB` | `10` | margines pozostawiany wolny po zrzucie |
+| `BACKUP_VERIFY_FULL` | `false` | odczytuje każdy blok z powrotem. Kosztuje pełną dekompresję przy każdej kopii |
+
+## Sprzątanie
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `GC_TMP_RETENTION_DAYS` | `7` | ile dni musi mieć katalog roboczy, zanim zostanie zebrany |
+| `GC_PRUNE_IMAGES` | `true` | usuwa nieużywane obrazy tego projektu. Wyłącznie tego projektu |
+
+## Czego nie ma w `.env`
+
+Część ustawień jest wpisana w `compose.yaml`, bo instalacja nie ma powodu ich
+zmieniać: środowisko, w jakim działa Server, domyślny identyfikator
+przechowywania, miejsce podmontowania prekonfiguracji, własna ścieżka robocza
+Runnera wewnątrz jego kontenera oraz cztery obrazy językowe, budowane z
+`REGISTRY` i `RUNNER_TAG`.
+
+Server czyta znacznie więcej niż powyższe klucze — całość jest na stronie
+[Konfiguracja Servera](/pl/server/configuration). Ops ustawia to, czego wymaga
+instalacja, a resztę zostawia na domyślnych wartościach Servera.

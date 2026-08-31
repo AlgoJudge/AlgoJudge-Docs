@@ -31,6 +31,24 @@ Zero is the honest score here. A submission refused for infrastructure reasons
 carries **no score at all**, because a zero on a board reads as a wrong answer
 about a program that was never run.
 
+## The source has a ceiling of its own
+
+**A submission larger than 8 MiB is refused here**, as a `PolicyViolation`
+verdict rather than an infrastructure failure — so it is scored zero, the
+participant is told, and the submission stays rejudgeable like any other refusal
+on this page.
+
+The number is not a rule a manager sets. It is the outer wall on this Runner's
+own work, chiefly the scan below, and it is **pinned to the ceiling the Server
+accepts an upload at**. That pinning is the point: while the two disagreed, a
+submission the Server had accepted, stored and handed out was refused by the
+Runner citing a limit nobody had configured.
+
+**At most 100 violations are reported**, with the remainder stated in the
+message. A megabyte of one denied identifier is a hundred and fifty thousand
+matches and seven megabytes of text, written into the result document and the
+log both.
+
 ## What is checked, and how
 
 The source is read as text, with **comments and string literals stripped first**,

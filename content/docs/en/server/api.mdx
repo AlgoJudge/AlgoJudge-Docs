@@ -72,6 +72,14 @@ A `503` may equally come from an edge proxy that has never heard of this
 product. The code is the Server's own word for what happened.
 </Callout>
 
+### A page past the end is not an error
+
+A list endpoint asked for a page beyond what it holds answers an **empty page**,
+not a failure. That includes an absurd one: `?page=2147483647` used to overflow
+the offset it was multiplied into, produce a negative number and answer `500`.
+Since 2026-08-31 the offset is clamped, and the answer is the empty page it
+always should have been.
+
 ## The admin surface
 
 `/api/v1/admin/**` is the **operator's** surface: the maintenance switch, the

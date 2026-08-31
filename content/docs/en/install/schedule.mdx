@@ -61,6 +61,9 @@ replaces them instead of appending a duplicate.
 the organisation's actual quiet hours rather than a fixed offset that drifts
 against them twice a year.
 
+- **The zone comes from `TZ` in `.env`**, which defaults to `Europe/Warsaw`.
+  That is the key an operator sets; `install-cron.sh` renders it into the
+  crontab's own `CRON_TZ` line, which is where cron reads it.
 - **`CRON_TZ` is honoured by Vixie cron and cronie and is not portable to every
   implementation.** `install-cron.sh` finds out by installing the real crontab
   and falling back without the line, with a warning, rather than silently

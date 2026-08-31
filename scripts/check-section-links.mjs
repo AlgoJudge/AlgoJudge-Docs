@@ -9,11 +9,10 @@
 // entries, because links that leave the site do not belong in the middle of a
 // page list.
 //
-// A section may also declare no repository. `protocol` does, on purpose - it is
-// versioned by `AlgoJudge-Design`, which holds internal working documents, and
-// this site exists in order not to send a reader there; it describes a contract
-// between two programs rather than one program, so there is no single
-// repository to name. So the absence is checked too, and it is the absence of
+// A section may also declare no repository. `protocol` does, on purpose - it
+// describes a contract between two programs rather than one program, so there
+// is no single repository to send a reader to, and what versions it is not one
+// either. So the absence is checked too, and it is the absence of
 // **both**: a licence link with no repository beside it would be a licence
 // belonging to nothing.
 import { readFile } from "node:fs/promises";

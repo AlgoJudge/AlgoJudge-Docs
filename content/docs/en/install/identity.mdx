@@ -110,7 +110,7 @@ Three steps, in the manager panel, behind the `provider:manage` permission.
 | Field | Notes |
 |---|---|
 | `slug` | appears in the sign-in path and the redirect URI; expensive to change |
-| `issuer` | discovery finds the endpoints and keys. **HTTPS, except on loopback** |
+| `issuer` | discovery finds the endpoints and keys. **An `https` address, or an `http` one on loopback** — and nothing else, including no credentials in the URL |
 | `clientId`, `clientSecret` | the secret is **write-only** |
 | `scopes` | `openid` is requested whether or not it is listed |
 | `claimPath` | a dotted path — `groups`, `realm_access.roles`. **Never an expression** |

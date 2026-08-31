@@ -158,9 +158,9 @@ the one series of files that exists, and a file no rule claims is deleted.
 
 | Rule | Keeps |
 |---|---|
-| `KEEP_DAILY` | the newest dump of each of the last N **days on which a dump exists** |
-| `KEEP_WEEKLY` | the newest of each of the last N ISO weeks |
-| `KEEP_MONTHLY` | the newest of each of the last N months |
+| `BACKUP_KEEP_DAILY` | the newest dump of each of the last N **days on which a dump exists** |
+| `BACKUP_KEEP_WEEKLY` | the newest of each of the last N ISO weeks |
+| `BACKUP_KEEP_MONTHLY` | the newest of each of the last N months |
 
 They are a **union of sets, not a sum of counts**. One file can satisfy all three
 and is then stored once. Measured on a 60-day fixture, `standard` settles at

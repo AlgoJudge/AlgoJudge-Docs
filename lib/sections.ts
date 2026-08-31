@@ -19,19 +19,23 @@
 export interface Section {
     /** The first path segment after the locale. */
     readonly slug: string;
-    /** The repository whose releases move this section's version. */
-    readonly owner: string;
     /** Whether Polish is authored here, per the language policy of 2026-08-09. */
     readonly polish: boolean;
     /**
      * **The repository this section documents, linked from its own sidebar.**
      *
-     * Usually the owner, and for four sections it is exactly the owner. It is a
-     * separate field because one section's owner is not a repository a reader
-     * should be sent to: `protocol` is versioned by `AlgoJudge-Design`, which
-     * holds internal working documents with statuses, and this site exists in
-     * order not to be that. So `protocol` links nowhere, and says so here
-     * rather than by omission.
+     * Four sections name the repository they describe. `protocol` is `null`,
+     * because what versions it is not a repository a public reader should be
+     * sent to - it describes a contract between two programs rather than one
+     * program. So `protocol` links nowhere, and says so here rather than by
+     * omission.
+     *
+     * **There was an `owner` field beside this one until 2026-09-01**, naming
+     * the repository whose releases move each section's version. Nothing ever
+     * read it - it was declared, assigned five times and accessed nowhere - and
+     * for `protocol` it was the site's only mention of a repository nobody
+     * outside can open. The rule it recorded is in the comment at the top of
+     * this file, which is where it was always stated anyway.
      */
     readonly repository: string | null;
     /**
@@ -53,7 +57,6 @@ export interface Section {
 export const sections: readonly Section[] = [
     {
         slug: "install",
-        owner: "AlgoJudge-Ops",
         polish: true,
         repository: "AlgoJudge-Ops",
         licence: "AlgoJudge-Ops",
@@ -65,7 +68,6 @@ export const sections: readonly Section[] = [
     },
     {
         slug: "client",
-        owner: "AlgoJudge-Client",
         polish: true,
         repository: "AlgoJudge-Client",
         licence: "AlgoJudge-Client",
@@ -77,7 +79,6 @@ export const sections: readonly Section[] = [
     },
     {
         slug: "server",
-        owner: "AlgoJudge-Server",
         polish: false,
         repository: "AlgoJudge-Server",
         licence: "AlgoJudge-Server",
@@ -89,7 +90,6 @@ export const sections: readonly Section[] = [
     },
     {
         slug: "runner",
-        owner: "AlgoJudge-Runner",
         polish: false,
         repository: "AlgoJudge-Runner",
         licence: "AlgoJudge-Runner",
@@ -101,7 +101,6 @@ export const sections: readonly Section[] = [
     },
     {
         slug: "protocol",
-        owner: "AlgoJudge-Design",
         polish: false,
         repository: null,
         licence: "AlgoJudge-Server",

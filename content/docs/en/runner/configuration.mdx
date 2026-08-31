@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Every environment variable a Runner reads, with its default, and the two that fail in ways nothing else warns about.
+description: Every environment variable a Runner reads, with its default, and the ones that fail in ways nothing else warns about.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -84,6 +84,7 @@ is bind-mounted at `AJ_Work__Path`.
 | Variable | Default | |
 |---|---|---|
 | `AJ_Sandbox__AllowCgroupV1` | unset | Start anyway on a host reporting cgroup v1 |
+| `AJ_Sandbox__CgroupRoot` | `/sys/fs/cgroup` | Where the cgroup filesystem is mounted |
 | `AJ_Sandbox__Image__Gcc` | `algojudge/lang-gcc:local` | |
 | `AJ_Sandbox__Image__Clang` | `algojudge/lang-clang:local` | |
 | `AJ_Sandbox__Image__Python` | `algojudge/lang-python:local` | |
@@ -117,12 +118,31 @@ reported beside a verdict on such a host are not to be trusted.
 [Isolation](/en/runner/isolation) says why.
 </Callout>
 
-## Logging
+## The variables that are not ours
 
-`RUST_LOG` sets the log filter, in the usual `tracing` grammar. It is not an
-`AJ_` variable. Unset, the Runner logs at `info`.
+Six more are read, by the libraries the Runner is built on rather than by its own
+configuration. They carry no `AJ_` prefix, and the Runner never validates them.
 
-## Two ways a configuration fails
+| Variable | |
+|---|---|
+| `RUST_LOG` | The log filter, in the usual `tracing` grammar. Unset, the Runner logs at `info`; a malformed filter falls back to `info` rather than refusing to start |
+| `DOCKER_HOST` | Where the container runtime's socket is. **Only a `unix://…` value is honoured** — anything else is ignored in silence, and the Runner goes on using the local default |
+| `NO_COLOR` | Set to anything to drop the colour from the log output |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` | The usual proxy configuration. A proxy URL may carry a credential, and one written here **appears in the process listing** |
+
+<Callout type="warn" title="Two variables to leave alone">
+Neither is ours, both are read by a library, and each breaks the Runner in a way
+that looks like something else.
+
+**`REQUEST_METHOD`** — any value, an empty one included, makes the HTTP client
+believe it is running as CGI, and it then **discards the whole proxy
+configuration, HTTPS included**.
+
+**`TOKIO_WORKER_THREADS`** — an empty value, or `0`, panics inside the async
+runtime before anything of ours runs.
+</Callout>
+
+## Three ways a configuration fails
 
 **A malformed number panics at start.** Every numeric variable above is parsed
 strictly, and `AJ_Poll__MaxSeconds=3O` — a letter O for a zero — stops the
@@ -132,6 +152,15 @@ never learn it.
 
 **A wrong `AJ_Work__HostPath` does not fail at all.** It is the opposite case and
 the reason the callout above exists.
+
+**And three settings are accepted and then quietly do the wrong thing.** An empty
+`AJ_Sandbox__CgroupRoot` **is honoured**, unlike every other `AJ_` variable, and
+ends all measurement without a word. The poll interval is advisory rather than
+checked, so a `AJ_Poll__MaxSeconds` below `AJ_Poll__MinSeconds` is silently
+raised to meet it instead of being refused. And a typo in
+`AJ_Runner__ProblemTypes` is accepted at start-up — the Runner declares the
+misspelt type, is handed nothing that matches it, and looks exactly like a Runner
+nobody has any work for.
 
 Everything else that can be wrong shows up as a queue that never drains. When
 that happens, read [Tags and routing](/en/runner/routing) first.

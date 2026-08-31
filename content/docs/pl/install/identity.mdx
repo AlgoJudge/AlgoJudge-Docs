@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane wdrożenia OIDC, jak między nimi wybrać i jak zarejestrować dostawcę w AlgoJudge.
 source: en/install/identity.mdx
-sourceSha256: eb22c299ccc6c1ddf9551617870a861ddb6a061217da5033495fcfc121f27697
+sourceSha256: 0e549c3be0a7bda2f94c744f8c314b53fc4e72e80c33ad2bcb00988ffc77cb5d
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -113,7 +113,7 @@ Trzy kroki, w panelu Zarządzanie, za uprawnieniem `provider:manage`.
 | Pole | Uwagi |
 |---|---|
 | `slug` | pojawia się w ścieżce logowania i w adresie powrotnym; drogo go potem zmieniać |
-| `issuer` | discovery znajduje endpointy i klucze. **HTTPS, poza pętlą zwrotną** |
+| `issuer` | discovery znajduje endpointy i klucze. **Adres `https`, albo `http` w pętli zwrotnej** — i nic poza tym, w tym żadnych danych logowania w adresie |
 | `clientId`, `clientSecret` | sekret jest **tylko do zapisu** |
 | `scopes` | `openid` żądamy niezależnie od tego, czy jest tu wymieniony |
 | `claimPath` | ścieżka z kropkami — `groups`, `realm_access.roles`. **Nigdy wyrażenie** |
