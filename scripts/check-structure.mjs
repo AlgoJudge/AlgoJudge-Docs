@@ -36,7 +36,13 @@ const FENCE_OPEN = /^```([A-Za-z0-9]*)/m;
 const FENCED_BLOCK = /^```[\s\S]*?^```/gm;
 /** Headings and callouts, in document order: one sequence, not two lists. */
 const OUTLINE = /^(#{1,6}) |<Callout\b[^>]*?\btype="([a-z]+)"/gm;
-const INTERNAL_LINK = /\]\((\/[a-z]{2}\/[^)\s]*)\)/g;
+/**
+ * Internal links, in both the forms this content uses: a Markdown link, and a
+ * `href` on a component. **The second matters as much as the first** - a
+ * `<Card href="…">` is a link a reader clicks, and leaving it out of the
+ * comparison would let one language quietly carry a card the other does not.
+ */
+const INTERNAL_LINK = /\]\((\/[a-z]{2}\/[^)\s]*)\)|href=["'](\/[a-z]{2}\/[^"']*)["']/g;
 const LOCALE_PREFIX = /^\/[a-z]{2}\//;
 
 function outline(text) {
@@ -55,7 +61,7 @@ function outline(text) {
     );
 
     const links = [...body.matchAll(INTERNAL_LINK)]
-        .map((m) => m[1].replace(LOCALE_PREFIX, "/"))
+        .map((m) => (m[1] ?? m[2]).replace(LOCALE_PREFIX, "/"))
         .sort();
 
     return { headings, fences, links };

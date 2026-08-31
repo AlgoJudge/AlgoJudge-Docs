@@ -2,8 +2,11 @@
 title: Dokumentacja AlgoJudge
 description: Otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.
 source: en/index.mdx
-sourceSha256: c1904637bd75210d108a37c589ae10736518beb8e74dab458d76f7db7e0224f0
+sourceSha256: c7f8c51b4bd2942817142d2bb597bafb93129cd81a2e71e5f8fe5f8133c8e11d
 ---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { BookOpen, Cable, Cpu, Send, Server, Settings } from "lucide-react";
 
 AlgoJudge to otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów
 i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.
@@ -13,14 +16,44 @@ ani wyników.
 
 ## Od czego zacząć
 
-| Jeżeli | Czytaj |
-|---|---|
-| bierzesz udział w konkursie albo kursie | [Dla uczestnika](/pl/client/participant) |
-| prowadzisz konkurs albo kurs | [Dla prowadzącego](/pl/client/manager) |
-| instalujesz AlgoJudge na własnej maszynie | [Instalacja i utrzymanie](/pl/install) |
-| piszesz coś, co korzysta z API | [Server](/pl/server) — po angielsku |
-| uruchamiasz maszynę oceniającą | [Runner](/pl/runner) — po angielsku |
-| piszesz własnego Runnera | [Protocol](/pl/protocol) — po angielsku |
+<Cards>
+  <Card
+    icon={<Send />}
+    href="/pl/client/participant"
+    title="Dla uczestnika"
+    description="Wejdź do aktywności, przeczytaj zadanie, wyślij rozwiązanie i sprawdź, co się z nim stało."
+  />
+  <Card
+    icon={<BookOpen />}
+    href="/pl/client/manager"
+    title="Dla prowadzącego"
+    description="Buduj aktywności i serie, prowadź bibliotekę zadań, odpowiadaj na pytania, decyduj kto co może."
+  />
+  <Card
+    icon={<Settings />}
+    href="/pl/install"
+    title="Instalacja i utrzymanie"
+    description="Postaw instalację na własnej maszynie, utrzymaj ją i odzyskaj po awarii."
+  />
+  <Card
+    icon={<Server />}
+    href="/pl/server"
+    title="Server"
+    description="Model dziedziny, model uprawnień i referencja REST generowana z samego API. Po angielsku."
+  />
+  <Card
+    icon={<Cpu />}
+    href="/pl/runner"
+    title="Runner"
+    description="Maszyny oceniające zgłoszenia: czego wymagają, jak są izolowane i jaką pracę dostają. Po angielsku."
+  />
+  <Card
+    icon={<Cable />}
+    href="/pl/protocol"
+    title="Protocol"
+    description="Kontrakt między Serverem a Runnerem, dla kogoś, kto pisze własnego Runnera. Po angielsku."
+  />
+</Cards>
 
 ## Z czego się składa
 

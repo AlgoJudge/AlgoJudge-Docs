@@ -3,6 +3,9 @@ title: AlgoJudge documentation
 description: Self-hosted software for programming contests and courses, with automatic evaluation of submitted solutions.
 ---
 
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { BookOpen, Cable, Cpu, Send, Server, Settings } from "lucide-react";
+
 AlgoJudge is open-source, self-hosted software for programming contests and
 courses, with automatic evaluation of submitted solutions.
 
@@ -11,14 +14,44 @@ problems or your results.
 
 ## Where to start
 
-| If you are | Read |
-|---|---|
-| taking part in a contest or a course | [For a participant](/en/client/participant) |
-| running one | [For a manager](/en/client/manager) |
-| installing AlgoJudge on a machine you own | [Install and operate](/en/install) |
-| building against the API | [Server](/en/server) |
-| running an evaluation machine | [Runner](/en/runner) |
-| implementing a Runner of your own | [Protocol](/en/protocol) |
+<Cards>
+  <Card
+    icon={<Send />}
+    href="/en/client/participant"
+    title="For a participant"
+    description="Enter an activity, read a problem, send a solution, and find out what happened to it."
+  />
+  <Card
+    icon={<BookOpen />}
+    href="/en/client/manager"
+    title="For a manager"
+    description="Build activities and rounds, keep the problem library, answer questions, decide who may do what."
+  />
+  <Card
+    icon={<Settings />}
+    href="/en/install"
+    title="Install and operate"
+    description="Stand an installation up on a machine you own, keep it running, and get it back."
+  />
+  <Card
+    icon={<Server />}
+    href="/en/server"
+    title="Server"
+    description="The domain model, the permission model, and the REST reference generated from the API itself."
+  />
+  <Card
+    icon={<Cpu />}
+    href="/en/runner"
+    title="Runner"
+    description="The machines that evaluate submissions: what one needs, how it is isolated, and which work it is given."
+  />
+  <Card
+    icon={<Cable />}
+    href="/en/protocol"
+    title="Protocol"
+    description="The contract between a Server and a Runner, for somebody writing a Runner of their own."
+  />
+</Cards>
 
 ## How the parts fit together
 

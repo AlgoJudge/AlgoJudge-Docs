@@ -10,6 +10,10 @@ const text: Record<string, string> = {
 /**
  * The way back out of the documentation, in the sidebar footer.
  *
+ * `mb-4` rather than the `mb-2` the picker uses below itself: without a box
+ * around it the link needs the gap to read as its own thing rather than as a
+ * label for the control under it.
+ *
  * **`-order-1` is what puts it above the language picker.** Fumadocs' sidebar
  * renders its footer slot last — after the picker and after the icon row — and
  * offers no slot between them. The container is a flex column, so ordering the
@@ -20,7 +24,7 @@ export function HomepageLink({ locale }: { locale: string }) {
     return (
         <a
             href={HOMEPAGE}
-            className="-order-1 mb-2 flex items-center gap-2 px-2 text-sm text-fd-muted-foreground transition-colors hover:text-fd-foreground"
+            className="-order-1 mb-4 flex items-center gap-2 px-2 text-sm text-fd-muted-foreground transition-colors hover:text-fd-foreground"
         >
             <ExternalLink className="size-4 shrink-0" />
             {text[locale] ?? text.en}
