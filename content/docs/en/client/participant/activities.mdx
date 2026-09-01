@@ -121,7 +121,16 @@ and the state. It updates itself as verdicts arrive, so you can watch one finish
 without leaving the statement you are reading.
 
 Its **Send** button opens the submit form in a dialog, on the problem you are
-looking at where you are looking at one.
+looking at where you are looking at one. That button is also why the panel
+appears only where you are **enrolled**: it sends, and the Server refuses a
+submission from somebody who is not in the activity.
+
+**Not on a phone.** At 768px and narrower the panel is not drawn at all. It is
+460px pinned to a corner, which on a small screen is nearly the whole width, and
+it would sit on top of whatever the page put in the same corner — the submit
+form's own **Send** button included. Nothing is lost: the list is
+**My submissions** in the navigation, and the form its Send button opens is
+**Submit** beside it.
 
 Whether it is open is remembered for the session.
 

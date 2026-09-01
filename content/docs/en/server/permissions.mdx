@@ -45,7 +45,8 @@ In this order. The order is the decision.
    `system:administrator`**. Checked *first*, because checking the administrator
    bypass before it is exactly how the override would be lost.
 2. `system:administrator`, held in **any** system contribution, bypasses every
-   other check at every other scope.
+   other *permission* check at every other scope. It does not put its holder in
+   an activity, and submitting asks that separately.
 3. Otherwise the effective set is the **union**: every system contribution, plus
    the activity grant when one activity is asked about.
 4. **There is no subtraction anywhere in the model.**
@@ -202,7 +203,7 @@ not learn the name of any particular archive.
 |---|---|---|
 | `submission:read:own` | activity | see one's own submissions |
 | `submission:read:all` | both | see everyone's submissions |
-| `submission:create` | activity | submit a solution |
+| `submission:create` | activity | submit a solution. **Membership is asked separately** — see below |
 | `submission:source:read:all` | both | read the source of someone else's submission |
 | `submission:rejudge` | both | queue another evaluation attempt |
 | `submission:cancel` | both | cancel a queued or running job |
@@ -213,6 +214,27 @@ seeing that someone submitted, and reading what they wrote, are different
 disclosures. `submission:exclude` is separate from `submission:rejudge` because
 rejudging asks the Runner to look again while excluding decides an outcome by
 hand.
+
+### Holding the key is not being in the activity
+
+`submission:create` is the first of two questions; the second is membership.
+Submitting is refused — 403, code `enrolment.required` — unless the submitter
+holds an **active** grant in that activity. *Resolution* unions permissions, and
+membership is not a permission: nothing carries it in from anywhere else.
+Without the second question a submission would be graded and listed among the
+manager's rows while belonging to nobody on the standings — the ranking builds
+its contestants from activity grants.
+
+`system:administrator` is **not** exempt, and that is the decision here worth
+arguing with: the bypass is a bypass of permissions, and this is not a
+permission question. An administrator who wants to compete takes an activity
+grant, which costs them one request. An `Invited` grant is not membership
+either — the resolver discards it, and so does this.
+
+Two things it does not reach. Creating an activity writes its creator an active
+grant in it, so nobody is shut out of what they just made. And `trial:run` is a
+different door: a trial is nobody's submission, so nothing about it asks who is
+in the activity.
 
 ### Results
 
@@ -267,12 +289,22 @@ arrive with ordinary account editing.
 |---|---|---|
 | `grant:read:all` | both | see who holds what |
 | `grant:update` | both | change what someone holds |
-| `template:read` | global | see the templates |
+| `template:read` | global | see the templates — and so does `grant:update`, held anywhere |
 | `template:manage` | global | create, edit and delete templates |
 
 `grant:update` is why "nobody may grant a permission they do not hold" exists.
 An activity manager needs it to run their own group, and without that rule it is
 the same as being able to make oneself an administrator.
+
+**The template list answers to either key, held anywhere.** `template:read` is
+global, and a global key in an activity grant confers nothing, so an activity
+manager could never hold it — while applying a template is exactly what they do
+when they enrol somebody by hand. So `GET /api/v1/permission-templates` admits
+`template:read` **or** `grant:update` from any grant the caller holds, and
+putting `template:read` into a manager set of your own is not the fix it looks
+like. Reading one discloses nothing: a template is copied into a grant, never
+referenced, and the excess rule still refuses to hand on a permission the caller
+does not hold.
 
 ### Runners and the installation
 
@@ -284,7 +316,7 @@ the same as being able to make oneself an administrator.
 | `runner:update` | global | rename, retag, add a note |
 | `instance:update` | global | what the installation is called, the mark it shows, the documents it publishes |
 | `provider:manage` | global | register identity providers, edit their claim mapping, enable and disable them |
-| `system:administrator` | global | bypasses every check and cannot be trimmed. **Refused outright in an activity grant** — see below |
+| `system:administrator` | global | bypasses every permission check and cannot be trimmed. **Refused outright in an activity grant**, and the last one cannot be taken away — see below |
 
 `provider:manage` is the most dangerous key here after `system:administrator`,
 because a mapping rule decides what a token buys. Its two guards are described
@@ -305,6 +337,31 @@ The refusal is narrow on purpose. Several `problem:*` keys are declared global
 too and are equally inert in an activity grant, and they are **not** refused,
 because the shipped `manager` template contains them: a rule that refused every
 global key would refuse the template this installation hands out.
+
+### The installation cannot lose its last administrator
+
+Revoking the only active system grant that carries the key is refused. So is
+rewriting it so that it no longer carries the key, and so is demoting it to
+`invited` — the resolver reads active grants only, so an invited administrator
+administers nothing. All three answer 403 with the code
+`grant.administrator.last`, and the message says to grant it to somebody else
+first.
+
+The question is asked about the row rather than the person: a second
+administrator anywhere in the installation makes every one of those acts legal
+again, including on the row that was refused a moment earlier.
+
+**The way back is a restart**, because `aj-admin` has no command for grants.
+Where no active system grant carries the key at all, the Server grants the
+`admin` template back to the seeded `admin` account on start and logs a warning.
+It never rewrites a system grant somebody made by hand: where that account
+already holds one that does not administer, the log says so and the row is left
+alone, so an operator who moved the role onto a named person keeps their
+arrangement.
+
+A restart returns the rights, not the password. If nobody knows that either,
+`aj-admin password` sets one — see
+[Troubleshooting](/en/install/troubleshooting).
 
 ## Archiving versus deletion
 

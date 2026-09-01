@@ -121,6 +121,26 @@ click, an under-cautious one leaks the tests during a contest. A Runner that
 starts attaching something new must not publish it by arriving.
 </Callout>
 
+### Absent is not empty
+
+An activity created with no `attachmentVisibility` gets the conventional three:
+`source` and `details` to the participant — their own work and its verdict — and
+`log` managers-only, because what a compiler says about a solution is the
+activity's to release. **Sent as `[]`, the field still means no rows at all.**
+The default fills in for a creation that said nothing, not for one that said
+*none*.
+
+The rule above is what makes the difference matter: an empty table leaves the
+author of a submission unable to read back their own source, which is not what
+leaving the field out was asking for. The panel's form names all three, and the
+default makes an activity created any other way match it. `log` is stored even
+though a missing row would say the same thing, because the editor draws one
+switch per row and a table with no rows offers a manager nothing to change.
+
+Editing is the other way round: an edit that omits `attachmentVisibility` leaves
+the table as it stands, and one that sends it replaces every row — so an empty
+list there does empty the table.
+
 ## Routing
 
 `RunnerTags` says which Runners judge this activity's submissions. Empty means

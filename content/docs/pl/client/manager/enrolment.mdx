@@ -2,7 +2,7 @@
 title: Zapisy
 description: Nadanie w aktywności jest członkostwem. Obok niego nie ma żadnej listy.
 source: en/client/manager/enrolment.mdx
-sourceSha256: 670792a726556b131d3edcc799d62c58dee57433e01a986f291539c7dbcea9dd
+sourceSha256: 1303d8c566b48f04f443ea379fa79dc67d91abfaba9f07cbb0e851dbc7401ba3
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -35,7 +35,7 @@ a Server odmawia niezależnie od tego, co zrobił ekran.
 
 ### Członkostwo systemowe
 
-Jeden przełącznik w tym samym oknie: *wysyła zgłoszenia jak każdy, nie liczy się
+Jeden przełącznik w tym samym oknie: *wysyła zgłoszenia jak każdy, a liczy się
 jak nikt* — nie ma go ani w liczbie uczestników, ani w rankingu.
 
 Włącza się **sam** przy nadaniu, które daje cokolwiek ponad zestaw zwykłego
@@ -43,6 +43,20 @@ uczestnika. Członek jury w rankingu obok studentów to błąd, a nie preferencj
 więc Server wylicza to przy każdym zapisie i nigdy nie przyjmuje z ekranu. Przy
 zwykłym członkostwie decydujesz sam: konto testowe albo to, na którym puszczasz
 rozwiązanie wzorcowe, jest dokładnie tym, do czego ten przełącznik służy.
+
+**Żeby sprawdzić zadanie przed zawodami, musisz zapisać się do aktywności.**
+Rozwiązanie wyśle tylko ktoś, kto ma w niej aktywne nadanie; nie pomaga tu nawet
+`system:administrator`, bo to obejście uprawnień, a bycie w aktywności
+uprawnieniem nie jest. W aktywności, w której cię nie ma, nie znajdziesz w
+nawigacji **Wyślij zgłoszenie** ani panelu zgłoszeń w rogu, a sam formularz, gdy
+wejdziesz na jego adres, odmówi tak samo jak Server.
+
+Wystarczy, że zapiszesz się do niej z włączonym przełącznikiem: wysyłasz
+zgłoszenia jak każdy, a nie ma cię ani w liczbie uczestników, ani w rankingu. W
+aktywności, którą sam założyłeś, już jesteś — przy zakładaniu dostajesz w niej
+nadanie prowadzącego — a [pomiar rozwiązania
+wzorcowego](/pl/client/manager/packages) to nie zgłoszenie i nic z tego go nie
+dotyczy.
 
 ## Nadanie zaproponowane, ale nieprzyjęte
 
