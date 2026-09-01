@@ -16,6 +16,7 @@
     "update",
     "schedule",
     "reverse-proxy",
+    "external-runner",
     "configuration",
     "troubleshooting",
     "external:[AlgoJudge-Ops](https://github.com/AlgoJudge/AlgoJudge-Ops)",

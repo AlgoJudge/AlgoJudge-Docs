@@ -16,22 +16,28 @@ sign in as, and the only fix is to drop the database and start again.**
 </Callout>
 
 <Callout type="warn" title="This procedure cannot be followed end to end today">
-No release has been cut. `ghcr.io/algojudge` is empty, the seven packages —
+No release has been cut. `ghcr.io/algojudge` is empty, the eight packages —
 `algojudge-server`, `algojudge-client`, `algojudge-runner`, `lang-gcc`,
-`lang-clang`, `lang-python`, `lang-pypy` — do not exist, and `docker compose
-pull` will find nothing. Until the first release, build the images yourself and
+`lang-clang`, `lang-python`, `lang-pypy`, `algojudge-external-runner` — do not
+exist, and `docker compose pull` will find nothing. Until the first release, build the images yourself and
 tag them as published: see [Running against locally built
 images](#running-against-locally-built-images) at the foot of this page.
 </Callout>
 
 ## One time, by hand: the packages must be public
 
-A GHCR package created by its first push is **private**. Until each of the seven
+A GHCR package created by its first push is **private**. Until each of the eight
 is set to Public once, `docker pull` needs a token, which defeats the point of
 there being no registry login in these instructions. The release workflow cannot
 do it; somebody with access to the organisation's packages must.
 
-Nothing to do here yet — none of the seven exists.
+**The eighth is not like the other seven.** `algojudge-external-runner` is built
+from a private repository, so whether it is made public at all is a decision
+rather than a step. If it is not, the [external
+Runner](/en/install/external-runner) is the one profile in this stack that needs
+a `docker login ghcr.io` before `up`.
+
+Nothing to do here yet — none of the eight exists.
 
 ## 1. Clone and configure
 
@@ -160,16 +166,24 @@ leaves commented out.
 
 ## Running against locally built images
 
-Until a release exists, build the three product repositories and tag them as
-published. `compose.yaml` then runs unmodified.
+Until a release exists, build the product repositories and tag them as
+published. `compose.yaml` then runs unmodified. **`-f` is relative to where you
+are standing, not to the build context** — the Server's line is the only one with
+a path in it, and it was wrong here until 2026-09-01.
+
+Rebuild rather than reuse a tag you already have: these are pinned by a moving
+tag, so a stale local `:1` is silently whatever you built last month.
 
 ```bash
-docker build -f AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
 docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
 docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
 for lang in gcc clang python pypy; do
     docker build -t "ghcr.io/algojudge/lang-$lang:1" "AlgoJudge-Runner/images/$lang"
 done
+
+# Only for the external Runner's profile.
+docker build -t ghcr.io/algojudge/algojudge-external-runner:1 AlgoJudge-External-Runner
 ```
 
 `update.sh` still needs a registry to pull from. A local `registry:2` with

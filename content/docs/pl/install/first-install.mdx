@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 8707071bdd21455bd87883eb4028d95743cb25fd991b3ffe8f12d3e00004f414
+sourceSha256: 978a68901663af996cd4db9b211b05657c451fcdac718cd2af317b1ea93f645e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -19,23 +19,29 @@ ktokolwiek mógłby wejść, a jedyne wyjście to skasować bazę i zacząć od 
 
 <Callout type="warn" title="Tej procedury nie da się dziś przejść do końca">
 Nie wydano żadnej wersji. `ghcr.io/algojudge` jest puste, nie istnieje żaden
-z siedmiu pakietów — `algojudge-server`, `algojudge-client`,
-`algojudge-runner`, `lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy` —
-a `docker compose pull` niczego nie znajdzie. Do pierwszego wydania zbuduj
-obrazy samodzielnie i otaguj je tak, jakby były opublikowane: patrz [Praca na
-obrazach zbudowanych lokalnie](#praca-na-obrazach-zbudowanych-lokalnie) na końcu
-tej strony.
+z ośmiu pakietów — `algojudge-server`, `algojudge-client`,
+`algojudge-runner`, `lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy`,
+`algojudge-external-runner` — a `docker compose pull` niczego nie znajdzie. Do
+pierwszego wydania zbuduj obrazy samodzielnie i otaguj je tak, jakby były
+opublikowane: patrz [Praca na obrazach zbudowanych
+lokalnie](#praca-na-obrazach-zbudowanych-lokalnie) na końcu tej strony.
 </Callout>
 
 ## Raz, ręcznie: pakiety muszą być publiczne
 
-Pakiet GHCR utworzony pierwszym pushem jest **prywatny**. Dopóki każdy z siedmiu
+Pakiet GHCR utworzony pierwszym pushem jest **prywatny**. Dopóki każdy z ośmiu
 nie zostanie raz przestawiony na publiczny, `docker pull` wymaga tokenu, a wtedy
 nie ma już znaczenia, że ta instrukcja nigdzie nie każe logować się do rejestru.
 Workflow wydania tego nie zrobi; musi to zrobić ktoś z dostępem do pakietów
 organizacji.
 
-Na razie nie ma tu nic do zrobienia — żaden z siedmiu nie istnieje.
+**Ósmy różni się od pozostałych siedmiu.** `algojudge-external-runner` jest
+budowany z prywatnego repozytorium, więc to, czy w ogóle zostanie
+upubliczniony, jest decyzją, a nie krokiem. Jeśli nie zostanie, [sędzia
+zewnętrzny](/pl/install/external-runner) jest w tym stosie jedynym profilem,
+który przed `up` wymaga `docker login ghcr.io`.
+
+Na razie nie ma tu nic do zrobienia — żaden z ośmiu nie istnieje.
 
 ## 1. Klon i konfiguracja
 
@@ -168,16 +174,25 @@ zakomentowane, opisuje [Praca rutynowa i harmonogram](/pl/install/schedule).
 
 ## Praca na obrazach zbudowanych lokalnie
 
-Dopóki nie ma wydania, zbuduj trzy repozytoria produktowe i otaguj je tak, jakby
-były opublikowane. `compose.yaml` zadziała bez zmian.
+Dopóki nie ma wydania, zbuduj repozytoria produktowe i otaguj je tak, jakby były
+opublikowane. `compose.yaml` zadziała bez zmian. **`-f` odnosi się do miejsca,
+w którym stoisz, a nie do kontekstu budowania** — linia Servera jako jedyna ma
+w sobie ścieżkę i do 2026-09-01 była tu błędna.
+
+Buduj od nowa, zamiast sięgać po tag, który już masz: te obrazy są przypięte
+ruchomym tagiem, więc stary lokalny `:1` jest po cichu tym, co zbudowałeś
+miesiąc temu.
 
 ```bash
-docker build -f AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
 docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
 docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
 for lang in gcc clang python pypy; do
     docker build -t "ghcr.io/algojudge/lang-$lang:1" "AlgoJudge-Runner/images/$lang"
 done
+
+# Tylko dla profilu sędziego zewnętrznego.
+docker build -t ghcr.io/algojudge/algojudge-external-runner:1 AlgoJudge-External-Runner
 ```
 
 `update.sh` wciąż potrzebuje rejestru, z którego pobiera. Aktualizację

@@ -47,6 +47,19 @@ is what waits, and `backup.sh --quiesce` uses it.
 expires, and the reaper puts it back on the queue. The cost is one evaluation
 done twice, against the cost of an operator held hostage by one wedged Runner.
 
+**With [an external judge](/en/install/external-runner) that sentence needs a
+qualification.** The evaluation done twice is then a submission made twice on
+somebody else's service, under your account there — the archive already received
+the first one, and what is repeated is the sending rather than the judging. That
+Runner holds the set it is waiting on in memory only, so a restart during a
+window loses it.
+
+An external job may legitimately be held for fifteen minutes and
+`Maintenance:ForceAfterSeconds` is 300, so the two do not meet on their own.
+Before a window that will restart that container: raise `ForceAfterSeconds` past
+`AJ_External__PendingTimeoutSeconds`, wait for the queue to be quiet, or accept
+the duplicate.
+
 ## `/api/v1/health` is the door that never closes
 
 It answers **200 at every level**, anonymously, carrying the window:
