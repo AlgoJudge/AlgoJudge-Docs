@@ -127,6 +127,50 @@ Matching is by the username the platform sends; **an address is never used for
 it**, and a platform that sends no usernames matches nobody. Putting them into
 the activity marks each one provisional until they open it themselves.
 
+### Choosing from inside the course
+
+A platform may also let somebody pick the activity from its own side, while
+adding the tool to a course. What they get is a list of the activities **they may
+manage** — the same permission that governs everything else about an activity, so
+the picker cannot offer what its user could not open here.
+
+The platform decides whether one may be chosen or several, and the list follows
+it: picking a second where the platform asked for one is refused rather than
+quietly dropping the rest.
+
+What is handed back is one link per activity, carrying the custom parameters a
+launch needs. **Nothing about grades is sent with it** — the gradebook column is
+created the first time a score is posted, not when the link is made.
+
+### What reaches the gradebook
+
+Scores travel back on their own, about once a minute, and the rule is one
+sentence:
+
+**A score reaches the gradebook exactly when the submitting participant may see
+it.**
+
+So a *managers only* activity sends nothing at all, and a frozen ranking defers
+everything until it is revealed. **The teacher does not see it either during a
+freeze**, and that is the cost rather than an oversight: a gradebook has no way to
+show a score to one reader and withhold it from another, so during a freeze
+AlgoJudge is the source of truth and the course is deliberately behind it.
+
+Three more things decide what lands:
+
+- **The best attempt is the best fraction, not the best raw score** — 1 out of 1
+  beats 70 out of 100.
+- **An excluded submission is not counted**, and somebody whose only counted
+  submission is excluded is carried back at **zero** rather than left out. A row
+  nobody computes is a row nobody corrects.
+- **A group's score reaches every member** who is linked to an account here.
+
+Where an assignment sets no maximum, the column is a percentage.
+
+**Nothing is ever withdrawn.** Scores already sent stay sent — switching a
+platform off stops new ones and retracts nothing — and a grade that fails to post
+is retried with a widening gap before it is given up on.
+
 ## Where the administrator's half is
 
 The identity provider itself is not part of this stack. It runs beside it, at its

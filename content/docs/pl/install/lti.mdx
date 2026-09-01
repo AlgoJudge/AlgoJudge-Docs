@@ -1,0 +1,168 @@
+---
+title: Podłączenie platformy kursowej
+description: Podpięcie Moodle do instalacji, ustawienie przeglądarki, które decyduje o tym, czy to w ogóle zadziała, oraz co zostało sprawdzone, a co nie.
+source: en/install/lti.mdx
+sourceSha256: c77ffcc28dcbbf44715ec925548fb51acaee612e031eeb7f99a7b8c8e5d963af
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Platforma kursowa może otworzyć aktywność swoim studentom, a ich oceny wracają do
+jej dziennika. Mechanizmem jest **LTI 1.3**; platformą, na której to sprawdzono,
+jest **Moodle**.
+
+Ta strona to połowa administratora. To, co robi potem prowadzący — umieszczenie
+aktywności w kursie, odczytanie listy uczestników — opisuje
+[Logowania zewnętrzne i platformy LTI](/pl/client/manager/logins).
+
+<Callout type="warn" title="Najpierw przeczytaj sekcję o przeglądarce">
+Więcej instalacji rozbija się o ciasteczko trzeciej strony niż o cokolwiek innego
+na tej stronie, a rozbija się **już po tym**, jak wszystko wygląda na poprawnie
+skonfigurowane. Jeśli Twoja instalacja nie serwuje HTTPS, osadzony start nie może
+zadziałać w ogóle.
+</Callout>
+
+## Zanim zaczniesz
+
+Trzy rzeczy muszą być prawdą.
+
+**Instalacja jest osiągalna po HTTPS**, pod adresem, który platforma potrafi
+rozwiązać. Tutaj nie jest to opcjonalne — powód jest w sekcji *W przeglądarce*
+poniżej.
+
+**Server zna swój publiczny adres.** Każdy adres podawany platformie jest z niego
+budowany. Ustaw `PublicApiUrl` — razem z `/api/v1` — kiedy Server stoi za
+czymkolwiek, co przepisuje żądanie:
+
+```bash
+AJ_PublicApiUrl=https://twoja.domena/api/v1
+```
+
+Pozostawienie tego pustym działa przy zwykłym reverse proxy, bo Server cofa się
+do adresu żądania. **Wyjątkiem są oczekiwane rejestracje**: odmawiają wydania
+zaproszenia, dopóki wynik nie jest adresem bezwzględnym, bo właśnie mają go podać
+cudzemu serwerowi.
+
+**Ktoś ma uprawnienie `provider:manage`.** Zarejestrowanie platformy to decyzja
+tej samej klasy co zarejestrowanie dostawcy tożsamości i stoi za tym samym
+uprawnieniem.
+
+## Dwie drogi
+
+### Platforma rejestruje się sama
+
+Krótsza i tę warto wybrać. W AlgoJudge otwórz **Logowania zewnętrzne i platformy
+LTI**, naciśnij *Oczekuj rejestracji*, wpisz notatkę mówiącą, co to za platforma,
+i skopiuj podany adres.
+
+Przekaż ten adres osobie administrującej platformą. Po jej stronie trafia tam,
+gdzie platforma przyjmuje **adres URL narzędzia** zewnętrznego, które ma samo się
+skonfigurować — w Moodle jest to ekran zarządzania narzędziami wtyczki narzędzia
+zewnętrznego. Wkleja adres; niczego więcej nie wpisuje ręcznie.
+
+Zaproszenie jest ważne **raz, przez trzydzieści minut**. Można je odwołać, zanim
+zostanie użyte, a platforma, która odpowie źle, **go nie zużywa** — nie musisz
+wydawać drugiego dlatego, że pierwsza próba się nie udała.
+
+<Callout type="warn" title="To, co przyjeżdża, jest wyłączone">
+Platforma, która zarejestruje się sama, przyjeżdża **wyłączona** i bez prawa
+mówienia, kim ktokolwiek jest. To jest zamierzone: ktoś udowodnił, że ma żywe
+zaproszenie, a nie że prowadzi uczelniany Moodle. Włączenie jej i osobne
+zdecydowanie, czy może potwierdzać tożsamości, to dwie czynności, które człowiek
+wykonuje, mając konsekwencje przed oczami.
+</Callout>
+
+### Wpisujesz ją ręcznie
+
+*Zarejestruj platformę* i formularz. Administrator platformy podaje wydawcę,
+identyfikator klienta, identyfikator wdrożenia oraz trzy adresy — jej zestaw
+kluczy, punkt wydawania tokenów i punkt autoryzacji.
+
+**Trzech z nich nie da się już zmienić**: wydawcy, identyfikatora klienta i
+identyfikatora wdrożenia. Każdy start i każde powiązanie tożsamości wisi na tej
+trójce, więc formularz blokuje je przy edycji, zamiast pozwolić Ci odkryć to
+później.
+
+Potem naciśnij *Co w niej wpisać*, co wypisze cztery adresy do wklejenia z
+powrotem do platformy oraz dwa parametry własne. **Trzeci parametr własny
+dochodzi przy każdym osadzeniu** — `activity=<slug>` — i to on mówi startowi,
+którą aktywność otwiera. Bez niego start jest odrzucany z kodem `noActivity`.
+
+## W przeglądarce
+
+**Start działa w ramce na stronie z innej witryny**, więc ciasteczko sesji jest
+ciasteczkiem trzeciej strony, a współczesne przeglądarki domyślnie takie
+odrzucają.
+
+Server na to odpowiada: sesja założona przez start dostaje ciasteczko oznaczone
+`SameSite=None; Secure; Partitioned` — i **tylko** taka sesja. To jest zmierzone,
+a nie założone: Chrome 141 i Firefox 153 bez tego odrzucają ciasteczko w ramce,
+własnymi słowami przeglądarki.
+
+Wynikają z tego dwie rzeczy, a pierwsza jest powodem ostrzeżenia na początku tej
+strony:
+
+- **`Secure` nie jest opcjonalne.** Instalacja serwująca zwykłe HTTP nie może
+  mieć osadzonych sesji w ogóle. Ciasteczko zostanie odrzucone, każdy start
+  wyląduje na stronie zapasowej, a w konfiguracji nic nie będzie wyglądało źle.
+- **Safari nie jest sprawdzone.** Nie ma tu sprzętu Apple, na którym dałoby się
+  to zrobić.
+
+Kiedy ciasteczko i tak zostanie odrzucone, uczestnik nie zostaje z zagadką:
+strona mówi, że przeglądarka blokuje logowanie dla tej ramki, proponuje **Otwórz
+w nowej karcie** i podaje zdanie, które ma przekazać osobie administrującej
+kursem. Naprawa po stronie platformy polega na ustawieniu narzędzia tak, by
+otwierało się w nowym oknie zamiast w ramce.
+
+[Za własnym reverse proxy](/pl/install/reverse-proxy) opisuje drugą połowę tego —
+dlaczego `X-Frame-Options` to `SAMEORIGIN`, a nie `DENY`, i co to znaczy, jeśli
+ustawiasz własne nagłówki przed instalacją.
+
+## Co zostało sprawdzone, a co nie
+
+Napisane wprost, bo to właśnie luka jest tym, co ma znaczenie dla kogoś, kto
+zaraz to wdroży.
+
+| | |
+|---|---|
+| Moodle **4.5.13 LTS** | starty i tożsamość |
+| Moodle **5.2.2** | wszystko, łącznie z deep linkingiem i samorejestracją |
+| Moodle **5.3dev** | starty i tożsamość |
+| Safari | **nie sprawdzone** |
+
+**Deep linking i samorejestracja były prowadzone wyłącznie na 5.2**, a 4.5.13 to
+wersja, którą uczelnia najprawdopodobniej ma uruchomioną. Cała reszta była
+sprawdzona na wszystkich trzech.
+
+Dwa zachowania Moodle kształtują to, czego można się spodziewać, i żadne nie jest
+usterką po naszej stronie:
+
+- **Skopiowany kurs jest rozpoznawany jako kopia, ale tylko na poziomie kursu.**
+  Moodle podstawia historię kursu, a nie pojedynczego osadzenia, we wszystkich
+  wspieranych wersjach — więc *wygląda na kopię…* jest mocną poszlaką, a nie
+  faktem.
+- **Ramka nie zmienia sobie wysokości.** Moodle nie implementuje zmiany rozmiaru
+  ramki, więc start ma tę wysokość, którą prowadzący wpisał w ustawieniach
+  aktywności. Osadzony interfejs jest pod to zbudowany — jeden rząd nagłówka, a
+  treść przewija się w środku.
+
+## Kiedy to nie działa
+
+Odrzucony start ląduje na stronie nazywającej to, co poszło źle, z surowym kodem
+obok, żeby dało się go zacytować w zgłoszeniu. Te, które spotyka administrator:
+
+| | |
+|---|---|
+| `unknownPlatform` | start nie pasował do żadnej rejestracji — albo pasował do kilku i nie powiedział, do której |
+| `platformDisabled` | zarejestrowana i nigdy niewłączona. Najczęstszy wynik po samorejestracji |
+| `noActivity` | osadzeniu brakuje `activity=<slug>` |
+| `notPublished` | aktywność nie jest opublikowana, a startujący nie prowadzi kursu |
+| `sharingNotAcknowledged` | aktywność jest osadzona w drugim kursie i nikt jeszcze tego nie zaakceptował |
+| `platformUnreachable` | nie udało się stąd pobrać zestawu kluczy platformy |
+
+`badState` i `badToken` to te dwa, które wyglądają groźnie, a zwykle nie są:
+przeterminowana karta przeglądarki, start powtórzony z historii albo zegary
+rozjechane o więcej niż dwie minuty.
+
+Model, który za tym wszystkim stoi — endpointy, klucze i to, do czego Server
+odmawia otwarcia połączenia — opisuje [LTI](/pl/server/lti).

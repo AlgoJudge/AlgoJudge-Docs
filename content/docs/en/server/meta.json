@@ -10,6 +10,7 @@
     "api",
     "events",
     "configuration",
+    "lti",
     "...",
     "external:[AlgoJudge-Server](https://github.com/AlgoJudge/AlgoJudge-Server)",
     "external:[Licence](https://github.com/AlgoJudge/AlgoJudge-Server/blob/main/LICENSE)"
