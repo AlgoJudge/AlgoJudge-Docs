@@ -259,6 +259,27 @@ equivalent setting to get wrong.
 
 Where you do not control the provider, leave its channel off.
 
+## What has been verified, and what has not
+
+| | |
+|---|---|
+| **Keycloak 26.7.0** | driven against a running Server from two empty databases: provisioning, the mapping, the contribution rewritten at the next sign-in, the deletion channel and its cascade, and registration end to end |
+| **Authentik 2026.5.6** | the same ground driven by hand in a browser, and its sign-in screens checked in Chromium, Firefox and WebKit |
+| Any other provider | **not verified** |
+
+**No university SSO has been tested**, and that is exactly the provider
+`unmappedBehavior` exists for — the one nobody here controls. What has been
+exercised is two products we configure ourselves.
+
+**No real mail has been sent.** The development stacks accept everything and
+deliver nothing, so `email_verified` has never arrived from a provider that
+actually sends. Confirm yours emits it truthfully before you treat a federated
+address as confirmed.
+
+Neither run is part of continuous integration: both need a running Server. They
+are run by hand before a release, and after anything touches identity on either
+side.
+
 ## When it does not work
 
 A refused sign-in comes back to the sign-in screen as

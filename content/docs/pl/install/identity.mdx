@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
 source: en/install/identity.mdx
-sourceSha256: e89bb7502a4d8c3eb135f734bb72c4646abb34586a0366687a20edd9c74a8b8c
+sourceSha256: c1563c87ca827f4ea82cb523754a784cdbe1574b1a34b110c430152a0e5cc31b
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -262,6 +262,27 @@ dałoby się przestawić źle.
 </Callout>
 
 Tam, gdzie nie kontrolujesz dostawcy, zostaw jego kanał wyłączony.
+
+## Co zostało sprawdzone, a co nie
+
+| | |
+|---|---|
+| **Keycloak 26.7.0** | przebieg przeciwko działającemu Serverowi z dwóch pustych baz: założenie konta, mapowanie, wkład nadpisany przy kolejnym logowaniu, kanał usunięcia wraz z kaskadą i rejestracja od początku do końca |
+| **Authentik 2026.5.6** | to samo przejechane ręcznie w przeglądarce, a ekrany logowania sprawdzone w Chromium, Firefoksie i WebKicie |
+| Dowolny inny dostawca | **niesprawdzone** |
+
+**Nie testowaliśmy żadnego uczelnianego SSO**, a to właśnie dla takiego dostawcy
+istnieje `unmappedBehavior` — dla tego, nad którym nikt tutaj nie panuje.
+Przećwiczyliśmy dwa produkty, które konfigurujemy sami.
+
+**Nie wyszedł stąd ani jeden prawdziwy e-mail.** Deweloperskie stosy przyjmują
+wszystko i nie doręczają niczego, więc `email_verified` nigdy nie przyszło od
+dostawcy, który naprawdę wysyła. Zanim uznasz adres z federacji za potwierdzony,
+upewnij się, że Twój dostawca wystawia ten claim zgodnie z prawdą.
+
+Żaden z tych przebiegów nie jest częścią ciągłej integracji, bo oba potrzebują
+działającego Servera. Uruchamiamy je ręcznie przed wydaniem i po każdej zmianie
+dotykającej tożsamości po którejkolwiek ze stron.
 
 ## Kiedy to nie działa
 
