@@ -93,10 +93,31 @@ existed, the only symptom was everybody being signed out, after the fact.
 
 `AlgoJudge-Ops` names no key-ring setting in its `.env.example`, so an
 installation that wants the certificate configures it on the Server service
-itself. `AlgoJudge-Server`'s own README carries the recipe: generating the
-PKCS#12 file, mounting it read-only, and the rotation rule. A certificate that is
-missing, unreadable, or carries no private key stops the Server at startup rather
-than at the first sign-in.
+itself — the two settings are on [Server configuration](/en/server/configuration).
+What it wants is a PKCS#12 file carrying its private key:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+    -keyout keyring.key -out keyring.crt -subj "/CN=algojudge-key-ring"
+
+openssl pkcs12 -export -inkey keyring.key -in keyring.crt \
+    -out keyring.pfx -passout pass:the-password-you-will-configure
+```
+
+Mount it read-only and point the setting at it. A certificate that is missing,
+unreadable, or carries **no private key** stops the Server at startup rather than
+at the first sign-in — the last of those would otherwise encrypt a ring it could
+never read back.
+
+**Rotating means prepending and keeping the old one.** The first certificate
+listed encrypts new keys; every one listed can still decrypt old ones. Dropping
+the old certificate makes the keys written under it unreadable, which looks
+exactly like having no key ring at all — and `keyring status` is what tells you
+apart, because it reports whether this Server can still read each key.
+
+So `keyring rotate` is what to run **after** putting a certificate in place on
+an installation that already had keys — the section above says why the setting
+alone changes nothing for ninety days.
 
 ## What the dump does and does not cover
 
@@ -118,7 +139,7 @@ docker compose exec -T server aj-admin storage migrate
 `storage migrate` moves what is already stored; changing the default store only
 decides where the next upload goes. It waits for its window and for the
 evaluation queue to empty, so nothing moves under a running contest. Take a
-backup first.
+backup first. [Where the files go](/en/install/storage) is the whole of it.
 
 ## Verified before it is named
 

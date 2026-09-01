@@ -1,0 +1,101 @@
+---
+title: Where the files go
+description: The three places an installation can keep uploaded files, what each one costs, and how to move what is already stored without losing anything.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Problem packages, submitted source, compiler logs and per-test tables are files.
+An installation decides where their bytes live, and **it has to decide**: where a
+product puts its files is not something to inherit from a default nobody read.
+
+A **store** is one configured place where bytes may live. A deployment may have
+several, including several of the same kind, and **every stored file remembers
+which one holds it** — for ever. That is why a store id may never be reused for a
+different location: a file written under `objects` will go on asking `objects`
+for its bytes.
+
+## Three kinds, and what each costs
+
+| Kind | What it needs | What it costs |
+|---|---|---|
+| `postgres` | nothing | the database grows by every file |
+| `filesystem` | a path on a volume | the backup now has to cover two things |
+| `s3` | an endpoint, a bucket and a key pair | an object store to run or to buy |
+
+**`postgres` is the default because it has no dependencies.** One container, and
+`pg_dump` alone is a complete backup — which is exactly what
+[Backup](/en/install/backup) relies on. It is the right answer for a small
+installation and the wrong one for a large contest, where every submitted file
+lands in the same database the scoreboard is being read from.
+
+The other two are the same trade in different words: less pressure on the
+database, and a backup that is no longer one thing.
+
+<Callout type="warn" title="Change the kind and your backup changes with it">
+A dump covers the whole installation only while the files are in the database.
+Move them to a filesystem or an object store and the dump stops being complete,
+without saying so — the backup script reports `coverage=INCOMPLETE`, and it is
+the only warning you get.
+</Callout>
+
+## Credentials, and what is never disclosed
+
+**Credentials live in the environment and nowhere else.** No endpoint sets a
+store, nothing about one is kept in the database, and none of it reaches a public
+answer: `/health` says storage is `ok` or `degraded` and **never which store,
+backend, bucket or path**. The detail is on the operator surface, behind loopback
+and a token.
+
+The settings themselves are on
+[Server configuration](/en/server/configuration).
+
+**The Server never creates a bucket.** On some providers encryption at rest is
+applied when the bucket is made and cannot be added convincingly afterwards, so
+making it is the operator's act rather than ours. The development Compose file is
+the single exception, and it says so where it sets the flag.
+
+## Moving what is already stored
+
+Changing which store is the default decides where the **next** upload goes. It
+moves nothing. Moving what is already there is a separate, deliberate act — and
+one to take a backup before:
+
+```bash
+docker compose exec server aj-admin storage status     # where the files are now
+docker compose exec server aj-admin storage migrate    # move them to the default
+docker compose exec server aj-admin storage cancel     # call it off
+```
+
+**It does not begin at once.** A migration waits for its window — `02:00` UTC by
+default — and for the evaluation queue to empty **and every round to close**, so
+nothing moves under a running contest. `storage status` says which of those it is
+waiting for.
+
+Each file is read, checked against its own checksum, written to the target, and
+**only then** does its row point at the new store. The old copy is kept for an
+hour afterwards, so a reader that resolved the row a moment ago still finds its
+bytes.
+
+A run works for half an hour and continues in the next window. **Killing the
+process loses nothing**: what has moved is recorded on the files themselves, so
+the next run picks up where it stopped rather than starting again.
+
+## Using something other than what we test against
+
+Two S3 implementations are exercised here: **RustFS**, which the development
+stack runs, and **SeaweedFS**, which is run by hand before a release.
+
+Anything else — MinIO, Ceph, a cloud provider — is **unknown rather than
+unsupported**, and the difference matters. The project keeps an S3 conformance
+suite that can be pointed at any endpoint without a code change; an
+implementation that passes it satisfies the contract this Server relies on, and
+one nobody has run it against has simply never been checked. If you are about to
+put a contest on one, running that suite first is the cheapest thing you will do
+all week.
+
+One item in it cannot be run against either implementation available here: it
+writes a known string, turns on bucket-default encryption and looks for the
+string in the store's own files. SeaweedFS stores objects readably but refuses
+the encryption call; RustFS accepts the call and stores objects unreadably either
+way. Against an endpoint that supports both, it runs.

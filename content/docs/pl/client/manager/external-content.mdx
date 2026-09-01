@@ -2,7 +2,7 @@
 title: Zasoby zewnętrzne
 description: Skąd instalacja może pobierać dokumenty i czy w ogóle może.
 source: en/client/manager/external-content.mdx
-sourceSha256: a06851810b2961c9e0499560f3d30a16e3874e043c538eb9d7e3e72a684f6e3d
+sourceSha256: 385fbea79e5f6af8422010da48c52b3de88051cf9b05f09735cc471e7995e760
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -76,6 +76,12 @@ Instalacja może mieć klucz do archiwum; ustawisz go wśród **kluczy dostępu*
 ekranie instancji. Server prosi o niego dopiero wtedy, gdy otwierasz przeglądarkę
 zadań — ekran, którego nikt nie otworzył, nie wydał ani jednego z tokenów
 archiwum.
+
+**Sam klucz nigdy nie trafia do przeglądarki.** Przeglądarka zadań to strona
+osadzona, a to, co dostanie, ląduje w adresie — więc Server wymienia klucz
+długoterminowy na token ważny godzinę i wysyła wyłącznie ten. Nieudana wymiana
+jest odmową i **nigdy powrotem do zapisanego klucza**, i po to właśnie ta wymiana
+istnieje.
 
 Wyniki są trzy, nie dwa:
 

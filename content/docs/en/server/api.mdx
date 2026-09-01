@@ -54,6 +54,13 @@ of the endpoint, before a body is bound.
   no mail sender in v1. An endpoint that exists and cannot work is worse than
   one that refuses: it invites a screen to promise something nothing will
   deliver.
+- **Two-factor authentication is not wired up.** The endpoints the framework
+  brings are unused rather than half-built, by decision.
+- **`/identity/manage/info` is refused too**, and for a different reason than the
+  mail ones: the framework builds that answer with a throw when an account has no
+  address, and this product allows accounts without one — the seeded
+  administrator is one. `GET /account` is the product's own answer, and it works
+  for every account this product allows.
 
 ## Errors
 

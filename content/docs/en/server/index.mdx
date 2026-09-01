@@ -100,6 +100,22 @@ library problem — nothing in the schema lists who may touch a particular row.
 Authorisation is a set of permission strings on a [`Grant`](/en/server/concepts/grant)
 that hangs off a **user**, not off a resource.
 
+## Some numbers, and where they come from
+
+Quoted because they are the shape of the thing rather than trivia, and each is
+read off the code rather than remembered.
+
+| | |
+|---|---|
+| **Nine hosted services** | the maintenance drainer, the lease reaper, the round scheduler, the deletion sweeper, the merge sweeper, the address sweeper, the file collector, the storage migrator, and the LTI module's grade synchroniser |
+| **Thirty-two `DbSet`s** | on top of the framework's own identity context |
+| **Two migrations, plus one for LTI** | squashed before 0.1.0, and the LTI module keeps its own history table |
+| **One event catalogue** | `events.json` is committed, so both sides of the socket can diff their names against it rather than against each other |
+
+**Every identifier is a UUIDv7** — time-ordered, so inserts append to an index
+instead of fragmenting it. The one exception is the user, which keeps the
+identity framework's own string key.
+
 ## Where to go next
 
 | | |

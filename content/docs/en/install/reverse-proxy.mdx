@@ -17,6 +17,14 @@ Keeping them on one origin is what makes `API_BASE_URL=/` work, and then there
 is **no CORS to get wrong**. The Client appends `/api/v1` itself — the path is
 fixed on every installation — so that variable names an origin and never a path.
 
+**It is fixed because getting it wrong is quiet.** Where one domain serves both,
+the API cannot live at the root, because the root is the application; and a
+prefix that is only sometimes present is one every deployment has to get right on
+its own. Get it wrong and the Client asks the right host for the wrong path, and
+your reverse proxy answers with the application's own `index.html` instead of an
+error. A value written in either of the older shapes — ending in `/v1` or
+`/api/v1` — is normalised rather than refused.
+
 The event socket is `/api/v1/ws`, under the same prefix, so it needs no rule of
 its own beyond the upgrade headers and a read timeout longer than a quiet
 socket.

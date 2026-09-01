@@ -101,7 +101,7 @@ rows.
 
 | Field | Meaning |
 |---|---|
-| `Slug` | stable, lowercase, URL-safe. It appears in the sign-in path |
+| `Slug` | stable, lowercase, URL-safe. It appears in the sign-in path, and **renaming one breaks every sign-in through it** — see below |
 | `DisplayName` | what the sign-in button says. Changed freely |
 | `Issuer` | half of the federated key. Discovery finds everything else from it |
 | `ClientId` | |
@@ -136,6 +136,19 @@ is the kind of helpfulness that reads as a runaround.
 Disabling a provider does **not** withdraw what it has already contributed.
 That is a decision about people's access, and turning a provider off to
 reconfigure it should not silently demote everybody who signed in through it.
+
+### Renaming a slug refuses every sign-in through it
+
+The slug is stamped on the challenge when a sign-in starts and checked when the
+provider sends the browser back. Change it and every sign-in in flight — and
+every one afterwards, until the redirect URI is changed at the provider too —
+is refused with `provider.ticket.mismatch`.
+
+That check is not tidiness. **Every provider shares one external cookie**, so
+without it the slug in the returning URL would decide whose claim mapping was
+applied to whose claims: a ticket issued by one provider could be redeemed at
+another's address. The slug is cheap to choose and expensive to change, and it is
+worth choosing it as though it were permanent.
 
 ## Mapping is configuration, not code
 

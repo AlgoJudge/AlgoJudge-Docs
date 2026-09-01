@@ -43,6 +43,17 @@ Both contexts read it: the Server and the LTI module keep separate migration
 histories in one database, so a value that reached only one of them still refuses
 the start.
 
+**The switch exists because nothing else shipped can apply a migration.**
+`aj-admin` has no migrate command and the image carries no SDK, so the documented
+alternative needs a workstation with the source — which a self-hosted stack does
+not have. Before it existed, a fresh installation had every migration pending and
+never started.
+
+**It takes a PostgreSQL advisory lock while it works**, and that is not
+decoration. Several instances against one database is a supported arrangement and
+they start together after an update; EF Core has no migration lock of its own, so
+without this one of them dies on a duplicate history row.
+
 ## Where the files go
 
 | Key | Environment | Default |

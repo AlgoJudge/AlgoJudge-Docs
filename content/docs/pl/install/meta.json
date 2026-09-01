@@ -9,6 +9,7 @@
     "preconfiguration",
     "identity",
     "lti",
+    "storage",
     "maintenance",
     "backup",
     "restore",
