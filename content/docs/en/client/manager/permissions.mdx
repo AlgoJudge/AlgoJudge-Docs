@@ -1,6 +1,6 @@
 ---
 title: Permissions and grants
-description: How rights are written, how they resolve, and the two rules that make the model safe.
+description: How rights are written, how they resolve, and the three rules that make the model safe.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -33,9 +33,14 @@ In this order:
 1. **An activity grant carrying the override flag is the whole answer inside its
    activity.** Nothing else applies there — not even `system:administrator`.
 2. Otherwise `system:administrator`, held in any system contribution, bypasses
-   every check.
+   every permission check.
 3. Otherwise the effective set is the **union**: every system contribution, plus
    the activity grant when one activity is being asked about.
+
+**Rule 2 bypasses permissions, and membership is not one.** Submitting needs an
+active grant in the activity itself, so an administrator who holds only a system
+grant is refused there like anybody else — and an activity grant is what being
+enrolled means.
 
 <Callout type="warn" title="There is no subtraction anywhere in the model">
 System scope is a union of contributions and is purely additive. An activity
@@ -72,7 +77,7 @@ Two things about it are worth knowing before you set one:
 An administrator's rights still cannot be trimmed from below: only an
 administrator may have set the flag on an administrator's grant.
 
-## Two rules the Server enforces, and you cannot turn off
+## Three rules the Server enforces, and you cannot turn off
 
 **Nobody may grant a permission they do not themselves hold.** Without it the
 model is decorative — anybody who could edit a grant could write
@@ -90,6 +95,13 @@ cannot have it added.
 
 The same rule applies to mapping as to granting: nobody may map onto a permission
 they do not themselves hold.
+
+**The installation cannot be left without an administrator.** Revoking the only
+active system grant that carries `system:administrator`, rewriting it so it no
+longer carries the key, and putting that row back to *invited* are one act in
+three spellings, and the Server refuses all three. Grant the key to somebody
+else first; the moment a second active system grant carries it, the first is an
+ordinary row again.
 
 ## Templates
 

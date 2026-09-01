@@ -1,8 +1,8 @@
 ---
 title: Uprawnienia i nadania
-description: Jak zapisuje się prawa, jak się rozstrzygają i dwie reguły, które czynią model bezpiecznym.
+description: Jak zapisuje się prawa, jak się rozstrzygają i trzy reguły, które czynią model bezpiecznym.
 source: en/client/manager/permissions.mdx
-sourceSha256: f91eefb604e2118864f70e7d67d6b61e5d1d7d925a0b517cbefadab9cec804c6
+sourceSha256: 70a980f3084a2a2cb1b82fe10f5949732c14a99caf2fe0db83d43f0321c49c94
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -34,9 +34,14 @@ W tej kolejności:
 1. **Nadanie w aktywności z flagą nadpisania jest całą odpowiedzią wewnątrz tej
    aktywności.** Nic innego tam nie obowiązuje — nawet `system:administrator`.
 2. W przeciwnym razie `system:administrator`, trzymany w dowolnym wkładzie
-   systemowym, omija każde sprawdzenie.
+   systemowym, omija każde sprawdzenie uprawnień.
 3. W przeciwnym razie zestaw efektywny jest **sumą**: wszystkich wkładów
    systemowych plus nadania w aktywności, gdy pytanie dotyczy jednej aktywności.
+
+**Reguła 2 omija uprawnienia, a członkostwo uprawnieniem nie jest.** Wysłanie
+rozwiązania wymaga aktywnego nadania w samej aktywności, więc administrator,
+który ma tylko nadanie systemowe, dostaje tam odmowę jak każdy inny — a nadanie
+w aktywności to właśnie bycie w niej zapisanym.
 
 <Callout type="warn" title="W tym modelu nigdzie nie ma odejmowania">
 Zakres systemowy jest sumą wkładów i tylko przyrasta. Nadanie w aktywności albo
@@ -74,7 +79,7 @@ Zanim ją ustawisz, weź pod uwagę dwie konsekwencje:
 Praw administratora nadal nie da się przyciąć od dołu: flagę na nadaniu
 administratora mógł ustawić tylko administrator.
 
-## Dwie reguły, których pilnuje Server i których nie da się wyłączyć
+## Trzy reguły, których pilnuje Server i których nie da się wyłączyć
 
 **Nikt nie nada uprawnienia, którego sam nie ma.** Bez tego model jest ozdobą —
 każdy, kto mógłby edytować nadanie, wpisałby do niego `system:administrator`.
@@ -92,6 +97,13 @@ da się go dopisać.
 
 Ta sama reguła dotyczy mapowania co nadawania: nikt nie zmapuje na uprawnienie,
 którego sam nie ma.
+
+**Instalacja nie zostanie bez administratora.** Cofnięcie jedynego aktywnego
+nadania systemowego, które trzyma `system:administrator`, przepisanie go bez
+tego uprawnienia i przestawienie tego wiersza w stan zaproszenia to ta sama
+czynność w trzech postaciach — Server odmawia za każdym razem. Najpierw nadaj to
+uprawnienie komuś innemu; gdy tylko ma je drugie aktywne nadanie systemowe,
+pierwsze jest znowu zwykłym wierszem.
 
 ## Szablony
 

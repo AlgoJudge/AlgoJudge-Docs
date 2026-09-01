@@ -78,6 +78,34 @@ docker compose exec -T server aj-admin status
 If that says `AJ_Admin__Token is not set in this container`, the token was empty
 when the container started. Set it in `.env` and recreate the Server.
 
+## Nobody can administer the installation
+
+**Restart the Server.** At every start it looks for an active installation-wide
+grant carrying `system:administrator` — anybody's, not only the seeded
+account's — and where the installation has none, it gives the `admin` account
+the `admin` template back:
+
+```bash
+docker compose restart server
+```
+
+The log then says `Nobody administered this installation, so admin has been
+granted system:administrator again. Its password is unchanged`. That last clause
+is the whole of the caveat: **a restart returns the rights, not the password.**
+If nobody knows that either, set one with `aj-admin password`.
+
+**A grant somebody made by hand is never rewritten.** Where `admin` already holds
+an installation-wide grant of its own that does not administer — trimmed to a
+shorter list, or set to *invited* — the row is left alone and the log says
+`grant system:administrator by hand` instead. That is the one case a restart does
+not repair.
+
+Reaching this state at all now takes a database older than the refusal, or one
+edited directly: taking the installation's last `system:administrator` away —
+revoking the grant, rewriting it without the key, or demoting it to *invited* —
+is answered 403 with the code `grant.administrator.last`. `aj-admin` has no
+command for grants, which is why the door is a restart rather than a command.
+
 ## Nothing is being judged
 
 In order of how often it is each one:

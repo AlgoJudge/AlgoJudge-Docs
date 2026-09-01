@@ -32,9 +32,22 @@ series — a string nothing is registered for gets whatever the fallback happens
 to do. **Ranking type** (`points` or `icpc`) is a separate setting and
 independent of it: it chooses which ranking is drawn.
 
-A new activity arrives **unpublished** and the list shows it as *being prepared*
-rather than giving it a state read off its dates. Nothing opens and nobody but
-you reaches it until you **Publish** it; **Unpublish** puts it back.
+A new activity is **published the moment it exists**. Making one is the
+deliberate act, and being asked to say so a second time would be ceremony rather
+than a safeguard. So the list gives it the state its dates imply — *Upcoming*,
+*Ongoing*, *Finished*, or *Untimed* while it has no dates — its series open on
+schedule, and anybody you enrol reaches it at once.
+
+That is not the same as being open to the world. A new activity is created
+**closed and hidden from the list**, so nobody enrols themselves into it and
+nobody browsing finds it; both switches are under *Visibility and enrolment* on
+the settings tab.
+
+**Unpublish** takes all of that back: no round of it opens, the address answers
+anybody who cannot edit it as though the activity were not there, and the list
+shows *Being prepared* in place of a state until you **Publish** it again. The
+one activity that does arrive unpublished is a
+[copy](/en/client/manager/copying), which nobody sat down and wrote.
 
 ## Time is stored in UTC and shown in the activity's zone
 

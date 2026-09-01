@@ -2,7 +2,7 @@
 title: Kopiowanie i import
 description: Kopia jest kształtem, a nie historią - wewnątrz instalacji i między dwiema.
 source: en/client/manager/copying.mdx
-sourceSha256: 490f1ce3dd30818951ba9c98584ba03e343f4dee969877d96dac072ebf20e004
+sourceSha256: 29036d167cde2a036015ef3f8c7e02f947c8c01eb9852d98027479eb6ca2ca33
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -78,6 +78,13 @@ Dwa wyjątki nie wypadają, tylko jadą inaczej:
   tej, która przyjechała.
 - **Dokumenty aktywności jadą** — regulamin i strony wejściowe, najnowsza wersja
   na język. Regulamin kursu jest częścią jego kształtu.
+
+**Zaimportowana aktywność jest opublikowana od razu**, inaczej niż kopia.
+Publikacja nie jedzie w paczce, a import o nią nie pyta: nowa aktywność powstaje
+opublikowana i tak samo powstaje ta z importu. Lista wylicza jej stan z dat,
+zamiast pokazywać *W przygotowaniu*, a rundy otworzą się w terminach, które
+import wyliczył z podanej przez ciebie daty startu. Jeżeli chcesz ją najpierw
+przejrzeć, kliknij **Cofnij publikację**.
 
 ### Import ma dwa kroki, a pierwszy nie zapisuje niczego
 

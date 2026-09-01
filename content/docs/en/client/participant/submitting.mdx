@@ -7,7 +7,10 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 The form is at **Submit** in the navigation, on the button beside every problem
 in the list, on the button at the top of a statement, and behind **Send** in the
-submissions panel in the corner.
+submissions panel in the corner. **That last route is not on a phone**: on a
+screen narrower than 768px the corner panel is not drawn at all, because there it
+would sit on top of the form's own **Send** button. Nothing is lost — the
+navigation has both **Submit** and **My submissions**.
 
 Opening **Submit** with no problem chosen gives you a picker. It offers only the
 problems of rounds that are **open**, because those are the only ones that would
@@ -114,5 +117,5 @@ Sending takes you straight to the submission's own screen, so the `queued` state
 is something you see rather than something you go looking for. See
 [What happened to my submission](/en/client/participant/results).
 
-Sending from the corner panel leaves you where you were, and the panel shows the
-new row.
+Where the corner panel is on screen, sending from it leaves you where you were,
+and the panel shows the new row.

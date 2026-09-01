@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 47eb36bfefd4d7c392477e16ad13564c5853e1cf7634504be5ef9c98eb10398c
+sourceSha256: 6ec1f811de6b7a3b58838977b78374a2b1df49ba03dd64bf47af1d0f67a313bd
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -81,6 +81,36 @@ docker compose exec -T server aj-admin status
 
 Jeśli odpowie `AJ_Admin__Token is not set in this container`, token był pusty,
 gdy kontener startował. Ustaw go w `.env` i odtwórz Server.
+
+## Nikt nie może administrować instalacją
+
+**Zrestartuj Server.** Przy każdym starcie sprawdza on, czy w instalacji jest
+jeszcze aktywne nadanie systemowe z kluczem `system:administrator` —
+czyjekolwiek, nie tylko na koncie zakładanym przy pierwszym starcie. Jeśli nie
+ma żadnego, przywraca kontu `admin` uprawnienia z szablonu `admin`:
+
+```bash
+docker compose restart server
+```
+
+W logu pojawia się wtedy `Nobody administered this installation, so admin has
+been granted system:administrator again. Its password is unchanged`. W tym
+ostatnim zdaniu mieści się całe zastrzeżenie: **restart przywraca uprawnienia, a
+nie hasło.** Jeśli hasła też nikt nie zna, ustaw je poleceniem
+`aj-admin password`.
+
+**Nadania zrobionego ręcznie Server nigdy nie nadpisze.** Jeżeli konto `admin`
+ma już własne nadanie systemowe, które nie daje praw administratora — przycięte
+do krótszej listy albo przestawione na *zaproszone* — zostaje ono bez zmian, a
+log mówi `grant system:administrator by hand`. To jedyny przypadek, którego
+restart nie naprawia.
+
+Dziś dojście do tego stanu wymaga już bazy starszej niż sama odmowa albo edycji
+wprost w bazie: odebranie instalacji ostatniego nadania z
+`system:administrator` — przez jego usunięcie, przepisanie bez tego klucza albo
+przestawienie na *zaproszone* — kończy się odpowiedzią 403 z kodem
+`grant.administrator.last`. `aj-admin` nie ma żadnego polecenia do nadań i
+dlatego jedyną drogą jest restart.
 
 ## Nic nie jest oceniane
 
