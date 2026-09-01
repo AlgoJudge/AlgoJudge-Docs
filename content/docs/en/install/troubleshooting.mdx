@@ -93,8 +93,11 @@ In order of how often it is each one:
 
 ## `Permission denied (os error 13)` in the Runner
 
-`DOCKER_GID` does not match the group that owns the daemon's socket. The message
-comes from deep inside an HTTP client and names neither.
+**Two different causes produce this one sentence**, and it names neither: it
+comes from deep inside an HTTP client or the sandbox layer, with no path and no
+number in it. `preflight.sh` checks both.
+
+**One: the daemon's socket.** `DOCKER_GID` does not match the group that owns it.
 
 ```bash
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g' /var/run/docker.sock
@@ -103,7 +106,18 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g'
 On Docker Desktop that is `0`; on a Linux host it is the `docker` group.
 `preflight.sh` runs exactly this and refuses if they disagree — asked of a
 container rather than of your shell, because under Docker Desktop and WSL the
-socket this shell can see is not the one the daemon serves.
+socket this shell can see is not the one the daemon serves. When this is the
+cause, the Runner fails at **startup** and never reaches a job.
+
+**Two: `RUNNER_WORK_DIR` belongs to somebody else.** Compose creates a missing
+bind-mount source **as root, mode 0755**, and the Runner runs as uid **65532**.
+The socket then works perfectly, the Runner registers, claims a job — and every
+single one fails at once, which is how to tell the two apart.
+
+```bash
+sudo mkdir -p /srv/algojudge/runner-work
+sudo chown 65532:65532 /srv/algojudge/runner-work
+```
 
 ## nginx will not start
 

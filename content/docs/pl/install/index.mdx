@@ -2,7 +2,7 @@
 title: Czym jest instalacja
 description: Pięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
 source: en/install/index.mdx
-sourceSha256: 73871c920a21b1e943ecd4ddf3706d7b81082a9589b4b1d7753d29d7c71e883d
+sourceSha256: 0dbf46813834dc1770e3b86f16cabc18d82c36370699b9e2462765c6031563e1
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -19,7 +19,7 @@ to co innego.
 
 <Callout type="warn" title="Nie wydano jeszcze żadnej wersji">
 `ghcr.io/algojudge` jest puste. Żadne repozytorium produktowe nie ma tagu `v*`,
-więc nie istnieje ani jeden z siedmiu obrazów wymienionych w `compose.yaml`,
+więc nie istnieje ani jeden z ośmiu obrazów wymienionych w `compose.yaml`,
 a szybki start nie zadziała z czystego klona. Dziś ten stos działa wyłącznie na
 obrazach, które sam zbudujesz z repozytoriów produktowych i otagujesz tak, jakby
 były opublikowane — [Pierwsza instalacja](/pl/install/first-install) mówi jak.
@@ -62,6 +62,12 @@ Compose.
 | **T2** | `edge,app,data`, a `runner` gdzie indziej | Runnery na własnych maszynach |
 | **T3** | `app,data` | [własne reverse proxy](/pl/install/reverse-proxy) z przodu |
 | — | `client,server,data` | po jednej połowie, do debugowania i etapowych aktualizacji |
+
+**`external-runner` to dodatek do każdego z nich, a nie piąty układ.** Dopisz go
+obok `runner` albo daj mu osobną maszynę. Nie ma go w zestawie domyślnym, bo
+loguje się do zewnętrznego archiwum na tamtejszym koncie — [Zewnętrzny
+sędzia](/pl/install/external-runner) mówi, czego wymaga i czego za Ciebie nie
+zrobi.
 
 ## Runner może działać na zupełnie innej maszynie
 

@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i trzy klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: 0abf9725fb225c3e1257dff553ed1d7539c332bb251a0f5720851bed15b3dece
+sourceSha256: 232022edda015eefa71974bddc122ad606c8ecd7f20c01f0235876ef2988f90b
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -25,12 +25,13 @@ administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/a
 
 | Klucz | Domyślnie | |
 |---|---|---|
-| `COMPOSE_PROFILES` | `edge,app,data,runner` | które usługi działają. Zobacz [cztery układy](/pl/install) |
+| `COMPOSE_PROFILES` | `edge,app,data,runner` | które usługi działają. Zobacz [cztery układy](/pl/install); `external-runner` jest dodatkiem do każdego z nich |
 | `TZ` | `Europe/Warsaw` | kotwiczy [pracę z harmonogramu](/pl/install/schedule) w czasie lokalnym |
 | `REGISTRY` | `ghcr.io/algojudge` | skąd pobierane są obrazy |
 | `SERVER_TAG` | `1` | **ruchomy major**, bez `v`. Zobacz [Aktualizacja](/pl/install/update) |
 | `CLIENT_TAG` | `1` | |
 | `RUNNER_TAG` | `1` | Runner **oraz** jego cztery obrazy `lang-*` |
+| `EXTERNAL_RUNNER_TAG` | `1` | własna wersja i własne repozytorium, więc własny tag |
 | `POSTGRES_TAG` | `18` | major przypięty celowo — 18 przeniósł katalog danych |
 | `NGINX_TAG` | `1.27-alpine` | |
 
@@ -52,6 +53,7 @@ administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/a
 | `SERVER_PORT` | `8080` | publikowany wyłącznie na pętli zwrotnej |
 | `CLIENT_PORT` | `8082` | publikowany wyłącznie na pętli zwrotnej |
 | `API_BASE_URL` | `/` | adres Servera tak, jak sięga do niego **przeglądarka**. `/`, gdy jedno origin obsługuje obie połowy. Zobacz [Za własnym proxy](/pl/install/reverse-proxy) |
+| `APP_BASE_URL` | puste | jego odbicie lustrzane: adres **aplikacji** tak, jak sięga do niej przeglądarka. Puste jest właściwe przy jednym origin. Przy dwóch pozostawienie go pustym kończy logowanie federacyjne na gołym `/activities`, rozwiązanym względem origin API |
 | `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | czyjemu słowu wierzyć w sprawie adresu odwiedzającego. **Sieć**, nie adres; `none`, gdy Server stoi bez proxy |
 | `EDGE_SUBNET` | `172.28.0.0/24` | sieć Compose, w której stoi dołączony nginx |
 
@@ -65,20 +67,45 @@ z tego proxy.
 | Klucz | Domyślnie | |
 |---|---|---|
 | `STORAGE_KIND` | `postgres` | `postgres`, `filesystem` albo `s3`. **Tylko przy `postgres` zrzut bazy jest całym stanem instalacji** |
+| `STORAGE_PATH` | `/var/lib/algojudge/objects` | tylko przy `filesystem`, na własnym wolumenie. Kopia musi go obejmować razem z bazą |
+| `STORAGE_ENDPOINT` | puste | tylko przy `s3`, a te cztery klucze są wymagane razem |
+| `STORAGE_BUCKET` | puste | |
+| `STORAGE_ACCESS_KEY` | puste | |
+| `STORAGE_SECRET_KEY` | puste | |
 | `AJ_ADMIN_TOKEN` | **wymagane** | staje się `AJ_Admin__Token`. Ustaw przed pierwszym startem |
 
 ## Runner
 
 | Klucz | Domyślnie | |
 |---|---|---|
-| `RUNNER_WORK_DIR` | **wymagane** | **bezwzględna ścieżka na hoście**. Ścieżka, której demon nie potrafi otworzyć, staje się pustym katalogiem, a nie błędem |
+| `RUNNER_WORK_DIR` | **wymagane** | **bezwzględna ścieżka na hoście**, i to **należąca do uid 65532**: brakującą Compose tworzy jako root, a wtedy każde zlecenie zawodzi z `Permission denied (os error 13)`. Ścieżka, której demon nie potrafi otworzyć, staje się pustym katalogiem, a nie błędem |
 | `RUNNER_NAME` | `runner-1` | to, co pokazuje panel Zarządzanie |
 | `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | co ten Runner oferuje do oceny |
 | `RUNNER_TAGS` | puste | pule. **Czytane wyłącznie przy pierwszej rejestracji**; nazwanie puli zabiera Runnera z kolejki ogólnej |
-| `RUNNER_STOP_GRACE` | `300s` | ile czasu Runner dostaje na dokończenie zadania, gdy stos jest zatrzymywany |
+| `RUNNER_STOP_GRACE` | `300s` | ile Docker czeka, zanim zabije Runnera. **Nic nie daje**: Runner nie obsługuje `SIGTERM`, więc w tym czasie niczego nie kończy — a `docker compose down` odczekuje to do końca. Czyste zatrzymanie to najpierw drenowanie |
 | `RUNNER_LOG` | `info` | staje się `RUST_LOG` |
 | `DOCKER_GID` | `999` | grupa właściciela gniazda demona. `0` na Docker Desktop |
 | `SERVER_URL` | `http://server:8080` | tylko dla Runnera na własnej maszynie; `/api/v1` jest dopisywane |
+
+## Runner zewnętrzny
+
+Czytaj tylko wtedy, gdy `external-runner` jest w `COMPOSE_PROFILES`. Zobacz
+[Zewnętrzny sędzia](/pl/install/external-runner).
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `EXTERNAL_JUDGE_USERNAME` | **wymagane z profilem** | konto w archiwum. Każde przekazane zgłoszenie idzie z niego i na nim zostaje |
+| `EXTERNAL_JUDGE_PASSWORD` | **wymagane z profilem** | odmawia tego `preflight.sh`, a nie `compose.yaml`: Compose interpoluje cały plik, zanim zastosuje profile, więc oznaczenie tego klucza jako wymaganego zepsułoby każdy układ, który tej usługi nie uruchamia |
+| `EXTERNAL_JUDGE` | `uva` | które archiwum. Jeden proces obsługuje jednego sędziego; drugi to druga usługa |
+| `EXTERNAL_RUNNER_NAME` | `external-runner-1` | **nie** `RUNNER_NAME`. To drugi Runner, z własną tożsamością i własnym zatwierdzeniem |
+| `EXTERNAL_PROBLEM_TYPES` | puste | puste deklaruje własny typ archiwum. Literówka jest tu ciszą, a nie błędem |
+| `EXTERNAL_RUNNER_TAGS` | puste | pule, czytane wyłącznie przy pierwszej rejestracji |
+| `EXTERNAL_RUNNER_LOG` | `info` | staje się `RUST_LOG` |
+
+Pięciu jego ustawień czasowych celowo nie udostępniamy: sprawdzają się nawzajem
+przy starcie, domyślne wartości obrazu spełniają to wszystko, a zmiana w dobrej
+wierze — łagodniejsze odpytywanie cudzej usługi — jest właśnie tą, która to
+psuje.
 
 ## Kopie zapasowe
 

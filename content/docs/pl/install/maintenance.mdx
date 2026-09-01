@@ -2,7 +2,7 @@
 title: Przerwa techniczna
 description: Jak wyłączyć instalację z ruchu, nie zatrzymując jej, i droga, która wygląda na oczywistą, a jest błędna.
 source: en/install/maintenance.mdx
-sourceSha256: 30297fa46964341430ebd18fb0436b7373a008128c004781761b99a48a179955
+sourceSha256: 5ea556a09ad114838e27437174023661e5d3c635b532d4d682a2f616f9987d3d
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -49,6 +49,18 @@ właśnie na to czeka i korzysta z niego `backup.sh --quiesce`.
 dzierżawę, dzierżawa wygasa, a reaper wkłada je z powrotem do kolejki. Kosztuje
 to jedno ocenianie wykonane dwa razy — wobec kosztu operatora trzymanego jako
 zakładnik przez jednego zakleszczonego Runnera.
+
+**Przy [sędzim zewnętrznym](/pl/install/external-runner) to zdanie wymaga
+zastrzeżenia.** Ocenianie wykonane dwa razy to wtedy zgłoszenie wysłane dwa razy
+do cudzego serwisu, na Waszym tamtejszym koncie — archiwum dostało już pierwsze,
+a powtarza się wysłanie, nie ocenianie. Ten Runner trzyma zbiór, na który czeka,
+wyłącznie w pamięci, więc restart w trakcie okna gubi go.
+
+Zlecenie zewnętrzne może być zgodnie z prawem trzymane przez piętnaście minut, a
+`Maintenance:ForceAfterSeconds` wynosi 300 — te dwie liczby same się nie spotkają.
+Przed oknem, które zrestartuje ten kontener: podnieś `ForceAfterSeconds` powyżej
+`AJ_External__PendingTimeoutSeconds`, poczekaj aż kolejka ucichnie, albo przyjmij
+duplikat.
 
 ## `/api/v1/health` to drzwi, które nigdy się nie zamykają
 

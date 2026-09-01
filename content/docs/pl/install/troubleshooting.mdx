@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 9d92373a02e2d4eb52109fc4bc13aa430a4916e383c9ec24cad9a85386b6e92f
+sourceSha256: b5704218c23185e5789a3facc2169a96c66593673a9f6c82f5d329b7c254d6db
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -97,8 +97,12 @@ Od najczęstszej przyczyny:
 
 ## `Permission denied (os error 13)` w Runnerze
 
-`DOCKER_GID` nie zgadza się z grupą, do której należy gniazdo demona. Komunikat
-przychodzi z głębi klienta HTTP i nie nazywa ani jednego, ani drugiego.
+**Dwie różne przyczyny dają to jedno zdanie**, a ono nie nazywa żadnej z nich:
+komunikat przychodzi z głębi klienta HTTP albo z warstwy sandboxa, bez ścieżki
+i bez numeru. `preflight.sh` sprawdza obie.
+
+**Pierwsza: gniazdo demona.** `DOCKER_GID` nie zgadza się z grupą, do której ono
+należy.
 
 ```bash
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g' /var/run/docker.sock
@@ -107,7 +111,19 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g'
 Na Docker Desktop to `0`; na hoście linuksowym to grupa `docker`. `preflight.sh`
 uruchamia dokładnie to i odmawia przy niezgodności — pytając kontener, a nie
 Twoją powłokę, bo pod Docker Desktop i WSL gniazdo widziane przez tę powłokę nie
-jest tym, które obsługuje demon.
+jest tym, które obsługuje demon. Gdy to jest przyczyną, Runner zawodzi przy
+**starcie** i nigdy nie dochodzi do żadnego zlecenia.
+
+**Druga: `RUNNER_WORK_DIR` należy do kogoś innego.** Compose tworzy brakujący
+katalog montowany z hosta **jako root, z prawami 0755**, a Runner działa jako
+uid **65532**. Gniazdo działa wtedy bez zarzutu, Runner rejestruje się, bierze
+zlecenie — i każde bez wyjątku zawodzi natychmiast, co właśnie odróżnia te dwie
+przyczyny.
+
+```bash
+sudo mkdir -p /srv/algojudge/runner-work
+sudo chown 65532:65532 /srv/algojudge/runner-work
+```
 
 ## nginx nie startuje
 

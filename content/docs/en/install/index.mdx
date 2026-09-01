@@ -16,7 +16,7 @@ product repositories and are labelled as development there; they are not this.
 
 <Callout type="warn" title="No release has been cut yet">
 `ghcr.io/algojudge` is empty. No product repository carries a `v*` tag, so none
-of the seven images named in `compose.yaml` exists, and the quick start does not
+of the eight images named in `compose.yaml` exists, and the quick start does not
 work from a clean clone. Today the stack runs only against images you build from
 the product repositories and tag as published — [First
 install](/en/install/first-install) says how. Every `docker pull` instruction in
@@ -58,6 +58,12 @@ them.
 | **T2** | `edge,app,data`, plus `runner` elsewhere | Runners on their own machines |
 | **T3** | `app,data` | [your own reverse proxy](/en/install/reverse-proxy) in front |
 | — | `client,server,data` | one half at a time, for debugging and staged updates |
+
+**`external-runner` is an addition to any of them, not a fifth one.** Add it
+beside `runner`, or give it a machine of its own. It is outside the default set
+because it signs in to an outside archive under an account there — [An external
+judge](/en/install/external-runner) says what it needs and what it cannot do for
+you.
 
 ## A Runner may live on another machine entirely
 
