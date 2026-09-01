@@ -8,6 +8,7 @@
     "first-install",
     "preconfiguration",
     "identity",
+    "lti",
     "maintenance",
     "backup",
     "restore",

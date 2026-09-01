@@ -2,7 +2,7 @@
 title: Logowania zewnętrzne i platformy LTI
 description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
-sourceSha256: 5eb223d18ed3c977f7f6577346b136b91986d4cbcca9cd3a32b906e3bc52e240
+sourceSha256: 764de70776663925d2cb6761f0345ee873dad204985256a97dc090793be487c6
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -130,6 +130,51 @@ nazwie użytkownika przysyłanej przez platformę; **adres e-mail nigdy do tego 
 służy**, a platforma, która nie wysyła nazw użytkowników, nie dopasuje nikogo.
 Gdy zapiszesz ich do aktywności, każdy dostaje powiązanie wstępne, dopóki sam jej
 nie otworzy.
+
+### Wybór z poziomu kursu
+
+Platforma może też pozwolić komuś wybrać aktywność po swojej stronie, w trakcie
+dodawania narzędzia do kursu. Taka osoba dostaje listę aktywności, **którymi może
+zarządzać** — to samo uprawnienie, które rządzi wszystkim innym wokół aktywności,
+więc wybór nie zaproponuje tego, czego jego użytkownik nie otworzyłby i tutaj.
+
+To platforma decyduje, czy wolno wybrać jedną, czy kilka, a lista się do tego
+stosuje: wybranie drugiej tam, gdzie platforma prosiła o jedną, jest odrzucane,
+zamiast po cichu pominąć resztę.
+
+Zwracany jest jeden odnośnik na aktywność, niosący parametry własne potrzebne
+startowi. **Nic o ocenach nie jest przy tym wysyłane** — kolumna w dzienniku
+powstaje przy pierwszym wysłanym wyniku, a nie przy tworzeniu odnośnika.
+
+### Co trafia do dziennika ocen
+
+Wyniki wracają same, mniej więcej raz na minutę, a reguła mieści się w jednym
+zdaniu:
+
+**Wynik trafia do dziennika dokładnie wtedy, kiedy zgłaszający uczestnik może go
+zobaczyć.**
+
+Więc aktywność z wynikami *tylko dla prowadzących* nie wysyła niczego, a
+zamrożony ranking odracza wszystko do odmrożenia. **Prowadzący też go wtedy nie
+widzi** i jest to koszt, a nie przeoczenie: dziennik ocen nie ma jak pokazać
+wyniku jednemu czytelnikowi, a zataić go przed drugim, więc w czasie zamrożenia
+to AlgoJudge jest źródłem prawdy, a kurs celowo zostaje w tyle.
+
+O tym, co wyląduje, decydują jeszcze trzy rzeczy:
+
+- **Najlepsza próba to najlepszy ułamek, nie najwyższy surowy wynik** — 1 na 1
+  bije 70 na 100.
+- **Zgłoszenie wyłączone z klasyfikacji nie liczy się**, a osoba, której jedyne
+  liczone zgłoszenie zostało wyłączone, wraca z **zerem**, zamiast wypaść z
+  zestawienia. Wiersz, którego nikt nie liczy, to wiersz, którego nikt nie
+  poprawi.
+- **Wynik grupy trafia do każdego jej członka**, który ma tu powiązane konto.
+
+Tam, gdzie przypisanie nie ustala maksimum, kolumna jest procentowa.
+
+**Nic nie jest nigdy wycofywane.** Wysłane wyniki zostają wysłane — wyłączenie
+platformy zatrzymuje nowe i nie cofa niczego — a ocena, której nie udało się
+wysłać, jest ponawiana z rosnącym odstępem, zanim zostanie odpuszczona.
 
 ## Czym zajmuje się administrator
 
