@@ -1,6 +1,6 @@
 ---
 title: Identity
-description: How a federated account is keyed, why it is never keyed on an address, and what a claim may never buy.
+description: The sign-in addresses, how a federated account is keyed, what a claim may never buy, and every way a sign-in is refused.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -23,6 +23,25 @@ have, built a completely different way from the other one — and not one line o
 the Server changed. A model that had grown a field for *how this product reports
 a deletion* would have had to.
 </Callout>
+
+## The addresses
+
+Three, and all of them anonymous — nobody is signed in yet, which is the point.
+The guard is the registration: a slug that is unknown **or disabled** is not
+found, and answers 404.
+
+| | |
+|---|---|
+| `GET /identity/providers/{slug}/challenge` | starts a sign-in. `returnUrl` is a local path, or it falls back to `/` |
+| `GET /identity/providers/{slug}/callback` | the handler's own address, and the redirect URI a provider is given |
+| `GET /identity/providers/{slug}/signed-in` | where a validated ticket lands and this Server decides what it means |
+
+They sit under the API's path base, so the redirect URI begins `/api/v1/`. It is
+computed and returned rather than written by hand: a literal path that omits the
+base validates perfectly and then sends the browser to an address nobody serves.
+
+`returnUrl` is local-only, and that is not tidiness. An open redirect on a
+sign-in endpoint is a phishing primitive, because the link really is ours.
 
 ## A federated identity is keyed on issuer plus `sub`
 
@@ -96,6 +115,35 @@ in again.
 
 Every path through this is idempotent: the same token twice leaves the same
 rows.
+
+## When a sign-in is refused
+
+A refusal is a redirect and not a status code: the browser is mid-journey and
+there is nobody to read a JSON body. The reason travels as a code the sign-in
+screen turns into a sentence, at `/login?provider=<slug>&error=<code>`.
+
+| | |
+|---|---|
+| `provider.ticket.missing` | the callback carried no validated ticket |
+| `provider.ticket.mismatch` | the ticket names a different provider |
+| `provider.subject.missing` | the token carried no `sub` |
+| `provider.disabled` | switched off between the challenge and the callback |
+| `provider.unmapped` | nothing matched, under `Deny` |
+| `provider.refused` | a refusal with nothing more specific to say |
+
+The external cookie is signed out **before** any of them is decided. A refusal
+that left one behind would let a later request be mistaken for a fresh ticket.
+
+Registering or editing one refuses at the write instead, and names why: `provider.slug.invalid` and
+`provider.slug.taken`; `provider.issuer.required`, `.invalid` and `.insecure`;
+`provider.clientId.required` and `provider.clientSecret.required`, the second on
+creation only; `provider.claimPath.invalid`;
+`provider.unmappedBehavior.unknown` and `provider.defaultTemplate.required`;
+`provider.deletionSecret.required` for a channel enabled without one; six
+`provider.rule.*` for a rule with no claim value, a value mapped twice, a
+template missing, unknown, carrying `system:administrator`, or carrying
+permissions its author does not hold; and `provider.linked`, which refuses to
+delete a provider people still sign in through.
 
 ## The provider row
 
