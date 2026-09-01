@@ -188,21 +188,21 @@ are standing, not to the build context** — the Server's line is the only one w
 a path in it, which makes it the one worth checking.
 
 Rebuild rather than reuse a tag you already have: these are pinned by a moving
-tag, so a stale local `:1` is silently whatever you built last month.
+tag, so a stale local `:0` is silently whatever you built last month.
 
 ```bash
-docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
-docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
-docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:0 AlgoJudge-Server
+docker build -t ghcr.io/algojudge/algojudge-client:0 AlgoJudge-Client
+docker build -t ghcr.io/algojudge/algojudge-runner:0 AlgoJudge-Runner
 # The context is `images`, not `images/$lang`: all four build the measuring
 # shim from `images/shim`, so it has to be inside what they are given.
 for lang in gcc clang python pypy; do
-    docker build -t "ghcr.io/algojudge/lang-$lang:1" \
+    docker build -t "ghcr.io/algojudge/lang-$lang:0" \
         -f "AlgoJudge-Runner/images/$lang/Dockerfile" AlgoJudge-Runner/images
 done
 
 # Only for the external Runner's profile.
-docker build -t ghcr.io/algojudge/algojudge-external-runner:1 AlgoJudge-External-Runner
+docker build -t ghcr.io/algojudge/algojudge-external-runner:0 AlgoJudge-External-Runner
 ```
 
 `update.sh` still needs a registry to pull from. A local `registry:2` with

@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i trzy klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: 6e8259069b510e56a5c44fb1faa01062a9af792f41184c21734ea6c883c7e50e
+sourceSha256: dd10d1458377155f5699869b7090ca3b042af36fb9679bc7e68ae12526c9caae
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -28,10 +28,10 @@ administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/a
 | `COMPOSE_PROFILES` | `edge,app,data,runner` | które usługi działają. Zobacz [cztery układy](/pl/install); `external-runner` jest dodatkiem do każdego z nich |
 | `TZ` | `Europe/Warsaw` | kotwiczy [pracę z harmonogramu](/pl/install/schedule) w czasie lokalnym |
 | `REGISTRY` | `ghcr.io/algojudge` | skąd pobierane są obrazy |
-| `SERVER_TAG` | `1` | **ruchomy major**, bez `v`. Zobacz [Aktualizacja](/pl/install/update) |
-| `CLIENT_TAG` | `1` | |
-| `RUNNER_TAG` | `1` | Runner **oraz** jego cztery obrazy `lang-*` |
-| `EXTERNAL_RUNNER_TAG` | `1` | własna wersja i własne repozytorium, więc własny tag |
+| `SERVER_TAG` | `0` | **ruchomy major**, bez `v`. Zobacz [Aktualizacja](/pl/install/update) |
+| `CLIENT_TAG` | `0` | |
+| `RUNNER_TAG` | `0` | Runner **oraz** jego cztery obrazy `lang-*` |
+| `EXTERNAL_RUNNER_TAG` | `0` | własna wersja i własne repozytorium, więc własny tag |
 | `POSTGRES_TAG` | `18` | major przypięty celowo — 18 przeniósł katalog danych |
 | `NGINX_TAG` | `1.27-alpine` | |
 

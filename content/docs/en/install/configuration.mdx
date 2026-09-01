@@ -26,10 +26,10 @@ closed and the administrator's password unreachable.
 | `COMPOSE_PROFILES` | `edge,app,data,runner` | which services run. See [the four arrangements](/en/install); `external-runner` is an addition to any of them |
 | `TZ` | `Europe/Warsaw` | anchors the [scheduled work](/en/install/schedule) to local time |
 | `REGISTRY` | `ghcr.io/algojudge` | where the images are pulled from |
-| `SERVER_TAG` | `1` | a **moving major**, and no `v`. See [Updating](/en/install/update) |
-| `CLIENT_TAG` | `1` | |
-| `RUNNER_TAG` | `1` | the Runner **and** its four `lang-*` images |
-| `EXTERNAL_RUNNER_TAG` | `1` | its own version and its own repository, so its own tag |
+| `SERVER_TAG` | `0` | a **moving major**, and no `v`. See [Updating](/en/install/update) |
+| `CLIENT_TAG` | `0` | |
+| `RUNNER_TAG` | `0` | the Runner **and** its four `lang-*` images |
+| `EXTERNAL_RUNNER_TAG` | `0` | its own version and its own repository, so its own tag |
 | `POSTGRES_TAG` | `18` | the major is pinned on purpose — 18 moved the data directory |
 | `NGINX_TAG` | `1.27-alpine` | |
 

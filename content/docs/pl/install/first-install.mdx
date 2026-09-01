@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 68e83ba167e631aff941bd4ca719ca919b62e211fda435e975cc7d9e70610275
+sourceSha256: 2a3812fb5bbc0b9fc94d7f3f4ab0e8446a6975f19a05a594e15e25acb8c2d1f3
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -198,22 +198,22 @@ względem katalogu, w którym stoisz, a nie względem kontekstu budowania** — 
 Servera jako jedyna zawiera ścieżkę, więc to ją warto sprawdzić.
 
 Buduj od nowa, zamiast sięgać po tag, który już masz: te obrazy są przypięte
-ruchomym tagiem, więc stary lokalny `:1` jest po cichu tym, co zbudowałeś
+ruchomym tagiem, więc stary lokalny `:0` jest po cichu tym, co zbudowałeś
 miesiąc temu.
 
 ```bash
-docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
-docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
-docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:0 AlgoJudge-Server
+docker build -t ghcr.io/algojudge/algojudge-client:0 AlgoJudge-Client
+docker build -t ghcr.io/algojudge/algojudge-runner:0 AlgoJudge-Runner
 # Kontekstem jest `images`, nie `images/$lang`: wszystkie cztery budują w nim
 # pośrednika pomiarowego z `images/shim`, więc musi się w nim znaleźć.
 for lang in gcc clang python pypy; do
-    docker build -t "ghcr.io/algojudge/lang-$lang:1" \
+    docker build -t "ghcr.io/algojudge/lang-$lang:0" \
         -f "AlgoJudge-Runner/images/$lang/Dockerfile" AlgoJudge-Runner/images
 done
 
 # Tylko dla profilu sędziego zewnętrznego.
-docker build -t ghcr.io/algojudge/algojudge-external-runner:1 AlgoJudge-External-Runner
+docker build -t ghcr.io/algojudge/algojudge-external-runner:0 AlgoJudge-External-Runner
 ```
 
 `update.sh` wciąż potrzebuje rejestru, z którego pobiera. Aktualizację

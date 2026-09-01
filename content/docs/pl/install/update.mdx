@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: b5dc8ed80c2347e2687e3246a6a58d0a538d3c02d1f8251207350b7dc45458b6
+sourceSha256: 1df9bb35eed6d7b4dc2c90ea62887eeaf66db6603365d86f33ade1b833f33acc
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -33,7 +33,7 @@ zawiedzie, nic nie zostaje zaktualizowane.
 
 ## Co znaczy „coś nowego”
 
-Nie tag. `SERVER_TAG=1` wskazuje po każdym wydaniu inny obraz, więc „czy tag jest
+Nie tag. `SERVER_TAG=0` wskazuje po każdym wydaniu inny obraz, więc „czy tag jest
 ten sam” odpowiadałoby „tak” w nieskończoność. Każdy działający kontener zna
 referencję, z której powstał, oraz identyfikator obrazu, na jaki ta referencja
 się wtedy rozwiązała; po pobraniu ta sama referencja rozwiązuje się na to, co
@@ -47,12 +47,15 @@ poproszono; digest mówi, co działa, i to jego przywraca wycofanie.
 Digesty nie mogą leżeć w repozytorium. To produkt, który wiele organizacji
 wdraża niezależnie, i żadna z nich nie może do niego commitować.
 
-Domyślny `SERVER_TAG=1` to **ruchoma wersja główna** i nie ma w nim `v`: wydanie
-otagowane `v1.4.2` publikuje tagi obrazów `1.4.2`, `1.4`, `1` i `latest`. Kto
-zostanie na `1`, dostanie przy następnej aktualizacji łatki i wersje minor, ale
-nigdy główną. Instalacja, która chce decydować o każdej wersji, wpisuje `1.4.2`.
-`latest` nie jest oferowany — instalacja, która zmieniła wersję, bo ktoś zrobił
-pull, nie jest wdrożeniem.
+Domyślny `SERVER_TAG=0` to **ruchoma wersja główna** i nie ma w nim `v`: wydanie
+otagowane `v0.4.2` publikuje tagi obrazów `0.4.2`, `0.4`, `0` i `latest`. Kto
+zostanie na `0`, dostanie przy następnej aktualizacji każde późniejsze wydanie.
+
+**Poniżej 1.0 to nie tylko poprawki.** Wersja minor może tam zmienić to, co
+robiła poprzednia, a `0` bierze także takie wydania. Kto chce wyłącznie
+poprawek, wpisuje `0.1`; kto chce decydować o każdej wersji — `0.1.0`.
+`latest` nie jest oferowany
+— instalacja, która zmieniła wersję, bo ktoś zrobił pull, nie jest wdrożeniem.
 
 ## Wycofanie
 

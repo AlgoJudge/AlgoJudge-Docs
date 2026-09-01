@@ -31,7 +31,7 @@ nothing is updated.
 
 ## What "something new" means
 
-Not the tag. `SERVER_TAG=1` points at a different image after every release, so
+Not the tag. `SERVER_TAG=0` points at a different image after every release, so
 "is the tag the same" would answer yes for ever. Each running container knows the
 reference it was created from and the image id that reference resolved to at the
 time; after a pull, the same reference resolves to whatever arrived. Those two
@@ -45,12 +45,15 @@ was asked for; the digest says what is running, and is what a rollback restores.
 Digests cannot live in the repository. This is a product many organisations
 deploy independently, and none of them can commit to it.
 
-The default `SERVER_TAG=1` is a **moving major** and carries no `v`: a release
-tagged `v1.4.2` publishes the image tags `1.4.2`, `1.4`, `1` and `latest`.
-Staying on `1` takes patches and minors on the next update and never a major. An
-installation that wants to decide every version writes `1.4.2`. `latest` is not
-offered — an installation that changed version because somebody pulled is not a
-deployment.
+The default `SERVER_TAG=0` is a **moving major** and carries no `v`: a release
+tagged `v0.4.2` publishes the image tags `0.4.2`, `0.4`, `0` and `latest`.
+Staying on `0` takes every later one on the next update.
+
+**Below 1.0 that is more than fixes.** A minor is allowed to change what the one
+before it did, so `0` follows those too. An installation that wants only fixes
+writes `0.1`, and one that wants to decide every version writes `0.1.0`.
+`latest` is not offered — an installation that changed version because somebody
+pulled is not a deployment.
 
 ## Rollback
 
