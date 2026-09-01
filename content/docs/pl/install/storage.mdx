@@ -2,7 +2,7 @@
 title: Gdzie trafiają pliki
 description: Trzy miejsca, w których instalacja może trzymać przesłane pliki, ile każde z nich kosztuje i jak przenieść to, co już leży, niczego nie tracąc.
 source: en/install/storage.mdx
-sourceSha256: 90fb57bf0df55a54fa334267f58cf3fec36629744aeb1e7eb345908558adedfb
+sourceSha256: 0362c1abcd797ee3d83f27dc4393eedb2a360923dced867b877b4219846a065f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -34,6 +34,13 @@ której czytany jest ranking.
 
 Pozostałe dwa to ten sam kompromis innymi słowami: mniejsze obciążenie bazy w
 zamian za kopię, która przestaje być jedna.
+
+**Gdzie `filesystem` naprawdę je kładzie** — warto wiedzieć, zanim zrobisz kopię
+nie tego, co trzeba: w nazwanym wolumenie `objects`, podmontowanym w kontenerze
+Servera pod `/var/lib/algojudge/objects`, a na hoście widocznym jako
+`algojudge_objects`. `STORAGE_PATH` przesuwa ścieżkę **wewnątrz kontenera**, a
+nie sam wolumen. `s3` kładzie je tam, gdzie wskazuje `STORAGE_ENDPOINT`, a kopia
+tego należy już do tamtej usługi, nie do tego stosu.
 
 <Callout type="warn" title="Zmiana rodzaju zmienia też Twoją kopię zapasową">
 Zrzut obejmuje całą instalację tylko dopóki pliki są w bazie. Przenieś je na

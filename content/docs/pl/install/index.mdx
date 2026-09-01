@@ -2,7 +2,7 @@
 title: Czym jest instalacja
 description: Pięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
 source: en/install/index.mdx
-sourceSha256: 0dbf46813834dc1770e3b86f16cabc18d82c36370699b9e2462765c6031563e1
+sourceSha256: 47f68808d4a44376e862c3825f1d1f60a14120e9941280e15087bb9400636f57
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -29,7 +29,7 @@ którą można dziś przejść.
 
 ## Usługi
 
-Pięć usług i sześć nazw profili — Server i Client mają po dwie, dzięki czemu
+Sześć usług i siedem nazw profili — Server i Client mają po dwie, dzięki czemu
 można podnieść jedną połowę bez drugiej.
 
 | Usługa | Profile | Czym jest |
@@ -39,6 +39,7 @@ można podnieść jedną połowę bez drugiej.
 | `client` | `app`, `client` | aplikacja w przeglądarce, publikowana na `127.0.0.1:8082` |
 | `nginx` | `edge` | TLS, jedno origin dla obu połówek, porty 80 i 443 |
 | `runner` | `runner` | ocenia zgłoszenia w kontenerach siostrzanych |
+| `external-runner` | `external-runner` | zamiast oceniać, przekazuje je do zewnętrznego archiwum. **Nie ma go w domyślnym zestawie** — patrz [Zewnętrzny sędzia](/pl/install/external-runner) |
 
 Sieci Compose są trzy — `edge`, `backend` i `runner` — żeby baza nie była
 osiągalna z krawędzi, a ruch oceniania dał się oddzielić od HTTP. PostgreSQL

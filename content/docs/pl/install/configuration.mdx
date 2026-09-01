@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i trzy klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: 232022edda015eefa71974bddc122ad606c8ecd7f20c01f0235876ef2988f90b
+sourceSha256: 7b7c0dd7765f6f6910448b3fedc0ff485ed4fe1790bcce4352c6355d5e06c03a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -82,7 +82,7 @@ z tego proxy.
 | `RUNNER_NAME` | `runner-1` | to, co pokazuje panel Zarządzanie |
 | `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | co ten Runner oferuje do oceny |
 | `RUNNER_TAGS` | puste | pule. **Czytane wyłącznie przy pierwszej rejestracji**; nazwanie puli zabiera Runnera z kolejki ogólnej |
-| `RUNNER_STOP_GRACE` | `300s` | ile Docker czeka, zanim zabije Runnera. **Nic nie daje**: Runner nie obsługuje `SIGTERM`, więc w tym czasie niczego nie kończy — a `docker compose down` odczekuje ten czas do końca. Czyste zatrzymanie zaczyna się od drenowania |
+| `RUNNER_STOP_GRACE` | `30s` | ile Docker czeka, zanim zabije Runnera. **Nic nie daje**: Runner ignoruje `SIGTERM`, więc w tym czasie niczego nie kończy — każdą z tych sekund odczekują `down`, `stop` i `update.sh`. Czyste zatrzymanie zaczyna się od drenowania. Patrz [Aktualizacja i wycofanie](/pl/install/update) |
 | `RUNNER_LOG` | `info` | staje się `RUST_LOG` |
 | `DOCKER_GID` | `999` | grupa właściciela gniazda demona. `0` na Docker Desktop |
 | `SERVER_URL` | `http://server:8080` | tylko dla Runnera na własnej maszynie; `/api/v1` jest dopisywane |

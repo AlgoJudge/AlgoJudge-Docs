@@ -47,15 +47,31 @@ back to an older Server as well, set `SERVER_TAG` to its version first.
 Nothing should hold a connection to a database whose tables are being dropped.
 PostgreSQL stays up, because it is what is being restored into.
 
-## It will not report success on an empty database
+**Neither Runner is stopped**, deliberately: they hold nothing a restore touches,
+and stopping the sandboxing one would abandon whatever it is evaluating. Both
+simply fail to renew their leases while the Server is down and give their jobs
+up, and the Server requeues those — so a restore of a few minutes costs nothing.
+A long one costs the external Runner's pending set, which is the duplicate
+submission [An external judge](/en/install/external-runner) describes.
 
-After restoring, the script counts the tables in the database and fails if there
-are fewer than two.
+## It will not report success on a restore that did nothing
 
-That check exists because of a real failure, found while this repository was
-being written: a Compose invocation failed, its one-line error was reported as a
-`pg_restore` warning, and the restore **did nothing at all** while every check
-afterwards passed on data that had never been touched at all.
+Two checks, and the second is the one that works.
+
+The script counts the tables afterwards and fails if there are fewer than two.
+That catches an empty database and **cannot** catch a silent no-op: the Server
+creates the whole schema at its first start, so every table is already there
+before a restore begins.
+
+So the **identity** of every table is taken before and compared after.
+`--clean --if-exists` drops each relation and creates it again, which gives every
+restored table a new one, while a restore that did nothing leaves the old ones
+exactly where they were. From outside, that is the only difference there is.
+
+The second check exists because of a real failure, found while this repository
+was being written: a Compose invocation failed, its one-line error was reported
+as a `pg_restore` warning, and the restore **did nothing at all** while every
+check afterwards passed on data that had never been touched at all.
 
 `state/restore.log` holds what `pg_restore` said. Some of it is routine — an
 extension the role may not drop, a comment on something it does not own — and
