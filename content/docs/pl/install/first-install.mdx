@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 978a68901663af996cd4db9b211b05657c451fcdac718cd2af317b1ea93f645e
+sourceSha256: 6412f39645aa2f44651571cce294f5ef503b06098b768ad667ffd728a578dbcf
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -67,6 +67,21 @@ Dockera, a **ścieżka, której demon nie potrafi otworzyć, staje się pustym
 katalogiem, nie błędem**. Każde zgłoszenie ocenia się wtedy na pustce i żaden
 test nie zawodzi w widoczny sposób. Właśnie dlatego `preflight.sh` odrzuca
 ścieżkę względną.
+
+**Załóż ten katalog sam i oddaj go uidowi 65532**, zanim uruchomisz stos po raz
+pierwszy:
+
+```bash
+sudo mkdir -p /srv/algojudge/runner-work
+sudo chown 65532:65532 /srv/algojudge/runner-work
+```
+
+Compose zakłada brakujący katalog montowany z hosta jako **root, z prawami
+0755**, a Runner działa bez uprawnień. Wtedy wstaje, dosięga demona, rejestruje
+się, bierze zlecenie — i każde z nich kończy się komunikatem
+`Permission denied (os error 13)`, czyli tym samym, który daje źle ustawiony
+`DOCKER_GID`. `preflight.sh` sprawdza ten katalog osobno i mówi, o które z dwojga
+chodzi.
 
 Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
 

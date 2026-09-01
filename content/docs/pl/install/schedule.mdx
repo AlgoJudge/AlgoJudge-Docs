@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: 77c8072a33c35dc741aa7edd62740e7cb184310c6c248db07d2fa488f9145dc2
+sourceSha256: ebc81e497dedb851972bc9904e05eb62b4665aeb5032986d8749258e3ec7e109
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -18,12 +18,20 @@ Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
 - **katalogi robocze** starsze niż `GC_TMP_RETENTION_DAYS` (domyślnie 7). Runner
   zabity w trakcie oceniania nie posprząta po sobie, a zlecenie, które robił,
   wraca do kolejki przez dzierżawę — więc pozostałości są normalne, a nie usterką;
-- **zakończone kontenery zadań**, których nic nie zbierze. Runner zamiata własne
-  kontenery siostrzane przy restarcie; to wyłapuje przypadek, z którym sam sobie
-  nie poradzi: Runnera usuniętego, a nie zrestartowanego;
-- **obrazy**, filtrowane po etykiecie, którą ma każdy obraz AlgoJudge. Obraz bez
-  niej należy do kogoś innego i zostaje nietknięty;
+- **zakończone kontenery zadań**, których nic nie zbierze, znajdowane po
+  etykiecie, którą nadaje im Runner — `algojudge.sandbox=1`, nigdy po nazwie,
+  bo filtr nazwy dopasowuje fragment i zabrałby ze sobą cudzy kontener. Runner
+  zamiata własne kontenery siostrzane przy restarcie; to wyłapuje przypadek,
+  z którym sam sobie nie poradzi: Runnera usuniętego, a nie zrestartowanego;
+- **obrazy**, po jednej etykiecie repozytorium naraz. Obraz, który żadnej z nich
+  nie ma, należy do kogoś innego i zostaje nietknięty;
 - **własne logi tego repozytorium** w `/var/log/algojudge/`, rotowane po 32 MB.
+
+**Żaden z dwóch wolumenów pamięci podręcznej nie jest sprzątany**, bo żaden tego
+nie potrzebuje: Runner ogranicza `runner-cache` do 10 GiB, a zewnętrzny Runner
+`external-runner-cache` do 256 MiB, oba od środka. To wolumeny nazwane, więc
+przeżywają `down` i zmianę obrazu — a skasowanie któregoś kosztuje pobranie
+danych, nie zlecenie.
 
 <Callout type="warn" title="Nigdy globalny prune">
 `docker system prune` i `docker volume prune` nie wiedzą, że na hoście może

@@ -79,7 +79,7 @@ front of it, and every visitor is recorded as arriving from that proxy.
 | `RUNNER_NAME` | `runner-1` | what the manager panel shows |
 | `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | what this Runner offers to evaluate |
 | `RUNNER_TAGS` | empty | pools. **Read at the first registration only**; naming one takes the Runner out of the general queue |
-| `RUNNER_STOP_GRACE` | `300s` | how long Docker waits before killing a Runner. It **buys nothing**: the Runner handles no `SIGTERM`, so it does not finish anything in that time — and `docker compose down` waits the whole of it. A clean stop is a drain first |
+| `RUNNER_STOP_GRACE` | `30s` | how long Docker waits before killing a Runner. It **buys nothing**: the Runner ignores `SIGTERM`, so it finishes nothing in that time — every second is one `down`, `stop` and `update.sh` spend waiting. A clean stop is a drain first. See [Update and rollback](/en/install/update) |
 | `RUNNER_LOG` | `info` | becomes `RUST_LOG` |
 | `DOCKER_GID` | `999` | the group that owns the daemon's socket. `0` on Docker Desktop |
 | `SERVER_URL` | `http://server:8080` | only for a Runner on its own machine; `/api/v1` is appended |

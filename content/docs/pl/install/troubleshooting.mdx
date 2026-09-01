@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: b5704218c23185e5789a3facc2169a96c66593673a9f6c82f5d329b7c254d6db
+sourceSha256: 47eb36bfefd4d7c392477e16ad13564c5853e1cf7634504be5ef9c98eb10398c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -35,6 +35,14 @@ więc Server odmawia i nazywa adres, który powinieneś był napisać.
 
 `STORAGE_KIND` jest puste albo z literówką. Wartości to `postgres`, `filesystem`
 albo `s3`.
+
+### Nazywa ustawienie magazynu, które jest puste
+
+`filesystem` potrzebuje `STORAGE_PATH`; `s3` potrzebuje `STORAGE_ENDPOINT`,
+`STORAGE_BUCKET`, `STORAGE_ACCESS_KEY` i `STORAGE_SECRET_KEY` — wszystkich
+czterech. Server odmawia startu, nazywając to, którego mu zabrakło, a
+`preflight.sh` odmawia jeszcze wcześniej. Przy `STORAGE_KIND=postgres` żadne
+z nich nie jest czytane i dlatego wszystkie są puste.
 
 ## API odpowiada 404, a jesteś pewien ścieżki
 
@@ -94,6 +102,48 @@ Od najczęstszej przyczyny:
    tagów idzie do puli ogólnej. Puste znaczy pulę ogólną po obu stronach. **Tagi
    są czytane raz, przy pierwszej rejestracji** — późniejsza zmiana zmiennej nie
    robi nic, a zmienia je ponowna rejestracja.
+
+## Nic **zewnętrznego** nie jest oceniane
+
+Lista jest inna, bo zwykłe przyczyny tutaj nie występują. Dwie pierwsze opisuje
+[Zewnętrzny sędzia](/pl/install/external-runner) i obie zostawiają pustą kolejkę
+przy kontenerze, który wygląda zdrowo: **ocenianie zewnętrzne jest w tej
+instalacji wyłączone** oraz **zewnętrzny Runner nie został zatwierdzony**.
+
+Pozostałe trzy:
+
+1. **Zadanie nie powstało jako zewnętrzne.** Musi mieć typ archiwum i znacznik
+   zewnętrznego; zadanie typowane lokalnie nigdy nie trafia do Runnera, który
+   przekazuje dalej.
+2. **`props` wersji nie podaje numeru zadania w archiwum.** To zostaje odrzucone
+   po nazwie, zanim cokolwiek opuści tę instalację.
+3. **Tagi**, dokładnie jak przy każdym Runnerze, czytane raz przy pierwszej
+   rejestracji.
+
+## Zewnętrzny Runner restartuje się co kilka sekund
+
+Konto w systemie oceniającym jest puste albo błędne. Runner odmawia już przy
+czytaniu konfiguracji — przed kluczem tożsamości, przed rejestracją — a
+`restart: unless-stopped` zamienia to w pętlę.
+
+```bash
+docker compose logs external-runner | tail -20
+```
+
+Odmowa nazywa ustawienie. Przy włączonym profilu `preflight.sh` odmawia
+wcześniej, więc stos podnoszony skryptami nigdy tu nie dochodzi.
+
+**Spacja na początku albo na końcu hasła nie jest przyczyną.** Hasło idzie dalej
+dokładnie tak, jak je zapisano, i to celowo: obcięcie spacji raz już zepsuło
+logowanie.
+
+## Archiwum twierdzi, że takie konto nie istnieje
+
+Sprawdź nazwę użytkownika w samym archiwum — to ta sama, którą podaje się przy
+logowaniu. Wyszukiwanie odmawia wprost, gdy identyfikator użytkownika wynosi `0`,
+bo dla nieznanej nazwy archiwum odpowiada właśnie `0`, a `0` daje się sparsować
+jako liczbę: zanim ta odmowa powstała, każde odpytanie po cichu nie zwracało
+niczego.
 
 ## `Permission denied (os error 13)` w Runnerze
 
@@ -157,6 +207,14 @@ startu.
 `compose.yaml` robi to poprawnie. Wersja główna jest przypięta celowo —
 nieprzypięty `postgres:latest` przechodzący na 18 to sposób, w jaki to
 znaleziono.
+
+## `docker compose ps` nie pokazuje zdrowia Runnera
+
+**Oba** Runnery mają pustą kolumnę zdrowia i mają ją zawsze; w żadnym z nich nie
+jest to usterka. Obraz Runnera nie deklaruje testu zdrowia, a obraz zewnętrznego nie może
+go mieć — nie ma powłoki, nie ma portu, nie ma o co zapytać. Dlatego
+`docker compose up --wait` uznaje obu za gotowych, gdy tylko działają, a działają
+także wtedy, gdy jeden z nich nie potrafi się zalogować. Czytaj ich logi.
 
 ## Stos stoi, a przeglądarka nic nie pokazuje
 

@@ -2,7 +2,7 @@
 title: Kopie zapasowe
 description: Co obejmuje zrzut, co się w nim teraz znalazło i dwie granice, przez które katalog kopii sam nie stanie się awarią.
 source: en/install/backup.mdx
-sourceSha256: 2867fefd04ecdee553a0aa630c49e268919e22ad08db947afddddbc8649acba3
+sourceSha256: c5a6939fabaf13105676e44453e82d488db3a279f5815e9dcb1fdb3ce52f44a8
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -36,6 +36,11 @@ inną decyzję niż podejmowała wcześniej.**
 W zrzucie jest też każdy hash hasła, każdy wgrany plik i — jeśli zarejestrowałeś
 dostawcę — działający sekret klienta dla każdego dostawcy tożsamości. Traktuj go
 tak, jak traktowałbyś samą bazę.
+
+**Skrypt zapisuje zrzuty z prawami `0600`, a ich katalogi z `0700`**, więc zrzut
+może odczytać konto, które go zrobiło, i root — nikt inny na tym hoście. To
+dotyczy samych praw do pliku; co się dzieje z kopią, która opuści host, jest
+decyzją opisaną wyżej.
 
 Jeśli taki zrzut wycieknie, najpilniejsze są sesje wystawione pod tymi kluczami:
 

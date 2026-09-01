@@ -83,13 +83,34 @@ that dump.
 
 ## The Runner during an update
 
-The Runner does not handle `SIGTERM`. It is killed, and its job goes back on the
-queue when the lease expires. `stop_grace_period` is set generously and buys
-nothing on its own.
+The Runner does not handle `SIGTERM` — it ignores it, and is killed. Its job goes
+back on the queue when the lease expires, whichever second it died in.
+
+So `stop_grace_period` is a **cost rather than a courtesy**, and it is paid on
+every `down`, every `stop` and every update. It is `30s`; at the 300s it used to
+be, `docker compose down` took **302 seconds** instead of 32, and nothing was
+saved by the wait.
+
+<Callout type="warn" title="Two things stop the shorter timeout reaching an installation that exists">
+**Docker records the timeout on the container when it is created**, so `down`
+waits the old value until the containers are recreated — the next `up` after a
+pull, or `up --force-recreate`. `docker inspect -f '{{.Config.StopTimeout}}'`
+says which one a container holds.
+
+**And your own `.env` wins.** An installation set up earlier carries
+`RUNNER_STOP_GRACE=300s` in it, and that is still what it gets. Change it there.
+</Callout>
 
 A clean drain is `maintenance.sh on --wait-closed` on the **Server** first,
 which `update.sh` does. Never `docker stop` on a Runner as a way of being
 careful.
+
+**The external Runner reaches the same conclusion by another road.** It handles
+no `SIGTERM` either and has no grace period at all, because one would buy
+nothing. What it loses when it dies is not an evaluation but the list of
+submissions an archive has not answered for — and each of those is sent again
+when the job is requeued. [Maintenance](/en/install/maintenance) has the
+arithmetic.
 
 ## If both halves fail
 

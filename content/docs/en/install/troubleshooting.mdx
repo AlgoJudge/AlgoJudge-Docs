@@ -33,6 +33,14 @@ written. `preflight.sh` catches it first.
 
 `STORAGE_KIND` is empty or misspelled. It is `postgres`, `filesystem` or `s3`.
 
+### It names a storage setting that is empty
+
+`filesystem` needs `STORAGE_PATH`; `s3` needs `STORAGE_ENDPOINT`,
+`STORAGE_BUCKET`, `STORAGE_ACCESS_KEY` and `STORAGE_SECRET_KEY`, all four. The
+Server refuses at startup naming the one it wanted, and `preflight.sh` refuses
+before that. None of them is read while `STORAGE_KIND` is `postgres`, which is
+why they ship empty.
+
 ## The API answers 404 and you are sure the path is right
 
 **`/health` is not the health endpoint. `/api/v1/health` is.**
@@ -91,6 +99,45 @@ In order of how often it is each one:
    sides. **Tags are read once, at the first registration** — changing the
    variable later does nothing, and re-registering is what changes them.
 
+## Nothing **external** is being judged
+
+A different list, because the ordinary causes are not the causes here. The first
+two are on [An external judge](/en/install/external-runner) and leave the queue
+empty with the container looking healthy: **external judging is off for this
+installation**, and **the external Runner has not been approved**.
+
+The other three:
+
+1. **The problem was not created as an external one.** It has to be typed for the
+   archive and marked external; a locally typed problem is never offered to a
+   forwarding Runner.
+2. **The version's `props` does not name the archive's problem number.** That is
+   refused by name, before anything leaves this installation.
+3. **Tags**, exactly as for any Runner, and read once at the first registration.
+
+## The external Runner restarts every few seconds
+
+The account at the judging system is empty or wrong. It refuses while reading its
+configuration — before the identity key, before registration — and
+`restart: unless-stopped` turns that into a loop.
+
+```bash
+docker compose logs external-runner | tail -20
+```
+
+The refusal names the setting. `preflight.sh` refuses ahead of it when the
+profile is on, so a stack brought up through the scripts never gets this far.
+
+**A leading or trailing space in the password is not the cause.** It is passed
+through exactly as written, deliberately: trimming one broke a sign-in once.
+
+## The archive says the account does not exist
+
+Check the username at the archive itself — it is the same one a person signs in
+with. The lookup refuses a user id of `0` by name, because the archive answers
+`0` for a username it does not know and `0` parses as a number: before that
+refusal existed, every poll silently returned nothing.
+
 ## `Permission denied (os error 13)` in the Runner
 
 **Two different causes produce this one sentence**, and it names neither: it
@@ -148,6 +195,14 @@ refuse to start.
 
 `compose.yaml` gets it right. The major is pinned on purpose — an unpinned
 `postgres:latest` rolling over to 18 is how this was found.
+
+## `docker compose ps` shows no health for a Runner
+
+**Both** Runners show an empty health column, for ever, and neither is a fault.
+The Runner's image declares no health check, and the external Runner's cannot
+have one — it has no shell, no port and nothing to ask. `docker compose up
+--wait` therefore calls both ready as soon as they are running, which they are
+even while one of them is failing to sign in. Read their logs instead.
 
 ## The stack is up but the browser shows nothing
 

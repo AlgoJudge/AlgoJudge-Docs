@@ -25,7 +25,7 @@ this section describes the intended path, not one you can follow today.
 
 ## The services
 
-Five services, and six profile names — the Server and the Client each carry two,
+Six services, and seven profile names — the Server and the Client each carry two,
 which is what lets one half be brought up without the other.
 
 | Service | Profiles | What it is |
@@ -35,6 +35,7 @@ which is what lets one half be brought up without the other.
 | `client` | `app`, `client` | the browser application, published on `127.0.0.1:8082` |
 | `nginx` | `edge` | TLS, one origin for both halves, ports 80 and 443 |
 | `runner` | `runner` | evaluates submissions in sibling containers |
+| `external-runner` | `external-runner` | forwards them to an outside archive instead. **Not in the default set** — see [An external judge](/en/install/external-runner) |
 
 There are three Compose networks — `edge`, `backend` and `runner` — so that the
 database is not reachable from the edge and evaluation traffic is separable from

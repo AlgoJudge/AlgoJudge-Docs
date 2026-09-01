@@ -126,9 +126,10 @@ the window instead of throwing it away.
 
 <Callout type="warn" title="Never `docker stop` a Runner as a way of being careful">
 The Runner does not handle `SIGTERM`. It is killed, and its job goes back on the
-queue when the lease expires. `stop_grace_period` is set generously and buys
-nothing on its own. A clean drain is `maintenance.sh on --wait-closed` on the
-**Server** first, after which there is nothing in flight to lose.
+queue when the lease expires. `stop_grace_period` buys nothing on its own and is
+paid on every stop — see [Update and rollback](/en/install/update). A clean drain
+is `maintenance.sh on --wait-closed` on the **Server** first, after which there
+is nothing in flight to lose.
 </Callout>
 
 ## What this deliberately does not do

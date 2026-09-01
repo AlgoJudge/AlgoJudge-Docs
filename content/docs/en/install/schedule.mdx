@@ -16,12 +16,19 @@ Four things, and each one filtered to this installation:
 - **work directories** older than `GC_TMP_RETENTION_DAYS` (7 by default). A
   Runner killed mid-evaluation cannot clean up after itself, and the job it was
   doing goes back on the queue by lease — so strays are normal, not a defect;
-- **exited job containers** nothing will collect. The Runner sweeps its own
-  siblings when it restarts; this catches the case it cannot, a Runner that was
-  removed rather than restarted;
-- **images**, filtered to the label every AlgoJudge image carries. An image
-  without it belongs to somebody else and is left alone;
+- **exited job containers** nothing will collect, found by the label the Runner
+  puts on them — `algojudge.sandbox=1`, never by name, because a name filter
+  matches a substring and would take somebody else's container with it. The
+  Runner sweeps its own siblings when it restarts; this catches the case it
+  cannot, a Runner that was removed rather than restarted;
+- **images**, one repository's label at a time. An image without one of those
+  labels belongs to somebody else and is left alone;
 - **this repository's own logs** under `/var/log/algojudge/`, rotated past 32 MB.
+
+**Neither cache volume is swept**, because neither needs it: the Runner bounds
+`runner-cache` at 10 GiB and the external Runner bounds `external-runner-cache`
+at 256 MiB, both from inside. They are named volumes, so they survive a `down`
+and an image change — and deleting either costs a download rather than a job.
 
 <Callout type="warn" title="Never a global prune">
 `docker system prune` and `docker volume prune` do not know that the host may

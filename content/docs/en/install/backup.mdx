@@ -36,6 +36,11 @@ A dump also carries every password hash, every uploaded file, and — if you hav
 registered one — a usable client secret for each identity provider. Handle it as
 you would handle the database itself.
 
+**The script writes dumps `0600` and their directories `0700`**, so a dump is
+readable by the account that took it and by root, and by nobody else on that
+host. That is the file mode only: what happens to a copy once it leaves the host
+is the decision above.
+
 If one leaks, the sessions minted under those keys are the urgent part:
 
 ```bash

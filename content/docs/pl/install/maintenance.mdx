@@ -2,7 +2,7 @@
 title: Przerwa techniczna
 description: Jak wyłączyć instalację z ruchu, nie zatrzymując jej, i droga, która wygląda na oczywistą, a jest błędna.
 source: en/install/maintenance.mdx
-sourceSha256: 5ea556a09ad114838e27437174023661e5d3c635b532d4d682a2f616f9987d3d
+sourceSha256: c0b09fe2ebc9f775f8ee50a0a6f15e2e48c438eed37005f51cea8edab265c0d5
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -128,9 +128,11 @@ okno, zamiast go wyrzucać.
 
 <Callout type="warn" title="Nigdy nie używaj `docker stop` na Runnerze jako ostrożności">
 Runner nie obsługuje `SIGTERM`. Zostaje zabity, a jego zlecenie wraca do kolejki,
-gdy wygaśnie dzierżawa. `stop_grace_period` jest ustawione hojnie i samo w sobie
-nic nie daje. Czyste drenowanie to `maintenance.sh on --wait-closed` na
-**Serverze** najpierw — potem nie ma już w locie nic do stracenia.
+gdy wygaśnie dzierżawa. `stop_grace_period` sam w sobie nic nie daje, a płaci się
+go przy każdym zatrzymaniu — patrz [Aktualizacja i
+wycofanie](/pl/install/update). Czyste drenowanie to `maintenance.sh on
+--wait-closed` na **Serverze** najpierw — potem nie ma już w locie nic do
+stracenia.
 </Callout>
 
 ## Czego to celowo nie robi

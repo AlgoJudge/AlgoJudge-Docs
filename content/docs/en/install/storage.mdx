@@ -32,6 +32,13 @@ lands in the same database the scoreboard is being read from.
 The other two are the same trade in different words: less pressure on the
 database, and a backup that is no longer one thing.
 
+**Where `filesystem` actually puts them** is worth knowing before you back the
+wrong thing up: the named volume `objects`, mounted in the Server's container at
+`/var/lib/algojudge/objects` and reachable on the host as `algojudge_objects`.
+`STORAGE_PATH` moves the path **inside the container**, not the volume. `s3` puts
+them wherever `STORAGE_ENDPOINT` points, and backing that up is that service's
+business rather than this stack's.
+
 <Callout type="warn" title="Change the kind and your backup changes with it">
 A dump covers the whole installation only while the files are in the database.
 Move them to a filesystem or an object store and the dump stops being complete,

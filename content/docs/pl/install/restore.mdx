@@ -2,7 +2,7 @@
 title: Odtwarzanie
 description: Jak wgrać zrzut z powrotem, co sprawdzamy, zanim cokolwiek ruszymy, i po co się to ćwiczy.
 source: en/install/restore.mdx
-sourceSha256: dd72034d639c3088105e4ac36eae76d647914ffb599d6887b7f0bdd9ac09a2cf
+sourceSha256: 72f2fe44c073c331d4d7029e06f82d088657ac661c590512faec9bb7c1b07367
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -51,13 +51,32 @@ jego wersję.
 Nic nie powinno trzymać połączenia do bazy, której tabele są właśnie usuwane.
 PostgreSQL zostaje na chodzie, bo to do niego odtwarzamy.
 
-## Nie zgłosi sukcesu na pustej bazie
+**Żaden z Runnerów nie jest zatrzymywany**, i to celowo: nie trzymają niczego,
+czego odtwarzanie dotyka, a zatrzymanie tego oceniającego porzuciłoby to, co
+właśnie liczy. Obu po prostu nie udaje się odnowić dzierżaw, kiedy Server jest
+wyłączony, więc oddają swoje zlecenia, a Server wstawia je z powrotem do
+kolejki — odtwarzanie trwające kilka minut nic nie kosztuje. Długie kosztuje
+zewnętrznego Runnera listę tego, na co archiwum jeszcze nie odpowiedziało: każde
+takie zgłoszenie zostaje wysłane drugi raz, co opisuje
+[Zewnętrzny sędzia](/pl/install/external-runner).
 
-Po odtworzeniu skrypt liczy tabele w bazie i kończy się porażką, jeśli jest ich
-mniej niż dwie.
+## Nie zgłosi sukcesu po odtwarzaniu, które nic nie zrobiło
 
-Ta kontrola istnieje z powodu prawdziwej awarii, znalezionej przy pisaniu tego
-repozytorium: wywołanie Compose zawiodło, jego jednolinijkowy błąd został
+Kontrole są dwie, a działa ta druga.
+
+Skrypt liczy potem tabele i kończy się porażką, jeśli jest ich mniej niż dwie.
+To wyłapuje pustą bazę i **nie jest w stanie** wyłapać odtwarzania, które nic nie
+zrobiło: Server zakłada cały schemat przy pierwszym starcie, więc wszystkie
+tabele są na miejscu, zanim odtwarzanie się zacznie.
+
+Dlatego przed odtwarzaniem zapisywana jest **tożsamość** każdej tabeli, a po nim
+porównywana. `--clean --if-exists` usuwa każdą relację i zakłada ją na nowo, więc
+każda odtworzona tabela dostaje nową tożsamość, a po odtwarzaniu, które nic nie
+zrobiło, stare zostają dokładnie tam, gdzie były. Z zewnątrz to jedyna widoczna
+różnica.
+
+Ta druga kontrola istnieje z powodu prawdziwej awarii, znalezionej przy pisaniu
+tego repozytorium: wywołanie Compose zawiodło, jego jednolinijkowy błąd został
 zaraportowany jako ostrzeżenie `pg_restore`, a odtwarzanie **nie zrobiło
 zupełnie nic**, podczas gdy każda kontrola po nim przechodziła na danych,
 których nikt nawet nie tknął.
