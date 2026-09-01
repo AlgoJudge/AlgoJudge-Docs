@@ -101,8 +101,8 @@ Od najczęstszej przyczyny:
 komunikat przychodzi z głębi klienta HTTP albo z warstwy sandboxa, bez ścieżki
 i bez numeru. `preflight.sh` sprawdza obie.
 
-**Pierwsza: gniazdo demona.** `DOCKER_GID` nie zgadza się z grupą, do której ono
-należy.
+**Pierwsza: gniazdo demona.** `DOCKER_GID` nie zgadza się z grupą, do której
+należy gniazdo.
 
 ```bash
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g' /var/run/docker.sock
@@ -112,7 +112,7 @@ Na Docker Desktop to `0`; na hoście linuksowym to grupa `docker`. `preflight.sh
 uruchamia dokładnie to i odmawia przy niezgodności — pytając kontener, a nie
 Twoją powłokę, bo pod Docker Desktop i WSL gniazdo widziane przez tę powłokę nie
 jest tym, które obsługuje demon. Gdy to jest przyczyną, Runner zawodzi przy
-**starcie** i nigdy nie dochodzi do żadnego zlecenia.
+**starcie** i nigdy nie bierze żadnego zlecenia.
 
 **Druga: `RUNNER_WORK_DIR` należy do kogoś innego.** Compose tworzy brakujący
 katalog montowany z hosta **jako root, z prawami 0755**, a Runner działa jako

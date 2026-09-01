@@ -37,8 +37,8 @@ organizacji.
 
 **Ósmy różni się od pozostałych siedmiu.** `algojudge-external-runner` jest
 budowany z prywatnego repozytorium, więc to, czy w ogóle zostanie
-upubliczniony, jest decyzją, a nie krokiem. Jeśli nie zostanie, [sędzia
-zewnętrzny](/pl/install/external-runner) jest w tym stosie jedynym profilem,
+upubliczniony, jest decyzją, a nie krokiem. Jeśli nie zostanie, profil
+[zewnętrznego sędziego](/pl/install/external-runner) jest w tym stosie jedynym,
 który przed `up` wymaga `docker login ghcr.io`.
 
 Na razie nie ma tu nic do zrobienia — żaden z ośmiu nie istnieje.
@@ -175,9 +175,9 @@ zakomentowane, opisuje [Praca rutynowa i harmonogram](/pl/install/schedule).
 ## Praca na obrazach zbudowanych lokalnie
 
 Dopóki nie ma wydania, zbuduj repozytoria produktowe i otaguj je tak, jakby były
-opublikowane. `compose.yaml` zadziała bez zmian. **`-f` odnosi się do miejsca,
-w którym stoisz, a nie do kontekstu budowania** — linia Servera jako jedyna ma
-w sobie ścieżkę i do 2026-09-01 była tu błędna.
+opublikowane. `compose.yaml` zadziała bez zmian. **Ścieżkę po `-f` liczy się
+względem katalogu, w którym stoisz, a nie względem kontekstu budowania** — linia
+Servera jako jedyna zawiera ścieżkę i do 2026-09-01 była tu błędna.
 
 Buduj od nowa, zamiast sięgać po tag, który już masz: te obrazy są przypięte
 ruchomym tagiem, więc stary lokalny `:1` jest po cichu tym, co zbudowałeś
