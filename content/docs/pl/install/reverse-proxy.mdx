@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: d4e8767b0759660e5f97e6c0b24575d014bd053a99a50160bb6ed1a027ba4888
+sourceSha256: 19aa00a2c9cfd5e1888084abf16d271e6f3e4fb5539ca12c4b92a7dd40acb97d
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -96,6 +96,28 @@ Dołączony nginx wysyła `Host`, `X-Real-IP`, `X-Forwarded-For`,
 Servera, i wyłącza buforowanie w obie strony — Client niczego nie streamuje,
 a pobrania Servera są już strumieniowane i bez sensu lądowałyby najpierw na
 dysku.
+
+**Wyłączenie buforowania nie wyłącza bufora nagłówków** — i lepiej wiedzieć
+o tym, zanim się zdarzy. Nagłówki odpowiedzi zawsze muszą zmieścić się
+w `proxy_buffer_size`, domyślnie 4 kB, a gdy się nie mieszczą, nginx odpowiada
+**502** i zapisuje w logu `upstream sent too big header`. Do przeglądarki nie
+dociera nic, więc wygląda to na awarię usługi za proxy, a nie na odmowę samego
+proxy.
+
+Najbliżej granicy jest odpowiedź kończąca logowanie federacyjne: kasuje
+`.AspNetCore.Correlation.*` i `.AspNetCore.OpenIdConnect.Nonce.*`, ustawiając
+przy tym `.AspNetCore.Identity.Application`, który sam bywa dzielony na `C1`
+i `C2`, gdy claimy go wydłużą. Gorzej jest z systemem tożsamości za tym samym
+proxy — zmierzone 2026-09-01: odpowiedź autoryzacyjna Keycloaka z
+`AUTH_SESSION_ID`, `KC_AUTH_SESSION_HASH` i `KC_RESTART`, gdzie ten ostatni jest
+tokenem JWT, nie zmieściła się w 4 kB i każde logowanie kończyło się 502.
+Dołączony nginx to ustawia; Twoje proxy też musi.
+
+```nginx
+proxy_buffer_size       16k;
+proxy_buffers         4 16k;
+proxy_busy_buffers_size 16k;
+```
 
 Wysyła `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`,
 `X-Frame-Options: SAMEORIGIN` i `Permissions-Policy`, każdy z `always`, żeby
