@@ -95,6 +95,27 @@ turns proxy buffering off in both directions — the Client streams nothing, and
 the Server's downloads are already streamed and would be pointlessly spooled to
 disk first.
 
+**Turning buffering off does not turn off the header buffer**, and that is the
+one worth knowing before it happens. Response headers always have to fit in
+`proxy_buffer_size`, 4 kB by default, and when they do not nginx answers **502**
+and logs `upstream sent too big header`. Nothing reaches the browser, so it
+reads as an upstream that fell over rather than as a proxy that refused.
+
+The response that gets close is the one that ends a federated sign-in: it
+deletes `.AspNetCore.Correlation.*` and `.AspNetCore.OpenIdConnect.Nonce.*`
+while setting `.AspNetCore.Identity.Application`, which is itself split into
+`C1`, `C2` once the claims make it long enough. An identity product behind the
+same proxy is worse — measured 2026-09-01, a Keycloak authorization response
+carrying `AUTH_SESSION_ID`, `KC_AUTH_SESSION_HASH` and `KC_RESTART`, the last a
+JWT, did not fit in 4 kB and every sign-in ended 502. The bundled nginx sets
+these; yours has to as well.
+
+```nginx
+proxy_buffer_size       16k;
+proxy_buffers         4 16k;
+proxy_busy_buffers_size 16k;
+```
+
 It sends `Strict-Transport-Security`, `X-Content-Type-Options`,
 `Referrer-Policy`, `X-Frame-Options: SAMEORIGIN` and `Permissions-Policy`, each
 with `always` so the header is not omitted on error responses — which are
