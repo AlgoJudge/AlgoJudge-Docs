@@ -1,8 +1,8 @@
 ---
 title: Tożsamość
-description: Dwa wspierane wdrożenia OIDC, jak między nimi wybrać i jak zarejestrować dostawcę w AlgoJudge.
+description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
 source: en/install/identity.mdx
-sourceSha256: 0e549c3be0a7bda2f94c744f8c314b53fc4e72e80c33ad2bcb00988ffc77cb5d
+sourceSha256: e89bb7502a4d8c3eb135f734bb72c4646abb34586a0366687a20edd9c74a8b8c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -11,11 +11,14 @@ Instalacja potrzebuje dostawcy OIDC. AlgoJudge na stałe prowadzi własne konta 
 administratora, konta lokalne i tymczasowe — ale ludzie, którzy biorą udział,
 logują się przez katalog prowadzony przez Ciebie.
 
-**Wspierane są dwa wdrożenia: Keycloak i Authentik.** Żadne nie jest awaryjnym
-zamiennikiem drugiego i żadne drugiego nie zastępuje. To dwa sugerowane
-rozwiązania, każde jako repozytorium konfiguracji, które klonujesz i uruchamiasz
-obok stosu AlgoJudge, a nie w nim; **żadne nie jest usługą w `compose.yaml`**.
-Instalacja uruchamia jedno.
+**Wspierane są dwa produkty: Keycloak i Authentik.** Żaden nie jest awaryjnym
+zamiennikiem drugiego i żaden drugiego nie zastępuje. Każdy działa obok stosu
+AlgoJudge, a nie w nim — **żaden nie jest usługą w `compose.yaml`** — a
+instalacja uruchamia jeden z nich.
+
+Uczelnia, która ma już własnego dostawcę OIDC, rejestruje właśnie jego. AlgoJudge
+oczekuje discovery i claimu, który umie odczytać, a dalsza część tej strony
+wygląda tak samo, cokolwiek stoi po drugiej stronie.
 
 AlgoJudge ich nie odróżnia. W obu przypadkach widzi zwykłego dostawcę OIDC
 i w całym modelu nie ma pola, gałęzi ani dyskryminatora, który mówiłby, jaki
@@ -37,7 +40,7 @@ jednej instalacji i niczego nie odsyła do archiwum.
 | Kontenery | **2** — Keycloak, PostgreSQL | 4 — server, worker, PostgreSQL, Redis |
 | Licencja | Apache-2.0 w całości; projekt CNCF | open core: rdzeń MIT, własnościowy katalog `enterprise/` w tym samym repozytorium |
 | Log audytowy z wartościami przed i po oraz eksport logu | w komplecie | funkcja Enterprise |
-| Konfiguracja stosowana ponownie sama z siebie | **nie** — import zakłada realm i pomija istniejący; dryf *zgłasza* `scripts/check-realm.py` | **tak** — blueprinty są stosowane ponownie wedle harmonogramu |
+| Konfiguracja stosowana ponownie sama z siebie | **nie** — import zakłada realm i pomija istniejący; dryf trzeba zauważyć samemu | **tak** — blueprinty są stosowane ponownie wedle harmonogramu |
 | Zgłaszanie usuniętego konta z powrotem do AlgoJudge | tak, **Event Listener SPI provider** | tak, dopasowanie zdarzeń i transport webhook |
 | Zgłoszenie przeżywające restart serwera tożsamości | **nie** — ponawiane w pamięci, potem `ERROR` do ręcznego powtórzenia | tak, kolejka w jego bazie |
 | Serwowanie katalogu przez **LDAP** | **niemożliwe** — Keycloak korzysta z LDAP, sam go nie udostępnia | tak, przez outpost LDAP |
@@ -95,9 +98,64 @@ skierujesz ich na Keycloaka. Authentik serwuje LDAP przez outpost; Keycloak nie
 ma na to sposobu.
 </Callout>
 
+## Zanim zaczniesz
+
+**Ktoś ma uprawnienie `provider:manage`.** Rejestracja dostawcy to decyzja tej
+samej wagi co [podłączenie platformy kursowej](/pl/install/lti) i stoi za tym
+samym uprawnieniem.
+
+**Do dostawcy sięga Server, nie przeglądarka.** Discovery, zestaw kluczy i wymiana
+kodu wychodzą z kontenera Servera. Adres osiągalny z Twojego laptopa, ale nie
+z wnętrza kontenera, zawiedzie przy czyimś pierwszym logowaniu, a nie przy
+zapisie formularza.
+
+**`issuer` jest adresem `https`**, poza pętlą zwrotną, gdzie deweloperski dostawca
+nie ma certyfikatu, któremu ktokolwiek by ufał. Wszystko inne formularz odrzuca z kodem
+`provider.issuer.insecure`.
+
+**Jeśli Client i API stoją pod dwoma adresami**, ustaw najpierw `APP_BASE_URL` —
+inaczej udane logowanie kończy się błędem 404 samego API. Patrz
+[Konfiguracja](/pl/install/configuration).
+
+## U dostawcy
+
+Jeden klient i jeden mapper. Nic z tego nie jest wymysłem AlgoJudge.
+
+**Klient poufny**, authorization code z PKCE. Sekret klienta jest wymagany: bez
+niego wymiana kodu się nie powiedzie, a to jedyny moment, w którym ten sekret jest
+do czegokolwiek potrzebny.
+
+**Jeden adres powrotny**, który ekran rejestracji pokazuje razem z przyciskiem
+do skopiowania:
+
+```
+https://twoja.domena/api/v1/identity/providers/<slug>/callback
+```
+
+Slug jest częścią tego adresu, więc powrotu od jednego dostawcy nie da się wziąć
+za powrót od innego — i dlatego właśnie zmiana sluga tyle kosztuje.
+
+**Zakresy.** `openid` idzie w żądaniu niezależnie od tego, czy go wpiszesz. Dodaj
+`profile` dla nazwy użytkownika i nazwiska, `email` dla adresu oraz ten zakres,
+który u Ciebie zawiera claim z grupami. O tym, czy adres liczy się tutaj jako
+potwierdzony, decyduje `email_verified`.
+
+<Callout type="warn" title="Claimu z grupami nie ma w tokenie, dopóki go tam nie umieścisz">
+Domyślnie żaden z tych produktów nie wysyła przynależności do grup: Keycloak
+potrzebuje mappera group membership, Authentik własnego scope mappingu. Bez tego
+token jest poprawny, mapowanie nie ma w co trafić, a **każde logowanie zostaje
+odrzucone** komunikatem *Ten dostawca nie daje Ci dostępu do tej instalacji*.
+Wygląda to na kłopot z uprawnieniami, a jest brakującym claimem.
+</Callout>
+
+Claimy przychodzą pod nazwami, które nadał im dostawca — nic nie jest po drodze
+przemianowywane. Claim `groups` leży pod ścieżką `groups`.
+
 ## Rejestracja dostawcy w AlgoJudge
 
-Trzy kroki, w panelu Zarządzanie, za uprawnieniem `provider:manage`.
+Trzy kroki, w panelu Zarządzanie, za uprawnieniem `provider:manage`. Ekrany, na
+których się to robi, to
+[Logowania zewnętrzne i platformy LTI](/pl/client/manager/logins).
 
 1. **Zarejestruj dostawcę** i skopiuj **adres powrotny**, który pokazuje ekran,
    na listę dozwolonych u samego dostawcy. AlgoJudge tę ścieżkę wylicza i zwraca;
@@ -204,3 +262,26 @@ dałoby się przestawić źle.
 </Callout>
 
 Tam, gdzie nie kontrolujesz dostawcy, zostaw jego kanał wyłączony.
+
+## Kiedy to nie działa
+
+Odrzucone logowanie wraca na ekran logowania jako
+`/login?provider=<slug>&error=<kod>`. Człowiek widzi zdanie, a kod warto
+zacytować w zgłoszeniu do administratora.
+
+| | |
+|---|---|
+| `provider.unmapped` | nic w tokenie nie trafiło w mapowanie. Najczęściej brakuje claimu z grupami, a nie samej grupy |
+| `provider.subject.missing` | w tokenie nie było `sub`. Źle skonfigurowany klient, nie człowiek |
+| `provider.ticket.missing` | w wywołaniu zwrotnym nie było zweryfikowanego biletu — stara karta przeglądarki albo powtórka z historii |
+| `provider.ticket.mismatch` | bilet wystawiono dla innego dostawcy, zwykle po zmianie sluga w trakcie trwającego logowania |
+| `provider.disabled` | dostawcę wyłączono w trakcie tego logowania. Wyłączony nie pokazuje przycisku, a jego challenge odpowiada 404, więc zostaje tylko ten jeden przypadek |
+
+Przy `provider.unmapped` warto pamiętać o kolejności: pod `deny` Server najpierw
+odbiera wczorajszy wkład, a dopiero potem odmawia. Dlaczego — mówi *Co robi
+logowanie*.
+
+Formularz odmawia gdzie indziej — przy zapisie — i wtedy nazywa powód:
+`provider.issuer.insecure`, `provider.rule.administrator`, `provider.linked`
+przy usuwaniu dostawcy, przez którego ktoś się jeszcze loguje. Cały spis i model,
+który za tym stoi, to [Tożsamość](/pl/server/identity).
