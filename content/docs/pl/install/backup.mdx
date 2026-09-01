@@ -2,7 +2,7 @@
 title: Kopie zapasowe
 description: Co obejmuje zrzut, co się w nim teraz znalazło i dwie granice, przez które katalog kopii sam nie stanie się awarią.
 source: en/install/backup.mdx
-sourceSha256: a3922a59b240a595c3d43e4a5eb3f2ca996d525cfc33008d82145c420794edf8
+sourceSha256: 2867fefd04ecdee553a0aa630c49e268919e22ad08db947afddddbc8649acba3
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -96,10 +96,32 @@ fakcie.
 
 `AlgoJudge-Ops` nie wymienia żadnego ustawienia pęku kluczy w swoim
 `.env.example`, więc instalacja, która chce certyfikatu, konfiguruje go na samej
-usłudze Server. Przepis znajdziesz w README `AlgoJudge-Server`: jak wygenerować
-plik PKCS#12, jak zamontować go tylko do odczytu i jaka jest zasada rotacji.
-Certyfikat brakujący, nieczytelny albo bez klucza prywatnego zatrzymuje Server
-przy starcie, a nie przy pierwszym logowaniu.
+usłudze Server — oba ustawienia są na stronie
+[Konfiguracja Servera](/pl/server/configuration). Potrzebny jest plik PKCS#12
+niosący swój klucz prywatny:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+    -keyout keyring.key -out keyring.crt -subj "/CN=algojudge-key-ring"
+
+openssl pkcs12 -export -inkey keyring.key -in keyring.crt \
+    -out keyring.pfx -passout pass:haslo-ktore-skonfigurujesz
+```
+
+Zamontuj go tylko do odczytu i wskaż na niego ustawieniem. Certyfikat brakujący,
+nieczytelny albo **bez klucza prywatnego** zatrzymuje Server przy starcie, a nie
+przy pierwszym logowaniu — ten ostatni przypadek zaszyfrowałby inaczej pęk,
+którego nigdy nie dałoby się odczytać z powrotem.
+
+**Rotacja polega na dopisaniu na początek i zachowaniu starego.** Pierwszy
+wymieniony certyfikat szyfruje nowe klucze; każdy wymieniony potrafi odszyfrować
+stare. Usunięcie starego czyni klucze zapisane pod nim nieczytelnymi, co wygląda
+dokładnie tak samo jak brak pęku kluczy — a `keyring status` jest tym, co pozwala
+je rozróżnić, bo mówi, czy Server nadal potrafi odczytać każdy klucz.
+
+Dlatego `keyring rotate` uruchamia się **po** wstawieniu certyfikatu w
+instalacji, która miała już klucze — sekcja wyżej mówi, dlaczego samo ustawienie
+przez dziewięćdziesiąt dni niczego nie zmienia.
 
 ## Co zrzut obejmuje, a czego nie
 
@@ -122,7 +144,8 @@ docker compose exec -T server aj-admin storage migrate
 `storage migrate` przenosi to, co już jest zapisane; zmiana domyślnego magazynu
 decyduje tylko o tym, gdzie trafi następny upload. Migracja czeka na swoje okno
 i na opróżnienie kolejki oceniania, więc nic nie rusza się pod trwającym
-konkursem. Najpierw zrób kopię.
+konkursem. Najpierw zrób kopię. Całość opisuje
+[Gdzie trafiają pliki](/pl/install/storage).
 
 ## Zweryfikowany, zanim dostanie nazwę
 

@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: 0abc2c722d4ca42ab767fdff85a618e5d3218e7ad93c459c674ee7d5e2986158
+sourceSha256: c0808a4eef45ccf5ba9d6c02407ea2201f305f5b3257e3c0048425a64948cbff
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -18,6 +18,14 @@ proxy.
 Dopiero na jednym origin działa `API_BASE_URL=/`, a wtedy **nie ma żadnego CORS
 do popsucia**. Client sam dokleja `/api/v1` — ścieżka jest stała w każdej
 instalacji — więc ta zmienna nazywa origin, a nigdy ścieżkę.
+
+**Jest stała, bo pomyłka tutaj jest cicha.** Tam, gdzie jedna domena obsługuje
+obie połowy, API nie może stać w korzeniu, bo korzeniem jest aplikacja; a
+prefiks, który bywa obecny, to prefiks, który każde wdrożenie musi trafić samo.
+Pomyl się, a Client zapyta właściwy host o niewłaściwą ścieżkę, a Twoje reverse
+proxy odpowie własnym `index.html` aplikacji zamiast błędem. Wartość zapisana w
+jednej ze starszych postaci — kończąca się na `/v1` albo `/api/v1` — jest
+normalizowana, a nie odrzucana.
 
 Gniazdo zdarzeń to `/api/v1/ws`, pod tym samym prefiksem, więc nie potrzebuje
 własnej reguły poza nagłówkami upgrade i timeoutem odczytu dłuższym niż cicha

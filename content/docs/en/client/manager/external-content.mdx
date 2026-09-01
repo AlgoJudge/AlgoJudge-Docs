@@ -73,6 +73,12 @@ An installation may hold a key for the archive, set among the **access keys** on
 the instance screen. It is asked for when the picker is opened and not before, so
 a screen nobody opened has not spent one of the archive's tokens.
 
+**The key itself never reaches a browser.** The picker is an embedded page, and
+whatever it is handed goes into an address — so the Server exchanges the
+long-lived key for a token good for an hour and sends only that. A failed
+exchange is a refusal and **never a fall back to the stored key**, which is the
+whole reason the exchange exists.
+
 Three outcomes, and they are not two:
 
 - a key opens the archive with this installation's private metadata;

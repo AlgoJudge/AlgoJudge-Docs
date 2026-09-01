@@ -1,0 +1,107 @@
+---
+title: Gdzie trafiają pliki
+description: Trzy miejsca, w których instalacja może trzymać przesłane pliki, ile każde z nich kosztuje i jak przenieść to, co już leży, niczego nie tracąc.
+source: en/install/storage.mdx
+sourceSha256: 90fb57bf0df55a54fa334267f58cf3fec36629744aeb1e7eb345908558adedfb
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Paczki z zadaniami, przesłany kod źródłowy, logi kompilatora i tabele testów to
+pliki.
+Instalacja decyduje, gdzie leżą ich bajty, i **musi zdecydować**: to, gdzie
+produkt kładzie swoje pliki, nie jest rzeczą do odziedziczenia po domyślnej
+wartości, której nikt nie przeczytał.
+
+**Magazyn** to jedno skonfigurowane miejsce, w którym mogą leżeć bajty. Wdrożenie
+może mieć ich kilka, w tym kilka tego samego rodzaju, a **każdy zapisany plik
+pamięta, który z nich go trzyma** — na zawsze. Dlatego identyfikatora magazynu
+nie wolno użyć ponownie dla innej lokalizacji: plik zapisany pod `objects` będzie
+dalej pytał `objects` o swoje bajty.
+
+## Trzy rodzaje i koszt każdego z nich
+
+| Rodzaj | Czego wymaga | Ile kosztuje |
+|---|---|---|
+| `postgres` | niczego | baza rośnie o każdy plik |
+| `filesystem` | ścieżki na wolumenie | kopia musi teraz obejmować dwie rzeczy |
+| `s3` | endpointu, kubełka i pary kluczy | magazynu obiektów do utrzymania albo kupienia |
+
+**`postgres` jest domyślny, bo nie ma zależności.** Jeden kontener, a `pg_dump`
+sam w sobie jest kompletną kopią — i właśnie na tym opierają się
+[Kopie zapasowe](/pl/install/backup). To dobra odpowiedź dla małej instalacji i
+zła dla dużych zawodów, gdzie każdy przesłany plik ląduje w tej samej bazie, z
+której czytany jest ranking.
+
+Pozostałe dwa to ten sam kompromis innymi słowami: mniejszy nacisk na bazę i
+kopia, która przestaje być jedną rzeczą.
+
+<Callout type="warn" title="Zmiana rodzaju zmienia też Twoją kopię zapasową">
+Zrzut obejmuje całą instalację tylko dopóki pliki są w bazie. Przenieś je na
+system plików albo do magazynu obiektów, a zrzut przestanie być kompletny, nie
+mówiąc o tym — skrypt kopii raportuje `coverage=INCOMPLETE` i jest to jedyne
+ostrzeżenie, jakie dostaniesz.
+</Callout>
+
+## Poświadczenia i to, czego nigdy nie ujawniamy
+
+**Poświadczenia żyją w środowisku i nigdzie indziej.** Żaden endpoint nie ustawia
+magazynu, nic o nim nie jest trzymane w bazie i nic z tego nie trafia do
+publicznej odpowiedzi: `/health` mówi, że magazyn jest `ok` albo `degraded`, i
+**nigdy który to magazyn, backend, kubełek czy ścieżka**. Szczegóły są na
+powierzchni operatora, za pętlą zwrotną i tokenem.
+
+Same ustawienia są na stronie
+[Konfiguracja Servera](/pl/server/configuration).
+
+**Server nigdy nie tworzy kubełka.** U części dostawców szyfrowanie w spoczynku
+nakłada się przy tworzeniu kubełka i nie da się go potem wiarygodnie dołożyć,
+więc utworzenie go jest czynnością operatora, a nie naszą. Deweloperski plik
+Compose jest jedynym wyjątkiem i mówi o tym w miejscu, w którym ustawia tę flagę.
+
+## Przeniesienie tego, co już leży
+
+Zmiana tego, który magazyn jest domyślny, decyduje o tym, gdzie trafi
+**następne** przesłanie. Nie przenosi niczego. Przeniesienie tego, co już tam
+jest, to osobna, świadoma czynność — i taka, przed którą warto zrobić kopię:
+
+```bash
+docker compose exec server aj-admin storage status     # gdzie pliki są teraz
+docker compose exec server aj-admin storage migrate    # przenieś je do domyślnego
+docker compose exec server aj-admin storage cancel     # odwołaj
+```
+
+**Nie zaczyna się od razu.** Migracja czeka na swoje okno — domyślnie `02:00`
+UTC — oraz na opróżnienie kolejki oceniania **i zamknięcie każdej rundy**, żeby
+nic nie ruszało się pod trwającymi zawodami. `storage status` mówi, na które z
+tych rzeczy czeka.
+
+Każdy plik jest odczytywany, sprawdzany względem własnej sumy kontrolnej,
+zapisywany w celu i **dopiero potem** jego wiersz wskazuje na nowy magazyn. Stara
+kopia zostaje jeszcze przez godzinę, żeby czytelnik, który rozwiązał wiersz
+chwilę wcześniej, wciąż znalazł swoje bajty.
+
+Jeden przebieg pracuje pół godziny i kontynuuje w następnym oknie. **Zabicie
+procesu niczego nie traci**: to, co się przeniosło, jest zapisane na samych
+plikach, więc następny przebieg podejmuje pracę tam, gdzie stanęła, a nie od
+początku.
+
+## Użycie czegoś innego niż to, na czym testujemy
+
+Sprawdzane są tu dwie implementacje S3: **RustFS**, którą uruchamia stos
+deweloperski, i **SeaweedFS**, uruchamiana ręcznie przed wydaniem.
+
+Cokolwiek innego — MinIO, Ceph, dostawca chmurowy — jest **nieznane, a nie
+niewspierane**, i ta różnica ma znaczenie. Projekt utrzymuje zestaw testów
+zgodności S3, który da się skierować na dowolny endpoint bez zmiany kodu;
+implementacja, która je przechodzi, spełnia kontrakt, na którym ten Server się
+opiera, a taka, na której nikt ich nie uruchomił, po prostu nigdy nie była
+sprawdzona. Jeśli masz zamiar postawić na niej zawody, uruchomienie tego zestawu
+najpierw będzie najtańszą rzeczą, jaką zrobisz w tym tygodniu.
+
+Jednej pozycji z tego zestawu nie da się uruchomić przeciwko żadnej z dostępnych
+tu implementacji: zapisuje znany ciąg, włącza domyślne szyfrowanie kubełka i
+szuka tego ciągu w plikach samego magazynu. SeaweedFS trzyma obiekty czytelnie,
+ale odmawia wywołania szyfrowania; RustFS przyjmuje wywołanie i tak czy inaczej
+trzyma obiekty nieczytelnie. Przeciwko endpointowi, który obsługuje jedno i
+drugie, ta pozycja się wykonuje.
