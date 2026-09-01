@@ -2,7 +2,7 @@
 title: Podłączenie platformy kursowej
 description: Podpięcie Moodle do instalacji, ustawienie przeglądarki, które decyduje o tym, czy to w ogóle zadziała, oraz co zostało sprawdzone, a co nie.
 source: en/install/lti.mdx
-sourceSha256: c77ffcc28dcbbf44715ec925548fb51acaee612e031eeb7f99a7b8c8e5d963af
+sourceSha256: 61eed8f9c1d7b5346532581ac11d95a64a48ae904158cfcab399a537215ccf44
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -161,6 +161,15 @@ obok, żeby dało się go zacytować w zgłoszeniu. Te, które spotyka administr
 `badState` i `badToken` wyglądają groźnie, a zwykle nie są niczym groźnym:
 przeterminowana karta przeglądarki, start powtórzony z historii albo zegary
 rozjechane o więcej niż dwie minuty.
+
+**Zupełnie pusta ramka to żaden z tych przypadków.** Jeśli start dociera do
+przeglądarki, ale ramka pozostaje pusta, a w konsoli przeglądarki pojawia się
+odmowa wyświetlenia strony — odrzuca ją polityka ramek, nie Server. Dołączony
+nginx wysyła `X-Frame-Options: SAMEORIGIN`, który pozwala osadzić stronę
+wyłącznie wtedy, gdy osadza ją **to samo** origin, więc LMS pod inną nazwą
+zostaje odrzucony dokładnie tak, jak odrzuciłby go `DENY`. Czym to zastąpić, mówi
+[Za własnym proxy](/pl/install/reverse-proxy); tutaj ten nagłówek leży w
+`nginx/snippets/security-headers.conf`.
 
 Model, który za tym wszystkim stoi — endpointy, klucze i to, do czego Server
 odmawia otwarcia połączenia — opisuje [LTI](/pl/server/lti).

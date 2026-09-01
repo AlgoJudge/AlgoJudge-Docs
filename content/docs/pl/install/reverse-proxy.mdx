@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: c0808a4eef45ccf5ba9d6c02407ea2201f305f5b3257e3c0048425a64948cbff
+sourceSha256: d4e8767b0759660e5f97e6c0b24575d014bd053a99a50160bb6ed1a027ba4888
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -102,8 +102,31 @@ Wysyła `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`
 nagłówek nie znikał na odpowiedziach błędu — czyli dokładnie na tych, które
 najłatwiej wywołać atakującemu.
 
-`X-Frame-Options` to celowo `SAMEORIGIN`, a nie `DENY`: uruchomienie LTI wstawia
-aplikację w iframe na stronie Moodle, a `DENY` zepsułoby każde z nich.
+`X-Frame-Options` to celowo `SAMEORIGIN`, a nie `DENY` — tyle że **nie obejmuje
+tego przypadku LTI, dla którego został wybrany**, a ta strona twierdziła inaczej
+do 2026-09-01. `SAMEORIGIN` pozwala osadzić stronę tylko wtedy, gdy osadza ją
+**to samo origin**. Przy uruchomieniu LTI osadza ją LMS, więc Moodle pod
+`moodle.example.edu`, który osadza tę instalację pod `algojudge.example.edu`,
+zostanie odrzucony dokładnie tak samo, jak odrzuciłby go `DENY`. Zmierzone
+w przeglądarce, a nie wyczytane ze specyfikacji.
+
+Dla układu, który ten nagłówek obejmuje — LMS i ta instalacja na jednym origin,
+rozdzielone ścieżką — wartość jest poprawna i dlatego zostaje: domyślne
+rozluźnienie polityki ramek w każdej instalacji nie jest decyzją, którą stos
+podejmuje za Ciebie. **Jeśli Twój LMS stoi pod inną nazwą, zastąp ten nagłówek**,
+bo `X-Frame-Options` nie umie wskazać obcego origin, a
+[`Content-Security-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors)
+umie:
+
+```nginx
+# zamiast linii X-Frame-Options
+add_header Content-Security-Policy "frame-ancestors https://moodle.example.edu" always;
+```
+
+Wymień w `frame-ancestors` każdą platformę, która ma prawo Cię osadzić, i usuń
+`X-Frame-Options`, żeby nagłówki nie mogły sobie przeczyć. Innego
+`Content-Security-Policy` tu nie ma — patrz niżej — więc ten jeden nagłówek jest
+całą polityką ramek, jaką dostajesz domyślnie.
 
 <Callout type="warn" title="Nie ma Content-Security-Policy i jest to decyzja">
 Obraz Client wpisuje swoją konfigurację uruchomieniową do `index.html` jako
