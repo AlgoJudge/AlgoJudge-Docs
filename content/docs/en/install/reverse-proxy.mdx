@@ -100,9 +100,29 @@ It sends `Strict-Transport-Security`, `X-Content-Type-Options`,
 with `always` so the header is not omitted on error responses — which are
 exactly the ones an attacker can provoke most readily.
 
-`X-Frame-Options` is `SAMEORIGIN` rather than `DENY` on purpose: an LTI launch
-puts the application inside an iframe on a Moodle page, and `DENY` would break
-every one of them.
+`X-Frame-Options` is `SAMEORIGIN` rather than `DENY` on purpose — but **it does
+not cover the LTI case it was chosen for**, and this page said it did until
+2026-09-01. `SAMEORIGIN` permits framing only from the **same** origin. An LTI
+launch is framed by the LMS, so a Moodle at `moodle.example.edu` framing this
+installation at `algojudge.example.edu` is refused exactly as `DENY` would refuse
+it. Measured in a browser rather than deduced from the specification.
+
+It is right for the arrangement it does cover — an LMS and this installation on
+one origin, routed by path — and it is left alone because loosening the frame
+policy of every installation by default is not a decision the stack makes for
+you. **If your LMS is on a different name, replace the header**, because
+`X-Frame-Options` cannot name a foreign origin and
+[`Content-Security-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors)
+can:
+
+```nginx
+# instead of the X-Frame-Options line
+add_header Content-Security-Policy "frame-ancestors https://moodle.example.edu" always;
+```
+
+naming every platform allowed to frame you, and dropping `X-Frame-Options` so the
+two cannot disagree. There is no other `Content-Security-Policy` here — see below
+— so this header is the whole of the frame policy you get by default.
 
 <Callout type="warn" title="There is no Content-Security-Policy, and that is a decision">
 The Client image writes its runtime configuration into `index.html` as an inline
