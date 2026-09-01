@@ -7,6 +7,23 @@ This repository is the **public documentation site** for it, published at
 `docs.algojudge.pl`. It is a Fumadocs static export, served by nginx from an
 image this repository builds.
 
+## Documentation
+
+The site this repository publishes is
+**[docs.algojudge.pl](https://docs.algojudge.pl/en/)** — five sections, each at
+`/{locale}/{section}/`:
+
+| | |
+|---|---|
+| [`/en/install/`](https://docs.algojudge.pl/en/install/) | standing an installation up, and keeping it running |
+| [`/en/client/`](https://docs.algojudge.pl/en/client/) | every screen, the participant's and the manager's |
+| [`/en/server/`](https://docs.algojudge.pl/en/server/) | the model, the permission model, and the REST reference |
+| [`/en/runner/`](https://docs.algojudge.pl/en/runner/) | evaluation, isolation, languages and routing |
+| [`/en/protocol/`](https://docs.algojudge.pl/en/protocol/) | the contract between a Server and a Runner |
+
+`/install/` and `/client/` are also in Polish. Everything below is how the site
+is built rather than what it says.
+
 ## What is here, and what is not
 
 It documents the five runtime repositories:
