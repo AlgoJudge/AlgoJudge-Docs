@@ -8,15 +8,15 @@ sourceSha256: 0c983d185f4855c32ef6d015cae205697d02add1e4f91e5c8f3b9aea95004f61
 import { Callout } from "fumadocs-ui/components/callout";
 
 Część zadań może ocenić zewnętrzne archiwum, a nie ta instalacja. Zgłoszenie
-jest tam przekazywane, kompilowane ich kompilatorami, pod ich limitami i na ich
-testach, a wraca to, co powiedzieli.
+jest tam przekazywane, kompilowane ich kompilatorami, w ich limitach i na ich
+testach, a wraca ich werdykt.
 
 Ta instalacja zapisuje ten werdykt i nazywa sędziego, który za nim stoi. Nie
-potrafi go wyjaśnić, powtórzyć ani się z nim nie zgodzić.
+potrafi go wyjaśnić, powtórzyć ani zakwestionować.
 
 <Callout type="warn" title="Wymaga konta w tym archiwum">
 Każde zgłoszenie, które ta instalacja przekazuje, idzie z jednego tamtejszego
-konta i zostaje na nim na zawsze. To decyzja tego, do kogo należy konto.
+konta i zostaje na nim na zawsze. To decyzja właściciela konta.
 Testując, wysyłaj coś napisanego tak, żeby było błędne — wtedy historia tego
 konta pozostaje uczciwa.
 </Callout>
@@ -35,18 +35,19 @@ EXTERNAL_JUDGE_USERNAME=
 EXTERNAL_JUDGE_PASSWORD=
 ```
 
-`preflight.sh` odmawia, kiedy profil jest włączony, a te dwa są puste. I musi:
-kontener inaczej kończyłby pracę już przy czytaniu swojej konfiguracji, a za
-`restart: unless-stopped` jest to pętla restartów, a nie jedna linia w logu —
-w obrazie, do którego nie ma powłoki, żeby zajrzeć, i bez healthchecku, który
-mógłby zrobić się czerwony.
+`preflight.sh` odmawia, kiedy profil jest włączony, a te dwa są puste. I
+słusznie: kontener inaczej kończyłby pracę już przy czytaniu konfiguracji, a
+przy `restart: unless-stopped` oznacza to pętlę restartów, a nie jedną linię w
+logu — w obrazie, w którym nie ma powłoki, żeby do niego zajrzeć, i bez
+healthchecku, który mógłby zapalić się na czerwono.
 
 ## Dwa przełączniki, których nie ma w `.env`
 
-Oba zostawiają pustą kolejkę przy Runnerze wyglądającym na zupełnie zdrowego
-i właśnie dlatego warto o nich wiedzieć, zanim zaczniesz szukać usterki.
+W obu przypadkach kolejka pozostaje pusta, choć Runner wygląda na zupełnie
+zdrowego — i właśnie dlatego warto o nich wiedzieć, zanim zaczniesz szukać
+usterki.
 
-1. **Ocenianie zewnętrzne jest wyłączone, dopóki ta instalacja go nie włączy.**
+1. **Ocenianie zewnętrzne jest wyłączone, dopóki instalacja tego nie włączy.**
    To wiersz w bazie. Przed pierwszym startem, w
    [`preconfig/`](/pl/install/preconfiguration):
 
@@ -66,9 +67,9 @@ i właśnie dlatego warto o nich wiedzieć, zanim zaczniesz szukać usterki.
 
 Musi mieć typ archiwum — `uva@1` dla jedynej istniejącej integracji — być
 oznaczone jako zewnętrzne i nieść numer zadania w archiwum w `props` swojej
-wersji. Zadanie z typem lokalnym nigdy nie trafia do Runnera, który przekazuje:
-Server dobiera te dwie strony po tej właśnie fladze, przez równość w obie
-strony.
+wersji. Zadanie z typem lokalnym nigdy nie trafia do Runnera przekazującego:
+Server dobiera te dwie strony po tej właśnie fladze — równość musi zachodzić
+w obie strony.
 
 ## Czego wymaga, a czego nie
 
@@ -87,18 +88,18 @@ Sam nawiązuje dwa połączenia — do Servera i do archiwum — i nie przyjmuje
 docker compose logs -f external-runner
 ```
 
-to całe oprzyrządowanie, jakie ma. Mówi, jako co się zarejestrował, co
+to wszystko, czym można go podejrzeć. Widać w nim, jak się zarejestrował, co
 zadeklarował i na co czeka.
 
 <Callout type="warn" title="Restart może kosztować zdublowane zgłoszenie">
 Zbiór zgłoszeń, na które archiwum jeszcze nie odpowiedziało, trzyma **w
-pamięci**, a zlecenie zewnętrzne może być zgodnie z prawem trzymane przez
-piętnaście minut. Zabity albo zrestartowany, gubi ten zbiór; Server odbiera
-dzierżawy, wkłada zlecenia z powrotem do kolejki, a każde z nich idzie do
-archiwum po raz drugi, na Waszym tamtejszym koncie.
+pamięci**, a zlecenie zewnętrzne może zupełnie normalnie czekać piętnaście
+minut. Po zabiciu albo restarcie traci ten zbiór; Server odbiera dzierżawy,
+wkłada zlecenia z powrotem do kolejki, a każde z nich idzie do archiwum po raz
+drugi, na Twoim tamtejszym koncie.
 
-Przed oknem, które go zrestartuje, najpierw zdrenuj — zobacz [Przerwa
-techniczna](/pl/install/maintenance), gdzie jest rachunek, dlaczego wymuszone
-zamknięcie po 300 sekundach i piętnastominutowe zlecenie zewnętrzne same się nie
-spotkają.
+Przed oknem, które go zrestartuje, najpierw przeprowadź drenowanie — zobacz
+[Przerwę techniczną](/pl/install/maintenance), gdzie jest rachunek pokazujący,
+że wymuszone zamknięcie po 300 sekundach nastąpi na długo przed końcem
+piętnastominutowego zlecenia zewnętrznego.
 </Callout>

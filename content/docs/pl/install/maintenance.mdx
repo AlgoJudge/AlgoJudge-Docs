@@ -52,14 +52,16 @@ zakładnik przez jednego zakleszczonego Runnera.
 
 **Przy [sędzim zewnętrznym](/pl/install/external-runner) to zdanie wymaga
 zastrzeżenia.** Ocenianie wykonane dwa razy to wtedy zgłoszenie wysłane dwa razy
-do cudzego serwisu, na Waszym tamtejszym koncie — archiwum dostało już pierwsze,
-a powtarza się wysłanie, nie ocenianie. Ten Runner trzyma zbiór, na który czeka,
-wyłącznie w pamięci, więc restart w trakcie okna gubi go.
+do cudzego archiwum, na Twoim tamtejszym koncie — archiwum dostało już pierwsze,
+a powtarza się wysłanie, nie ocenianie. Ten Runner trzyma zbiór zgłoszeń, na które
+archiwum jeszcze nie odpowiedziało, wyłącznie w pamięci — restart w trakcie okna
+gubi ten zbiór.
 
-Zlecenie zewnętrzne może być zgodnie z prawem trzymane przez piętnaście minut, a
-`Maintenance:ForceAfterSeconds` wynosi 300 — te dwie liczby same się nie spotkają.
+Zlecenie zewnętrzne może zupełnie normalnie czekać piętnaście minut — tyle wynosi
+`AJ_External__PendingTimeoutSeconds` — a `Maintenance:ForceAfterSeconds` to 300,
+więc wymuszone zamknięcie nastąpi na długo przed końcem takiego zlecenia.
 Przed oknem, które zrestartuje ten kontener: podnieś `ForceAfterSeconds` powyżej
-`AJ_External__PendingTimeoutSeconds`, poczekaj aż kolejka ucichnie, albo przyjmij
+`AJ_External__PendingTimeoutSeconds`, poczekaj, aż kolejka ucichnie, albo przyjmij
 duplikat.
 
 ## `/api/v1/health` to drzwi, które nigdy się nie zamykają
