@@ -98,7 +98,7 @@ fakcie.
 `.env.example`, więc instalacja, która chce certyfikatu, konfiguruje go na samej
 usłudze Server — oba ustawienia są na stronie
 [Konfiguracja Servera](/pl/server/configuration). Potrzebny jest plik PKCS#12
-niosący swój klucz prywatny:
+zawierający klucz prywatny:
 
 ```bash
 openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
@@ -108,16 +108,16 @@ openssl pkcs12 -export -inkey keyring.key -in keyring.crt \
     -out keyring.pfx -passout pass:haslo-ktore-skonfigurujesz
 ```
 
-Zamontuj go tylko do odczytu i wskaż na niego ustawieniem. Certyfikat brakujący,
-nieczytelny albo **bez klucza prywatnego** zatrzymuje Server przy starcie, a nie
-przy pierwszym logowaniu — ten ostatni przypadek zaszyfrowałby inaczej pęk,
-którego nigdy nie dałoby się odczytać z powrotem.
+Zamontuj go tylko do odczytu i podaj jego ścieżkę w ustawieniu. Certyfikat
+brakujący, nieczytelny albo **bez klucza prywatnego** zatrzymuje Server przy
+starcie, a nie przy pierwszym logowaniu — inaczej ten ostatni zaszyfrowałby pęk,
+którego nikt by już potem nie odczytał.
 
-**Rotacja polega na dopisaniu na początek i zachowaniu starego.** Pierwszy
-wymieniony certyfikat szyfruje nowe klucze; każdy wymieniony potrafi odszyfrować
-stare. Usunięcie starego czyni klucze zapisane pod nim nieczytelnymi, co wygląda
-dokładnie tak samo jak brak pęku kluczy — a `keyring status` jest tym, co pozwala
-je rozróżnić, bo mówi, czy Server nadal potrafi odczytać każdy klucz.
+**Rotacja polega na dopisaniu nowego na początek i zachowaniu starego.**
+Pierwszy certyfikat z listy szyfruje nowe klucze, a odszyfrować stare potrafi
+każdy z niej. Usuń stary, a klucze zapisane pod nim staną się nieczytelne — co
+wygląda dokładnie tak samo jak brak pęku kluczy. Rozróżnia je `keyring status`,
+bo mówi, czy Server nadal potrafi odczytać każdy klucz.
 
 Dlatego `keyring rotate` uruchamia się **po** wstawieniu certyfikatu w
 instalacji, która miała już klucze — sekcja wyżej mówi, dlaczego samo ustawienie

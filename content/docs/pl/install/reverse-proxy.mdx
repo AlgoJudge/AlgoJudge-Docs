@@ -19,11 +19,11 @@ Dopiero na jednym origin działa `API_BASE_URL=/`, a wtedy **nie ma żadnego COR
 do popsucia**. Client sam dokleja `/api/v1` — ścieżka jest stała w każdej
 instalacji — więc ta zmienna nazywa origin, a nigdy ścieżkę.
 
-**Jest stała, bo pomyłka tutaj jest cicha.** Tam, gdzie jedna domena obsługuje
-obie połowy, API nie może stać w korzeniu, bo korzeniem jest aplikacja; a
-prefiks, który bywa obecny, to prefiks, który każde wdrożenie musi trafić samo.
-Pomyl się, a Client zapyta właściwy host o niewłaściwą ścieżkę, a Twoje reverse
-proxy odpowie własnym `index.html` aplikacji zamiast błędem. Wartość zapisana w
+**Jest stała, bo pomyłka w tym miejscu jest cicha.** Tam, gdzie jedna domena
+obsługuje obie połowy, API nie może stać w korzeniu, bo korzeniem jest aplikacja;
+a prefiks, który raz jest, a raz go nie ma, każde wdrożenie musiałoby odgadywać
+na własną rękę. Pomyl się, a Client zapyta właściwy host o niewłaściwą ścieżkę i
+dostanie w odpowiedzi `index.html` aplikacji zamiast błędu. Wartość zapisana w
 jednej ze starszych postaci — kończąca się na `/v1` albo `/api/v1` — jest
 normalizowana, a nie odrzucana.
 
