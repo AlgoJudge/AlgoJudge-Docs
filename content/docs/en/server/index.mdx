@@ -85,10 +85,12 @@ embedded ASP.NET Core Identity for **administrator, local and temporary
 accounts** — a room of bulk logins handed out on paper has no mailboxes and no
 provider.
 
-<Callout type="warn" title="Suspended for the MVP">
-The invariant is deliberately suspended while the MVP ships: local accounts with
-passwords work for everybody. That is a recorded decision, not an oversight to
-correct. What is permanent is the narrowing, not the suspension.
+<Callout type="warn" title="Local accounts still work for everybody, and that is not the recommendation">
+Nothing stops an installation running entirely on local accounts — the password
+storage is there, and *accept local sign-ups* turns the third door on. **Register
+an identity provider instead.** That is the recommended arrangement for ordinary
+participants, and the embedded accounts are meant for the administrator and for
+the local and temporary ones that have no provider to come from.
 </Callout>
 
 ### It does not implement an access control list

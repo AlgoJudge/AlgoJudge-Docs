@@ -46,8 +46,10 @@ that had been revoked.
 omit any of it, so the Server refuses several of them in middleware — in front
 of the endpoint, before a body is bound.
 
-- **There is no self-service registration.** Accounts are created by an
-  organiser or arrive by SSO.
+- **Self-service registration is off unless the installation turns it on.**
+  `POST /identity/register` answers `403 registration.closed` while it is, and
+  the switch is the manager panel's *accept local sign-ups*. With it off,
+  accounts are created by an organiser or arrive through a provider.
 - **There is no password reset and no confirmation to resend**, because there is
   no mail sender in v1. An endpoint that exists and cannot work is worse than
   one that refuses: it invites a screen to promise something nothing will
