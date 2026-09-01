@@ -16,15 +16,15 @@ aktywności w kursie, odczytanie listy uczestników — opisuje
 [Logowania zewnętrzne i platformy LTI](/pl/client/manager/logins).
 
 <Callout type="warn" title="Najpierw przeczytaj sekcję o przeglądarce">
-Więcej instalacji rozbija się o ciasteczko trzeciej strony niż o cokolwiek innego
-na tej stronie, a rozbija się **już po tym**, jak wszystko wygląda na poprawnie
-skonfigurowane. Jeśli Twoja instalacja nie serwuje HTTPS, osadzony start nie może
+O ciasteczko trzeciej strony rozbija się więcej instalacji niż o cokolwiek
+innego na tej stronie — i rozbija się **dopiero wtedy**, gdy wszystko wygląda już
+na poprawnie skonfigurowane. Jeśli Twoja instalacja nie serwuje HTTPS, osadzony start nie może
 zadziałać w ogóle.
 </Callout>
 
 ## Zanim zaczniesz
 
-Trzy rzeczy muszą być prawdą.
+Trzy warunki muszą być spełnione.
 
 **Instalacja jest osiągalna po HTTPS**, pod adresem, który platforma potrafi
 rozwiązać. Tutaj nie jest to opcjonalne — powód jest w sekcji *W przeglądarce*
@@ -68,8 +68,8 @@ wydawać drugiego dlatego, że pierwsza próba się nie udała.
 Platforma, która zarejestruje się sama, przyjeżdża **wyłączona** i bez prawa
 mówienia, kim ktokolwiek jest. To jest zamierzone: ktoś udowodnił, że ma żywe
 zaproszenie, a nie że prowadzi uczelniany Moodle. Włączenie jej i osobne
-zdecydowanie, czy może potwierdzać tożsamości, to dwie czynności, które człowiek
-wykonuje, mając konsekwencje przed oczami.
+zdecydowanie, czy może potwierdzać tożsamości, to dwie osobne decyzje, które
+ktoś podejmuje ze świadomością, co z nich wynika.
 </Callout>
 
 ### Wpisujesz ją ręcznie
@@ -108,10 +108,9 @@ strony:
 - **Safari nie jest sprawdzone.** Nie ma tu sprzętu Apple, na którym dałoby się
   to zrobić.
 
-Kiedy ciasteczko i tak zostanie odrzucone, uczestnik nie zostaje z zagadką:
+Kiedy ciasteczko i tak zostanie odrzucone, uczestnik nie zostaje bez wyjaśnienia:
 strona mówi, że przeglądarka blokuje logowanie dla tej ramki, proponuje **Otwórz
-w nowej karcie** i podaje zdanie, które ma przekazać osobie administrującej
-kursem. Naprawa po stronie platformy polega na ustawieniu narzędzia tak, by
+w nowej karcie** i podaje zdanie do przekazania osobie administrującej kursem. Naprawa po stronie platformy polega na ustawieniu narzędzia tak, by
 otwierało się w nowym oknie zamiast w ramce.
 
 [Za własnym reverse proxy](/pl/install/reverse-proxy) opisuje drugą połowę tego —
@@ -120,8 +119,7 @@ ustawiasz własne nagłówki przed instalacją.
 
 ## Co zostało sprawdzone, a co nie
 
-Napisane wprost, bo to właśnie luka jest tym, co ma znaczenie dla kogoś, kto
-zaraz to wdroży.
+Napisane wprost, bo dla kogoś, kto zaraz to wdroży, liczy się właśnie luka.
 
 | | |
 |---|---|
@@ -141,7 +139,7 @@ usterką po naszej stronie:
   Moodle podstawia historię kursu, a nie pojedynczego osadzenia, we wszystkich
   wspieranych wersjach — więc *wygląda na kopię…* jest mocną poszlaką, a nie
   faktem.
-- **Ramka nie zmienia sobie wysokości.** Moodle nie implementuje zmiany rozmiaru
+- **Ramka nie zmienia wysokości.** Moodle nie implementuje zmiany rozmiaru
   ramki, więc start ma tę wysokość, którą prowadzący wpisał w ustawieniach
   aktywności. Osadzony interfejs jest pod to zbudowany — jeden rząd nagłówka, a
   treść przewija się w środku.
@@ -160,7 +158,7 @@ obok, żeby dało się go zacytować w zgłoszeniu. Te, które spotyka administr
 | `sharingNotAcknowledged` | aktywność jest osadzona w drugim kursie i nikt jeszcze tego nie zaakceptował |
 | `platformUnreachable` | nie udało się stąd pobrać zestawu kluczy platformy |
 
-`badState` i `badToken` to te dwa, które wyglądają groźnie, a zwykle nie są:
+`badState` i `badToken` wyglądają groźnie, a zwykle nie są niczym groźnym:
 przeterminowana karta przeglądarki, start powtórzony z historii albo zegary
 rozjechane o więcej niż dwie minuty.
 
