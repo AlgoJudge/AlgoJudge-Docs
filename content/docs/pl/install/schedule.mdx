@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: ebc81e497dedb851972bc9904e05eb62b4665aeb5032986d8749258e3ec7e109
+sourceSha256: 18a84e7b339a9a386db9f339a00e5c7e48bd30be88de6a5b93d3147451b2c761
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -101,6 +101,16 @@ harmonogram rządzi obydwoma.
 **Nic nie powiadamia nikogo, gdy skrypt crona zakończy się kodem niezerowym.**
 Kopia, która nie udaje się od trzech tygodni, wychodzi na jaw w trakcie awarii,
 którą miała pozwolić przeżyć.
+
+**Samo `MAILTO` by tego nie przeniosło.** Cron wysyła to, co zadanie wypisze,
+a każda linia dostarczanego crontaba wypisuje do pliku dziennika przez `2>&1` —
+więc nie zostawało nic do wysłania. Dlatego każda linia kończy się `|| echo`:
+przy kodzie niezerowym trafia na stdout crona jedno zdanie, a przy zwykłym
+przebiegu nie trafia nic. To właśnie dostaje adres wpisany w `MAILTO`.
+
+Celowo nie zdjęliśmy `2>&1`: `warn` pisze na stderr, a `backup.sh` przy
+`STORAGE_KIND=s3` ostrzega przy każdym uruchomieniu — czyli byłaby to poczta
+co noc, której nikt nie czyta.
 
 Skieruj `MAILTO` na kogoś, kto to czyta, albo podaj `/var/log/algojudge/*.log`
 do tego, co Twoja organizacja już obserwuje. Wybranie kanału za Ciebie byłoby

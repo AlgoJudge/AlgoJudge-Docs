@@ -99,6 +99,16 @@ schedule governs both.
 been failing for three weeks surfaces during the incident it was meant to
 survive.
 
+**`MAILTO` alone would not have carried it.** Cron mails what a job prints, and
+every line in the shipped crontab prints into a log file with `2>&1` — so there
+was nothing left to send. Each line therefore ends with `|| echo`, which puts one
+sentence on cron's stdout on a non-zero exit and nothing at all on an ordinary
+run. That is what an address behind `MAILTO` now receives.
+
+It is deliberately not `2>&1` removed: `warn` writes to stderr, and `backup.sh`
+warns on every run under `STORAGE_KIND=s3`, so that would have meant nightly mail
+nobody reads.
+
 Point `MAILTO` at somebody who reads it, or feed `/var/log/algojudge/*.log` into
 whatever your organisation already watches. Choosing a channel for you would be
 inventing policy.
