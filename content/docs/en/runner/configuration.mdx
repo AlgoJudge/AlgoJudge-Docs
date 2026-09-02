@@ -83,8 +83,9 @@ is bind-mounted at `AJ_Work__Path`.
 
 | Variable | Default | |
 |---|---|---|
-| `AJ_Sandbox__AllowCgroupV1` | unset | Start anyway on a host reporting cgroup v1 |
-| `AJ_Sandbox__CgroupRoot` | `/sys/fs/cgroup` | Where the cgroup filesystem is mounted |
+| `AJ_Sandbox__AllowUnmeasured` | unset | Start anyway on a host this Runner cannot measure on — and **only start**: every job it claims then fails |
+| `AJ_Sandbox__AllowCgroupV1` | unset | The old name for the row above, still read |
+| `AJ_Sandbox__CgroupRoot` | `/sys/fs/cgroup` | Where the cgroup filesystem is mounted. Must be absolute; empty is treated as unset |
 | `AJ_Sandbox__Image__Gcc` | `algojudge/lang-gcc:local` | |
 | `AJ_Sandbox__Image__Clang` | `algojudge/lang-clang:local` | |
 | `AJ_Sandbox__Image__Python` | `algojudge/lang-python:local` | |
@@ -106,9 +107,10 @@ Pin the same version as the Runner unless there is a reason not to: that pairing
 is what the release was tested as. [Languages](/en/runner/languages) says why the
 compiler version is a thing to pin rather than a thing that moves.
 
-<Callout type="warn" title="AJ_Sandbox__AllowCgroupV1 is on whenever it holds any value at all">
+<Callout type="warn" title="AJ_Sandbox__AllowUnmeasured is on whenever it holds any value at all">
 It is read as *set or not set*, not as a boolean. Any non-empty value turns it
-on — including `AJ_Sandbox__AllowCgroupV1=false`, which reads as *allow*.
+on — including `AJ_Sandbox__AllowUnmeasured=false`, which reads as *allow*. The
+same is true of `AJ_Sandbox__AllowCgroupV1`, which is the old name for it.
 
 To turn it off, remove the variable or leave it empty.
 

@@ -37,8 +37,8 @@ ran out of disk.
 | `--user 65534:65534` | never root, even inside |
 | `--memory` with `--memory-swap` **equal** | without the second the limit means nothing — the process swaps instead of being killed |
 | `--pids-limit` | a fork bomb hits a wall |
-| `--cpus` **and** `--cpuset-cpus` | capping CPU is not pinning it; without a pinned core, threads buy wall-clock time the single-thread rule does not give them |
-| wall clock = the problem's limit **plus one second** | something outside the process has to reap one stuck in an uninterruptible syscall |
+| `--cpus` **and** `--cpuset-cpus` | capping CPU is not pinning it. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast — and the pin keeps a run reproducible and keeps processor time close to wall clock, which is what makes the deadline below mean anything |
+| wall clock = **three times the limit plus one second** | not a limit anybody is judged against. A time limit is processor time, so this reaps what is *not* spending any: one stuck in an uninterruptible syscall, or one that waits rather than computes |
 | an output cap enforced **while it runs** | read afterwards, a flooding program fills the host's disk first |
 
 Every row has a test that asserts two things: the program was stopped correctly,

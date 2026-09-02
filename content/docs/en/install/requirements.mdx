@@ -19,26 +19,34 @@ This is not about whether the sandbox holds: **v1 enforces the limits perfectly
 well.** A job container over its memory limit is killed and reported as
 `OOMKilled`, and the whole adversarial test suite passes.
 
-What v1 cannot do is **report honestly**. `memory.peak` and `cpu.stat` are v2
+What v1 cannot do is **measure**. `memory.peak` and `cpu.stat` are v2
 interfaces, and there is no v1 equivalent that tells the truth about a process
 that has already exited. The Runner's refusal says exactly this:
 
-> the limits are enforced on v1, but peak memory and CPU time cannot be measured
-> honestly, and a number shown to a participant beside their verdict has to be
-> right
+> the limits are enforced on v1, but a time limit is decided on processor time
+> read from cpu.stat, which is a v2 interface — so what cannot be done here is
+> reach a verdict at all
 
-That is the whole reason. Those numbers are printed next to a verdict, and a
-participant tuning a solution against a memory limit is acting on them.
+**That last clause is the whole reason, and it grew teeth on 2026-09-02.** A time
+limit used to be the wall clock, which the Runner took itself; the cgroup gave it
+peak memory and processor time to *print* beside a verdict. A time limit is now
+processor time, so a Runner that cannot read the cgroup cannot judge — the
+refusal is no longer about a missing number.
 
-There is an override, `AJ_Sandbox__AllowCgroupV1`. It exists because a
+There is an override, `AJ_Sandbox__AllowUnmeasured`. It exists because a
 developer's machine is often Docker Desktop, which may still report v1, and the
-alternative is a development stack that cannot start at all. When it is set the
-Runner logs on every start, at `ERROR`:
+alternative is a development stack that cannot start at all. **It only makes the
+process start**: such a Runner registers, answers the protocol, and then fails
+every job it claims with an infrastructure error. When it is set the Runner logs
+on every start, at `ERROR`:
 
 ```
-STARTING BELOW SPECIFICATION — … Times and memory reported beside a verdict
-on this host are not to be trusted.
+STARTING BELOW SPECIFICATION — … A time limit is decided on processor time read
+from this host's cgroups, so this Runner registers and answers the protocol and
+then fails every job it claims.
 ```
+
+`AJ_Sandbox__AllowCgroupV1` is the old name for it and is still read.
 
 <Callout type="warn" title="The override cannot be reported to the panel">
 `MachineDto` is a closed shape and drops anything it does not name, so a Runner
@@ -47,7 +55,7 @@ panel. The only place it says so is its own log. Do not set this on an
 installation anybody else uses.
 </Callout>
 
-### Peak memory also needs the `cgroupfs` driver
+### The `cgroupfs` driver, and a writable cgroup tree
 
 Even on v2, the Runner measures a peak by creating a cgroup of its own, starting
 each job container underneath it with `--cgroup-parent`, and reading the parent

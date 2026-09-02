@@ -2,7 +2,7 @@
 title: Co się stało z moim zgłoszeniem
 description: Pięć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
 source: en/client/participant/results.mdx
-sourceSha256: 57a61b66d22a63a340d5336d8ac52af3ecc0b01b8c090b925047ce77f1b1d472
+sourceSha256: 87bbc73066f4480cd1f4f7cf25b6348d6add3ef52d5c3cf2cc0b64965d09e7d3
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -70,13 +70,24 @@ tabela testów:
 |---|---|
 | **Test** | numer testu |
 | **Status** | `OK`, `WARNING`, `ERROR`, z odpowiednim kolorem |
-| **Czas** | ile zużył Twój program, a obok limit |
+| **Czas** | czas procesora zużyty przez Twój program, a obok limit |
 | **Pamięć** | to samo, w MiB |
 | **Wynik** | punkty za ten test wobec jego maksimum |
 | **Uwagi** | dlaczego nie przeszedł i własna notatka checkera |
 
 Czas i pamięć robią się bursztynowe powyżej połowy limitu, a czerwone przy
 limicie i powyżej.
+
+**Czas to czas procesora, a nie to, ile czekałeś.** Liczy się to, co maszyna
+faktycznie spędziła na wykonywaniu Twojego programu — uruchomienie kontenera nie
+obciąża Twojego limitu, tak samo jak oczekiwanie. Wynikają z tego dwie rzeczy i
+obie są zamierzone: program, który śpi albo czeka na wejście-wyjście, nie zużywa limitu — a
+program korzystający z kilku wątków zużywa go szybciej, bo czasy wszystkich
+wątków się sumują.
+
+Czekanie nie jest jednak darmowe w nieskończoność. Zgłoszenie, które długo po swoim
+limicie wciąż działa, zostaje zatrzymane i oznaczone jako *Limit czasu*, tak samo
+jak takie, które za długo liczyło; w uwadze widać, o który przypadek chodzi.
 
 Kolumna **Uwagi** zaczyna się od powodu, za każdym razem tymi samymi słowami,
 więc kolumnę porażek da się przeczytać z góry na dół: *Zła odpowiedź*, *Limit
