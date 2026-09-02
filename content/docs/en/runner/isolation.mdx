@@ -115,9 +115,12 @@ A cgroup pseudo-file reports a size of zero however much it holds, so a size tes
 calls every host v1. Read the file and check that it is not empty.
 </Callout>
 
-`AJ_Sandbox__AllowCgroupV1` starts anyway, for a development machine whose Docker
-still reports v1. It shouts at `ERROR` on every start, and
+`AJ_Sandbox__AllowUnmeasured` starts anyway, for a development machine whose
+Docker still reports v1 — and **only starts**: a time limit is decided on
+processor time read from the cgroup, so such a Runner registers, answers the
+protocol, and fails every job it claims. It shouts at `ERROR` on every start, and
 [Configuration](/en/runner/configuration) records the trap in how it is read.
+`AJ_Sandbox__AllowCgroupV1` is the old name for it and is still read.
 
 ## `linux/amd64` only
 
