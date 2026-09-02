@@ -37,7 +37,7 @@ package.
 | In `config.yml` | What it says |
 |---|---|
 | `type` | which format this is. A Runner that does not know the version refuses the package rather than guessing |
-| `limits.timeMs` | milliseconds |
+| `limits.timeMs` | milliseconds of **processor time** — user plus system, for everything the submission starts. Not how long a participant waits: starting the container is not charged to them, and neither is waiting |
 | `limits.memoryBytes` | **bytes, everywhere.** There is no second memory unit anywhere in the product |
 | `languages` | which toolchains may be submitted. Empty means the package does not say, which allows everything the Runner can build |
 | `overrideLimits` | per language, keyed by a family (`cpp`, `python`) or one toolchain (`pypy3`). Python is slower; this is where that is said |

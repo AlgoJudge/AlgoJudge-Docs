@@ -66,12 +66,23 @@ per-test table is a per-test table:
 |---|---|
 | **Test** | the test's number |
 | **Status** | `OK`, `WARNING`, `ERROR`, coloured accordingly |
-| **Time** | what your program used, and the limit beside it |
+| **Time** | the processor time your program used, and the limit beside it |
 | **Memory** | the same, in MiB |
 | **Result** | the points for that test, against its maximum |
 | **Comments** | why it failed, and the checker's own note |
 
 Time and memory turn amber past half the limit and red at or over it.
+
+**Time is processor time, not how long you waited.** It is what the machine
+spent running your program, so starting the container that ran it is not charged
+to you and neither is waiting. Two consequences follow, and both are deliberate:
+a program that sleeps, or that blocks waiting for something, spends none of its
+limit — and a program that uses several threads spends the limit faster, because
+the time of every thread is added together.
+
+Waiting is not free without end. A submission still running long after its limit
+is stopped and marked *Time limit*, the same as one that computed too long; the
+comment says which.
 
 The **Comments** column leads with the reason, in the same words every time, so
 a column of failures can be read straight down: *Wrong answer*, *Time limit*,

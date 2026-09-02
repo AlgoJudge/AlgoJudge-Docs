@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
 source: en/install/requirements.mdx
-sourceSha256: f66b94746709ea2a91e1936018a07970c6e17b70b4b7261def5f1d2ae9424fcf
+sourceSha256: a1cd1f6493e5f7f1c5414f19a0557655b7ecf13e79698bd41672273b11bdb8bc
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -21,26 +21,34 @@ Nie chodzi o szczelność sandboxa: **v1 egzekwuje limity całkowicie poprawnie.
 Kontener zadania, który przekroczy limit pamięci, zostaje zabity i zgłoszony
 jako `OOMKilled`, a cały zestaw testów adwersaryjnych przechodzi.
 
-v1 nie potrafi natomiast **uczciwie raportować**. `memory.peak` i `cpu.stat` to
-interfejsy v2, a w v1 nie ma odpowiednika, który powiedziałby prawdę o procesie,
-który już się zakończył. Odmowa Runnera brzmi dokładnie tak:
+v1 nie potrafi natomiast **mierzyć**. `memory.peak` i `cpu.stat` to interfejsy
+v2, a w v1 nie ma odpowiednika, który powiedziałby prawdę o procesie, który już
+się zakończył. Odmowa Runnera brzmi dokładnie tak:
 
-> limity są egzekwowane na v1, ale szczytu pamięci i czasu procesora nie da się
-> zmierzyć uczciwie, a liczba pokazywana uczestnikowi obok werdyktu musi być
-> prawdziwa
+> the limits are enforced on v1, but a time limit is decided on processor time
+> read from cpu.stat, which is a v2 interface — so what cannot be done here is
+> reach a verdict at all
 
-To cały powód. Te liczby pokazujemy obok werdyktu, a uczestnik, który dopasowuje
-rozwiązanie do limitu pamięci, właśnie na nich się opiera.
+**Ta ostatnia część to cały powód i od 2026-09-02 waży znacznie więcej.** Limit
+czasu był wcześniej czasem zegarowym, który Runner mierzył sam; cgroup dawała mu
+szczyt pamięci i czas procesora do *pokazania* obok werdyktu. Limit czasu jest
+teraz czasem procesora, więc Runner, który nie potrafi odczytać cgroup, nie
+potrafi wydać werdyktu — odmowa nie dotyczy już brakującej liczby.
 
-Jest obejście: `AJ_Sandbox__AllowCgroupV1`. Powstało, bo maszyna programisty to
+Jest obejście: `AJ_Sandbox__AllowUnmeasured`. Powstało, bo maszyna programisty to
 często Docker Desktop, który wciąż może raportować v1, a inaczej stos
-deweloperski w ogóle by nie wstał. Gdy je ustawisz, Runner przy każdym starcie
-loguje na poziomie `ERROR`:
+deweloperski w ogóle by nie wstał. **Sprawia jednak tylko tyle, że proces
+wstaje**: taki Runner zarejestruje się, odpowie na protokół, a potem każde
+przejęte zadanie zakończy awarią infrastruktury. Gdy je ustawisz, Runner przy
+każdym starcie loguje na poziomie `ERROR`:
 
 ```
-STARTING BELOW SPECIFICATION — … Times and memory reported beside a verdict
-on this host are not to be trusted.
+STARTING BELOW SPECIFICATION — … A time limit is decided on processor time read
+from this host's cgroups, so this Runner registers and answers the protocol and
+then fails every job it claims.
 ```
+
+`AJ_Sandbox__AllowCgroupV1` to jego stara nazwa i nadal jest czytana.
 
 <Callout type="warn" title="Tego obejścia nie da się zgłosić do panelu">
 `MachineDto` to struktura zamknięta i pomija każde pole, którego sama nie
@@ -49,7 +57,7 @@ dokładnie jak każdy inny. Mówi o tym wyłącznie jego własny log. Nie ustawi
 tego w instalacji, z której korzysta ktokolwiek poza Tobą.
 </Callout>
 
-### Szczyt pamięci wymaga jeszcze sterownika `cgroupfs`
+### Sterownik `cgroupfs` i zapisywalne drzewo cgroup
 
 Nawet na v2 Runner mierzy szczyt okrężnie: tworzy własną cgroup, uruchamia w
 niej każdy kontener zadania przez `--cgroup-parent` i odczytuje rodzica, kiedy

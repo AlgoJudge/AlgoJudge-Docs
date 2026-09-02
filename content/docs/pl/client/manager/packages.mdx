@@ -2,7 +2,7 @@
 title: Paczki
 description: Co dostaje Runner i skąd zadanie bierze swoje testy i limity.
 source: en/client/manager/packages.mdx
-sourceSha256: 0853181834a882305c602ec2fdbf879ddf7d7fbc83924bcf07463f8023a21520
+sourceSha256: 739f111cdffd372fa5852f8ce2c4c7b8016314b07d2e2b32dfa88dd2b48d30a3
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -38,7 +38,7 @@ package.zip
 | W `config.yml` | Co mówi |
 |---|---|
 | `type` | jaki to format. Runner, który nie zna wersji, odmawia paczki, zamiast zgadywać |
-| `limits.timeMs` | milisekundy |
+| `limits.timeMs` | milisekundy **czasu procesora** — użytkownika plus systemowego, dla wszystkiego, co uruchomi zgłoszenie. Nie jest to czas oczekiwania uczestnika: uruchomienie kontenera go nie obciąża, tak samo jak czekanie |
 | `limits.memoryBytes` | **bajty, wszędzie.** W całym produkcie nie ma drugiej jednostki pamięci |
 | `languages` | w czym wolno zgłaszać. Puste znaczy, że paczka nic nie narzuca, a wtedy wolno wszystko, co Runner umie zbudować |
 | `overrideLimits` | limity na język, kluczem jest rodzina (`cpp`, `python`) albo jeden toolchain (`pypy3`). Tutaj zapisujesz, że Python jest wolniejszy |
