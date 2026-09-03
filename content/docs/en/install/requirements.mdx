@@ -72,7 +72,7 @@ start and chooses; **neither driver needs the daemon reconfigured.**
 | How many | one per run, removed afterwards | one per Runner, for its whole life |
 | A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
 | A run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run and measured from what the slice already held, which needs **Linux 6.8** |
-| Kernel | 5.19 and later | 5.19 to judge, 6.8 to report a peak |
+| Kernel | 5.19 and later | 5.19 to judge, **6.12** to report a peak |
 
 Requiring `cgroupfs` was a host requirement until 2026-09-03, and the expensive
 one: an installation began by editing `/etc/docker/daemon.json` and restarting
@@ -98,7 +98,9 @@ host by itself, so the uid inside its container was never the boundary — and
 nothing it *starts* gains anything, because a job container still runs as
 `65534:65534` with every capability dropped.
 
-**One thing a `systemd` host below Linux 6.8 loses, and it is not the verdict.**
+**One thing a `systemd` host below Linux 6.12 loses, and it is not the verdict.**
+That excludes **Ubuntu 24.04**, which ships 6.8; **Debian 13** ships 6.12 and is
+fine.
 A time limit is decided on processor time, which is unaffected; what is absent
 is the peak-memory number beside it. The Runner says so at `ERROR` on every
 start.

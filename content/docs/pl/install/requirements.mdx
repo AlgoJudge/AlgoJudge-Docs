@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
 source: en/install/requirements.mdx
-sourceSha256: e50677ba91d89703ef6a822ce4da7c165956536c8d65254ed3a858d7655254dd
+sourceSha256: e14f6f757c5808da6e05403f8b23a2a475169c9c76301425552490765c96ded1
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -75,7 +75,7 @@ wymaga przestawiania demona.**
 | Ile ich jest | jedna na przebieg, potem usuwana | jedna na Runnera, przez cały czas jego działania |
 | Czas procesora przebiegu | odczyt z `cpu.stat` | przyrost `cpu.stat` w czasie przebiegu |
 | Szczyt pamięci przebiegu | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.8** |
-| Jądro | 5.19 i nowsze | 5.19, żeby oceniać; 6.8, żeby podać szczyt |
+| Jądro | 5.19 i nowsze | 5.19, żeby oceniać; **6.12**, żeby podać szczyt |
 
 Do 2026-09-03 `cgroupfs` był wymaganiem stawianym hostowi — i to najbardziej
 kosztownym, bo instalacja zaczynała się od edycji `/etc/docker/daemon.json` i
@@ -102,7 +102,9 @@ identyfikator użytkownika w jego kontenerze nigdy nie był granicą. To, co Run
 *uruchamia*, nic na tym nie zyskuje: kontener zadania nadal działa jako
 `65534:65534`, z odebranymi wszystkimi uprawnieniami (`capabilities`).
 
-**Host z systemd i jądrem starszym niż 6.8 traci jedno, i nie jest to werdykt.**
+**Host z systemd i jądrem starszym niż 6.12 traci jedno, i nie jest to werdykt.**
+Dotyczy to **Ubuntu 24.04**, które ma 6.8; **Debian 13** ma 6.12 i jest w
+porządku.
 O limicie czasu rozstrzyga czas procesora, na który nie ma to wpływu; brakuje
 jedynie liczby obok, czyli szczytu pamięci. Runner mówi o tym na poziomie
 `ERROR` przy każdym starcie.

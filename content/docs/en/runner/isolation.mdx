@@ -141,8 +141,8 @@ docker info --format '{{.CgroupDriver}}'
 | A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
 | A run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run, less what the slice already held |
 | To start and judge | a writable mount, and root | a readable mount, and nothing else |
-| To report a peak as well | the same | a writable mount, root, and Linux 6.8 |
-| Kernel | 5.19 and later | 5.19 to judge, 6.8 to report a peak |
+| To report a peak as well | the same | a writable mount, root, and Linux 6.12 |
+| Kernel | 5.19 and later | 5.19 to judge, **6.12** to report a peak |
 
 **One slice rather than one per run, and it is not a preference.** A slice
 systemd creates for a container is never collected: it stays loaded
