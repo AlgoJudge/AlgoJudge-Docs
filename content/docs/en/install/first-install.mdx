@@ -185,7 +185,7 @@ leaves commented out.
 Until a release exists, build the product repositories and tag them as
 published. `compose.yaml` then runs unmodified. **`-f` is relative to where you
 are standing, not to the build context** — the Server's line is the only one with
-a path in it, and it was wrong here until 2026-09-01.
+a path in it, which makes it the one worth checking.
 
 Rebuild rather than reuse a tag you already have: these are pinned by a moving
 tag, so a stale local `:1` is silently whatever you built last month.

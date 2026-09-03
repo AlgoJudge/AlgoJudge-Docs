@@ -255,8 +255,8 @@ literal `false` and always has, so the flag has never reached the polling
 behaviour from configuration. What it does reach is **one warning at start-up**,
 saying the trigger behind it is not built.
 
-It defaults to `false`, and defaulted to `true` until 2026-08-31. That old
-default cost nothing — it could not, given the above — but it described the
-Runner as doing something it has never done.
+It defaults to `false`. A default of `true` would cost nothing — it could not,
+given the above — but it would describe the Runner as doing something it does
+not do.
 
 Verdicts arrive on the polling interval alone, which is slower but not wrong.

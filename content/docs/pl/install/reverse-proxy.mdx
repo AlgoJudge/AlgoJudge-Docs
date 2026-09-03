@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: 19aa00a2c9cfd5e1888084abf16d271e6f3e4fb5539ca12c4b92a7dd40acb97d
+sourceSha256: dc8efca8eeff39b500433fb46b8b8884cb16152cdf5be967dc8e46c98718cd9d
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -125,8 +125,8 @@ nagłówek nie znikał na odpowiedziach błędu — czyli dokładnie na tych, kt
 najłatwiej wywołać atakującemu.
 
 `X-Frame-Options` to celowo `SAMEORIGIN`, a nie `DENY` — tyle że **nie obejmuje
-tego przypadku LTI, dla którego został wybrany**, a ta strona twierdziła inaczej
-do 2026-09-01. `SAMEORIGIN` pozwala osadzić stronę tylko wtedy, gdy osadza ją
+tego przypadku LTI, dla którego został wybrany**. `SAMEORIGIN` pozwala osadzić
+stronę tylko wtedy, gdy osadza ją
 **to samo origin**. Przy uruchomieniu LTI osadza ją LMS, więc Moodle pod
 `moodle.example.edu`, który osadza tę instalację pod `algojudge.example.edu`,
 zostanie odrzucony dokładnie tak samo, jak odrzuciłby go `DENY`. Zmierzone
