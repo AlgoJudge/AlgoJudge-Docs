@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
 source: en/install/requirements.mdx
-sourceSha256: a1cd1f6493e5f7f1c5414f19a0557655b7ecf13e79698bd41672273b11bdb8bc
+sourceSha256: e50677ba91d89703ef6a822ce4da7c165956536c8d65254ed3a858d7655254dd
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -57,24 +57,55 @@ dokładnie jak każdy inny. Mówi o tym wyłącznie jego własny log. Nie ustawi
 tego w instalacji, z której korzysta ktokolwiek poza Tobą.
 </Callout>
 
-### Sterownik `cgroupfs` i zapisywalne drzewo cgroup
+### Dowolny sterownik cgroup i zapisywalne drzewo
 
-Nawet na v2 Runner mierzy szczyt okrężnie: tworzy własną cgroup, uruchamia w
-niej każdy kontener zadania przez `--cgroup-parent` i odczytuje rodzica, kiedy
-dziecko już zniknęło — bo API środowiska uruchomieniowego nie raportuje szczytu
-dla kontenera, którego cgroup zniknęła w chwili wyjścia.
+Nawet na v2 liczby zbiera się okrężnie. Sandbox uruchamiany jest **w cgroup,
+która go przeżyje**, przez `--cgroup-parent`, i to ją odczytujemy, kiedy dziecka
+już nie ma — bo API środowiska uruchomieniowego nie podaje szczytu, a własna
+cgroup kontenera znika w chwili, w której kończy się jego proces.
 
-Zepsuć to mogą dwie sytuacje i żadna nie zatrzymuje oceniania:
+To, czym jest ta cgroup, zależy od sterownika cgroup w demonie. Runner pyta o
+niego przy starcie i sam wybiera sposób pomiaru; **żaden ze sterowników nie
+wymaga przestawiania demona.**
 
-- **sterownik cgroup `systemd`**, gdzie rodzic cgroup jest nazwą slice’a, a nie
-  ścieżką. Runner loguje `peak memory will not be measured: a cgroup parent is
-  only a path under the cgroupfs driver`;
-- **system plików cgroup bez prawa zapisu**. Utworzenie katalogu w zamontowanym
-  `cgroup2` wymaga prawa zapisu. Runner loguje `peak memory will not be
-  measured: this Runner cannot create a cgroup`.
+| | `cgroupfs` | `systemd` |
+|---|---|---|
+| Gdzie jest domyślny | Docker Desktop | praktycznie każdy linuksowy serwer z systemd |
+| Kto tworzy cgroup | Runner | systemd, kiedy poprosi go o to demon |
+| Ile ich jest | jedna na przebieg, potem usuwana | jedna na Runnera, przez cały czas jego działania |
+| Czas procesora przebiegu | odczyt z `cpu.stat` | przyrost `cpu.stat` w czasie przebiegu |
+| Szczyt pamięci przebiegu | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.8** |
+| Jądro | 5.19 i nowsze | 5.19, żeby oceniać; 6.8, żeby podać szczyt |
 
-W obu przypadkach ocenianie idzie dalej, a werdykt jest poprawny; brakuje samego
-szczytu.
+Do 2026-09-03 `cgroupfs` był wymaganiem stawianym hostowi — i to najbardziej
+kosztownym, bo instalacja zaczynała się od edycji `/etc/docker/daemon.json` i
+restartu demona. Jeśli taki wpis gdzieś został, nie szkodzi.
+
+Jednego i drugiego dotyczą natomiast te same trzy warunki, a `AlgoJudge-Ops`
+zapewnia je wszystkie:
+
+```
+-v /sys/fs/cgroup:/sys/fs/cgroup     # z prawem zapisu
+--cgroupns=host                      # w Compose: `cgroup: host`
+--user 0:0                           # katalogi tego drzewa należą do roota
+```
+
+Każdy z backendów potrzebuje ich w innym stopniu i warto wiedzieć, w jakim.
+`cgroupfs` tworzy cgroup, więc bez zapisywalnego montażu i roota Runner **odmawia
+uruchomienia**. `systemd` niczego nie tworzy, tylko czyta, więc uruchamia się i
+ocenia tak czy inaczej — te dwa warunki dają mu wyłącznie **liczbę szczytu
+pamięci**. Sprawdzone pomiarem na wszystkich czterech kombinacjach, 2026-09-03.
+
+Root brzmi groźniej, niż jest. Runner i tak trzyma gniazdo środowiska
+uruchomieniowego kontenerów, co samo w sobie odpowiada rootowi na hoście, więc
+identyfikator użytkownika w jego kontenerze nigdy nie był granicą. To, co Runner
+*uruchamia*, nic na tym nie zyskuje: kontener zadania nadal działa jako
+`65534:65534`, z odebranymi wszystkimi uprawnieniami (`capabilities`).
+
+**Host z systemd i jądrem starszym niż 6.8 traci jedno, i nie jest to werdykt.**
+O limicie czasu rozstrzyga czas procesora, na który nie ma to wpływu; brakuje
+jedynie liczby obok, czyli szczytu pamięci. Runner mówi o tym na poziomie
+`ERROR` przy każdym starcie.
 
 ## Pięć narzędzi powłoki
 
@@ -111,9 +142,11 @@ ograniczyć.
 
 ## Grupa, do której należy gniazdo Dockera
 
-Na hoście z Runnerem `DOCKER_GID` musi być grupą, która jest właścicielem
-`/var/run/docker.sock`. Obraz Runnera działa nieuprzywilejowany i sięga do
-demona wyłącznie przez tę grupę.
+Na hoście z Runnerem `DOCKER_GID` powinien być grupą, która jest właścicielem
+`/var/run/docker.sock`. Od 2026-09-03 nic już od tego nie zależy: usługa Runnera
+działa jako root, żeby móc mierzyć, a root otwiera gniazdo niezależnie od tego,
+do jakich grup należy. Ustaw ją mimo to poprawnie — będzie znów potrzebna, jeśli
+usługa kiedykolwiek wróci do działania bez uprawnień roota.
 
 ```bash
 getent group docker | cut -d: -f3
@@ -122,5 +155,6 @@ getent group docker | cut -d: -f3
 Na Docker Desktop gniazdo należy do `root:root`, więc jest to `0`.
 `preflight.sh` odczytuje prawdziwy numer — pytając kontener, bo na Docker Desktop
 i pod WSL gniazdo widziane przez tę powłokę nie jest tym, które obsługuje demon —
-i odmawia, jeśli Twój się nie zgadza. Zła wartość daje `Permission denied (os
-error 13)` z głębi klienta HTTP, nie nazywając ani gniazda, ani grupy.
+i ostrzega, jeśli Twój się nie zgadza. W instalacji, w której ktoś zmienił
+`compose.yaml` z powrotem na Runnera bez roota, zła wartość daje `Permission
+denied (os error 13)` z głębi klienta HTTP, nie nazywając ani gniazda, ani grupy.

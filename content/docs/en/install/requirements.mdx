@@ -55,23 +55,53 @@ panel. The only place it says so is its own log. Do not set this on an
 installation anybody else uses.
 </Callout>
 
-### The `cgroupfs` driver, and a writable cgroup tree
+### Either cgroup driver, and a writable cgroup tree
 
-Even on v2, the Runner measures a peak by creating a cgroup of its own, starting
-each job container underneath it with `--cgroup-parent`, and reading the parent
-after the child is gone — because the runtime API reports no peak for a
-container whose cgroup was destroyed the moment it exited.
+Even on v2, the numbers come out sideways. The sandbox is started **under a
+cgroup that outlives it**, with `--cgroup-parent`, and that cgroup is read once
+the child is gone — because the runtime API reports no peak, and a container's
+own cgroup is destroyed the moment its process exits.
 
-Two things can stop that working, and neither stops evaluation:
+What that cgroup is depends on the daemon's cgroup driver. The Runner asks at
+start and chooses; **neither driver needs the daemon reconfigured.**
 
-- **the `systemd` cgroup driver**, where a cgroup parent is a slice name rather
-  than a path. The Runner logs `peak memory will not be measured: a cgroup
-  parent is only a path under the cgroupfs driver`;
-- **a cgroup filesystem it cannot write to**. Creating a directory under a
-  mounted `cgroup2` needs write permission. The Runner logs `peak memory will
-  not be measured: this Runner cannot create a cgroup`.
+| | `cgroupfs` | `systemd` |
+|---|---|---|
+| Where it is the default | Docker Desktop | virtually every systemd Linux host |
+| Who creates the cgroup | the Runner | systemd, when the daemon asks it |
+| How many | one per run, removed afterwards | one per Runner, for its whole life |
+| A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
+| A run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run and measured from what the slice already held, which needs **Linux 6.8** |
+| Kernel | 5.19 and later | 5.19 to judge, 6.8 to report a peak |
 
-In both cases the run proceeds and the verdict is correct; the peak is absent.
+Requiring `cgroupfs` was a host requirement until 2026-09-03, and the expensive
+one: an installation began by editing `/etc/docker/daemon.json` and restarting
+the daemon. A line of that kind still in place does no harm.
+
+What both need, and `AlgoJudge-Ops` supplies all three:
+
+```
+-v /sys/fs/cgroup:/sys/fs/cgroup     # writable
+--cgroupns=host                      # `cgroup: host` in Compose
+--user 0:0                           # the tree's directories are root's
+```
+
+The two backends do not need them equally, and it is worth knowing which.
+`cgroupfs` creates a cgroup, so without a writable mount and root the Runner
+**refuses to start**. `systemd` creates nothing and only reads, so it starts and
+judges either way; what those two buy there is the **peak-memory number**.
+Measured on all four combinations, 2026-09-03.
+
+Root sounds worse than it is: the
+Runner holds the container runtime's socket, which is root-equivalent on the
+host by itself, so the uid inside its container was never the boundary — and
+nothing it *starts* gains anything, because a job container still runs as
+`65534:65534` with every capability dropped.
+
+**One thing a `systemd` host below Linux 6.8 loses, and it is not the verdict.**
+A time limit is decided on processor time, which is unaffected; what is absent
+is the peak-memory number beside it. The Runner says so at `ERROR` on every
+start.
 
 ## Five shell tools
 
@@ -108,9 +138,11 @@ daemon can bound them.
 
 ## The group that owns the Docker socket
 
-On a host running a Runner, `DOCKER_GID` must be the group that owns
-`/var/run/docker.sock`. The Runner image runs unprivileged and reaches the daemon
-only through that group.
+On a host running a Runner, `DOCKER_GID` should be the group that owns
+`/var/run/docker.sock`. It stopped being load-bearing on 2026-09-03: the runner
+service runs as root so that it can measure, and root opens the socket whatever
+groups it is in. Set it correctly anyway — it is what the service would need
+again if it ever went back to running unprivileged.
 
 ```bash
 getent group docker | cut -d: -f3
@@ -118,6 +150,7 @@ getent group docker | cut -d: -f3
 
 On Docker Desktop the socket is `root:root`, so it is `0`. `preflight.sh` reads
 the real number — by asking a container, because on Docker Desktop and under WSL
-the socket this shell can see is not the one the daemon serves — and refuses if
-yours disagrees. A wrong value produces `Permission denied (os error 13)` from
-deep inside an HTTP client, naming neither the socket nor the group.
+the socket this shell can see is not the one the daemon serves — and warns if
+yours disagrees. On an installation whose `compose.yaml` has been edited back to
+an unprivileged Runner, a wrong value produces `Permission denied (os error 13)`
+from deep inside an HTTP client, naming neither the socket nor the group.

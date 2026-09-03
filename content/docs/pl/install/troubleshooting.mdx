@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 6ec1f811de6b7a3b58838977b78374a2b1df49ba03dd64bf47af1d0f67a313bd
+sourceSha256: 1a19572eeb5bbf95d2c1a1a84c58745cae60ab2b95821b0125ad7d17f016896b
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -189,21 +189,61 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g'
 ```
 
 Na Docker Desktop to `0`; na hoście linuksowym to grupa `docker`. `preflight.sh`
-uruchamia dokładnie to i odmawia przy niezgodności — pytając kontener, a nie
+uruchamia dokładnie to i ostrzega przy niezgodności — pytając kontener, a nie
 Twoją powłokę, bo pod Docker Desktop i WSL gniazdo widziane przez tę powłokę nie
-jest tym, które obsługuje demon. Gdy to jest przyczyną, Runner zawodzi przy
+jest tym, które obsługuje demon. Odkąd usługa Runnera działa jako root, nie może
+to już być przyczyną; spotkasz ją jeszcze w instalacji sprzed 2026-09-03 albo
+takiej, w której ktoś zmienił `compose.yaml` — wtedy Runner zawodzi przy
 **starcie** i nigdy nie bierze żadnego zlecenia.
 
-**Druga: `RUNNER_WORK_DIR` należy do kogoś innego.** Compose tworzy brakujący
-katalog montowany z hosta **jako root, z prawami 0755**, a Runner działa jako
-uid **65532**. Gniazdo działa wtedy bez zarzutu, Runner rejestruje się, bierze
-zlecenie — i każde bez wyjątku zawodzi natychmiast, co właśnie odróżnia te dwie
-przyczyny.
+**Druga: kontener zadania nie potrafi odczytać `RUNNER_WORK_DIR`.** Runner
+zapisuje tam pliki zgłoszenia jako root, a każdy kontener zadania montuje ten
+katalog tylko do odczytu i czyta go jako uid **65534**. Katalog ręcznie zamknięty
+przed innymi przechodzi próbę Runnera i nie przechodzi próby zadania, więc
+gniazdo działa bez zarzutu, Runner rejestruje się, bierze zlecenie — i każde bez
+wyjątku zawodzi natychmiast, co właśnie odróżnia te dwie przyczyny.
 
 ```bash
-sudo mkdir -p /srv/algojudge/runner-work
-sudo chown 65532:65532 /srv/algojudge/runner-work
+sudo chmod 755 /srv/algojudge/runner-work
 ```
+
+## Każde zlecenie zawodzi, a Runner napisał coś o cgroup
+
+O limicie czasu rozstrzyga **czas procesora**, odczytany z cgroup, w której
+uruchamiany jest sandbox. Runner, który nie potrafi jej odczytać, nie ocenia bez
+niej — to komunikat ze startu, a nie z pojedynczego zlecenia:
+
+```bash
+docker compose logs runner | head -40
+```
+
+| Co mówi | Co zrobić |
+|---|---|
+| cgroup w wersji 1 | host wstaje z hierarchią hybrydową. Dopisz `systemd.unified_cgroup_hierarchy=1` do wiersza poleceń jądra i zrestartuj maszynę |
+| sterownik cgroup, którego nie zna | `docker info --format '{{.CgroupDriver}}'` musi wypisać `cgroupfs` albo `systemd`. Cokolwiek innego znaczy, że cgroup są wyłączone |
+| nie potrafi odczytać hierarchii | ktoś zmienił `compose.yaml`: brakuje montażu `/sys/fs/cgroup`, `cgroup: host` albo `user: "0:0"` w usłudze runnera |
+
+**Oba sterowniki cgroup działają i żaden nie wymaga przestawiania demona.** Do
+2026-09-03 Runner wymagał `cgroupfs`, a `systemd` jest domyślny niemal wszędzie,
+więc instalacja z tamtego czasu może nadal mieć wpis `native.cgroupdriver` w
+`/etc/docker/daemon.json`. Nie szkodzi.
+
+## Werdykty są poprawne, ale nie ma pomiaru pamięci
+
+Zdarza się to wyłącznie na hoście ze sterownikiem cgroup **`systemd`** i Runner
+mówi o tym na poziomie `ERROR` przy każdym starcie. Jedna slice obsługuje tam
+wszystkie przebiegi, więc szczyt dla pojedynczego przebiegu bierze się z
+wyzerowania `memory.peak` — interfejsu jądra, który pojawił się w **Linuksie
+6.8**. O limicie czasu rozstrzyga czas procesora, więc każdy werdykt pozostaje w
+mocy.
+
+```bash
+uname -r
+```
+
+Na starszym jądrze albo się z tym pogódź, albo daj demonowi sterownik
+`cgroupfs`, gdzie szczyt pochodzi ze świeżej cgroup na każdy przebieg i nie
+wymaga niczego poza Linuksem 5.19.
 
 ## nginx nie startuje
 
