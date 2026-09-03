@@ -63,18 +63,22 @@ Docker daemon, and **a path the daemon cannot open becomes an empty directory
 rather than an error**. Every submission then runs against nothing and no test
 fails visibly. `preflight.sh` refuses a relative one for that reason.
 
-**Make it yourself, and give it to uid 65532**, before the first start:
+**Make it yourself before the first start**, or let Compose make it:
 
 ```bash
 sudo mkdir -p /srv/algojudge/runner-work
-sudo chown 65532:65532 /srv/algojudge/runner-work
 ```
 
-Compose creates a missing bind-mount source as **root, mode 0755**, and the
-Runner runs unprivileged. It then starts, reaches the daemon, registers, claims a
-job — and fails every one of them with `Permission denied (os error 13)`, the
-same sentence a wrong `DOCKER_GID` produces. `preflight.sh` probes the directory
-separately and says which of the two it is.
+Compose creates a missing bind-mount source as **root, mode 0755**, which is
+what this needs: the Runner writes there as root, and every job container mounts
+it read-only and reads it as uid **65534**. A directory locked down by hand
+passes for the Runner and fails for the job — every submission then fails with
+`Permission denied (os error 13)`. `preflight.sh` probes both halves, writing as
+root and reading back as 65534, and says which one failed.
+
+*This asked for `chown 65532:65532` until 2026-09-03, when the runner service
+started running as root so that it could measure. That ownership still works and
+is simply no longer needed.*
 
 Two more worth reading before the first start:
 

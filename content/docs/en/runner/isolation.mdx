@@ -122,6 +122,50 @@ protocol, and fails every job it claims. It shouts at `ERROR` on every start, an
 [Configuration](/en/runner/configuration) records the trap in how it is read.
 `AJ_Sandbox__AllowCgroupV1` is the old name for it and is still read.
 
+### Two ways of getting the numbers, and the driver picks
+
+The sandbox is started **under a cgroup that outlives it** and that cgroup is
+read once the child is gone. What it is depends on the daemon's cgroup driver,
+and the Runner asks at start:
+
+```bash
+docker info --format '{{.CgroupDriver}}'
+```
+
+| | `cgroupfs` | `systemd` |
+|---|---|---|
+| Where it is the default | Docker Desktop | virtually every systemd Linux host |
+| What the daemon is told | a path, `/algojudge/<run>` | a slice name, `algojudge-<fingerprint>.slice` |
+| Who creates the cgroup | the Runner | systemd, when the daemon asks it |
+| How many | one per run, removed afterwards | **one per Runner**, for its whole life |
+| A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
+| A run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run, less what the slice already held |
+| To start and judge | a writable mount, and root | a readable mount, and nothing else |
+| To report a peak as well | the same | a writable mount, root, and Linux 6.8 |
+| Kernel | 5.19 and later | 5.19 to judge, 6.8 to report a peak |
+
+**One slice rather than one per run, and it is not a preference.** A slice
+systemd creates for a container is never collected: it stays loaded
+indefinitely, and removing its directory does not release the unit. Two hundred
+of them cost 49 MB in pid 1, so a slice per test would cost some 37 MB per
+submission, permanently. Nothing the Runner can reach takes them away.
+
+That is what makes the systemd numbers differences rather than readings, and
+what makes **one run at a time** part of the arrangement: the Runner claims one
+job at a time and judges one test at a time, and a mutex holds the invariant so
+a second caller would wait rather than spoil both readings.
+
+<Callout type="warn" title="A slice is a name, and a dash in it is a level of nesting">
+`algojudge-a-b.slice` is not one slice named with two dashes; it is a slice
+inside `algojudge-a.slice` inside `algojudge.slice`, and systemd creates every
+level. So the Runner's instance id is flattened before it becomes part of a unit
+name.
+</Callout>
+
+Requiring `cgroupfs` was a host requirement until 2026-09-03 — and the expensive
+one, because `systemd` is the default nearly everywhere, so an installation
+began by editing `/etc/docker/daemon.json` and restarting the daemon.
+
 ## `linux/amd64` only
 
 That is not an oversight. cgroup v2 on amd64 is what the measurement rests on,

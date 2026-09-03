@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 6412f39645aa2f44651571cce294f5ef503b06098b768ad667ffd728a578dbcf
+sourceSha256: cf5069475721bd986f7d704315dcd4ce77a9700263c38a7a77ab0cf810b29fe1
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -68,20 +68,24 @@ katalogiem, nie błędem**. Każde zgłoszenie ocenia się wtedy na pustce i ża
 test nie zawodzi w widoczny sposób. Właśnie dlatego `preflight.sh` odrzuca
 ścieżkę względną.
 
-**Załóż ten katalog sam i oddaj go uidowi 65532**, zanim uruchomisz stos po raz
-pierwszy:
+**Załóż ten katalog sam** przed pierwszym uruchomieniem albo pozwól utworzyć go
+Compose:
 
 ```bash
 sudo mkdir -p /srv/algojudge/runner-work
-sudo chown 65532:65532 /srv/algojudge/runner-work
 ```
 
 Compose zakłada brakujący katalog montowany z hosta jako **root, z prawami
-0755**, a Runner działa bez uprawnień. Wtedy wstaje, dosięga demona, rejestruje
-się, bierze zlecenie — i każde z nich kończy się komunikatem
-`Permission denied (os error 13)`, czyli tym samym, który daje źle ustawiony
-`DOCKER_GID`. `preflight.sh` sprawdza ten katalog osobno i mówi, o które z dwojga
-chodzi.
+0755** — i o to właśnie chodzi: Runner zapisuje tu jako root, a każdy kontener
+zadania montuje ten katalog tylko do odczytu i czyta go jako uid **65534**.
+Katalog ręcznie zamknięty przed innymi przechodzi próbę Runnera, a nie przechodzi
+próby zadania, i wtedy każde zgłoszenie kończy się komunikatem `Permission denied
+(os error 13)`. `preflight.sh` sprawdza obie połowy — zapis jako root i odczyt
+jako 65534 — i mówi, która zawiodła.
+
+*Do 2026-09-03 była tu prośba o `chown 65532:65532`. Usługa Runnera działa od
+tamtej pory jako root, żeby móc mierzyć, więc tamten właściciel nadal działa, ale
+przestał być potrzebny.*
 
 Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
 

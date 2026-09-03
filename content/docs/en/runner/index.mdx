@@ -101,7 +101,8 @@ host](/en/runner/isolation):
 
 - a container runtime whose socket the Runner can reach — job containers are
   **siblings** of the Runner, never nested inside it;
-- **cgroup v2**, checked at start;
+- **cgroup v2**, checked at start, with either cgroup driver;
+- the host's cgroup tree, and **root** in its own container, to measure from it;
 - `linux/amd64`;
 - the four language images, without which it judges nothing;
 - outbound access to the Server, and nothing else.
