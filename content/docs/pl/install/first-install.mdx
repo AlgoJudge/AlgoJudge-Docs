@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: d63f1f84dda68bc87f46e37302745d1832230bde5b1abf02c30859954a6a62c9
+sourceSha256: 20327911bfd186e472b542d07823d0dfd60a712f682041b4f7597f6bef1ee772
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -205,8 +205,11 @@ miesiąc temu.
 docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
 docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
 docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
+# Kontekstem jest `images`, nie `images/$lang`: wszystkie cztery budują w nim
+# pośrednika pomiarowego z `images/shim`, więc musi się w nim znaleźć.
 for lang in gcc clang python pypy; do
-    docker build -t "ghcr.io/algojudge/lang-$lang:1" "AlgoJudge-Runner/images/$lang"
+    docker build -t "ghcr.io/algojudge/lang-$lang:1" \
+        -f "AlgoJudge-Runner/images/$lang/Dockerfile" AlgoJudge-Runner/images
 done
 
 # Tylko dla profilu sędziego zewnętrznego.

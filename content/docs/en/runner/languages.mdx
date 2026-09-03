@@ -127,6 +127,48 @@ images are the project's own and pinned rather than a stock compiler image that
 moves. A tag that moves means two submissions to the same problem were judged by
 two different compilers.
 
+## Building an image of your own
+
+`AJ_Sandbox__Image__*` will take any image, which is how you pin a compiler
+version we do not ship or add one to a fork. Four things are expected of it.
+
+| | What, and why |
+|---|---|
+| `/etc/algojudge-toolchain` | one line per compiler, whatever `--version` prints. The Runner reports it as a capability, and it is how two submissions to one problem can be shown to have met the same compiler |
+| `/out`, owned by `65534:65534` | where a build puts what it made. Part of the image because the container is unprivileged and cannot create a directory at the root of its own filesystem |
+| `USER 65534:65534` | the safe default, and the one a step that is not measured runs as |
+| `/usr/local/bin/aj-shim` | the measuring shim, below |
+
+### The shim, and how to get one
+
+A measured run is started as `aj-shim <input-file> <program> [args...]`. The shim
+becomes PID 1, opens the input file onto the submission's standard input, drops
+to `65534`, forks, and reports the child's own processor time and peak memory —
+see [Isolation](/en/runner/isolation) for what that is worth and why it is not
+trusted on its own.
+
+**Copy ours rather than writing one.** It is statically linked and depends on
+nothing in the image around it:
+
+```dockerfile
+COPY --from=ghcr.io/algojudge/lang-gcc:1.2.3 /usr/local/bin/aj-shim /usr/local/bin/aj-shim
+```
+
+Pin the same version as the Runner, for the reason the callout above gives about
+tags that move.
+
+<Callout type="info" title="An image without it still judges">
+Leave the shim out and nothing breaks: the report is absent, the reading from the
+cgroup stands on its own, and the container's own start is inside the measurement
+again — 33 to 74 ms of it, against limits that can be 100. The Runner says so
+once per image rather than once per submission.
+
+What you must not do is ship a *different* program under that name. The Runner
+reads what the report says; a shim that reports less than the program spent is a
+submission that beats the time limit, and one that reports more is a correct
+solution refused.
+</Callout>
+
 ## What decides which toolchains a problem allows
 
 Not the Runner. An assignment's configuration may list the languages it accepts,
