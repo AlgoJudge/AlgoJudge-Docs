@@ -102,6 +102,110 @@ A time limit is decided on processor time, which is unaffected; what is absent
 is the peak-memory number beside it. The Runner says so at `ERROR` on every
 start.
 
+## Cores and memory
+
+**A Runner judges one submission at a time**, and each test is pinned to a core
+so that a run is reproducible rather than a function of what else the host was
+doing. So the arithmetic is not a throughput calculation: **one Runner is one
+concurrent submission and one core in use**, and the question is only how many
+cores you can spare.
+
+Contention for a core costs wall clock and not verdicts — a limit is processor
+time, so two submissions sharing a core each accrue their own correctly and
+merely finish later. That is what makes more than half the cores defensible.
+
+| Component | Cores | Memory | Notes |
+|---|---|---|---|
+| Server | 1, shared with Postgres | 512 MiB | 228 MiB measured under judging load |
+| Postgres | shared with the Server | 512 MiB | 115 MiB measured; give it more if the installation is large |
+| Client | — | 32 MiB | nginx and a static bundle |
+| nginx, the edge | — | 32 MiB | |
+| External Runner | — | 64 MiB | it forwards to the external judge and waits on the network; it starts no containers |
+| **each Runner** | **1** | **0.6 GiB** | its own process, plus one sandbox container at a time |
+| the Docker daemon and the operating system | 1 | 750 MiB | not a rounding: several containers a second are created while judging |
+
+A Runner's 0.6 GiB is its process and the largest container it will hold — a
+build, capped at 512 MiB. It holds one at a time, but the budget has to be the
+largest.
+
+### A worked example: four Runners
+
+One Client, one Server, four Runners and one External Runner:
+
+| | Cores | Memory |
+|---|---|---|
+| four Runners | 4 | 2.4 GiB |
+| Server and Postgres | 1 | 1 GiB |
+| Client, edge, External Runner | — | 128 MiB |
+| daemon and operating system | 1 | 750 MiB |
+| **total** | **6** | **~4.3 GiB** |
+
+**Six cores and 8 GiB**, and the gap between 4.3 and 8 is not waste: it becomes
+page cache, and a problem whose tests are read once per submission and again for
+the next one is the difference between memory and a disk read per test.
+
+The rule underneath, for a size not in the table: **2 GiB of base, 0.6 GiB per
+Runner**, and one core per Runner on top of two for everything else.
+
+An identity deployment is not part of this stack — it is [its own
+installation](/en/install/identity) — but if you run one on the same host, a
+Keycloak or Authentik wants **another core and about 1 GiB**.
+
+<Callout type="warn" title="Physical cores, not vCPU">
+Two hyperthreads of one physical core share execution units. The measurement
+stays honest — processor time is billed to each correctly — but the work done per
+processor-second falls when the sibling is busy, so the same solution measures
+differently depending on what is beside it. For a judge that is a
+reproducibility problem, and it is why contest hosts commonly disable SMT.
+
+On a shared VPS the neighbour is invisible and nothing can be done about it.
+</Callout>
+
+<Callout type="info" title="Do not pin a Runner container to a subset of cores">
+It does not do what it looks like. The Runner rotates its pin over the cores it
+can see and passes the index straight through as a CPU number, so confining its
+container to `3-5` sends every submission to cores 0, 1 and 2 — the ones you were
+protecting. Leave a Runner all of them; collisions cost wall clock, not
+correctness.
+</Callout>
+
+Disk is covered under [backups](#disk-for-backups-ideally-not-the-databases)
+below. Beyond that a Runner keeps a package cache bounded at 10 GiB and the
+External Runner one bounded at 256 MiB.
+
+## What keeps it running
+
+Every service is `restart: unless-stopped`. **A container that exits for any
+reason is started again**, a crash included, and no supervisor of your own is
+needed: the Docker daemon is the supervisor.
+
+`unless-stopped` rather than `always`, and the difference is narrow: after a host
+restart, `always` brings back even a container you had deliberately stopped.
+`unless-stopped` respects the stop, which is what an operator taking a Runner out
+for maintenance wants.
+
+<Callout type="warn" title="The daemon has to start at boot, and that part is not ours">
+`restart: unless-stopped` only applies if `dockerd` itself comes up. Packages
+normally arrange it, but an installation whose daemon does not start at boot
+simply does not come back, and nothing says why:
+
+```bash
+systemctl is-enabled docker
+```
+</Callout>
+
+**Three things it does not do**, and each has a different answer:
+
+| | What happens |
+|---|---|
+| A service that **hangs** rather than exits | Nothing restarts it: a restart policy acts on exit. A hung Runner's *job* is recovered by the Server's lease — it expires and the job returns to the queue — but the Runner stays hung until somebody looks |
+| A container **crash-looping** | It is restarted for ever, with the delay growing to a minute. Nothing escalates and nothing tells you. A flapping container is the first thing to look for when an installation is up but does nothing |
+| A **failed health check** | Nothing. In Compose a health check reports and does not restart; that is an orchestrator's behaviour, not this one's |
+
+State survives a restart because the volumes are named. A Runner keeps its
+identity key across one, so it stays approved rather than arriving as a new
+Runner a manager has to admit again.
+
 ## Five shell tools
 
 `bash`, `openssl`, `find`, `du`, `df`. The scripts in `AlgoJudge-Ops` use

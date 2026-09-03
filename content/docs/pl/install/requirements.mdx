@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
 source: en/install/requirements.mdx
-sourceSha256: 74a73a425b70f30c5d839820e5e7875b3b6af22e1cf9b04751ece35ccad411e7
+sourceSha256: d8391c0ec81681e26a1aef20ff0518d258b45906a9a6b61d760a02a42033c895
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -106,6 +106,112 @@ porządku.
 O limicie czasu rozstrzyga czas procesora, na który nie ma to wpływu; brakuje
 jedynie liczby obok, czyli szczytu pamięci. Runner mówi o tym na poziomie
 `ERROR` przy każdym starcie.
+
+## Rdzenie i pamięć
+
+**Runner sądzi jedno zgłoszenie naraz**, a każdy test jest przypięty do rdzenia,
+żeby przebieg był powtarzalny, a nie zależny od tego, co akurat robił host.
+Rachunek nie dotyczy więc przepustowości: **jeden Runner to jedno równoległe
+zgłoszenie i jeden zajęty rdzeń**, a pytanie brzmi tylko, ile rdzeni możesz
+oddać.
+
+Walka o rdzeń kosztuje czas oczekiwania, a nie werdykty — limit jest czasem
+procesora, więc dwa zgłoszenia dzielące rdzeń naliczają swój czas poprawnie i po
+prostu kończą później. Dlatego oddanie ponad połowy rdzeni jest do obrony.
+
+| Składnik | Rdzenie | Pamięć | Uwagi |
+|---|---|---|---|
+| Server | 1, wspólny z Postgresem | 512 MiB | zmierzone 228 MiB pod obciążeniem sądzenia |
+| Postgres | wspólny z Serverem | 512 MiB | zmierzone 115 MiB; przy dużej instalacji daj więcej |
+| Client | — | 32 MiB | nginx i statyczne pliki |
+| nginx na brzegu | — | 32 MiB | |
+| External Runner | — | 64 MiB | przekazuje do zewnętrznego sędziego i czeka na sieć; nie uruchamia kontenerów |
+| **każdy Runner** | **1** | **0,6 GiB** | własny proces plus jeden kontener sandboksa naraz |
+| demon Dockera i system | 1 | 750 MiB | to nie jest zaokrąglenie: podczas sądzenia powstaje kilka kontenerów na sekundę |
+
+Te 0,6 GiB na Runnera to jego proces i największy kontener, jaki utrzyma —
+budowanie, ograniczone do 512 MiB. Utrzymuje jeden naraz, ale budżet musi
+wystarczyć na największy.
+
+### Przykład: cztery Runnery
+
+Jeden Client, jeden Server, cztery Runnery i jeden External Runner:
+
+| | Rdzenie | Pamięć |
+|---|---|---|
+| cztery Runnery | 4 | 2,4 GiB |
+| Server i Postgres | 1 | 1 GiB |
+| Client, brzeg, External Runner | — | 128 MiB |
+| demon i system | 1 | 750 MiB |
+| **razem** | **6** | **~4,3 GiB** |
+
+**Sześć rdzeni i 8 GiB**, a różnica między 4,3 a 8 nie jest zmarnowana — staje
+się pamięcią podręczną plików. Przy zadaniu, którego testy czyta się raz na
+zgłoszenie i znów przy następnym, to jest różnica między pamięcią a odczytem z
+dysku na każdy test.
+
+Dla rozmiaru spoza tabeli: **2 GiB podstawy i 0,6 GiB na Runnera**, plus
+jeden rdzeń na Runnera ponad dwa na całą resztę.
+
+Wdrożenie tożsamości nie należy do tego stosu — to [osobna
+instalacja](/pl/install/identity) — ale jeśli postawisz je na tym samym hoście,
+Keycloak albo Authentik potrzebuje **kolejnego rdzenia i około 1 GiB**.
+
+<Callout type="warn" title="Rdzenie fizyczne, nie vCPU">
+Dwa wątki jednego rdzenia fizycznego dzielą jednostki wykonawcze. Pomiar
+pozostaje uczciwy — czas procesora nalicza się każdemu osobno — ale praca
+wykonana w jednej sekundzie procesora maleje, gdy sąsiedni wątek jest zajęty.
+To samo rozwiązanie zmierzy się więc różnie, zależnie od tego, co siedzi obok.
+Dla sędziego to problem z powtarzalnością i dlatego maszyny zawodów zwykle mają
+SMT wyłączone.
+
+Na współdzielonym VPS-ie sąsiada nie widać i nie da się z tym nic zrobić.
+</Callout>
+
+<Callout type="info" title="Nie przypinaj kontenera Runnera do części rdzeni">
+To nie robi tego, na co wygląda. Runner rotuje przypięcie po rdzeniach, które
+widzi, i przekazuje sam indeks jako numer procesora — więc zamknięcie jego
+kontenera w `3-5` wyśle każde zgłoszenie na rdzenie 0, 1 i 2, czyli te, których
+broniłeś. Zostaw Runnerowi wszystkie; kolizje kosztują czas oczekiwania, a nie
+poprawność.
+</Callout>
+
+Dysk opisuje sekcja o [kopiach zapasowych](#dysk-na-kopie-najlepiej-nie-ten-od-bazy)
+poniżej. Poza tym Runner trzyma pamięć podręczną paczek ograniczoną do 10 GiB, a
+External Runner do 256 MiB.
+
+## Co wznawia usługi po awarii
+
+Każda usługa ma `restart: unless-stopped`. **Kontener, który zakończy się z
+jakiegokolwiek powodu, zostaje uruchomiony ponownie** — awaria też — i nie
+potrzebujesz do tego własnego nadzorcy: nadzorcą jest demon Dockera.
+
+`unless-stopped`, a nie `always`, i różnica jest wąska: po restarcie hosta
+`always` przywróci nawet kontener, który celowo zatrzymałeś. `unless-stopped`
+uszanuje to zatrzymanie, czego właśnie chce operator wyłączający Runnera na czas
+prac.
+
+<Callout type="warn" title="Demon musi wstać przy starcie systemu, a to już nie nasza część">
+`restart: unless-stopped` obowiązuje tylko wtedy, gdy `dockerd` w ogóle wstanie.
+Pakiety zwykle to załatwiają, ale instalacja, w której demon nie startuje przy
+boocie, po prostu nie wraca i nic nie powie dlaczego:
+
+```bash
+systemctl is-enabled docker
+```
+</Callout>
+
+**Trzech rzeczy to nie załatwia**, a każda ma inne rozwiązanie:
+
+| | Co się dzieje |
+|---|---|
+| Usługa, która **zawiesza się** zamiast zakończyć | Nic jej nie wznowi: polityka restartu reaguje na zakończenie. *Zadanie* zawieszonego Runnera odzyskuje dzierżawa Servera — wygasa i zadanie wraca do kolejki — ale sam Runner stoi, dopóki ktoś nie zajrzy |
+| Kontener **w pętli restartów** | Wznawia się w nieskończoność, z opóźnieniem rosnącym do minuty. Nic tego nie eskaluje i nic o tym nie powie. Kontener, który wciąż się restartuje, to pierwsza rzecz do sprawdzenia, gdy instalacja stoi, a nic nie robi |
+| **Nieudany healthcheck** | Nic. W Compose healthcheck informuje i nie restartuje; restartowanie po nim to zachowanie orkiestratora, nie tego stosu |
+
+Restart nie gubi stanu, bo wolumeny są nazwane. Runner zachowuje przez niego swój
+klucz tożsamości, więc pozostaje zatwierdzony, zamiast zgłosić się jako nowy,
+którego menedżer musi dopuścić od nowa.
 
 ## Pięć narzędzi powłoki
 
