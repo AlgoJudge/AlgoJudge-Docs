@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: cf5069475721bd986f7d704315dcd4ce77a9700263c38a7a77ab0cf810b29fe1
+sourceSha256: 48327060a9cccd05baeaed2a283eed6cf460923aa2a5164e8cf74383bf42c386
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -83,9 +83,8 @@ próby zadania, i wtedy każde zgłoszenie kończy się komunikatem `Permission 
 (os error 13)`. `preflight.sh` sprawdza obie połowy — zapis jako root i odczyt
 jako 65534 — i mówi, która zawiodła.
 
-*Do 2026-09-03 była tu prośba o `chown 65532:65532`. Usługa Runnera działa od
-tamtej pory jako root, żeby móc mierzyć, więc tamten właściciel nadal działa, ale
-przestał być potrzebny.*
+*`chown 65532:65532` też zadziała i nie jest potrzebny — usługa Runnera działa
+jako root, żeby móc mierzyć.*
 
 Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
 

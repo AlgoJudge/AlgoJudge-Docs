@@ -170,9 +170,8 @@ level. So the Runner's instance id is flattened before it becomes part of a unit
 name.
 </Callout>
 
-Requiring `cgroupfs` was a host requirement until 2026-09-03 — and the expensive
-one, because `systemd` is the default nearly everywhere, so an installation
-began by editing `/etc/docker/daemon.json` and restarting the daemon.
+Neither driver is a host requirement, and no daemon has to be reconfigured for
+either.
 
 ## `linux/amd64` only
 
