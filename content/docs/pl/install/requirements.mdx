@@ -201,16 +201,16 @@ systemctl is-enabled docker
 ```
 </Callout>
 
-**Trzech rzeczy to nie załatwia**, a każda ma inne rozwiązanie:
+**Trzech rzeczy to nie rozwiązuje**, a każda z nich ma inną odpowiedź:
 
 | | Co się dzieje |
 |---|---|
 | Usługa, która **zawiesza się** zamiast zakończyć | Nic jej nie wznowi: polityka restartu reaguje na zakończenie. *Zadanie* zawieszonego Runnera odzyskuje dzierżawa Servera — wygasa i zadanie wraca do kolejki — ale sam Runner stoi, dopóki ktoś nie zajrzy |
-| Kontener **w pętli restartów** | Wznawia się w nieskończoność, z opóźnieniem rosnącym do minuty. Nic tego nie eskaluje i nic o tym nie powie. Kontener, który wciąż się restartuje, to pierwsza rzecz do sprawdzenia, gdy instalacja stoi, a nic nie robi |
+| Kontener **w pętli restartów** | Wznawia się w nieskończoność, z opóźnieniem rosnącym do minuty. Nic tego nie eskaluje i nic o tym nie powie — a jest to pierwsza rzecz do sprawdzenia, gdy instalacja stoi, a nic nie robi |
 | **Nieudany healthcheck** | Nic. W Compose healthcheck informuje i nie restartuje; restartowanie po nim to zachowanie orkiestratora, nie tego stosu |
 
-Restart nie gubi stanu, bo wolumeny są nazwane. Runner zachowuje przez niego swój
-klucz tożsamości, więc pozostaje zatwierdzony, zamiast zgłosić się jako nowy,
+Restart nie gubi stanu, bo wolumeny są nazwane. Runner zachowuje klucz tożsamości, więc
+pozostaje zatwierdzony, zamiast zgłosić się jako nowy,
 którego menedżer musi dopuścić od nowa.
 
 ## Pięć narzędzi powłoki
