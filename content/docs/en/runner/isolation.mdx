@@ -76,6 +76,92 @@ The build step gets **no writable host path**. It writes to its own container
 layer and the artefact is read back through the runtime API. The alternative was
 opening a directory to every user on the host.
 
+## What a submission is charged for
+
+**The submission, and not the container it arrived in.** A time limit is
+processor time, and the obvious place to read that is the cgroup the container
+ran under. The obvious place is wrong on its own: a container that has run
+nothing of ours has already spent processor time getting there -- namespaces,
+mounts, an init process. Measured 2026-09-03 across all four language images on
+a Docker Desktop host, 40 runs: median 50 ms, worst 66 idle and 74 under load, and it barely
+moves with load because it is setup work rather than contention.
+
+Against a limit of 100 ms that is half the budget, spent before the participant's
+first instruction.
+
+So a small program called the **shim** is the container's entrypoint. It forks the
+submission, waits for it with `wait4`, and reports the accounting for that one
+child: processor time and peak memory, at microsecond resolution, of the program
+and nothing else.
+
+```
+the cgroup says   271 ms      the whole container
+the shim says     222 ms      the program
+                   49 ms      the container getting out of its own way
+```
+
+### Two instruments, and only one of them is trusted
+
+The shim's report leaves through the container's standard error, which the
+submission also holds. So it is treated as **untrusted and precise**, and the
+cgroup reading -- taken by the Runner on the host, where nothing inside can reach
+it -- is kept as **trusted and coarse**:
+
+```
+time = max( the shim's report,  the cgroup total − 120 ms )
+```
+
+An honest run is corrected exactly: the floor sits below its real cost, so the
+shim's figure wins. A forged report cannot take the reported time below the
+cgroup total less that constant, which is 120 ms -- above the worst floor ever
+measured, and the most a blanket subtraction would have given away anyway.
+
+Three things stand between a submission and a forged report, and each holds when
+the one before it does not:
+
+| | What it does |
+|---|---|
+| A per-run nonce | The report carries a value the submission cannot read. It is passed in the shim's environment, never in its arguments — `/proc/1/cmdline` is world-readable and `/proc/1/environ` is not, and the shim overwrites the bytes in place besides, because `unsetenv` does not touch what `/proc` reports |
+| The last line wins | Before reporting, the shim kills every other process in the PID namespace with `kill(-1)`. Not the process group: a child that called `setsid` has left the group and would outlive it. Nothing is then alive to write after the report |
+| The cgroup floor | The rule above, which needs neither of the other two to be true |
+
+### Memory follows the same split, with one difference
+
+Peak memory comes from the shim where there is one and from `memory.peak`
+otherwise. It needs no floor of its own: a memory limit is enforced by the
+kernel, which kills a container that passes it, so understating the figure buys
+a submission nothing. **The verdict is the cgroup's either way** -- `Memory
+limit exceeded` is decided by `memory.events`, never by what the report says.
+
+The shim's figure is the better one where both exist. It is the program's own
+resident peak, where `memory.peak` also carries the page cache of whatever the
+container read.
+
+### The submission does not run as root, and the shim does
+
+The container starts as root so the shim can put the submission back to
+`nobody` before handing over, and it keeps exactly two capabilities to do it:
+`SETUID` and `SETGID`. Everything else is dropped, `no-new-privileges` is set,
+the root filesystem is read-only and there is no network — the table further up
+is unchanged.
+
+Untrusted code never runs as root. The window in which root exists is the shim's
+own few dozen lines, before `execve`. The drop is verified rather than assumed:
+the shim checks that it cannot return to uid 0 and **refuses to start the
+submission** if it can, so a defect there is an infrastructure failure and never
+a submission with privileges.
+
+What the separation buys is one-directional, and that direction is the point: the
+submission cannot read the shim's environment, signal it, or trace it.
+
+<Callout type="info" title="An image without a shim still judges">
+A toolchain may point at an image of your own, and one built before this — or
+without it — is not refused. The report is simply absent, the cgroup reading
+stands on its own, and the container start is inside the number again. The Runner
+says so once per image rather than once per submission.
+</Callout>
+
+
 ## cgroup v2 is required, and is checked at start
 
 The Runner asks the **container runtime**, not the filesystem:
@@ -91,8 +177,9 @@ container, and what *it* sees is a different question from what the containers
 **The limits are enforced on cgroup v1** — measured, not assumed: a container
 over its memory limit is OOM-killed there and reported as such. What v1 cannot do
 is **measure honestly**. `memory.peak` and `cpu.stat` are v2 interfaces, and
-those two numbers are shown to a participant beside their verdict. A number that
-is sometimes wrong is worse than no number.
+they are the trusted half of the pair above -- the half a submission cannot
+reach, and so the half a limit ultimately rests on. A number that is
+sometimes wrong is worse than no number.
 
 ### What a host must satisfy
 
@@ -117,7 +204,7 @@ calls every host v1. Read the file and check that it is not empty.
 
 `AJ_Sandbox__AllowUnmeasured` starts anyway, for a development machine whose
 Docker still reports v1 — and **only starts**: a time limit is decided on
-processor time read from the cgroup, so such a Runner registers, answers the
+processor time floored by a reading from the cgroup, so such a Runner registers, answers the
 protocol, and fails every job it claims. It shouts at `ERROR` on every start, and
 [Configuration](/en/runner/configuration) records the trap in how it is read.
 `AJ_Sandbox__AllowCgroupV1` is the old name for it and is still read.
