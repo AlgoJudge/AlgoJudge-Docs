@@ -35,7 +35,7 @@ ran out of disk.
 | read-only root filesystem | writes go to a tmpfs or nowhere |
 | tmpfs `rw,noexec,nosuid` | scratch that cannot be executed from |
 | `--user 65534:65534` | never root, even inside |
-| `--memory` with `--memory-swap` **equal** | without the second the limit means nothing — the process swaps instead of being killed. A kill is told from two places, the runtime's `OOMKilled` and the kernel's own count in `memory.events`, and either is enough |
+| `--memory` with `--memory-swap` **equal** | without the second the limit means nothing — the process swaps instead of being killed. A kill is told from two places and either is enough: the runtime's `OOMKilled`, and the kernel's own `memory.events` — where it takes **both** `oom_kill` and `oom`, since the first counts kills by any OOM killer including the system one, and the second counts this cgroup reaching its own limit |
 | `--pids-limit` | a fork bomb hits a wall |
 | `--cpus` **and** `--cpuset-cpus` | capping CPU is not pinning it. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast — and the pin keeps a run reproducible and keeps processor time close to wall clock, which is what makes the deadline below mean anything |
 | wall clock = **three times the limit plus one second** | not a limit anybody is judged against. A time limit is processor time, so this reaps what is *not* spending any: one stuck in an uninterruptible syscall, or one that waits rather than computes |
