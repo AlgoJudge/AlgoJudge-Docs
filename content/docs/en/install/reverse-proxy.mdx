@@ -122,8 +122,8 @@ with `always` so the header is not omitted on error responses — which are
 exactly the ones an attacker can provoke most readily.
 
 `X-Frame-Options` is `SAMEORIGIN` rather than `DENY` on purpose — but **it does
-not cover the LTI case it was chosen for**, and this page said it did until
-2026-09-01. `SAMEORIGIN` permits framing only from the **same** origin. An LTI
+not cover the LTI case it was chosen for.** `SAMEORIGIN` permits framing only
+from the **same** origin. An LTI
 launch is framed by the LMS, so a Moodle at `moodle.example.edu` framing this
 installation at `algojudge.example.edu` is refused exactly as `DENY` would refuse
 it. Measured in a browser rather than deduced from the specification.

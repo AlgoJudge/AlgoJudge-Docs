@@ -38,10 +38,10 @@ them, which is what lets a problem type introduce a verdict without a Server
 release.
 
 <Callout type="warn" title="A submission that names no language is an infrastructure failure, never a guess">
-The language travels with the submission, and the Runner will not supply one. It
-used to default to C++, which was harmless while C++ was one of two languages and
-is not now: a submission arriving without a language would be compiled as C++20
-by GCC and reported as a compilation error in a language nobody chose.
+The language travels with the submission, and the Runner will not supply one.
+Defaulting to C++ would mean a submission arriving without one is compiled as
+C++20 by GCC and reported as a compilation error in a language nobody chose —
+harmless when C++ was one of two languages, and not with eighteen toolchains.
 
 An absent language means the job arrived incomplete. Reported as an
 infrastructure failure, the submission stays rejudgeable once that is fixed;

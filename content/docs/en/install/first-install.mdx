@@ -76,9 +76,8 @@ passes for the Runner and fails for the job — every submission then fails with
 `Permission denied (os error 13)`. `preflight.sh` probes both halves, writing as
 root and reading back as 65534, and says which one failed.
 
-*This asked for `chown 65532:65532` until 2026-09-03, when the runner service
-started running as root so that it could measure. That ownership still works and
-is simply no longer needed.*
+*`chown 65532:65532` also works and is not needed; the runner service runs as
+root so that it can measure.*
 
 Two more worth reading before the first start:
 
@@ -186,7 +185,7 @@ leaves commented out.
 Until a release exists, build the product repositories and tag them as
 published. `compose.yaml` then runs unmodified. **`-f` is relative to where you
 are standing, not to the build context** — the Server's line is the only one with
-a path in it, and it was wrong here until 2026-09-01.
+a path in it, which makes it the one worth checking.
 
 Rebuild rather than reuse a tag you already have: these are pinned by a moving
 tag, so a stale local `:1` is silently whatever you built last month.

@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: 4dc44d2d0b4e7f0e7d1c3fe3cbf0434de524e45e0455a9d1ebc6c80b4a4be889
+sourceSha256: b5dc8ed80c2347e2687e3246a6a58d0a538d3c02d1f8251207350b7dc45458b6
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -90,9 +90,9 @@ Runner nie obsługuje `SIGTERM` — ignoruje go i zostaje zabity. Jego zlecenie
 wraca do kolejki, gdy wygaśnie dzierżawa, obojętnie w której sekundzie zginął.
 
 Dlatego `stop_grace_period` **tylko kosztuje**, a niczego nie ratuje, i płaci się
-go przy każdym `down`, każdym `stop` i każdej aktualizacji. Wynosi `30s`; przy dawnych
-300s `docker compose down` trwał **302 sekundy** zamiast 32, a to czekanie
-niczego nie ratowało.
+go przy każdym `down`, każdym `stop` i każdej aktualizacji. Wynosi `30s`; przy
+domyślnych dla Compose 300s `docker compose down` trwa **302 sekundy** zamiast
+32, a to czekanie niczego nie ratuje.
 
 <Callout type="warn" title="Dwie rzeczy sprawiają, że krótszy czas nie dociera do istniejącej instalacji">
 **Docker zapisuje ten limit na kontenerze w chwili jego utworzenia**, więc `down`

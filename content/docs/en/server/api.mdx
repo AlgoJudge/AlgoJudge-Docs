@@ -84,10 +84,9 @@ product. The code is the Server's own word for what happened.
 ### A page past the end is not an error
 
 A list endpoint asked for a page beyond what it holds answers an **empty page**,
-not a failure. That includes an absurd one: `?page=2147483647` used to overflow
-the offset it was multiplied into, produce a negative number and answer `500`.
-Since 2026-08-31 the offset is clamped, and the answer is the empty page it
-always should have been.
+not a failure. That includes an absurd one: `?page=2147483647` would overflow
+the offset it is multiplied into and answer `500` on a negative number, so the
+offset is **clamped** and the answer is the empty page.
 
 ## The admin surface
 

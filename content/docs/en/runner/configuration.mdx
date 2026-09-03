@@ -162,9 +162,8 @@ a typo in `AJ_Runner__ProblemTypes` is accepted at start-up — the Runner decla
 the misspelt type, is handed nothing that matches it, and looks exactly like a
 Runner nobody has any work for.
 
-*There were three until 2026-09-02. An empty `AJ_Sandbox__CgroupRoot` used to be
-honoured, unlike every other `AJ_` variable, and ended all measurement without a
-word; it is now treated as unset, and a relative value is refused by name.*
+*An empty `AJ_Sandbox__CgroupRoot` is not one of them: it is treated as unset,
+and a relative value is refused by name.*
 
 Everything else that can be wrong shows up as a queue that never drains. When
 that happens, read [Tags and routing](/en/runner/routing) first.

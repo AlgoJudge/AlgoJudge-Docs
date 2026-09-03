@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 1a19572eeb5bbf95d2c1a1a84c58745cae60ab2b95821b0125ad7d17f016896b
+sourceSha256: d1045e6e01f99d0e951d4aeaaa75a798fab1d8b8de19a77432f62c7ce4a5cefc
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -191,10 +191,9 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g'
 Na Docker Desktop to `0`; na hoście linuksowym to grupa `docker`. `preflight.sh`
 uruchamia dokładnie to i ostrzega przy niezgodności — pytając kontener, a nie
 Twoją powłokę, bo pod Docker Desktop i WSL gniazdo widziane przez tę powłokę nie
-jest tym, które obsługuje demon. Odkąd usługa Runnera działa jako root, nie może
-to już być przyczyną; spotkasz ją jeszcze w instalacji sprzed 2026-09-03 albo
-takiej, w której ktoś zmienił `compose.yaml` — wtedy Runner zawodzi przy
-**starcie** i nigdy nie bierze żadnego zlecenia.
+jest tym, które obsługuje demon. Usługa Runnera działa jako root, więc jest to
+przyczyną tylko tam, gdzie ktoś usunął to z `compose.yaml` — wtedy Runner
+zawodzi przy **starcie** i nigdy nie bierze żadnego zlecenia.
 
 **Druga: kontener zadania nie potrafi odczytać `RUNNER_WORK_DIR`.** Runner
 zapisuje tam pliki zgłoszenia jako root, a każdy kontener zadania montuje ten
@@ -223,10 +222,9 @@ docker compose logs runner | head -40
 | sterownik cgroup, którego nie zna | `docker info --format '{{.CgroupDriver}}'` musi wypisać `cgroupfs` albo `systemd`. Cokolwiek innego znaczy, że cgroup są wyłączone |
 | nie potrafi odczytać hierarchii | ktoś zmienił `compose.yaml`: brakuje montażu `/sys/fs/cgroup`, `cgroup: host` albo `user: "0:0"` w usłudze runnera |
 
-**Oba sterowniki cgroup działają i żaden nie wymaga przestawiania demona.** Do
-2026-09-03 Runner wymagał `cgroupfs`, a `systemd` jest domyślny niemal wszędzie,
-więc instalacja z tamtego czasu może nadal mieć wpis `native.cgroupdriver` w
-`/etc/docker/daemon.json`. Nie szkodzi.
+**Oba sterowniki cgroup działają i żaden nie wymaga przestawiania demona.** Wpis
+`native.cgroupdriver` w `/etc/docker/daemon.json` nie jest ani potrzebny, ani
+szkodliwy.
 
 ## Werdykty są poprawne, ale nie ma pomiaru pamięci
 

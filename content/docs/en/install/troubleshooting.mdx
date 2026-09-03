@@ -182,9 +182,9 @@ On Docker Desktop that is `0`; on a Linux host it is the `docker` group.
 `preflight.sh` runs exactly this and warns if they disagree — asked of a
 container rather than of your shell, because under Docker Desktop and WSL the
 socket this shell can see is not the one the daemon serves. Since the runner
-service runs as root this can no longer be the cause; a stack installed before
-2026-09-03, or one whose `compose.yaml` has been edited, can still meet it, and
-then the Runner fails at **startup** and never reaches a job.
+service runs as root this is only a cause where `compose.yaml` has been edited
+to drop that, and then the Runner fails at **startup** and never reaches a
+job.
 
 **Two: a job container cannot read `RUNNER_WORK_DIR`.** The Runner writes a
 submission's files there as root, and every job container mounts the directory

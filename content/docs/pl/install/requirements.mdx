@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
 source: en/install/requirements.mdx
-sourceSha256: e14f6f757c5808da6e05403f8b23a2a475169c9c76301425552490765c96ded1
+sourceSha256: 74a73a425b70f30c5d839820e5e7875b3b6af22e1cf9b04751ece35ccad411e7
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -29,11 +29,10 @@ się zakończył. Odmowa Runnera brzmi dokładnie tak:
 > read from cpu.stat, which is a v2 interface — so what cannot be done here is
 > reach a verdict at all
 
-**Ta ostatnia część to cały powód i od 2026-09-02 waży znacznie więcej.** Limit
-czasu był wcześniej czasem zegarowym, który Runner mierzył sam; cgroup dawała mu
-szczyt pamięci i czas procesora do *pokazania* obok werdyktu. Limit czasu jest
-teraz czasem procesora, więc Runner, który nie potrafi odczytać cgroup, nie
-potrafi wydać werdyktu — odmowa nie dotyczy już brakującej liczby.
+**Ta ostatnia część to cały powód.** Limit czasu jest czasem procesora,
+odczytanym z cgroup, więc Runner, który nie potrafi jej odczytać, nie potrafi
+wydać werdyktu. Odmowa nie dotyczy liczby brakującej obok werdyktu, tylko samego
+werdyktu.
 
 Jest obejście: `AJ_Sandbox__AllowUnmeasured`. Powstało, bo maszyna programisty to
 często Docker Desktop, który wciąż może raportować v1, a inaczej stos
@@ -77,9 +76,8 @@ wymaga przestawiania demona.**
 | Szczyt pamięci przebiegu | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.8** |
 | Jądro | 5.19 i nowsze | 5.19, żeby oceniać; **6.12**, żeby podać szczyt |
 
-Do 2026-09-03 `cgroupfs` był wymaganiem stawianym hostowi — i to najbardziej
-kosztownym, bo instalacja zaczynała się od edycji `/etc/docker/daemon.json` i
-restartu demona. Jeśli taki wpis gdzieś został, nie szkodzi.
+Wpis `native.cgroupdriver` w `/etc/docker/daemon.json` nie jest ani potrzebny,
+ani szkodliwy.
 
 Jednego i drugiego dotyczą natomiast te same trzy warunki, a `AlgoJudge-Ops`
 zapewnia je wszystkie:
@@ -145,10 +143,10 @@ ograniczyć.
 ## Grupa, do której należy gniazdo Dockera
 
 Na hoście z Runnerem `DOCKER_GID` powinien być grupą, która jest właścicielem
-`/var/run/docker.sock`. Od 2026-09-03 nic już od tego nie zależy: usługa Runnera
-działa jako root, żeby móc mierzyć, a root otwiera gniazdo niezależnie od tego,
-do jakich grup należy. Ustaw ją mimo to poprawnie — będzie znów potrzebna, jeśli
-usługa kiedykolwiek wróci do działania bez uprawnień roota.
+`/var/run/docker.sock`, choć nic od tego nie zależy: usługa Runnera działa jako
+root, żeby móc mierzyć, a root otwiera gniazdo niezależnie od tego, do jakich
+grup należy. Ustaw ją mimo to poprawnie — będzie potrzebna, gdyby usługa
+działała bez uprawnień roota.
 
 ```bash
 getent group docker | cut -d: -f3

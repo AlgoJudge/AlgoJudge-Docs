@@ -328,10 +328,10 @@ running the installation it lives in.
 
 ### `system:administrator` is refused in an activity grant
 
-It is a bypass **only** in a system-scoped grant, and since 2026-08-31 writing it
-into an activity grant is refused outright rather than stored and ignored — the
-code is `grant.permission.scope`, and the message says the key is
-installation-wide and means nothing in an activity.
+It is a bypass **only** in a system-scoped grant. Writing it into an activity
+grant is refused outright rather than stored and ignored — the code is
+`grant.permission.scope`, and the message says the key is installation-wide and
+means nothing in an activity.
 
 The refusal is narrow on purpose. Several `problem:*` keys are declared global
 too and are equally inert in an activity grant, and they are **not** refused,

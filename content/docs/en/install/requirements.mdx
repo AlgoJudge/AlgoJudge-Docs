@@ -27,11 +27,9 @@ that has already exited. The Runner's refusal says exactly this:
 > read from cpu.stat, which is a v2 interface — so what cannot be done here is
 > reach a verdict at all
 
-**That last clause is the whole reason, and it grew teeth on 2026-09-02.** A time
-limit used to be the wall clock, which the Runner took itself; the cgroup gave it
-peak memory and processor time to *print* beside a verdict. A time limit is now
-processor time, so a Runner that cannot read the cgroup cannot judge — the
-refusal is no longer about a missing number.
+**That last clause is the whole reason.** A time limit is processor time, read
+from the cgroup, so a Runner that cannot read one cannot judge. The refusal is
+not about a number missing from beside a verdict; it is about the verdict.
 
 There is an override, `AJ_Sandbox__AllowUnmeasured`. It exists because a
 developer's machine is often Docker Desktop, which may still report v1, and the
@@ -74,9 +72,8 @@ start and chooses; **neither driver needs the daemon reconfigured.**
 | A run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run and measured from what the slice already held, which needs **Linux 6.8** |
 | Kernel | 5.19 and later | 5.19 to judge, **6.12** to report a peak |
 
-Requiring `cgroupfs` was a host requirement until 2026-09-03, and the expensive
-one: an installation began by editing `/etc/docker/daemon.json` and restarting
-the daemon. A line of that kind still in place does no harm.
+A `native.cgroupdriver` line in `/etc/docker/daemon.json` is neither needed nor
+harmful.
 
 What both need, and `AlgoJudge-Ops` supplies all three:
 

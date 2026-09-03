@@ -150,6 +150,14 @@ indefinitely, and removing its directory does not release the unit. Two hundred
 of them cost 49 MB in pid 1, so a slice per test would cost some 37 MB per
 submission, permanently. Nothing the Runner can reach takes them away.
 
+**One cgroup does outlive the Runner, deliberately.** Its home — the slice under
+`systemd`, the directory under `cgroupfs` — is never removed, because a Runner
+cannot: `rmdir` on a live slice is undone by systemd, and stopping the unit needs
+a D-Bus connection this Runner does not hold. The cost is one empty slice per
+Runner identity that has *judged* something, since the slice is created when a
+container first starts under it rather than when the Runner does. A reboot
+clears them; so does `systemctl stop 'algojudge-*.slice'`.
+
 That is what makes the systemd numbers differences rather than readings, and
 what makes **one run at a time** part of the arrangement: the Runner claims one
 job at a time and judges one test at a time, and a mutex holds the invariant so
@@ -162,9 +170,8 @@ level. So the Runner's instance id is flattened before it becomes part of a unit
 name.
 </Callout>
 
-Requiring `cgroupfs` was a host requirement until 2026-09-03 — and the expensive
-one, because `systemd` is the default nearly everywhere, so an installation
-began by editing `/etc/docker/daemon.json` and restarting the daemon.
+Neither driver is a host requirement, and no daemon has to be reconfigured for
+either.
 
 ## `linux/amd64` only
 
