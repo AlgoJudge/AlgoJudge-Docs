@@ -66,6 +66,30 @@ A Runner registers on every start. The identity is the key, so this does not
 produce a second Runner and does not need a second approval; **every field above
 is refreshed** — except one.
 
+<Callout type="warn" title="A registration for a key the Server already knows must be signed">
+It carries two more fields, `nonce` and `signature`, obtained and computed
+exactly as the handshake below does it: a nonce from `auth/challenge`, Ed25519
+over its UTF-8 bytes, base64, spent once.
+
+A **first** registration cannot be signed and does not carry them —
+`auth/challenge` answers `404` for a fingerprint it has never seen, which is how
+an implementation tells the two apart. A Runner that has registered and is still
+waiting to be approved *can* ask for a nonce; the challenge endpoint does not
+require approval, and such a Runner registers again on every restart.
+
+Without this, the endpoint's anonymity extended to keys the Server already knew.
+A public key is public by construction and the manager's surface hands it to
+anybody who may list Runners, so whoever had one could rewrite the row it names —
+`problemTypes` and `external`, two of the filters the claim pairs work on, and
+the `name`, `product`, `version` and `machine` a person reads when deciding
+whether to approve it — with the approval left exactly where it was.
+
+**The nonce is signed, not the request.** What is being established is only that
+the private key is present on the machine that is asking. Signing the body would
+need a canonical serialization every implementation agrees on for ever, and the
+first day two of them disagreed no Runner could restart.
+</Callout>
+
 **`tags` is read on the first registration and never again.** From then on it
 belongs to the operator, who sets it on the manager's surface. It exists so a
 room of machines can be deployed from one configuration rather than tagged one at

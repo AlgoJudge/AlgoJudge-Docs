@@ -2,7 +2,7 @@
 title: Zgłoszenia
 description: Jak je znaleźć, skąd przyszły, jak ocenić ponownie i jak wyłączyć z rankingu.
 source: en/client/manager/submissions.mdx
-sourceSha256: 2e7c1473e8dea4846f6f342f5b8f8a39b9a35be08a7b3f0c36a2633cabe272cc
+sourceSha256: e30b3253b1bd975a18fe00aa90a5436084f3cd745b643f5a29be79a98ccac376
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -56,6 +56,20 @@ oferuje też ponowną ocenę całej serii i mówi, ile zgłoszeń zakolejkowano.
 **Ponowna ocena dokłada próbę; nigdy nie nadpisuje tej, którą już pokazano.**
 Wcześniejsza próba zachowuje swój wynik i log, i obie zostają na ekranie.
 Niezakończoną próbę możesz anulować; zakończonej nie.
+
+To, co dzieje się z wcześniejszą próbą, zależy od tego, jak daleko zaszła:
+
+- **Nikt jej jeszcze nie podjął.** Zostaje oznaczona jako `superseded` i razem z
+  ponowną oceną znika z kolejki. Bez tego jedno zgłoszenie miało dwie czekające
+  próby i brały je dwa Runnery — ten sam kod oceniony dwa razy, a przy Runnerze
+  przekazującym to samo rozwiązanie wysłane dwukrotnie do cudzego serwisu.
+  Zastąpiona próba jest zakończona i nie da się jej anulować.
+- **Runner właśnie ją ocenia.** Zostaje nietknięta i kończy się normalnie,
+  zachowując wynik i załączniki; nowa próba czeka za nią i rusza w chwili, gdy
+  tamta zgłosi rezultat. Przerwanie trwającej oceny wyrzuciłoby już wykonaną
+  pracę, a przy Runnerze przekazującym — zgłoszenie już zużyte u sędziego.
+- **Zdążyła się zakończyć.** Nic się nie zmienia. To zwykły przypadek i to o nim
+  mówi zdanie powyżej.
 
 Ponowna ocena to `submission:rejudge`, anulowanie to `submission:cancel`. Oba są
 w dostarczanym szablonie `manager`.

@@ -1,6 +1,6 @@
 ---
 title: What happened to my submission
-description: The five states, the header, the per-test table, and the result that has no table at all.
+description: The six states, the header, the per-test table, and the result that has no table at all.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -15,7 +15,7 @@ Rows update themselves as verdicts arrive — that is what the screen is for. So
 does the panel in the bottom-right corner, which keeps your last dozen in view
 wherever you are.
 
-## The five states
+## The six states
 
 | State | What it means |
 |---|---|
@@ -24,6 +24,13 @@ wherever you are.
 | `completed` | it finished, and there is a verdict |
 | `failed` | the evaluation itself broke |
 | `cancelled` | it was called off |
+| `superseded` | a rejudge overtook it before a Runner picked it up, so it was never evaluated |
+
+**The last one only ever appears on an *attempt*, never on the submission
+itself.** A rejudge always adds a newer attempt and the submission's badge
+follows the newest — so `superseded` is something you meet in the *Evaluation
+attempts* list further down, where it means that attempt was replaced before
+anything ran it.
 
 While a submission is still being judged, the badge shows the state. Once it is
 done, the badge shows the **verdict** instead — the short label the Runner

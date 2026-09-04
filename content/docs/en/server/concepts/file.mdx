@@ -23,6 +23,7 @@ may read it.
 | `Sha256` | lowercase hexadecimal SHA-256 of the stored bytes |
 | `StorageId` | which configured store holds these bytes |
 | `UploadedByUserId` | |
+| `UploadedByRunnerId` | set instead when a Runner uploaded it, which carries a token rather than a session. At most one of the two |
 
 **Bytes are immutable.** There is no replace: a corrected file is a new upload
 with a new id. That is what lets a pinned problem version mean something, and

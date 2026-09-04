@@ -76,12 +76,11 @@ means what it says: somebody else has this now.
 Enforced by a filtered unique index on the job rather than by a check the code
 could forget — one result row per job, whoever asks twice.
 
-**The repeat is answered only to the Runner whose result it is.** A repeat is
-checked before the lease on purpose, so that a Runner resending after its lease
-expired is still told what it computed; until 2026-09-04 it was checked before
-the *owner* as well, which nothing argued for and which let any approved Runner
-name a finished job and be handed its result id and state. A Runner asking about
-work it never held is refused like any other caller without the lease.
+**The repeat is answered only to the Runner whose result it is.** It is checked
+before the lease on purpose, so that a Runner resending after its lease expired
+is still told what it computed — but never before the owner. A Runner asking
+about a job it never held is refused like any other caller presenting a lease it
+does not have, and is told nothing about that job.
 
 A repeat answers **the same result with `duplicate: true`**. It does not create a
 second one, and it is not an error — it is the whole point.

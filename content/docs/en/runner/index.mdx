@@ -106,6 +106,14 @@ counted against the submission: an operator restarting a fleet is not spending a
 participant's attempts. Without that the job waits out its lease, which is ten
 minutes by default, while every idle Runner in the installation waits with it.
 
+**The word reaches every wait, not only an evaluation.** A Runner sitting out a
+maintenance window, carrying a result the Server has not taken yet, or waiting
+for somebody to press approve exits on `SIGTERM` like any other — none of those
+waits outlasts the grace a container runtime allows, which matters because a
+kill is not a slower release but none. And a job the Server hands over at the
+very instant of a stop is settled and released rather than dropped with the
+Server already committed to it.
+
 **The work already done on that submission is lost and redone** by whoever
 claims it next. There is no way around that — the evaluation lives in containers
 on the host being stopped — so the cost of restarting a fleet mid-contest is
