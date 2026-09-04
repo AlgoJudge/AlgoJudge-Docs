@@ -104,11 +104,14 @@ start.
 
 ## Cores and memory
 
-**A Runner judges one submission at a time**, and each test is pinned to a core
-so that a run is reproducible rather than a function of what else the host was
-doing. So the arithmetic is not a throughput calculation: **one Runner is one
-concurrent submission and one core in use**, and the question is only how many
-cores you can spare.
+**A Runner judges one submission at a time**, and every test runs under
+`--cpus=1` — one processor's worth of time, whatever the program does with
+threads, because the accounting sums the whole subtree. So the arithmetic is not
+a throughput calculation: **one Runner is one concurrent submission and one
+core's worth of work**, and the question is only how many cores you can spare.
+
+**That is a quota, not a pin.** Which processors a submission actually runs on
+is the kernel's business, unless you divide the host yourself — see below.
 
 Contention for a core costs wall clock and not verdicts — a limit is processor
 time, so two submissions sharing a core each accrue their own correctly and
@@ -161,12 +164,31 @@ reproducibility problem, and it is why contest hosts commonly disable SMT.
 On a shared VPS the neighbour is invisible and nothing can be done about it.
 </Callout>
 
-<Callout type="info" title="Do not pin a Runner container to a subset of cores">
-It does not do what it looks like. The Runner rotates its pin over the cores it
-can see and passes the index straight through as a CPU number, so confining its
-container to `3-5` sends every submission to cores 0, 1 and 2 — the ones you were
-protecting. Leave a Runner all of them; collisions cost wall clock, not
-correctness.
+<Callout type="info" title="Dividing the host between Runners is yours to decide">
+**A Runner never chooses processors for itself**, and that is deliberate:
+several of them choosing independently, with nothing to coordinate them, is
+worse than letting the host place the work. Given the whole machine it pins
+nothing and the scheduler decides — which is right on a host nobody has divided.
+
+**Confine a Runner's container with `cpuset` and it carries that set to every
+job container it starts.** It has to: a job container is the daemon's child
+rather than the Runner's, so it inherits no affinity and would otherwise spread
+over the whole host, quietly undoing the division you drew.
+
+**The division worth making is one Runner per physical core, given both of that
+core's threads.** Two threads of one core share their caches, so a job moving
+between them costs nothing; two *different* Runners on one core take each
+other's execution units, and a program then spends more processor time than it
+should for the same work — which is a wrong verdict, not a slow one.
+`AlgoJudge-Ops` exposes this as `RUNNER_1_CPUSET` and its siblings, and its
+`.env.example` shows how to read the pairs off the machine:
+`thread_siblings_list` says `0-1` on one host and `0,8` on another, and a list
+copied from an example is exactly wrong on the second.
+
+What a pin does not buy is time. `--cpus=1` is on every job container either
+way, so a run cannot win processor time by spreading over cores. And a set
+narrower than a core takes away the one repair the host has, because the kernel
+cannot then move a starved run to a free processor.
 </Callout>
 
 Disk is covered under [backups](#disk-for-backups-ideally-not-the-databases)
