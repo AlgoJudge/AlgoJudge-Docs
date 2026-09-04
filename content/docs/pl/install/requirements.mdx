@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
 source: en/install/requirements.mdx
-sourceSha256: 8ef6f19ebb7eacb36d99f6c9e987abde116799500a281ee17d3df6480a424086
+sourceSha256: 68b3719c1c0eae397dcb042518f6434ec3148efda244f3be1eb8fc3ae40b20a2
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -118,9 +118,23 @@ rdzeń**, a pytanie brzmi tylko, ile rdzeni możesz oddać.
 **To przydział, a nie przypięcie.** Na których procesorach zgłoszenie naprawdę
 pobiegnie, decyduje jądro — chyba że sam podzielisz maszynę; patrz niżej.
 
-Walka o rdzeń kosztuje czas oczekiwania, a nie werdykty — limit jest czasem
-procesora, więc dwa zgłoszenia dzielące rdzeń naliczają swój czas poprawnie i po
-prostu kończą później. Dlatego oddanie ponad połowy rdzeni jest do obrony.
+**Walka o rdzeń kosztuje czas zegarowy, a bezpiecznik stoi właśnie na zegarze.**
+Limit jest czasem procesora, a czas procesora nie zmienia się pod obciążeniem:
+dwa zgłoszenia dzielące rdzeń naliczają swój czas poprawnie, choćby czekały na
+niego długo. Zmienia się wszystko, co mierzy zegar — a przebieg, który spędza
+czas w kolejce po procesor, wygląda z zewnątrz dokładnie jak taki, który
+przestał liczyć. Piaskownica zatrzymuje takie przebiegi, żeby program naprawdę
+zawieszony nie trzymał Runnera bez końca, i zagłodzony dobija do tego samego
+progu, nigdy nie będąc wolnym. Werdykt brzmi `Time limit exceeded`.
+
+Zmierzone na maszynie o szesnastu procesorach, z dwunastoma Runnerami bez
+podziału między nimi: 80% z 8409 osądzonych testów przekroczyło swój limit na
+zegarze, mieszcząc się w nim na procesorze, a **pięć werdyktów na 150 było
+błędnych** — trzy z nich dla programów, które zużyły około ćwierci tego, na co
+im pozwolono.
+
+Rdzenie liczone niżej muszą więc być rdzeniami, na których nie ma nic innego.
+Oddanie ponad połowy maszyny jest do obrony; dwa Runnery na jednym rdzeniu nie.
 
 | Składnik | Rdzenie | Pamięć | Uwagi |
 |---|---|---|---|
@@ -171,11 +185,12 @@ SMT wyłączone.
 Na współdzielonym VPS-ie sąsiada nie widać i nie da się z tym nic zrobić.
 </Callout>
 
-<Callout type="info" title="Podział maszyny między Runnery należy do ciebie">
+<Callout type="warn" title="Podziel maszynę między Runnery">
 **Runner nigdy nie wybiera procesorów sam** i jest to celowe: kilka Runnerów
 wybierających niezależnie, bez niczego, co by ich uzgadniało, wypada gorzej niż
 zostawienie rozmieszczenia hostowi. Mając całą maszynę, nie przypina niczego i
-decyduje planista — co jest właściwe na maszynie, której nikt nie podzielił.
+decyduje planista — tyle tylko może zrobić na maszynie, której nikt nie
+podzielił.
 
 **Zamknij kontener Runnera w `cpuset`, a przeniesie ten zbiór na każdy
 uruchomiony przez siebie kontener zadania.** Musi: kontener zadania jest
