@@ -235,12 +235,23 @@ POST /api/v1/runner/jobs/{jobId}/progress
 reports progress and **renews nothing**. A Runner still working says so with a
 lease call.
 
-| Refusal | Code |
-|---|---|
-| The token names another Runner's lease | `runner.lease.foreign` |
-| The lease has already been reclaimed | `runner.lease.stale` |
-| The token is not a token | `runner.lease.malformed` |
-| The job is not in a state that allows this | `job.state` |
+| Refusal | Code | Where |
+|---|---|---|
+| The token names another Runner's lease | `runner.lease.foreign` | everywhere |
+| The lease has already been reclaimed | `runner.lease.stale` | everywhere |
+| The token is not a token | `runner.lease.malformed` | the two `report` calls only |
+| The job is not in a state that allows this | `job.state` | everywhere |
+
+The third row is narrower than the others. A lease, release or progress call
+folds an unparseable token into `runner.lease.stale` — a token that cannot be a
+token is one the caller does not hold. A `report` answers **422** and names it,
+because a report carries a result somebody computed, and losing that to a typo
+deserves the more exact word.
+
+`runner.lease.foreign` needs a token to reach at all: the token is compared
+before the owner, and a Runner's id and its lease token are written together and
+cleared together. A presented token that matches a job this Runner does not own
+is one that leaked from a live Runner.
 
 ## Why the lease token matters twice
 
