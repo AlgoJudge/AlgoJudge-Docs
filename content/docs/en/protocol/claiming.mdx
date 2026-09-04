@@ -12,7 +12,7 @@ wrong.
 ## Claiming
 
 ```http
-POST /api/v1/runner/jobs/claim          { "leaseSeconds": 600 }
+POST /api/v1/runner/jobs/claim   { "leaseSeconds": 600, "waitSeconds": 25 }
 ```
 
 Answers a job, or **`204 No Content`** when the queue holds nothing **for this
@@ -21,6 +21,43 @@ Runner**.
 Claiming is `SELECT … FOR UPDATE SKIP LOCKED` over queued jobs. Two Runners
 claiming at the same instant take **different** jobs; neither waits for the
 other.
+
+### `waitSeconds` asks to be told rather than to ask again
+
+Without it the Server answers an empty queue at once and the Runner decides when
+to try again — up to thirty seconds later, on the shipped backoff. With it the
+Server **holds the request open** until a job is claimable, and answers `204`
+only when the wait runs out.
+
+**Nothing else changes, and that is the point.** A job still leaves through one
+`claim`, still under `SKIP LOCKED`, and still cannot be handed to two Runners.
+There is no socket, no subscription and no reconnection logic — a dropped long
+poll is simply a request to make again.
+
+Three things an implementation has to get right:
+
+- **The Server clamps it**, as it clamps the lease. Asking for more is answered
+  sooner, not refused. This Server's ceiling is 300 seconds.
+- **Each deadline is shortened by up to a sixteenth**, so a fleet that started
+  together does not answer its `204`s in the same instant and ask again as one.
+  A Runner always hears back at or before what it asked for.
+- **Your own request timeout must exceed the wait**, or an ordinary empty answer
+  arrives as a failed request.
+
+Being told is an optimisation and **not a guarantee**. The Server may answer
+`204` at any moment, and a Runner that is never told finds the work on its next
+ask. Nothing about correctness rests on it.
+
+<Callout type="warn" title="What cuts a long poll is not this Server">
+A held request sends nothing, and an intermediary that measures silence will end
+it: an **Azure Application Gateway at 20 s**, a stock **nginx** or an **AWS ALB
+at 60 s**, **Cloudflare at 125 s** with HTTP 524. RFC 6202 puts the safe figure
+at about thirty seconds, which is why a Runner ships asking for **25**.
+
+An installation that owns its whole network path may ask for far more — the
+stack `AlgoJudge-Ops` builds allows 3600 s at its own nginx. One behind somebody
+else's proxy may have to ask for less, or for none at all.
+</Callout>
 
 ### `204` asks three questions and answers with one word
 

@@ -39,10 +39,23 @@ is configuration, not code.
 
 | Variable | Default | |
 |---|---|---|
+| `AJ_Poll__WaitSeconds` | `25` | How long the **Server** may hold a claim open on an empty queue. `0` asks for none |
 | `AJ_Poll__MinSeconds` | `1` | Shortest wait after an empty queue |
 | `AJ_Poll__MaxSeconds` | `30` | Longest wait. The backoff is jittered |
 | `AJ_Heartbeat__Seconds` | `60` | How often an **idle** Runner says it is alive |
 | `AJ_Lease__RequestSeconds` | `600` | How long a claim asks to hold a job for |
+
+**`AJ_Poll__WaitSeconds` makes the two below matter only after a failure.** On
+an empty queue the Server holds the request rather than answering it, so the
+wait *is* the interval, and a submission starts being judged as soon as it
+exists instead of at the next poll. See [Claiming](/en/protocol/claiming) for
+what the Server does with it.
+
+What bounds it is not this product but whatever sits between the Runner and the
+Server — an Azure Application Gateway ends a silent request at 20 s, a stock
+nginx or an AWS ALB at 60 s, Cloudflare at 125 s. Twenty-five clears all but the
+first. Raise it on a path you own; lower it, or set `0`, behind a proxy you do
+not control.
 
 `AJ_Lease__RequestSeconds` is a **request**. The Server clamps it to
 `[60, 3600]` and answers with the deadline it actually granted, which is the
