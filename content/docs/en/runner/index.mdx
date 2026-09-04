@@ -115,6 +115,11 @@ measured in the submissions that were in flight, not in the queue behind them.
 shorter than they need turns a stop back into a kill, and a killed Runner leaves
 its job to the lease. `AlgoJudge-Ops` ships `stop_grace_period: 30s` for this.
 
+**The External Runner does the same, for every job at once.** It holds a pool
+rather than one job, so a stop hands back up to twenty of them — and what it
+cannot take back is the submission already sitting on somebody else's service.
+[Forwarding to an external judge](/en/runner/external) has that in full.
+
 A Runner stopped a fourth time while holding the same job stops being free: a
 Runner crash-looping under a supervisor gives a job back exactly as an operator's
 restart does, and the Server cannot tell them apart except by how often it
