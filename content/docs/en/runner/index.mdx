@@ -94,6 +94,33 @@ that is the single most common reason for a queue that looks stuck — see [Tags
 and routing](/en/runner/routing) and [Forwarding to an external
 judge](/en/runner/external).
 
+## Stopping one
+
+**A Runner told to stop gives its job back before it goes.** On `SIGTERM` — what
+`docker stop`, `docker compose down` and `systemctl stop` all send — it stops
+the evaluation it is running, tells the Server the job is free, clears the
+containers it had started, and exits.
+
+The job is claimable by another Runner **that instant**, and the delivery is not
+counted against the submission: an operator restarting a fleet is not spending a
+participant's attempts. Without that the job waits out its lease, which is ten
+minutes by default, while every idle Runner in the installation waits with it.
+
+**The work already done on that submission is lost and redone** by whoever
+claims it next. There is no way around that — the evaluation lives in containers
+on the host being stopped — so the cost of restarting a fleet mid-contest is
+measured in the submissions that were in flight, not in the queue behind them.
+
+**Give it time to say all that.** The calls take seconds, but a grace period
+shorter than they need turns a stop back into a kill, and a killed Runner leaves
+its job to the lease. `AlgoJudge-Ops` ships `stop_grace_period: 30s` for this.
+
+A Runner stopped a fourth time while holding the same job stops being free: a
+Runner crash-looping under a supervisor gives a job back exactly as an operator's
+restart does, and the Server cannot tell them apart except by how often it
+happens. Past three the job spends a delivery like any other, and the delivery
+cap ends it.
+
 ## What a Runner needs from the host it runs on
 
 Summarised here, stated in full in [Isolation and the

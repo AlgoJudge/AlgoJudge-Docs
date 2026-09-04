@@ -149,8 +149,31 @@ to the queue when the lease expires. Each delivery is counted, and past a cap th
 job is **failed with a reason** rather than retried for ever — retrying for ever
 is how one bad package stops an installation.
 
-There is no "give this job back" call. A Runner that genuinely wants to give a
-job up does so by **going quiet and letting the lease expire**.
+### Giving a job back
+
+```http
+POST /api/v1/runner/jobs/{jobId}/release
+{ "leaseToken": "…" }
+```
+
+**It means one thing: this Runner is stopping.** The job returns to the queue
+immediately, any Runner may claim it, and nothing is recorded against the
+submission — it was not judged, and a release is not a result. **The delivery
+the claim counted is given back**, because being shut down is an operator's
+doing and a participant's attempts are not the operator's to spend.
+
+There is no reason field, and that is the design. Every other way a job comes
+back without a result is a [report](/en/protocol/reporting), which carries a
+description of what went wrong: a Runner that cannot judge a job has something
+to say about it, and one being stopped has not.
+
+**Three releases are free.** Past that a release counts the delivery like
+everything else and the cap above ends it — a Runner crash-looping under a
+supervisor gives jobs back exactly as an operator's restart does, and nothing
+here tells them apart except how often it happens.
+
+A Runner whose lease has already gone is refused with `runner.lease.stale`,
+which is a success from its side: the job it was giving back is already back.
 
 ### Renewing
 
