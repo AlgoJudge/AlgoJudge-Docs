@@ -49,16 +49,34 @@ leaking a process has not contained it.
 
 A time limit is processor time, and a program that has stopped computing spends
 none — so it would sit there for ever. Three deadlines end it. Write `L` for the
-problem's time limit; **none of the three decides a verdict anybody is judged
-against**, and a run that reaches one has already failed for another reason.
+problem's time limit. **None of the three is the time limit**: that is decided
+afterwards, on the measurement. Two of them do end the run as `Time limit
+exceeded`, and the notes beside them say which happened.
 
-| | Measured on | Value | Ends |
-|---|---|---|---|
-| **no progress** | processor time | `4L + 4s` | a program that has stopped computing. **Consecutive** — any processor time at all resets it to zero, so this is time spent *not working*, not time spent |
-| **the processor ceiling** | processor time | `L + 2s` | a program still working, well past what it was allowed. The two seconds are what a container may honestly add to the reading, which is the cgroup's and so carries the container's own start; added rather than multiplied, because a container costs what it costs whatever limit the problem set |
-| **the absolute cap** | wall clock | `5 × (L + 2s)` | everything else — the program that wakes for a millisecond every quarter-second, never stalling and never approaching its limit. Five times what the run was entitled to spend: a problem allowed more processor time has earned more wall clock, and one allowed less has not |
+| | Watches | Value | Ends | Reported as |
+|---|---|---|---|---|
+| **no progress** | elapsed time in which the processor time did **not** grow | `4L + 4s` | a program that has stopped computing — waiting for input that never comes, or wedged in an uninterruptible call | `Time limit exceeded`, with a note giving the span it spent no processor time in |
+| **the processor ceiling** | processor time | `L + 2s` | a program still working, plainly past what it was allowed. There is nothing left to learn by waiting; the verdict is still settled on the measurement afterwards | `Time limit exceeded`, with what it spent shown beside the limit |
+| **the absolute cap** | elapsed time, whatever the progress | `5 × (L + 2s)` | the program that wakes for a millisecond a tick: never stalling, never approaching its limit, and resetting the window every time it twitches | `Time limit exceeded`, with a note that it kept running without finishing |
 
-The cap sits above the window at every limit, which is what keeps the window
+**The window counts consecutive time, and any processor time at all resets it to
+zero** — so it measures time spent *not working* rather than time spent. It has
+a second brake as well: the kernel's own pressure figure for the run is read at
+every look, and while that says something was **runnable and waiting for a
+processor**, the window does not advance at all. A host with no PSI reaps
+exactly as it would without this, and so does a task blocked on I/O — a task
+waiting on a disk is not runnable, so it raises no processor pressure to be
+seen. The window is what covers that case.
+
+The two seconds in the ceiling are what a container may honestly add to the
+reading, which is the cgroup's and so carries the container's own start. Added
+rather than multiplied: a container costs what it costs whatever limit the
+problem set, and doubling the participant's limit instead was most generous
+exactly where that overhead matters least.
+
+The cap is five times what the run was entitled to spend — a problem allowed
+more processor time has earned more wall clock, one allowed less has not — and
+it sits above the window at every limit, which is what keeps the window
 meaningful: `5(L + 2s) − (4L + 4s) = L + 6s`, positive for every `L`. A test
 holds it there.
 
@@ -74,9 +92,16 @@ a participant otherwise is an accusation.
 The window is generous on purpose, and the reason is on the [requirements
 page](/en/install/requirements): a program starved of a processor looks, from
 outside, exactly like one that has stopped computing. Four times the limit is
-roughly a host loaded four times past what it can carry. It is a safety net for
-a wedged program, not a second time limit — and an installation that lets its
-Runners compete for cores will reach it with programs that were merely waiting.
+roughly a host loaded four times past what it can carry, and the four seconds
+are what make the window also the guard against a hang, at a limit small enough
+that four times it would not be.
+
+It is a safety net, not a second time limit — but it is a wide one, and the
+width is the cost of the trade. **Waiting is free right up to it**: under a
+300 ms limit a program may sit on an input that never arrives for 5.2 seconds
+and be judged on nothing but its output. An installation that lets its Runners
+compete for cores will reach the same net with programs that were merely
+waiting, and there the verdict is wrong rather than merely slow.
 
 ## One container per test, never reused
 
