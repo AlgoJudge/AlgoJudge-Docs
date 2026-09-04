@@ -68,6 +68,12 @@ POST /api/v1/runner/jobs/{jobId}/files      { "leaseToken": "…", "fileId": "�
 POST /api/v1/runner/files/attach            { "fileId": "…", "name": "runner.log" }
 ```
 
+**A `fileId` must name a file this Runner uploaded through
+`POST /api/v1/runner/files`, and nothing else** — not one another Runner
+uploaded, and not one a person did. Anything else is not an error you will see:
+on a report the attachment is skipped silently, so an implementation reusing an
+id from somewhere else loses its log with nothing said.
+
 The first attaches to the **attempt** this Runner holds, and needs the lease
 token. The second attaches to the **Runner itself** — a start-up log, a `lscpu`
 dump — and **replaces** the file under that name rather than adding another, so a

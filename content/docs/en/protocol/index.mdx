@@ -45,7 +45,9 @@ anonymous ────────> pendingApproval ────────> ap
 ```
 
 A Runner may register at any time and evaluates nothing until a manager approves
-it. **Revocation is permanent**: there is no rotation, so a leaked key means a
+it. A **re-registration** — which is what every restart is — asks for a challenge
+first and signs the nonce; the challenge endpoint does not itself require
+approval, so a Runner still waiting to be approved can restart like any other. **Revocation is permanent**: there is no rotation, so a leaked key means a
 new configuration, a new key and a new registration.
 
 ## Every call
@@ -55,7 +57,7 @@ Everything is JSON over HTTP, under `/api/v1`.
 | | Path | Auth |
 |---|---|---|
 | Health | `GET /api/v1/health` | anonymous |
-| Register | `POST /api/v1/runner/register` | anonymous |
+| Register | `POST /api/v1/runner/register` | anonymous; **signed** for a fingerprint the Server already knows — see [Registration](/en/protocol/registration) |
 | Challenge | `POST /api/v1/runner/auth/challenge` | anonymous |
 | Token | `POST /api/v1/runner/auth/token` | anonymous |
 | Claim a job | `POST /api/v1/runner/jobs/claim` | bearer |

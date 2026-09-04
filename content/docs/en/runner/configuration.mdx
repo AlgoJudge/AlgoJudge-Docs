@@ -51,11 +51,19 @@ wait *is* the interval, and a submission starts being judged as soon as it
 exists instead of at the next poll. See [Claiming](/en/protocol/claiming) for
 what the Server does with it.
 
-What bounds it is not this product but whatever sits between the Runner and the
-Server — an Azure Application Gateway ends a silent request at 20 s, a stock
-nginx or an AWS ALB at 60 s, Cloudflare at 125 s. Twenty-five clears all but the
-first. Raise it on a path you own; lower it, or set `0`, behind a proxy you do
-not control.
+What bounds it in practice is not this product but whatever sits between the
+Runner and the Server — an Azure Application Gateway ends a silent request at
+20 s, a stock nginx or an AWS ALB at 60 s, Cloudflare at 125 s. Twenty-five
+clears all but the first. Raise it on a path you own; lower it, or set `0`,
+behind a proxy you do not control.
+
+**Three hundred is a ceiling, and above it the Runner refuses to start.** That
+is the longest a Server will hold a claim, and asking for more is worse than
+being ignored: the Runner tells a held claim from an immediate answer by how
+long it took, so one asking for nine hundred would read the Server's three
+hundred as no wait at all and sleep the interval below after every claim — the
+deafness the held claim exists to remove, restored by a setting and visible in
+no log.
 
 `AJ_Lease__RequestSeconds` is a **request**. The Server clamps it to
 `[60, 3600]` and answers with the deadline it actually granted, which is the
@@ -174,6 +182,12 @@ interval is advisory rather than checked, so an `AJ_Poll__MaxSeconds` below
 a typo in `AJ_Runner__ProblemTypes` is accepted at start-up — the Runner declares
 the misspelt type, is handed nothing that matches it, and looks exactly like a
 Runner nobody has any work for.
+
+A value naming **no** type at all is a different case and is refused by name: a
+lone comma, or a trailing one from a paste, leaves the list empty, and an empty
+list matches no problem in the installation. That Runner would register, be
+approved, heartbeat, show as connected and be handed nothing for as long as it
+ran.
 
 *An empty `AJ_Sandbox__CgroupRoot` is not one of them: it is treated as unset,
 and a relative value is refused by name.*

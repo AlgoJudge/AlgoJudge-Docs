@@ -1,8 +1,8 @@
 ---
 title: Co się stało z moim zgłoszeniem
-description: Pięć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
+description: Sześć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
 source: en/client/participant/results.mdx
-sourceSha256: 87bbc73066f4480cd1f4f7cf25b6348d6add3ef52d5c3cf2cc0b64965d09e7d3
+sourceSha256: 9ae3a55268a9716de7fc8575e5f74b45aca5e5116185b6511c39ea98ba0398e1
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -18,7 +18,7 @@ Wiersze same się aktualizują, gdy przychodzą werdykty — po to jest ten ekra
 samo panel w prawym dolnym rogu, który trzyma ostatnich kilkanaście zgłoszeń w
 zasięgu wzroku, gdziekolwiek jesteś.
 
-## Pięć stanów
+## Sześć stanów
 
 | Stan | Co oznacza |
 |---|---|
@@ -27,6 +27,12 @@ zasięgu wzroku, gdziekolwiek jesteś.
 | *Zakończone* | skończyło się i jest werdykt |
 | *Błąd* | zepsuła się sama ocena |
 | *Anulowane* | zostało odwołane |
+| *Zastąpiono* | ponowna ocena wyprzedziła je, zanim podjął je Runner, więc nigdy nie zostało sprawdzone |
+
+**Ostatni stan pojawia się wyłącznie przy *próbie*, nigdy przy samym
+zgłoszeniu.** Ponowna ocena zawsze dokłada nowszą próbę, a odznaka zgłoszenia
+idzie za najnowszą — *Zastąpiono* zobaczysz więc na liście *Próby oceny* niżej,
+i znaczy tam, że tę próbę zastąpiono, zanim cokolwiek ją uruchomiło.
 
 Dopóki zgłoszenie jest oceniane, plakietka pokazuje stan. Gdy się skończy,
 plakietka pokazuje **werdykt** — krótką etykietę od Runnera, na przykład

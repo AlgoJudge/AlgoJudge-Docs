@@ -56,6 +56,20 @@ A **rejudge adds an attempt; it never rewrites the one that was shown.** The
 earlier attempt keeps its result and its log, and both stay on the screen. An
 unfinished attempt can be cancelled; a finished one cannot.
 
+What happens to the earlier attempt depends on how far it had got:
+
+- **It had not been picked up yet.** It is marked `superseded` and leaves the
+  queue with the rejudge. Without that, one submission had two attempts waiting
+  and two Runners took them — the same source judged twice, and where the Runner
+  forwards, the same solution sent twice to somebody else's service. A
+  superseded attempt is over and cannot be cancelled.
+- **A Runner is judging it.** It is left alone and finishes normally, keeping
+  its result and its attachments; the new attempt waits behind it and starts the
+  moment it reports. Cancelling an evaluation in flight would throw away work
+  already done, and on a forwarding Runner a submission already spent.
+- **It had finished.** Nothing changes. That is the ordinary case, and the
+  sentence above is about it.
+
 Rejudging is `submission:rejudge`; cancelling is `submission:cancel`. Both are in
 the shipped `manager` template.
 

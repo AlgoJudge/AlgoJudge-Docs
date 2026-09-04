@@ -157,6 +157,7 @@ Two values are secrets and have no defaults.
 | `AJ_Cache__Path` | `/var/cache/algojudge-external-runner` | where a submission's source is cached on its way to the judge |
 | `AJ_Cache__MaxBytes` | `268435456` (256 MiB) | the cache ceiling. Plain bytes only |
 | `AJ_Lease__RequestSeconds` | `1200` | |
+| `AJ_Poll__WaitSeconds` | `25` | how long the **Server** may hold a claim open. `0` asks for none, and **above 300 the Runner refuses to start** |
 
 The two addresses both default to UVa's, because `uva` is the judge the Runner
 selects when nothing says otherwise. They are settings rather than constants so
@@ -195,15 +196,23 @@ polling down to be polite to somebody else's service slows the renewing down wit
 it. Four, so that three renewals fit inside every lease and two may fail in a row
 with the deadline still ahead.
 
+**The cycle is the judge's interval *plus* the claim.** A lease is renewed once
+per loop, and the loop's other blocking call is the claim the Server may hold
+open for `AJ_Poll__WaitSeconds` — so both waits are inside one renewal gap, and
+what has to fit four times inside the lease is
+`AJ_External__PollMaxSeconds + AJ_Poll__WaitSeconds`.
+
 That last one is the well-meant change that would have cost a double
 submission, which is exactly why it is refused at start-up rather than discovered
-an hour later. Note the ceiling it implies: with a lease clamped at 3600 seconds,
-the poll interval cannot exceed 900.
+an hour later. Note the ceiling it implies: with a lease clamped at 3600 seconds
+the cycle cannot exceed 900, so the poll interval cannot exceed **875** at the
+shipped wait — 900 only if the wait is set to `0`.
 
 These are the three an operator meets while tuning. The start-up check refuses
-six configurations in all — the other three are a poll floor below twenty, a poll
-ceiling below the floor, and `AJ_External__MaxPending` at zero, which would claim
-no job at all.
+**seven** configurations in all — the other four are a poll floor below twenty, a
+poll ceiling below the floor, `AJ_External__MaxPending` at zero, which would
+claim no job at all, and an `AJ_Poll__WaitSeconds` above the three hundred the
+Server will hold.
 
 ## UVa Online Judge
 

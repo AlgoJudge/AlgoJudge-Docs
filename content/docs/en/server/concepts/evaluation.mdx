@@ -24,10 +24,12 @@ One attempt at evaluating a [submission](/en/server/concepts/submission). A
 | `Attempt` | increments from 1 within its submission. A rejudge adds an attempt |
 | `ProblemVersionId` | the content version being evaluated. The source of truth, copied onto `Result` |
 | `RunnerId` | null until a Runner claims the job |
-| `State` | `Queued`, `Running`, `Completed`, `Failed`, `Cancelled` |
+| `State` | `Queued`, `Running`, `Completed`, `Failed`, `Cancelled`, `Superseded` |
 | `LeaseToken` | handed to the Runner on claim and required back when it reports |
 | `LeaseSeconds` | how long the lease was, as granted at claim |
 | `Deliveries` | how many times this job has been handed out |
+| `AcknowledgedAt` | when a Runner was first heard from about this claim, and null while nobody has been |
+| `Refunds` | how many deliveries were given back because nobody was ever heard from about them |
 | `FailureReason` | why it failed, when it failed for a reason that is not a verdict |
 | `RowVersion` | optimistic concurrency for everything that is not the claim |
 | `Files` | what the Runner attached for **this attempt** |
@@ -41,9 +43,18 @@ One attempt at evaluating a [submission](/en/server/concepts/submission). A
 | `Running` | `Failed` | on an infrastructure failure |
 | `Running` | `Cancelled` | by a manager |
 | `Running` | `Queued` | when the lease expires |
+| `Queued` | `Superseded` | when a rejudge overtakes it |
 
-The Server validates them. **A rejudge is a new job, never a transition**, and a
-finished job never leaves its state.
+The Server validates them, and a finished job never leaves its state.
+
+**A rejudge is a new job, and it also ends a queued sibling.** That last row is
+the only terminal state never reached from `Running`, and no Runner ever meets
+one: leaving `Queued` is exactly what takes the row out of the claim's reach, so
+a superseded attempt is one nobody was holding. An attempt a Runner *is* holding
+is left alone — it finishes, keeps its result and its attachments, and the new
+attempt waits behind it on the claim's fourth filter. Cancelling it instead
+would throw away work already done, and on a forwarding Runner a submission
+already spent at somebody else's service.
 
 ### The lease is a correctness mechanism
 
@@ -64,6 +75,16 @@ one. Without it a heartbeat had nothing to renew *by*.
 lease expiry. A job that keeps being reclaimed is a job that keeps killing
 Runners; past the configured cap it goes to `Failed` with a reason rather than
 back into the queue.
+
+**A delivery nobody was ever heard from about is given back.** The claim is
+committed before the answer to it is written — `Running`, a lease token, one of
+five attempts spent — so an answer lost in between leaves a job the Runner
+cannot release, never having learned the token. `AcknowledgedAt` is what tells
+that apart from a Runner that took the job and died judging it: it is written on
+the first lease-bearing call and cleared on every re-claim, and the reaper
+refunds only the claims where it is still null. Three of those are free, for the
+same reason three releases are — a row that throws after every commit would
+otherwise be refunded for ever and never reach the cap.
 
 <Callout type="warn" title="An infrastructure failure is not a wrong answer">
 A package whose checksum does not match lands in `FailureReason` and the job
