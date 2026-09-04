@@ -14,9 +14,9 @@
   "openapi": {
     "repository": "AlgoJudge/AlgoJudge-Server",
     "path": "openapi.json",
-    "ref": "d8e267e8b6ee4f8ac96e931b32b0a1f0f81cdf15",
+    "ref": "977df3ecc3ef2db16650fb440fb7727104396322",
     "refKind": "commit",
     "refDate": "2026-09-04",
-    "sha256": "8b7e17aa3d91276bc7f67145a07124c913cb84669e776c06384bd90ef679086e"
+    "sha256": "77d676e366a58339c074ad7cdb3e1e70a61098dec2823066c7b21c00daaa7da0"
   }
 }
