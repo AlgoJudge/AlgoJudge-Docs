@@ -291,9 +291,16 @@ docker info --format '{{.CgroupDriver}}'
 
 **One slice rather than one per run, and it is not a preference.** A slice
 systemd creates for a container is never collected: it stays loaded
-indefinitely, and removing its directory does not release the unit. Two hundred
-of them cost 49 MB in pid 1, so a slice per test would cost some 37 MB per
-submission, permanently. Nothing the Runner can reach takes them away.
+indefinitely, and removing its directory does not release the unit. A slice per
+test would therefore be a permanent systemd unit per test, growing for as long
+as the installation judges anything. Nothing the Runner can reach takes them
+away — only `systemctl stop` as root does.
+
+What one costs is beside the point, and small: on a host holding 250 leftover
+slices, freeing 238 of them released nothing measurable from `systemd` itself.
+It is that nothing ever ends them. If you have recreated a Runner's identity —
+a lost volume, a `docker compose down -v` — its old slice stays behind, and
+`systemctl stop 'algojudge-<fingerprint>.slice'` is what takes it away.
 
 **One cgroup does outlive the Runner, deliberately.** Its home — the slice under
 `systemd`, the directory under `cgroupfs` — is never removed, because a Runner
