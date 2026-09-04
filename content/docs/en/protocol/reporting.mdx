@@ -27,7 +27,9 @@ POST /api/v1/runner/jobs/{jobId}/report
 }
 ```
 
-Answers `{ resultId, state, duplicate }`.
+Answers `{ resultId, state, duplicate }`. **`resultId` is absent** where nothing
+was stored, which is an infrastructure failure the Server is going to have judged
+again — see below; `state` says `queued` there.
 
 `score` and `maxScore` are the **Runner's own scale**, before any rescaling the
 assignment applies.
@@ -48,8 +50,26 @@ submission whose language never arrived. In every one of those the submission wa
 
 Send `infrastructureFailure: true` with a `failureReason`, and **send no score at
 all** — not zero. A zero on a board reads as a wrong answer about a program that
-was never run. The submission stays rejudgeable once the cause is fixed.
+was never run.
 </Callout>
+
+**And it is not final.** The job returns to the queue and the delivery count
+carries it, exactly as a lease that expired does; at the cap it becomes `failed`
+with the last reason given.
+
+A Runner cannot tell a package that is broken from a download that tore, or a
+host that is broken from a second that was — so the first failure is a reason to
+try again rather than a verdict on the submission. Another Runner, or the same
+one a moment later, may well judge it.
+
+**No result is stored until the cap**, which is why `resultId` is absent on that
+answer. A stored result is what makes a repeat report answer `duplicate`, and one
+kept from a failed attempt would hand the next Runner's honest work back to it as
+a duplicate of the failure.
+
+A Runner that reports a failure and then resends after the job has been requeued
+is refused with `runner.lease.stale` rather than answered with a duplicate. It
+means what it says: somebody else has this now.
 
 ## Reporting is idempotent on the lease token
 
