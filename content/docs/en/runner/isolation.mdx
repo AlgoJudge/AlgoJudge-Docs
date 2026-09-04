@@ -38,12 +38,45 @@ ran out of disk.
 | `--memory` with `--memory-swap` **equal** | without the second the limit means nothing — the process swaps instead of being killed. A kill is told from two places and either is enough: the runtime's `OOMKilled`, and the kernel's own `memory.events` — where it takes **both** `oom_kill` and `oom`, since the first counts kills by any OOM killer including the system one, and the second counts this cgroup reaching its own limit |
 | `--pids-limit` | a fork bomb hits a wall |
 | `--cpus`, and `--cpuset-cpus` **only where the Runner was given a set** | capping CPU is not pinning it, and only the cap is unconditional. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast. A set is carried to the job containers when an operator confined the Runner itself, because they inherit no affinity of their own; given the whole machine the Runner pins nothing, which is what lets the host move a run that is starving |
-| wall clock = **three times the limit plus one second** | not a limit anybody is judged against. A time limit is processor time, so this reaps what is *not* spending any: one stuck in an uninterruptible syscall, or one that waits rather than computes |
+| **three deadlines**, and [none of them is the limit](#three-deadlines-and-none-of-them-is-the-limit) | a time limit is processor time, so the sandbox needs its own way of ending a run that is *not* spending any: one stuck in an uninterruptible syscall, one waiting for input that never comes |
 | an output cap enforced **while it runs** | read afterwards, a flooding program fills the host's disk first |
 
 Every row has a test that asserts two things: the program was stopped correctly,
 **and the host is unchanged afterwards**. A sandbox that contains a program by
 leaking a process has not contained it.
+
+## Three deadlines, and none of them is the limit
+
+A time limit is processor time, and a program that has stopped computing spends
+none — so it would sit there for ever. Three deadlines end it. Write `L` for the
+problem's time limit; **none of the three decides a verdict anybody is judged
+against**, and a run that reaches one has already failed for another reason.
+
+| | Measured on | Value | Ends |
+|---|---|---|---|
+| **no progress** | processor time | `4L + 4s` | a program that has stopped computing. **Consecutive** — any processor time at all resets it to zero, so this is time spent *not working*, not time spent |
+| **the processor ceiling** | processor time | `L + 2s` | a program still working, well past what it was allowed. The two seconds are what a container may honestly add to the reading, which is the cgroup's and so carries the container's own start; added rather than multiplied, because a container costs what it costs whatever limit the problem set |
+| **the absolute cap** | wall clock | `5 × (L + 2s)` | everything else — the program that wakes for a millisecond every quarter-second, never stalling and never approaching its limit. Five times what the run was entitled to spend: a problem allowed more processor time has earned more wall clock, and one allowed less has not |
+
+The cap sits above the window at every limit, which is what keeps the window
+meaningful: `5(L + 2s) − (4L + 4s) = L + 6s`, positive for every `L`. A test
+holds it there.
+
+<Callout type="info" title="A run that never started is not a verdict">
+If a deadline passes and the sandbox recorded **no processor time at all**, the
+program never ran — what took the time was the container, the image or the host,
+never the submission. That is reported as a failure to run the test, not as
+`Time limit exceeded`. A run that spent processor time and then stopped spending
+it has failed; one that never spent any was never given the chance, and telling
+a participant otherwise is an accusation.
+</Callout>
+
+The window is generous on purpose, and the reason is on the [requirements
+page](/en/install/requirements): a program starved of a processor looks, from
+outside, exactly like one that has stopped computing. Four times the limit is
+roughly a host loaded four times past what it can carry. It is a safety net for
+a wedged program, not a second time limit — and an installation that lets its
+Runners compete for cores will reach it with programs that were merely waiting.
 
 ## One container per test, never reused
 

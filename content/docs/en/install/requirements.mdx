@@ -113,9 +113,23 @@ core's worth of work**, and the question is only how many cores you can spare.
 **That is a quota, not a pin.** Which processors a submission actually runs on
 is the kernel's business, unless you divide the host yourself — see below.
 
-Contention for a core costs wall clock and not verdicts — a limit is processor
-time, so two submissions sharing a core each accrue their own correctly and
-merely finish later. That is what makes more than half the cores defensible.
+**Contention costs wall clock, and the wall clock is where the safety net is.**
+A limit is processor time and processor time does not move under load: two
+submissions sharing a core each accrue their own correctly, however long they
+wait for it. What does move is everything measured on the clock — and a run that
+spends its time waiting for a processor looks, from outside, exactly like one
+that has stopped computing. The sandbox stops such a run so that a genuinely
+wedged program cannot hold a Runner for ever, and a starved one reaches that stop
+without ever having been slow. The verdict says `Time limit exceeded`.
+
+Measured on a sixteen-processor host running twelve Runners with no division
+between them: 80% of 8409 judged tests ran past their limit on the wall clock
+while staying inside it on the processor, and **five verdicts in 150 were
+wrong** — three of them programs that had used about a quarter of what they were
+allowed.
+
+So the cores counted below have to be cores nothing else is on. More than half
+the host is defensible; two Runners on one core is not.
 
 | Component | Cores | Memory | Notes |
 |---|---|---|---|
@@ -164,11 +178,12 @@ reproducibility problem, and it is why contest hosts commonly disable SMT.
 On a shared VPS the neighbour is invisible and nothing can be done about it.
 </Callout>
 
-<Callout type="info" title="Dividing the host between Runners is yours to decide">
+<Callout type="warn" title="Divide the host between the Runners">
 **A Runner never chooses processors for itself**, and that is deliberate:
 several of them choosing independently, with nothing to coordinate them, is
 worse than letting the host place the work. Given the whole machine it pins
-nothing and the scheduler decides — which is right on a host nobody has divided.
+nothing and the scheduler decides, which is all it can do on a host nobody has
+divided.
 
 **Confine a Runner's container with `cpuset` and it carries that set to every
 job container it starts.** It has to: a job container is the daemon's child
