@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
 source: en/install/requirements.mdx
-sourceSha256: d8391c0ec81681e26a1aef20ff0518d258b45906a9a6b61d760a02a42033c895
+sourceSha256: 8ef6f19ebb7eacb36d99f6c9e987abde116799500a281ee17d3df6480a424086
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -109,11 +109,14 @@ jedynie liczby obok, czyli szczytu pamięci. Runner mówi o tym na poziomie
 
 ## Rdzenie i pamięć
 
-**Runner sądzi jedno zgłoszenie naraz**, a każdy test jest przypięty do rdzenia,
-żeby przebieg był powtarzalny, a nie zależny od tego, co akurat robił host.
-Rachunek nie dotyczy więc przepustowości: **jeden Runner to jedno równoległe
-zgłoszenie i jeden zajęty rdzeń**, a pytanie brzmi tylko, ile rdzeni możesz
-oddać.
+**Runner sądzi jedno zgłoszenie naraz**, a każdy test dostaje `--cpus=1` — tyle
+czasu procesora, ile daje jeden rdzeń, niezależnie od tego, ile wątków uruchomi
+program, bo rozliczenie sumuje całe poddrzewo. Rachunek nie dotyczy więc
+przepustowości: **jeden Runner to jedno równoległe zgłoszenie i praca za jeden
+rdzeń**, a pytanie brzmi tylko, ile rdzeni możesz oddać.
+
+**To przydział, a nie przypięcie.** Na których procesorach zgłoszenie naprawdę
+pobiegnie, decyduje jądro — chyba że sam podzielisz maszynę; patrz niżej.
 
 Walka o rdzeń kosztuje czas oczekiwania, a nie werdykty — limit jest czasem
 procesora, więc dwa zgłoszenia dzielące rdzeń naliczają swój czas poprawnie i po
@@ -168,12 +171,33 @@ SMT wyłączone.
 Na współdzielonym VPS-ie sąsiada nie widać i nie da się z tym nic zrobić.
 </Callout>
 
-<Callout type="info" title="Nie przypinaj kontenera Runnera do części rdzeni">
-To nie robi tego, na co wygląda. Runner rotuje przypięcie po rdzeniach, które
-widzi, i przekazuje sam indeks jako numer procesora — więc zamknięcie jego
-kontenera w `3-5` wyśle każde zgłoszenie na rdzenie 0, 1 i 2, czyli te, których
-broniłeś. Zostaw Runnerowi wszystkie; kolizje kosztują czas oczekiwania, a nie
-poprawność.
+<Callout type="info" title="Podział maszyny między Runnery należy do ciebie">
+**Runner nigdy nie wybiera procesorów sam** i jest to celowe: kilka Runnerów
+wybierających niezależnie, bez niczego, co by ich uzgadniało, wypada gorzej niż
+zostawienie rozmieszczenia hostowi. Mając całą maszynę, nie przypina niczego i
+decyduje planista — co jest właściwe na maszynie, której nikt nie podzielił.
+
+**Zamknij kontener Runnera w `cpuset`, a przeniesie ten zbiór na każdy
+uruchomiony przez siebie kontener zadania.** Musi: kontener zadania jest
+dzieckiem demona, nie Runnera, więc nie dziedziczy żadnego powinowactwa i bez
+tego rozlałby się po całej maszynie, po cichu znosząc narysowany przez ciebie
+podział.
+
+**Podział, który warto zrobić, to jeden Runner na rdzeń fizyczny, z obydwoma
+jego wątkami.** Dwa wątki jednego rdzenia dzielą pamięci podręczne, więc
+przeniesienie zadania między nimi nic nie kosztuje; dwa *różne* Runnery na
+jednym rdzeniu odbierają sobie jednostki wykonawcze, a program zużywa wtedy
+więcej czasu procesora na tę samą pracę — czyli dostaje zły werdykt, a nie
+wolniejszy. `AlgoJudge-Ops` udostępnia to jako `RUNNER_1_CPUSET` i kolejne, a
+jego `.env.example` pokazuje, jak odczytać pary z maszyny:
+`thread_siblings_list` mówi `0-1` na jednym hoście, a `0,8` na innym — lista
+przepisana z przykładu jest na tym drugim dokładnie odwrotna.
+
+Czego przypięcie nie daje, to czasu. `--cpus=1` obowiązuje na każdym kontenerze
+zadania tak czy inaczej, więc przebieg nie zdobędzie czasu procesora przez
+rozłożenie się na kilka rdzeni. A zbiór węższy niż rdzeń odbiera hostowi jedyną
+dostępną naprawę, bo jądro nie może wtedy przenieść zagłodzonego przebiegu na
+wolny procesor.
 </Callout>
 
 Dysk opisuje sekcja o [kopiach zapasowych](#dysk-na-kopie-najlepiej-nie-ten-od-bazy)
