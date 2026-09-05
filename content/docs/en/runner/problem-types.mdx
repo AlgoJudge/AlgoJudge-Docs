@@ -23,7 +23,8 @@ what came out.
 | What decides the language | the participant's own declaration, travelling with the submission |
 | Before the build | [the policy profile](/en/runner/policy) |
 | Per test | one container, [isolated](/en/runner/isolation), started with that test's input |
-| Comparison | the package's own checker where it has one, otherwise a direct comparison |
+| Comparison | the package's own checker where it has one, otherwise a direct comparison — either way as the program writes, so a wrong answer stops it at the first differing token |
+| Interaction | a package may declare an **interactor** instead of a checker. The submission is then given no input file: everything it reads is produced by the interactor in answer to what it wrote |
 | Scoring | by group, as the package defines them |
 
 The verdict is one word for the submission as a whole: `Accepted` when every test

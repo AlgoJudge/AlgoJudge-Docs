@@ -39,7 +39,8 @@ ran out of disk.
 | `--pids-limit` | a fork bomb hits a wall |
 | `--cpus`, and `--cpuset-cpus` **only where the Runner was given a set** | capping CPU is not pinning it, and only the cap is unconditional. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast. A set is carried to the job containers when an operator confined the Runner itself, because they inherit no affinity of their own; given the whole machine the Runner pins nothing, which is what lets the host move a run that is starving |
 | **three deadlines**, and [none of them is the limit](#three-deadlines-and-none-of-them-is-the-limit) | a time limit is processor time, so the sandbox needs its own way of ending a run that is *not* spending any: one stuck in an uninterruptible syscall, one waiting for input that never comes |
-| an output cap enforced **while it runs** | read afterwards, a flooding program fills the host's disk first |
+| an output cap counted **as the bytes cross** | nothing stores what a submission prints. It travels on a pipe from the program to whatever is comparing it, and the count is taken in passing. Collected and read afterwards, a flooding program fills the host's disk before anybody looks |
+| **nothing on the container's own streams** | a judged container is started with no log driver at all, and the submission's standard error goes to `/dev/null`. There is nothing for the runtime to write down, which is where a flood used to land |
 
 Every row has a test that asserts two things: the program was stopped correctly,
 **and the host is unchanged afterwards**. A sandbox that contains a program by
@@ -110,14 +111,20 @@ Four rules define what one test is:
 1. **One test, one container, never reused.** A fresh container is the only
    answer that does not depend on cleanup having been written correctly.
 2. **The program is given its own test's input and nothing else** — one file,
-   mounted read-only. Mounting the whole test directory would put the expected
-   answer inside the submission's own container.
+   mounted read-only, for a batch problem; a channel with the interactor on the
+   far end for an interactive one. Mounting the whole test directory would put
+   the expected answer inside the submission's own container.
 3. **Nothing a program writes reaches the next test**, for the scratch tmpfs and
    for `/dev/shm`.
-4. **A package-supplied checker is contained on the same terms.** It comes from a
-   problem author rather than from the platform, runs with its own limits and no
-   network, and never in the Runner's process. A checker stopped by a limit is
-   reported as a **broken checker**, never as a wrong answer.
+4. **A package-supplied checker or interactor is contained on the same terms.**
+   It comes from a problem author rather than from the platform, runs with its
+   own limits and no network, and never in the Runner's process. One stopped by
+   a limit is reported as a **broken checker**, never as a wrong answer.
+
+   It also never touches the submission's own channels. The two containers share
+   no directory — they run as the same unprivileged user, so a shared one would
+   be a place each could reach the other's — and every byte between them is
+   copied by the Runner.
 
 Two consequences that are easy to get backwards:
 
@@ -126,9 +133,17 @@ Two consequences that are easy to get backwards:
   cover it. It breaks none of the four rules — it is new with the container, and
   tmpfs pages are charged to the memory limit — but it is a surface nobody
   declared, which is why rule 3 names it explicitly.
-- **The input is a mounted file, not a pipe.** A pipe would be marginally
-  stricter and is deliberately not used: it is not seekable, so a solution that
-  reads its input twice would work on its author's machine and fail here.
+- **The input is a mounted file, not a pipe** — for a batch problem. A pipe
+  would be marginally stricter and is deliberately not used: it is not seekable,
+  so a solution that reads its input twice would work on its author's machine
+  and fail here. An **interactive** problem has no file to mount: its input does
+  not exist until an interactor decides what to send, so there the cost above is
+  inherent and is paid.
+- **The output is a pipe in every case**, which is where that objection stops
+  applying: nobody re-reads their own output. It is read once, forwards, and
+  that is what lets a wrong answer be found at the first differing token and the
+  program stopped there, rather than left to finish an answer nobody would look
+  at.
 
 The build step gets **no writable host path**. It writes to its own container
 layer and the artefact is read back through the runtime API. The alternative was
