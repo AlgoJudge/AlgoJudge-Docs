@@ -90,6 +90,10 @@ carrying: `remove` collides with `std::remove` and `std::remove_if`, which are
 entirely legal and common. A rule that fires on correct standard-library use is a
 rule that teaches people to distrust the checker.
 
+None of this reaches a checker or an interactor. The dictionary is read before a
+**submission** is compiled; a judging program comes from the problem author, not
+from a participant, and is contained by the sandbox rather than by a word list.
+
 **A list of names is explicitly never denied**, recorded so nobody re-adds them
 from a legacy list. All of them operate on standard input, output and error, or
 name no file at all: `printf`, `scanf`, `fprintf` — `fprintf(stderr, …)` is

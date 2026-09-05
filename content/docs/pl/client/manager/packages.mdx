@@ -2,7 +2,7 @@
 title: Paczki
 description: Co dostaje Runner i skąd zadanie bierze swoje testy i limity.
 source: en/client/manager/packages.mdx
-sourceSha256: fa2e59656ad63aa55221bcb545b4a5542e7bfa53df62a617d79d822fc862e26a
+sourceSha256: 4e98d9a00b2f808bfd5f6d26bd5ce3b1d0b32c7780559af2c78b66db88239094
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -44,7 +44,7 @@ package.zip
 | `overrideLimits` | limity na język, kluczem jest rodzina (`cpp`, `python`) albo jeden toolchain (`pypy3`). Tutaj zapisujesz, że Python jest wolniejszy |
 | `groups` | grupy punktowe, ich punkty i opcjonalnie własne limity |
 | `checker` | brak oznacza, że decydują pliki `.out`. Dostaje odpowiedź uczestnika strumieniowo, w trakcie jej powstawania, więc musi ją czytać sekwencyjnie i tylko raz — nie da się w niej cofnąć |
-| `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interactor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok |
+| `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interaktor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok — załączenie jednego z nich w karcie „Programy" blokuje drugi |
 | `modelSolution` | służy do kalibracji limitów, nigdy do oceniania |
 
 Własne limity grupy zastępują globalne dla testów tej jednej grupy; gdy ich nie

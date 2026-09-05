@@ -1,6 +1,6 @@
 ---
 title: What the host needs
-description: Docker with Compose v2, cgroup v2, five shell tools, disk for backups, and a log driver that stops.
+description: Docker with Compose v2, cgroup v2, five shell tools, and disk for backups. The stack bounds its own logs.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -259,22 +259,35 @@ filesystem the backups live on, never more than 50% — so that a count policy,
 which does not bound disk usage at all, is not the only thing standing between
 the backup directory and a full disk.
 
-## A bounded container log driver
+## Container logs, which the stack bounds itself
 
-<Callout type="warn" title="The default log driver is unbounded">
-Docker's default is a JSON file with no size limit, and it is the commonest way
-one of these hosts fills its disk.
+<Callout title="Nothing to do before you install">
+The stack sets a log driver on every service it starts — Docker's `local`, sized
+by `LOG_MAX_SIZE` and `LOG_MAX_FILES` in your `.env` — so it does not depend on
+what your daemon is set to.
 </Callout>
 
-In `/etc/docker/daemon.json`:
+Docker's own default is a JSON file with no size limit, and it used to be the
+commonest way one of these hosts filled its disk. Setting a bound on the daemon
+is still worth doing for **whatever else runs on the machine**, and it is no
+longer a step to take first. In `/etc/docker/daemon.json`:
 
 ```json
 { "log-driver": "json-file", "log-opts": { "max-size": "50m", "max-file": "5" } }
 ```
 
-Then restart the daemon. `gc.sh` rotates the scripts' own logs under
-`/var/log/algojudge/`, but container logs are the daemon's business and only the
-daemon can bound them.
+Then restart the daemon.
+
+**One consequence, if you ship logs somewhere.** `docker logs` and `docker
+compose logs` read `local` exactly as they read `json-file`, so every command in
+these pages works unchanged. But the file on disk is a compact binary format —
+so **a collector that tails `*-json.log` off the host filesystem will not find
+these**. If you run one, change `logging.driver` in `compose.yaml` back to
+`json-file`; the size options mean the same thing under both.
+
+`gc.sh` rotates the scripts' own logs under `/var/log/algojudge/`, and never
+touches container logs: those are the daemon's, bounded by the block in
+`compose.yaml`.
 
 ## The group that owns the Docker socket
 

@@ -43,7 +43,7 @@ package.
 | `overrideLimits` | per language, keyed by a family (`cpp`, `python`) or one toolchain (`pypy3`). Python is slower; this is where that is said |
 | `groups` | the scoring groups, their points, and optionally their own limits |
 | `checker` | absent means the `.out` files decide. It is handed the answer as the submission writes it, so it must read it once and forwards |
-| `interactor` | the problem is interactive: the submission is given no input file, and every byte it reads is one the interactor sent in answer to what it wrote. Stands **instead** of a checker, never beside one |
+| `interactor` | the problem is interactive: the submission is given no input file, and every byte it reads is one the interactor sent in answer to what it wrote. Stands **instead** of a checker, never beside one — attaching either in the Programs card disables the other |
 | `modelSolution` | used to calibrate limits, never to judge |
 
 A group's own limits replace the global ones for that group's tests alone;
