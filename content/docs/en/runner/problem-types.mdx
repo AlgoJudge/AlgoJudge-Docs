@@ -25,6 +25,7 @@ what came out.
 | Per test | one container, [isolated](/en/runner/isolation), started with that test's input |
 | Comparison | the package's own checker where it has one, otherwise a direct comparison — either way as the program writes, so a wrong answer stops it at the first differing token |
 | Interaction | a package may declare an **interactor** instead of a checker. The submission is then given no input file: everything it reads is produced by the interactor in answer to what it wrote |
+| What a test needs | both files with no judging program; a checker makes the expected output optional; an interactor makes both optional, and a group may then simply say how many tests it has |
 | Scoring | by group, as the package defines them |
 
 The verdict is one word for the submission as a whole: `Accepted` when every test

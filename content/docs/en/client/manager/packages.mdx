@@ -42,8 +42,9 @@ package.
 | `languages` | which toolchains may be submitted. Empty means the package does not say, which allows everything the Runner can build |
 | `overrideLimits` | per language, keyed by a family (`cpp`, `python`) or one toolchain (`pypy3`). Python is slower; this is where that is said |
 | `groups` | the scoring groups, their points, and optionally their own limits |
-| `checker` | absent means the `.out` files decide. It is handed the answer as the submission writes it, so it must read it once and forwards |
-| `interactor` | the problem is interactive: the submission is given no input file, and every byte it reads is one the interactor sent in answer to what it wrote. Stands **instead** of a checker, never beside one — attaching either in the Programs card disables the other |
+| `checker` | absent means the `.out` files decide. It is handed the answer as the submission writes it, so it must read it once and forwards. With one, the `.out` files need not be there at all |
+| `interactor` | the problem is interactive: the submission is given no input file, and every byte it reads is one the interactor sent in answer to what it wrote. Stands **instead** of a checker, never beside one — attaching either in the Programs card disables the other. With one, **neither** test file is required |
+| `groups[].tests` | how many tests a group has, when you ship no files for them. Only an interactive problem may say it, and at most 26 — elsewhere the files are the count |
 | `modelSolution` | used to calibrate limits, never to judge |
 
 A group's own limits replace the global ones for that group's tests alone;
@@ -61,6 +62,11 @@ The **Groups** table is where the points live, and where one group is marked as
 participants as `examples.zip` — from the same files, so the sample in the
 statement and the sample in the download cannot differ. No group marked as
 examples means the participant receives none.
+
+**An interactive problem publishes none either way.** There is no input file to
+hand over — the submission is given none — so an archive of expected outputs
+with nothing to answer would be worse than no archive. Show a sample
+conversation in the statement instead.
 
 The archive is assembled in your browser, because its layout is a property of
 the problem type and the Server is not allowed to know one type from another.
