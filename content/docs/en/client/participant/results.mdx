@@ -76,7 +76,7 @@ per-test table is a per-test table:
 | **Time** | the processor time your program used, and the limit beside it |
 | **Memory** | the same, in MiB |
 | **Result** | the points for that test, against its maximum |
-| **Comments** | why it failed, and the checker's own note |
+| **Comments** | why it failed, and the note from whatever judged it — a checker, or an interactor on an interactive problem |
 
 Time and memory turn amber past half the limit and red at or over it.
 
@@ -95,7 +95,8 @@ The **Comments** column leads with the reason, in the same words every time, so
 a column of failures can be read straight down: *Wrong answer*, *Time limit*,
 *Memory limit*, *Output limit*, *Runtime error*, *Rule violation*, *Compilation
 error*. A reason this version of the interface does not recognise is not printed
-raw; you get the checker's note instead, which is where the detail is anyway.
+raw; you get the judging program's note instead, which is where the detail is
+anyway.
 
 Two other things it may say: *No test results are available for this submission*,
 and *Tests will appear here once the evaluation finishes*.

@@ -1,8 +1,8 @@
 ---
 title: Czego wymaga host
-description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki, dysk na kopie i sterownik logów z limitem rozmiaru.
+description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: 68b3719c1c0eae397dcb042518f6434ec3148efda244f3be1eb8fc3ae40b20a2
+sourceSha256: e2a737036ff6ab88fd278abbf901e31cdc45bad7381220668040dddb30a3180f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -268,22 +268,35 @@ systemu plików, na którym leżą kopie, i nigdy więcej niż 50% — żeby kat
 kopii przed zapełnieniem dysku nie chroniła sama polityka ilościowa, która
 zużycia dysku wcale nie ogranicza.
 
-## Ograniczony sterownik logów kontenerów
+## Logi kontenerów, które stack ogranicza sam
 
-<Callout type="warn" title="Domyślny sterownik logów nie ma żadnego limitu">
-Domyślnie Docker pisze do pliku JSON bez limitu rozmiaru i tak właśnie taki host
-najczęściej zapełnia sobie dysk.
+<Callout title="Przed instalacją nie musisz nic robić">
+Stack ustawia sterownik logów każdej usłudze, którą uruchamia — dockerowy
+`local`, o rozmiarze z `LOG_MAX_SIZE` i `LOG_MAX_FILES` w Twoim `.env` — więc nie
+zależy od tego, jak masz ustawionego demona.
 </Callout>
 
-W `/etc/docker/daemon.json`:
+Sam Docker domyślnie pisze do pliku JSON bez żadnego limitu i kiedyś to właśnie
+tak taki host najczęściej zapełniał sobie dysk. Ograniczenie po stronie demona
+nadal warto ustawić — ze względu na **wszystko inne, co działa na tej maszynie** —
+ale nie jest to już pierwszy krok. W `/etc/docker/daemon.json`:
 
 ```json
 { "log-driver": "json-file", "log-opts": { "max-size": "50m", "max-file": "5" } }
 ```
 
-Potem zrestartuj demona. `gc.sh` rotuje własne logi skryptów w
-`/var/log/algojudge/`, ale logi kontenerów należą do demona i tylko demon może je
-ograniczyć.
+Potem zrestartuj demona.
+
+**Jedna rzecz do wiedzenia, jeśli zbierasz logi gdzieś dalej.** `docker logs` i
+`docker compose logs` czytają `local` dokładnie tak samo jak `json-file`, więc
+wszystkie polecenia z tych stron działają bez zmian. Ale plik na dysku ma
+zwarty format binarny — więc **kolektor, który zbiera pliki `*-json.log` wprost z
+systemu plików hosta, nic tu nie znajdzie**. Jeśli takiego używasz, zmień
+`logging.driver` w `compose.yaml` z powrotem na `json-file`; opcje rozmiaru
+znaczą pod obydwoma to samo.
+
+`gc.sh` rotuje własne logi skryptów w `/var/log/algojudge/` i nie dotyka logów
+kontenerów — te należą do demona i ogranicza je blok w `compose.yaml`.
 
 ## Grupa, do której należy gniazdo Dockera
 

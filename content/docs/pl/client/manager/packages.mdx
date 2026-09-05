@@ -2,7 +2,7 @@
 title: Paczki
 description: Co dostaje Runner i skąd zadanie bierze swoje testy i limity.
 source: en/client/manager/packages.mdx
-sourceSha256: fa2e59656ad63aa55221bcb545b4a5542e7bfa53df62a617d79d822fc862e26a
+sourceSha256: bf2997067258774201b9daeace82122ffbd70828e9a47545e1ccce2dda26e249
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -43,8 +43,9 @@ package.zip
 | `languages` | w czym wolno zgłaszać. Puste znaczy, że paczka nic nie narzuca, a wtedy wolno wszystko, co Runner umie zbudować |
 | `overrideLimits` | limity na język, kluczem jest rodzina (`cpp`, `python`) albo jeden toolchain (`pypy3`). Tutaj zapisujesz, że Python jest wolniejszy |
 | `groups` | grupy punktowe, ich punkty i opcjonalnie własne limity |
-| `checker` | brak oznacza, że decydują pliki `.out`. Dostaje odpowiedź uczestnika strumieniowo, w trakcie jej powstawania, więc musi ją czytać sekwencyjnie i tylko raz — nie da się w niej cofnąć |
-| `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interactor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok |
+| `checker` | brak oznacza, że decydują pliki `.out`. Dostaje odpowiedź uczestnika strumieniowo, w trakcie jej powstawania, więc musi ją czytać sekwencyjnie i tylko raz — nie da się w niej cofnąć. Kiedy jest, plików `.out` w ogóle nie musi być |
+| `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interaktor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok — załączenie jednego z nich w karcie „Programy" blokuje drugi. Kiedy jest, **żaden** z plików testu nie jest wymagany |
+| `groups[].tests` | ile testów ma grupa, gdy nie wysyłasz dla nich plików. Może to podać tylko zadanie interaktywne i najwyżej 26 — gdzie indziej testy liczą się z plików |
 | `modelSolution` | służy do kalibracji limitów, nigdy do oceniania |
 
 Własne limity grupy zastępują globalne dla testów tej jednej grupy; gdy ich nie
@@ -63,6 +64,11 @@ W tabeli **Grupy** wpisujesz punkty i tam oznaczasz jedną grupę jako
 uczestnikom jako `examples.zip` — z tych samych plików, więc przykład w treści i
 przykład do pobrania nie mogą się różnić. Jeśli nie oznaczysz żadnej grupy jako
 przykłady, uczestnik nie dostanie żadnych.
+
+**Zadanie interaktywne nie publikuje ich tak czy inaczej.** Nie ma pliku z
+wejściem, który można by przekazać — zgłoszenie też go nie dostaje — więc
+archiwum z samymi oczekiwanymi wyjściami, na które nie ma czym odpowiedzieć,
+byłoby gorsze niż jego brak. Pokaż przykładową rozmowę w treści zadania.
 
 Archiwum składa się w twojej przeglądarce, bo jego układ należy do typu zadania,
 a Server nie może odróżniać jednego typu od drugiego. Zbudowaną paczkę i

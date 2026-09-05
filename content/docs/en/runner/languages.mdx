@@ -76,9 +76,11 @@ failing with the same traceback.
 ### Two ids that resolve but are not offered
 
 `cpp` and `python` were the whole catalogue once, and a problem package's
-`config.yml` names a checker's language and a model solution's language using
-them. They still resolve — `cpp` to `cpp20-gcc`, `python` to `python3` — so that
-packages written against the documented format keep building their own checkers.
+`config.yml` names the language of a checker, an interactor and a model solution
+using them. They still resolve — `cpp` to `cpp20-gcc`, `python` to `python3` — so
+that packages written against the documented format keep building their own
+judging programs. A checker and an interactor are built by the same path, in the
+same image, with the same command as a submission.
 They are not offered on any form.
 
 `cpp` resolves to C++20 specifically because that is the standard the single C++
