@@ -35,7 +35,7 @@ ran out of disk.
 | read-only root filesystem | writes go to a tmpfs or nowhere |
 | tmpfs `rw,noexec,nosuid` | scratch that cannot be executed from |
 | `--user 65534:65534` | never root, even inside |
-| `--memory` with `--memory-swap` **equal** | without the second the limit means nothing — the process swaps instead of being killed. A kill is told from two places and either is enough: the runtime's `OOMKilled`, and the kernel's own `memory.events` — where it takes **both** `oom_kill` and `oom`, since the first counts kills by any OOM killer including the system one, and the second counts this cgroup reaching its own limit |
+| `memory.max` with `memory.swap.max` **zero**, on a cgroup holding the submission alone | without the second the limit means nothing — the program swaps instead of being killed. A kill is told from two places and either is enough: the runtime's `OOMKilled`, and the kernel's own `memory.events` — where it takes **both** `oom_kill` and `oom`, since the first counts kills by any OOM killer including the system one, and the second counts this cgroup reaching its own limit. The container keeps a `--memory` of its own for the shim, unrelated to the problem's |
 | `--pids-limit` | a fork bomb hits a wall |
 | `--cpus`, and `--cpuset-cpus` **only where the Runner was given a set** | capping CPU is not pinning it, and only the cap is unconditional. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast. A set is carried to **every** container the Runner starts — both builds, the judged run, and a checker or interactor beside it — when an operator confined the Runner itself, because they inherit no affinity of their own; given the whole machine the Runner pins nothing, which is what lets the host move a run that is starving |
 | **three deadlines**, and [none of them is the limit](#three-deadlines-and-none-of-them-is-the-limit) | a time limit is processor time, so the sandbox needs its own way of ending a run that is *not* spending any: one stuck in an uninterruptible syscall, one waiting for input that never comes |
@@ -198,17 +198,32 @@ the one before it does not:
 | The last line wins | Before reporting, the shim kills every other process in the PID namespace with `kill(-1)`. Not the process group: a child that called `setsid` has left the group and would outlive it. Nothing is then alive to write after the report |
 | The cgroup floor | The rule above, which needs neither of the other two to be true |
 
-### Memory follows the same split, with one difference
+### Memory is the submission's too, and by a different route
 
-Peak memory comes from the shim where there is one and from `memory.peak`
-otherwise. It needs no floor of its own: a memory limit is enforced by the
-kernel, which kills a container that passes it, so understating the figure buys
-a submission nothing. **The verdict is the cgroup's either way** -- `Memory
-limit exceeded` is decided by `memory.events`, never by what the report says.
+A memory limit is not compared after the fact; the kernel enforces it while the
+program runs. So it is written on a cgroup that holds **the submission and
+nothing else** — made per run, beside the container's own — and the shim puts
+the child into it between `fork` and `exec`. `Memory limit exceeded` is that
+cgroup reaching its limit, and the peak reported beside the verdict is that
+cgroup's peak, so the figure a participant reads is the figure they were judged
+on.
 
-The shim's figure is the better one where both exist. It is the program's own
-resident peak, where `memory.peak` also carries the page cache of whatever the
-container read.
+Three things follow that a problem author will notice:
+
+- **A limit may be as small as the problem needs.** The container runtime
+  refuses a container limit under six megabytes; a cgroup has no such floor.
+- **The container's own cost is not in the budget.** The same trivial C++
+  solution reads **1.75 MiB** in its own cgroup and **6.68 MiB** in its
+  container's.
+- **What the submission spends anywhere is its own**: every process it forks,
+  and every byte it writes to a tmpfs, `/dev/shm` included. A figure taken from
+  one process's resident set counts neither, which is why the limit is a
+  cgroup's and not a number in a report.
+
+A run that carries no shim — a build, a checker, an interactor — is held by its
+container's limit and its peak read from that container's cgroup, as before.
+The shim reports a resident peak as well, and it is kept only where there is no
+cgroup of the submission's own to read.
 
 ### The submission does not run as root, and the shim does
 
@@ -299,10 +314,11 @@ docker info --format '{{.CgroupDriver}}'
 | Who creates the cgroup | the Runner | systemd, when the daemon asks it |
 | How many | one per run, removed afterwards | **one per Runner**, for its whole life |
 | A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
-| A run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run, less what the slice already held |
+| A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, made per run | the same, and made per run inside the slice |
+| Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run, less what the slice already held |
 | To start and judge | a writable mount, and root | a readable mount, and nothing else |
-| To report a peak as well | the same | a writable mount, root, and Linux 6.12 |
-| Kernel | 5.19 and later | 5.19 to judge, **6.12** to report a peak |
+| To report a peak as well | the same | a writable mount and root — and Linux 6.12 only for the runs that are nobody's submission, whose peak still comes from a reset |
+| Kernel | 5.19 and later | 5.19 to judge; **6.12** to report the peak of a build, a checker or an interactor, which no screen shows |
 
 **One slice rather than one per run, and it is not a preference.** A slice
 systemd creates for a container is never collected: it stays loaded
