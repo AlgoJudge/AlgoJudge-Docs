@@ -71,8 +71,8 @@ start and chooses; **neither driver needs the daemon reconfigured.**
 | Who creates the cgroup | the Runner | systemd, when the daemon asks it |
 | How many | one per run, removed afterwards | one per Runner, for its whole life |
 | A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
-| A **judged** run's peak memory | `memory.peak` of the cgroup the submission was in, made per run | the same, and made per run inside the slice |
-| Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run and measured from what the slice already held, which needs **Linux 6.8** |
+| A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, made inside the judged container | the same — the driver decides nothing here |
+| Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run and measured from what the slice already held, which needs **Linux 6.12** |
 | Kernel | 5.19 and later | 5.19 to judge; **6.12** only for the peak of a build, a checker or an interactor |
 
 A `native.cgroupdriver` line in `/etc/docker/daemon.json` is neither needed nor
@@ -86,11 +86,13 @@ What both need, and `AlgoJudge-Ops` supplies all three:
 --user 0:0                           # the tree's directories are root's
 ```
 
-**Both backends need them, and neither starts without them.** A memory limit is
-enforced on a cgroup holding the submission alone, and that one is the Runner's
-to make whichever backend is in use — so a tree it cannot write into is a
-**refusal to start** either way, checked at startup rather than found out one
-failed job at a time.
+**Both backends need them.** A memory limit is enforced on a cgroup holding the
+submission alone, made **inside the judged container**, so the tree this mount
+exposes has to be writable whichever backend is in use. Under `cgroupfs` the
+Runner proves it at start — it makes a cgroup, removes it again, and **refuses
+to start** if it cannot. Under `systemd` there is nothing for it to make at
+start, so a tree it cannot write into shows up at the first judged run instead,
+as an infrastructure failure naming the write that did not land.
 
 Root sounds worse than it is: the
 Runner holds the container runtime's socket, which is root-equivalent on the

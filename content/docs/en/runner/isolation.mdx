@@ -202,11 +202,27 @@ the one before it does not:
 
 A memory limit is not compared after the fact; the kernel enforces it while the
 program runs. So it is written on a cgroup that holds **the submission and
-nothing else** — made per run, beside the container's own — and the shim puts
-the child into it between `fork` and `exec`. `Memory limit exceeded` is that
-cgroup reaching its limit, and the peak reported beside the verdict is that
-cgroup's peak, so the figure a participant reads is the figure they were judged
-on.
+nothing else** — made per run **inside the container's own**, by the shim, which
+then puts the child into it between `fork` and `exec`. `Memory limit exceeded`
+is that cgroup reaching its limit, and the peak reported beside the verdict is
+that cgroup's peak, so the figure a participant reads is the figure they were
+judged on.
+
+**Two cgroups are made and not one**, and the kernel is why: a cgroup may hold
+processes or hand controllers to its children, never both. So the shim moves
+*itself* into one of them first, and the submission's is then the only thing
+under the limit — still inside the container, and still out of the submission's
+reach.
+
+**Inside rather than beside, and the kernel decided that.** A cgroup made next
+to the container's is not a descendant of the container's own namespace root,
+and cgroup2 mounted with `nsdelegate` — how systemd mounts it, so on virtually
+every Linux server — refuses to move a task there at all. Inside, the migration
+is permitted; what is still needed is a **name**, because `/proc/self/cgroup`
+reads `/` in a private cgroup namespace and the shim would have nothing to look
+for. So a judged container is given the host's cgroup namespace. That grants no
+write it did not have: the only cgroup file it can reach is root's, and the
+submission is `nobody` by the time it runs.
 
 Three things follow that a problem author will notice:
 
@@ -220,10 +236,21 @@ Three things follow that a problem author will notice:
   one process's resident set counts neither, which is why the limit is a
   cgroup's and not a number in a report.
 
+**The peak is the report's and the kill is not**, which is what lets the figure
+be untrusted without costing anything. That cgroup dies with the container, so
+there is no window afterwards in which the Runner could read its peak from the
+host — the shim reads it from inside and sends it on the same channel as the
+time. Memory needs no counterpart of the floor above, and the reason is not that
+the report is trustworthy: **nothing is decided on that number.** The verdict is
+the kernel's, counted in `memory.events` on a cgroup of the Runner's own that
+outlives the container — and that file is hierarchical, so a kill down in the
+submission's is counted up there, out of reach. A forged peak buys a submission
+a prettier number beside a verdict it cannot change.
+
 A run that carries no shim — a build, a checker, an interactor — is held by its
-container's limit and its peak read from that container's cgroup, as before.
-The shim reports a resident peak as well, and it is kept only where there is no
-cgroup of the submission's own to read.
+container's limit and its peak read from that container's cgroup, by the Runner,
+as before. The shim reports a resident peak as well, and it is kept only where
+it made no cgroup of the submission's own to read.
 
 ### The submission does not run as root, and the shim does
 
@@ -314,10 +341,10 @@ docker info --format '{{.CgroupDriver}}'
 | Who creates the cgroup | the Runner | systemd, when the daemon asks it |
 | How many | one per run, removed afterwards | **one per Runner**, for its whole life |
 | A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
-| A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, made per run | the same, and made per run inside the slice |
+| A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, read by the shim from inside | the same — the driver decides nothing here, because that cgroup is the container's own child |
 | Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run, less what the slice already held |
-| To start and judge | a writable mount, and root | a readable mount, and nothing else |
-| To report a peak as well | the same | a writable mount and root — and Linux 6.12 only for the runs that are nobody's submission, whose peak still comes from a reset |
+| To start and judge | a writable mount, and root | the same, since a judged submission's cgroup is made inside the container and the tree it is made in is this one |
+| To report a peak as well | the same | the same, and **Linux 6.12** for the runs that are nobody's submission, whose peak still comes from a reset |
 | Kernel | 5.19 and later | 5.19 to judge; **6.12** to report the peak of a build, a checker or an interactor, which no screen shows |
 
 **One slice rather than one per run, and it is not a preference.** A slice

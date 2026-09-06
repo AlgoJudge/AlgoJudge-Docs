@@ -82,6 +82,14 @@ is `sha256`, never `hash`; in prose, SHA-256.
   4.0**, unconditionally, and links `/{locale}/source` rather than the Creative
   Commons deed — the deed cannot state the carve-out that puts code samples back
   under MIT, and a reader pasting a command needs that half.
+- **A diagram is `<Mermaid chart={`…`} />`**, imported from
+  `@/components/mermaid` on the page that draws one. It renders in the reader's
+  browser, so keep the source out of the initial chunk by leaving the import
+  where it is — inside the effect — and keep to flowcharts and sequence
+  diagrams. **`deploy/security-headers.conf` grants no `'unsafe-eval'`**, and
+  those two need none; if a diagram type ever wants it, render at build time
+  rather than edit that file. A reader with no JavaScript meets the source in a
+  `<noscript>`, so the prose beside a diagram must carry the same facts.
 - **An address a component links and no page contains is named in `lib/site.ts`**
   (`linkedFromCode`). `check:links` reads `.mdx` files, so without that it is the
   one internal link nothing would notice breaking.
