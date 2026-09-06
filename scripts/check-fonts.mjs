@@ -107,9 +107,11 @@ for (const { lang } of surfaces) {
         check(mark.words === "AlgoJudge", `the mark is the live-text drawing — ${mark.words}`);
         check(mark.svgRequests.length === 0, "and the document requested no .svg at all");
         // Compared as a path, because the origin is whatever host is serving:
-        // 127.0.0.1 in development, docs.algojudge.pl in production.
-        check(mark.href !== null && new URL(mark.href).pathname === "/",
-            `it links to the root of the site — ${mark.href}`);
+        // 127.0.0.1 in development, docs.algojudge.pl in production. The
+        // language has to be this page's own — a mark that sent a reader to
+        // another one would be answering a question nobody asked.
+        check(mark.href !== null && new URL(mark.href).pathname === `/${lang}/`,
+            `it links home without changing language — ${mark.href}`);
     }
 
     await page.close();

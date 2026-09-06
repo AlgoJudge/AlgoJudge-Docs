@@ -13,13 +13,13 @@ import { i18nConfig } from "@/lib/i18n";
  * two cannot disagree about a reader: the first tag decides, and anything that
  * is not Polish is English.
  *
- * **It has to be a component rather than an inline `<script>`**, because `/` is
- * reached two different ways. A visitor typing the address gets a document, and
- * the server rule catches them. But the mark at the top of the sidebar links
- * here, and Next navigates to it **on the client** — no document is requested,
- * so no server rule runs, and a script injected through
- * `dangerouslySetInnerHTML` is inert when React inserts it. An effect runs on
- * both paths.
+ * **A component rather than an inline `<script>`.** On a fresh document either
+ * would do, and that is the only way in today. An effect also survives a client
+ * navigation, where a script injected through `dangerouslySetInnerHTML` would
+ * not: React inserts it through `innerHTML`, and the browser never executes
+ * those. Nothing inside the site links to `/`, so that path is not exercised —
+ * it is here so that adding such a link later does not quietly land a reader on
+ * a page of two links.
  *
  * **`replace`, not `assign`.** An assignment leaves `/` in the history, so Back
  * from `/en/` returns here and is sent forward again — the reader cannot leave

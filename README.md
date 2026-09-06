@@ -46,10 +46,10 @@ header, is English.
 
 `app/(root)/page.tsx` answers `/` wherever that rule does not run, by reading
 `navigator.languages` — the browser's own copy of the same list, matched by the
-same rule. Three cases reach it: `next dev`, which has no way to read a header; a
-host serving `out/` with a configuration of its own; and **the mark at the top of
-the sidebar**, which links to `/` and is navigated on the client, so no document
-is requested and no server rule runs.
+same rule. Two cases reach it: `next dev`, which has no way to read a header, and
+a host serving `out/` with a configuration of its own. **Nothing inside the site
+links to `/`**: the mark at the top of the sidebar goes to the front page of the
+language being read, and the language picker is what changes language.
 
 **Every section has exactly one owning source and is versioned by that source's
 releases.** A section without one has no honest version axis.

@@ -33,19 +33,18 @@ export function baseOptions(locale: string): BaseLayoutProps {
                     </span>
                 </span>
             ),
-            // **The whole header block is one link, to the root of the site.**
-            // Fumadocs renders `nav.title` inside a single anchor of its own, so
-            // the mark cannot carry a second one without nesting `<a>` in `<a>`.
-            // One destination for the block it is, then.
+            // **The whole header block is one link.** Fumadocs renders
+            // `nav.title` inside a single anchor of its own, so the mark cannot
+            // carry a second one without nesting `<a>` in `<a>`.
             //
-            // **`/` rather than `/${language}/`**, so the mark answers with the
-            // language the reader asked for rather than the one they happen to
-            // be reading. `app/(root)/` is what turns that into a locale — on a
-            // client navigation, which is what this link performs, no document
-            // is requested and the server's `Accept-Language` rule never runs.
-            // The way out to the project's own site is the sidebar footer,
-            // `components/homepage-link.tsx`.
-            url: "/",
+            // **It goes to this language's front page, not to `/`.** `/`
+            // negotiates from `Accept-Language`, so a reader with a Polish
+            // browser reading the English pages would be moved to Polish by
+            // clicking the mark — the site deciding it knew better than the
+            // reader's own navigation. The language picker is what changes
+            // language; the mark goes home. The way out to the project's own
+            // site is the sidebar footer, `components/homepage-link.tsx`.
+            url: `/${language}/`,
         },
         // **No links at all here, deliberately.** Every section is a root folder,
         // so the sidebar already carries a switcher for them at the top; listing
