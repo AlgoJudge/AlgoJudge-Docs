@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i trzy klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: 7b7c0dd7765f6f6910448b3fedc0ff485ed4fe1790bcce4352c6355d5e06c03a
+sourceSha256: 6e8259069b510e56a5c44fb1faa01062a9af792f41184c21734ea6c883c7e50e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -52,7 +52,7 @@ administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/a
 | `HTTPS_PORT` | `443` | |
 | `SERVER_PORT` | `8080` | publikowany wyłącznie na pętli zwrotnej |
 | `CLIENT_PORT` | `8082` | publikowany wyłącznie na pętli zwrotnej |
-| `API_BASE_URL` | `/` | adres Servera tak, jak sięga do niego **przeglądarka**. `/`, gdy jedno origin obsługuje obie połowy. Zobacz [Za własnym proxy](/pl/install/reverse-proxy) |
+| `API_BASE_URL` | `/` | adres Servera tak, jak sięga do niego **przeglądarka**. `/`, gdy jedno origin obsługuje obie połowy. Dwa origins muszą być **tą samą witryną** — jedna domena rejestrowalna, jeden schemat — inaczej nikt się nie zaloguje. Zobacz [Za własnym proxy](/pl/install/reverse-proxy) |
 | `APP_BASE_URL` | puste | jego odbicie lustrzane: adres **aplikacji** tak, jak sięga do niej przeglądarka. Puste jest właściwe przy jednym origin. Przy dwóch pozostawienie go pustym kończy logowanie federacyjne na gołym `/activities`, rozwiniętym względem origin API |
 | `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | czyjemu słowu wierzyć w sprawie adresu odwiedzającego. **Sieć**, nie adres; `none`, gdy Server stoi bez proxy |
 | `EDGE_SUBNET` | `172.28.0.0/24` | sieć Compose, w której stoi dołączony nginx |

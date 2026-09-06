@@ -133,6 +133,13 @@ Both accept a comma-separated list.
 an LTI launch by sending the browser back. `PublicApiUrl` is the address given to
 LTI platforms. Leave both unset where the Client and the Server share an origin.
 
+Where they do not, the two origins must still be the **same site** — one
+registrable domain and one scheme — because the session cookie is `SameSite=Lax`
+and a browser will not keep it across sites. An allowlist entry does not change
+that: CORS decides whether a call may **read** an answer, `SameSite` decides
+whether the cookie is sent at all. [What two origins
+require](/en/install/reverse-proxy#two-different-origins) has the measurement.
+
 <Callout type="warn" title="`Cors:AllowedOrigins` is a list, and a comma-separated one binds nothing">
 It is bound as an array, so it needs indexed variables —
 `AJ_Cors__AllowedOrigins__0=https://algojudge.example`. Writing

@@ -50,7 +50,7 @@ closed and the administrator's password unreachable.
 | `HTTPS_PORT` | `443` | |
 | `SERVER_PORT` | `8080` | published on loopback only |
 | `CLIENT_PORT` | `8082` | published on loopback only |
-| `API_BASE_URL` | `/` | the Server's address as a **browser** reaches it. `/` when one origin serves both. See [Behind your own proxy](/en/install/reverse-proxy) |
+| `API_BASE_URL` | `/` | the Server's address as a **browser** reaches it. `/` when one origin serves both. Two origins must be the **same site** — one registrable domain, one scheme — or nobody can sign in. See [Behind your own proxy](/en/install/reverse-proxy) |
 | `APP_BASE_URL` | empty | its mirror image: where a browser reaches the **application**. Empty is right on one origin. On two, leaving it empty ends a federated sign-in at a bare `/activities`, resolved against the API's origin |
 | `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | whose word to take for a visitor's address. A **network**, not an address; `none` for a Server reached directly |
 | `EDGE_SUBNET` | `172.28.0.0/24` | the Compose network the bundled nginx sits on |

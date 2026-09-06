@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: dc8efca8eeff39b500433fb46b8b8884cb16152cdf5be967dc8e46c98718cd9d
+sourceSha256: 140123969fa94d3e8c4021bb7693a4214eeb03ca1672c319c69da35ed21273a1
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -162,8 +162,53 @@ mówi. Zamknięcie tego należy do Clienta.
 ## Dwa różne origins
 
 Client i Server mogą też stać na różnych origins i to działa. Wtedy
-`API_BASE_URL` to publiczny adres Servera, a origin Clienta trafia do
+`API_BASE_URL` to publiczny adres Servera, `APP_BASE_URL` to adres, pod którym
+przeglądarka sięga po Clienta, a origin Clienta trafia do
 `AJ_Cors__AllowedOrigins` Servera.
+
+<Callout type="warn" title="Musi to być ta sama witryna: jedna domena rejestrowalna, jeden schemat">
+`https://algojudge.example` obok `https://api.algojudge.example` to **jedna
+witryna** — inne origins, ta sama domena rejestrowalna — i wszystko działa.
+`https://algojudge.example` obok `https://algojudge-api.inna` to **dwie** i wtedy
+nikt się nie zaloguje.
+</Callout>
+
+Ciasteczko sesji ma `SameSite=Lax`. Przeglądarka nie zapisze takiego ciasteczka,
+gdy odpowiedź, która je ustawia, przychodzi z innej witryny — więc logowanie
+zawodzi w sposób najtrudniejszy do rozpoznania: `POST /identity/login` odpowiada
+**200** i odsyła `Set-Cookie`, przeglądarka **nie zapisuje nic**, kolejne żądanie
+dostaje **401**, a aplikacja zostaje na ekranie logowania **bez żadnego błędu**.
+
+Atrybut `Domain` tego nie ratuje. `Domain` decyduje, do jakich hostów ciasteczko
+jest wysyłane, a serwer może poszerzyć je najwyżej do własnej domeny nadrzędnej —
+`api.algojudge.example` nie ustawi ciasteczka dla `algojudge-api.inna`. W obrębie
+jednej witryny jest zresztą zbędny: na dwóch nazwach jednej domeny rysunki w
+treści zadania narysowały się z origins API przy ciasteczku host-only, a
+poszerzenie `Domain` sprawiło tylko tyle, że sesja zaczęła jechać na host Clienta
+przy każdym żądaniu o zasób.
+
+Każdy układ przetrwa to, co nie potrzebuje sesji w ogóle: znak firmowy
+instalacji, krój pisma i dokumenty publikowane przez operatora są plikami
+publicznymi i wczytają się skądkolwiek.
+
+### Ustawianie listy dozwolonych origins
+
+Ten stos nie ustawia `AJ_Cors__AllowedOrigins` z tego samego powodu, dla którego
+nie ustawia `AJ_PublicApiUrl`: pusty wpis listy to nie to samo, co brak listy.
+Napisz nakładkę.
+
+```yaml
+# state/origins.compose.yaml
+services:
+  server:
+    environment:
+      AJ_Cors__AllowedOrigins__0: https://algojudge.example
+```
+
+Jeden indeks na origin — `AJ_Cors__AllowedOrigins=a,b` nie wiąże **żadnego**, po
+cichu. Znacznik `<img>` nie potrzebuje CORS w ogóle, więc rysunek może się
+narysować, gdy wszystkie wywołania API są odrzucane; objawem brakującego origins
+jest ekran offline, a nie brakujący obrazek.
 
 ## Certyfikaty
 
