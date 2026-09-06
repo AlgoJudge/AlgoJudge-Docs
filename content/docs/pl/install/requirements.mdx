@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: 0267a9ee7a24f88ad3389bb9c9af5fcefa2b4822c5063982772ab96fab04cddd
+sourceSha256: 8419e38273117f9ac542a780d132dab4c146d72079dacdde98b5ed2b99474a3e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -75,8 +75,8 @@ wymaga przestawiania demona.**
 | Kto tworzy cgroup | Runner | systemd, kiedy poprosi go o to demon |
 | Ile ich jest | jedna na przebieg, potem usuwana | jedna na Runnera, przez cały czas jego działania |
 | Czas procesora przebiegu | odczyt z `cpu.stat` | przyrost `cpu.stat` w czasie przebiegu |
-| Szczyt pamięci **ocenianego** przebiegu | `memory.peak` cgroup, w której było zgłoszenie, zakładanej na każdy przebieg | tak samo, tyle że wewnątrz slice'a |
-| Szczyt pamięci pozostałych przebiegów | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.8** |
+| Szczyt pamięci **ocenianego** przebiegu | `memory.peak` cgroup mieszczącej samo zgłoszenie, zakładanej wewnątrz kontenera zadania | tak samo — tutaj sterownik o niczym nie decyduje |
+| Szczyt pamięci pozostałych przebiegów | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.12** |
 | Jądro | 5.19 i nowsze | 5.19, żeby oceniać; **6.12** wyłącznie dla szczytu kompilacji, programu weryfikującego i interaktora |
 
 Wpis `native.cgroupdriver` w `/etc/docker/daemon.json` nie jest ani potrzebny,
@@ -91,11 +91,14 @@ zapewnia je wszystkie:
 --user 0:0                           # katalogi tego drzewa należą do roota
 ```
 
-**Potrzebują ich oba i żaden bez nich nie wstanie.** Limit pamięci jest
-egzekwowany na cgroup mieszczącej samo zgłoszenie, a tę zakłada Runner — niezależnie
-od backendu. Drzewo, do którego nie umie pisać, jest więc **odmową uruchomienia**
-w obu przypadkach, sprawdzaną przy starcie, a nie odkrywaną po jednym nieudanym
-zadaniu naraz.
+**Potrzebują ich oba.** Limit pamięci jest egzekwowany na cgroup mieszczącej
+samo zgłoszenie, a tę zakłada shim **wewnątrz kontenera zadania** — drzewo
+widoczne przez ten montaż musi więc być zapisywalne przy każdym z backendów. Pod
+`cgroupfs` Runner sprawdza to przy starcie: zakłada cgroup, od razu ją usuwa i
+**odmawia uruchomienia**, jeżeli mu się nie uda. Pod `systemd` przy starcie nie ma
+czego zakładać, więc drzewo bez prawa zapisu wychodzi na jaw dopiero przy
+pierwszym ocenianym przebiegu — jako awaria infrastruktury, która mówi, którego
+zapisu nie dało się wykonać.
 
 Root brzmi groźniej, niż jest. Runner i tak trzyma gniazdo środowiska
 uruchomieniowego kontenerów, co samo w sobie odpowiada rootowi na hoście, więc
