@@ -1,7 +1,7 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 import { i18nConfig, type Locale } from "@/lib/i18n";
-import { documented } from "@/lib/site";
+import { documented, HOMEPAGE } from "@/lib/site";
 import { Mark } from "@/components/mark";
 
 const tagline: Record<Locale, string> = {
@@ -26,14 +26,20 @@ export function baseOptions(locale: string): BaseLayoutProps {
             // empty switcher would suggest the choice exists. A word does not.
             title: (
                 <span className="flex flex-col items-start leading-tight">
-                    <Mark className="mb-1.5" />
+                    <Mark className="mt-2 mb-3" />
                     <span>{tagline[language]}</span>
                     <span className="text-[0.7rem] font-normal whitespace-nowrap text-fd-muted-foreground">
                         {documented.released ?? documented.label[language]}
                     </span>
                 </span>
             ),
-            url: `/${language}`,
+            // **The whole header block is the link, and it leaves for the
+            // project's own site.** Fumadocs renders `nav.title` inside one
+            // anchor of its own, so the mark cannot carry a second one without
+            // nesting `<a>` in `<a>` — and the only way to own that markup is a
+            // client component, which cannot read the drawing off disk. One
+            // destination for the block is the smaller thing.
+            url: HOMEPAGE,
         },
         // **No links at all here, deliberately.** Every section is a root folder,
         // so the sidebar already carries a switcher for them at the top; listing
