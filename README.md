@@ -36,8 +36,20 @@ products release independently. There is no single version of this site.
 | `section` | `install`, `client`, `server`, `runner`, `protocol` |
 | `version` | `v0.1`, `v0.2`, … at minor granularity, or absent |
 
-`/` redirects to `/en/`. That redirect is a web-server rule, not application
-code: a static export runs no middleware.
+**`/` redirects to the language the reader asked for**, `/pl/` or `/en/`, from
+`Accept-Language`. That redirect is a web-server rule, not application code: a
+static export runs no middleware, so it is a `map` in `deploy/nginx.conf` and a
+`location` in `deploy/redirects.conf`. **The first tag in the header decides** —
+browsers send the list in preference order, and ranking `q=` values is not
+something a `map` can do. Anything that is not Polish, and a request with no
+header, is English.
+
+`app/(root)/page.tsx` answers `/` wherever that rule does not run, by reading
+`navigator.languages` — the browser's own copy of the same list, matched by the
+same rule. Two cases reach it: `next dev`, which has no way to read a header, and
+a host serving `out/` with a configuration of its own. **Nothing inside the site
+links to `/`**: the mark at the top of the sidebar goes to the front page of the
+language being read, and the language picker is what changes language.
 
 **Every section has exactly one owning source and is versioned by that source's
 releases.** A section without one has no honest version axis.
@@ -105,12 +117,16 @@ output is not source.
 | `npm run check:structure` | A translation has the same headings, blocks and links as its source |
 | `npm run check:glossary` | Polish uses the interface's own words, and every interface string has one |
 | `npm run check:no-playground` | The built site contacts no installation |
+| `npm run check:fonts` | Every page is painted with the faces this site ships — needs a served site, so it runs locally rather than in CI |
 | `npm run og` | Regenerate the Open Graph card from the wordmark |
 | `npm run snapshot` | The release-day version snapshot |
 
-The theme is Fumadocs' **ocean**. The favicon is the square mark `algojudge.pl`
-already uses and `public/og.png` is generated from the wordmark;
-[BRANDING.md](BRANDING.md) says where both came from and how to check the copies.
+The theme is Fumadocs' **ocean**, set in **Inter** with **JetBrains Mono** for
+code, both shipped with the site rather than named. The mark at the top of the
+sidebar is the wordmark, inlined into the page so that it renders in the face it
+asks for; the favicon is the square mark `algojudge.pl` already uses, and
+`public/og.png` is generated from the outlined drawing.
+[BRANDING.md](BRANDING.md) says where each came from and how to check the copies.
 
 ### Two dependencies are deliberately not the newest
 
