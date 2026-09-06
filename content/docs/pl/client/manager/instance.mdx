@@ -2,7 +2,7 @@
 title: Instancja
 description: Jak nazywa się instalacja, jaki nosi znak, jakie publikuje dokumenty i w jakich kolorach.
 source: en/client/manager/instance.mdx
-sourceSha256: e4fd055a836a9c6514adcfcb652cf9f34491dab6badb632274810bf8159b91b6
+sourceSha256: 18da9cded66ec94b0b6f03536df1e2def30066814c15e764f2b00ada8b512d0f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -23,7 +23,10 @@ Cztery zakładki.
 | Wymagaj adresu e-mail | czy konto musi mieć adres |
 | Wymagaj potwierdzonego adresu do logowania | |
 | Pokazuj znak w aplikacji | |
+| Otwórz stronę główną wprowadzeniem do AlgoJudge | domyślnie włączone. Pokazywane nad Twoją stroną powitalną, osobie niezalogowanej |
 | Pokazuj formularz hasła na ekranie logowania | |
+| Przekieruj ekran logowania prosto do dostawcy | domyślnie „Brak”. Przeglądarka idzie do dostawcy i wraca zalogowana |
+| Przekieruj ekran rejestracji prosto do dostawcy | domyślnie „Brak”, dla instalacji, w której konta pochodzą z katalogu |
 | Pozwól usuwać własne konto | domyślnie włączone |
 | Zezwól na ocenianie przez usługi, których ta instalacja nie prowadzi | domyślnie wyłączone |
 
@@ -41,6 +44,48 @@ zadanie nie jest wydawane, a praca czeka w kolejce — włączysz je później i
 nie stracisz. To właśnie włączenie musi uwzględnić polityka prywatności. Dokąd te
 usługi mogą sięgać, opisują [Zasoby
 zewnętrzne](/pl/client/manager/external-content).
+
+### Wprowadzenie na stronie głównej
+
+Czym jest oprogramowanie — nad tym, czym jest instalacja. Otwiera stronę główną
+osobie niezalogowanej, a Twoja własna strona powitalna renderuje się bezpośrednio
+pod spodem. Wyłącz, a zostanie sam dokument.
+
+**Podróżuje przełącznik, nie treść.** Nagłówek, zdanie, dwa odnośniki i rysunek
+należą do Clienta i tłumaczą się razem z resztą jego interfejsu; ta instalacja
+przechowuje ustawienie i ani jednego słowa. Uczelnia, która chce powiedzieć coś
+innego, mówi to w swojej stronie powitalnej, a nie przez edycję tego — i dlatego
+wprowadzenie jest domyślnie włączone: instalacja, która nie opublikowała strony
+powitalnej, witałaby odwiedzającego pustą stroną.
+
+### Wskazanie dostawcy ekranom logowania i rejestracji
+
+Dwie listy, każda z pozycją *Brak* i każdym logowaniem zewnętrznym, które ta
+instalacja obecnie przyjmuje. Wybierz jedno, a ten ekran przestaje się rysować:
+przeglądarka idzie do dostawcy i wraca zalogowana. Tego chce instalacja, w której
+wszystkie konta pochodzą z jednego katalogu — bo inaczej ekran logowania jest
+stroną z jednym przyciskiem.
+
+To dwa ustawienia, a nie jedno, bo odpowiedzi bywają różne. Uczelnia może brać
+z katalogu każde logowanie i nadal prowadzić własne rejestracje albo przyjmować
+kilka dróg wejścia i tylko nowe osoby odsyłać do katalogu.
+
+<Callout type="warn" title="Przekierowanie to nie zamek i nie może stać się ślepą uliczką">
+`?admin=true` nadal prowadzi do formularza lokalnego. Instalacja, która
+przekierowuje, wciąż ma administratorów, konta lokalne i konta tymczasowe na
+zawody.
+
+**Odmówione logowanie nadal ląduje na ekranie wraz z powodem odmowy**, zamiast
+wracać do dostawcy, który przed chwilą odmówił — a to byłaby przeglądarka
+odbijająca się między dwiema witrynami, bez niczego do przeczytania.
+
+**Wyłączenie dostawcy gasi przekierowanie w tej samej minucie**, a ustawienie
+pamięta slug, więc ponowne włączenie tego dostawcy je przywraca.
+</Callout>
+
+**Na ekranie rejestracji `?admin=true` nie otwiera rejestracji.** Gasi tylko
+przekierowanie; zobaczysz wtedy to, co mówi *Przyjmuj rejestracje lokalne*, czyli
+na takiej instalacji odmowę.
 
 Pod ustawieniami są **klucze dostępu**: nazwane sekrety, które ta instalacja
 przechowuje dla usług, z którymi rozmawia. Są **tylko do zapisu**. Nic na tej

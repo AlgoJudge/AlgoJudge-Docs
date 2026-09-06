@@ -2,7 +2,7 @@
 title: Logowania zewnętrzne i platformy LTI
 description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
-sourceSha256: f1975e4201eee67a205890ef78e40894f14efd9d775e777022109c7cd56a815f
+sourceSha256: 7993182e9e43f4578497f9af6824d7736e029903971a4a92b7be0e2396e25f1f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -37,6 +37,14 @@ komunikatem od dostawcy, a nie stąd.
 
 Puste pole sekretu niczego nie kasuje. Znaczy *zostaw przechowany bez zmian*, a
 opis mówi, w którym z dwóch stanów jesteś.
+
+**Zarejestrowany dostawca jest drogą wejścia, a ekrany ją rysują.** *Załóż konto*
+pojawia się wszędzie tam, gdzie taka droga jest — bo ta instalacja przyjmuje
+rejestracje lokalne albo bo jej ekran rejestracji wskazuje dostawcę — więc
+instalacja bez własnych rejestracji nadal oferuje tę drogę, którą ma. Każdy
+z tych dwóch ekranów można też wysłać prosto do dostawcy, zamiast go rysować.
+Jedno i drugie jest ustawieniem instalacji, a nie dostawcy:
+[Instancja](/pl/client/manager/instance).
 
 ### Mapowanie
 

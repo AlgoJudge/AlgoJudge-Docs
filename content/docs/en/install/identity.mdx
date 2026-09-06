@@ -149,7 +149,8 @@ way in. A `groups` claim is found at the path `groups`.
 
 ## Registering a provider in AlgoJudge
 
-Three steps, in the manager panel, behind the `provider:manage` permission. The
+Three steps, in the manager panel, behind the `provider:manage` permission, and
+a fourth for an installation where this provider is the only way in. The
 screens are [External logins](/en/client/manager/logins).
 
 1. **Register the provider**, and copy the **redirect URI** the screen shows
@@ -160,6 +161,12 @@ screens are [External logins](/en/client/manager/logins).
    not name.
 3. **If the provider can report deletions**, set a back-channel secret and turn
    the channel on.
+4. **If nobody here signs in any other way**, point the sign-in screen at it, in
+   [The instance](/en/client/manager/instance). Without that the screen is a
+   page with one button on it; with it the browser goes straight to the
+   provider. `?admin=true` still reaches the local form, and a refused sign-in
+   still lands on the screen with the code below rather than being sent round
+   again.
 
 ### The fields
 
@@ -285,6 +292,11 @@ side.
 A refused sign-in comes back to the sign-in screen as
 `/login?provider=<slug>&error=<code>`. The person sees a sentence; the code is
 what a support message should quote.
+
+**This works on an installation that redirects, too.** An `error` in the
+address is one of the two things that stop the redirect, precisely so that a
+refusal can be read instead of being handed back to the provider that issued
+it. A redirect never hides a diagnosis.
 
 | | |
 |---|---|
