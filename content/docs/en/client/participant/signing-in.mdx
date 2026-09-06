@@ -6,7 +6,8 @@ description: A local account or your institution's provider, and what changes de
 import { Callout } from "fumadocs-ui/components/callout";
 
 There are two ways into an AlgoJudge installation, and which ones you see on the
-sign-in screen is the operator's decision.
+sign-in screen is the operator's decision — including, on some installations,
+seeing no sign-in screen at all.
 
 ## A local account
 
@@ -41,11 +42,32 @@ Three refusals come back to the sign-in screen with an explanation:
 | *That login method is switched off here* | The operator disabled that provider. |
 | *The sign-in did not complete* | Something went wrong on the way. Try again, or use a password. |
 
+### When you never see the sign-in screen
+
+Where an installation takes all its sign-ins from one provider, the operator can
+point the screen straight at it. You press **Sign in**, read *Taking you to …*
+for a moment, and arrive back signed in without having chosen anything.
+
+**Where you were going survives the trip.** A link into an activity, a
+self-enrolment link with its password, a page you had open when your session
+expired — you land on that page and not on the front one.
+
+Two things still bring the screen back. `/login?admin=true` is the form, which is
+how administrators and temporary contest accounts sign in on such an
+installation. And a **refused** sign-in returns here with its reason rather than
+being sent round again, so the three messages in the table above are as readable
+as they are anywhere else.
+
 ## Creating an account yourself
 
 Most installations do not allow it. Accounts are made by an organiser or arrive
 through a provider, and the registration screen says so plainly rather than
 offering a form whose answer is always no.
+
+**Create account** is therefore not a promise of a form. Where the operator has
+pointed registration at a provider it appears even though this installation
+takes no sign-ups of its own, and it leads to the provider, where whoever
+offers accounts offers them. What the button means is *there is a way in*.
 
 Where it is allowed, **Create account** on the sign-in screen leads to a form:
 

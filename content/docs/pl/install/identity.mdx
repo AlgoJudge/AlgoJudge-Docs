@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
 source: en/install/identity.mdx
-sourceSha256: c1563c87ca827f4ea82cb523754a784cdbe1574b1a34b110c430152a0e5cc31b
+sourceSha256: 75e26dced3f810f67c4f75d926f2717e8124b06d2ac362f91311fa3415472da0
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -153,7 +153,8 @@ przemianowywane. Claim `groups` leży pod ścieżką `groups`.
 
 ## Rejestracja dostawcy w AlgoJudge
 
-Trzy kroki, w panelu Zarządzanie, za uprawnieniem `provider:manage`. Ekrany, na
+Trzy kroki, w panelu Zarządzanie, za uprawnieniem `provider:manage`, i czwarty
+dla instalacji, w której ten dostawca jest jedyną drogą wejścia. Ekrany, na
 których się to robi, to
 [Logowania zewnętrzne i platformy LTI](/pl/client/manager/logins).
 
@@ -165,6 +166,11 @@ których się to robi, to
    nazywa.
 3. **Jeśli dostawca umie zgłaszać usunięcia**, ustaw sekret kanału zwrotnego
    i włącz kanał.
+4. **Jeśli nikt tutaj nie loguje się inaczej**, wskaż go ekranowi logowania,
+   w [Instancji](/pl/client/manager/instance). Bez tego ekran jest stroną
+   z jednym przyciskiem; z tym przeglądarka idzie prosto do dostawcy.
+   `?admin=true` nadal prowadzi do formularza lokalnego, a odrzucone logowanie
+   nadal ląduje na ekranie z kodem z listy niżej, zamiast iść w kółko.
 
 ### Pola
 
@@ -289,6 +295,11 @@ dotykającej tożsamości po którejkolwiek ze stron.
 Odrzucone logowanie wraca na ekran logowania jako
 `/login?provider=<slug>&error=<kod>`. Człowiek widzi zdanie, a kod warto
 zacytować w zgłoszeniu do administratora.
+
+**Działa to również na instalacji, która przekierowuje.** `error` w adresie jest
+jedną z dwóch rzeczy gaszących przekierowanie — właśnie po to, żeby odmowę dało
+się przeczytać, zamiast oddawać ją dostawcy, który ją wystawił. Przekierowanie
+nigdy nie zasłania diagnozy.
 
 | | |
 |---|---|

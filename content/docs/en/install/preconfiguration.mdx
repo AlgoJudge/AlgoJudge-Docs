@@ -94,9 +94,12 @@ instance:
   requireConfirmedEmail: false
   showLogo: true
   showLocalSignIn: true
+  showHero: true
   accountDeletionEnabled: true
   externalJudgingEnabled: false
   seriesRestrictionsEnabled: true
+  signInRedirectProvider: ""
+  registerRedirectProvider: ""
   externalFetchHosts:
     - onlinejudge.org
 ```
@@ -110,6 +113,9 @@ instance:
   not in force.
 - `externalFetchHosts` is the **whole list**, replaced rather than added to. An
   empty list means this installation fetches nothing.
+- `signInRedirectProvider` and `registerRedirectProvider` take a provider's
+  **slug**, and an empty string is off — which is how an installation ships.
+  Naming one here registers nothing; see *What it does not carry* below.
 
 String values expand a `${VARIABLE}` reference from the Server's own
 environment, and nothing cleverer — no defaults, no nesting. **An unresolved
@@ -178,6 +184,14 @@ registered from a file is a sign-in path configured by whoever can write to a
 mount, and a permission template from a file is privilege from a file. Both
 belong to a decision of their own. Register a provider in the panel:
 [Identity](/en/install/identity).
+
+**Naming a provider is not registering one.** The two redirect settings hold a
+slug and nothing else, and a slug on its own is not a sign-in path: nothing
+happens until somebody registers that provider in the panel and enables it,
+and disabling it later stops the redirect while the slug stays written down.
+That is what lets this file name a provider **before any exists** — which it
+has to, because at the first start of an empty database none do, and that is
+the only start this file is read on.
 
 Pre-configuration is also **not the environment**. The `AJ_*` variables
 configure what the process needs in order to start — the database, storage,

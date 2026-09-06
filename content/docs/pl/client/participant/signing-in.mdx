@@ -2,13 +2,14 @@
 title: Logowanie
 description: Konto lokalne albo dostawca tożsamości uczelni — i co się przez to zmienia.
 source: en/client/participant/signing-in.mdx
-sourceSha256: c0e15804553edfcc65c38bcdab313e5746fb190f81c26e37e8982351bd625c27
+sourceSha256: b3f86a0d2e2cd52c3cccdffbcbee94b008dfb2c09bfdbf95465c5d36ff934216
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 Do instalacji AlgoJudge prowadzą dwie drogi. Które z nich zobaczysz na ekranie
-**Logowanie**, decyduje operator.
+**Logowanie**, decyduje operator — a na części instalacji nie zobaczysz tego
+ekranu w ogóle.
 
 ## Konto lokalne
 
@@ -44,11 +45,32 @@ Trzy odmowy sprowadzają Cię z powrotem na ekran logowania, pod nagłówek
 | *Ta metoda logowania jest tu wyłączona.* | Operator wyłączył tego dostawcę. |
 | *Logowanie nie doszło do skutku. Spróbuj ponownie albo użyj hasła.* | Coś poszło nie tak po drodze. |
 
+### Kiedy w ogóle nie widzisz ekranu logowania
+
+Tam, gdzie instalacja bierze wszystkie logowania od jednego dostawcy, operator
+może wskazać go ekranowi. Naciskasz **Zaloguj się**, przez chwilę czytasz
+*Przenosimy Cię do …* i wracasz zalogowana albo zalogowany, niczego nie
+wybierając.
+
+**Miejsce, do którego szłaś czy szedłeś, przeżywa tę podróż.** Odnośnik do
+aktywności, link do samodzielnego zapisu wraz z jego hasłem, strona otwarta
+w chwili wygaśnięcia sesji — lądujesz na niej, a nie na stronie głównej.
+
+Dwie rzeczy nadal przywracają ekran. `/login?admin=true` to formularz i tak na
+takiej instalacji logują się administratorzy oraz konta tymczasowe na zawody.
+A logowanie **odmówione** wraca tutaj wraz z powodem, zamiast iść w kółko, więc
+trzy komunikaty z tabeli powyżej czyta się tak samo jak wszędzie indziej.
+
 ## Zakładanie konta samodzielnie
 
 Większość instalacji na to nie pozwala. Konta zakłada organizator albo
 przychodzą one od dostawcy tożsamości, a ekran rejestracji mówi to wprost,
 zamiast pokazywać formularz, który i tak zawsze odmówi.
+
+**Załóż konto** nie jest więc obietnicą formularza. Tam, gdzie operator wskazał
+rejestracji dostawcę, przycisk jest widoczny, choć ta instalacja nie przyjmuje
+własnych rejestracji — i prowadzi do dostawcy, u którego konta zakłada ten, kto
+je zakłada. Przycisk znaczy tyle: *jest którędy wejść*.
 
 Tam, gdzie jest to dozwolone, **Załóż konto** na ekranie logowania prowadzi do
 formularza:

@@ -2,7 +2,7 @@
 title: Prekonfiguracja
 description: Jak postawić instalację z plików na dysku, zamiast klikać w panelu.
 source: en/install/preconfiguration.mdx
-sourceSha256: 418db718f914ae90a62b8905e5418bfd1318e98bf003ff1ee88269c7b663c109
+sourceSha256: 34950e73d2a699210af602b142ed797e835308258c34ba40da6c9cfb17546bab
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -101,9 +101,12 @@ instance:
   requireConfirmedEmail: false
   showLogo: true
   showLocalSignIn: true
+  showHero: true
   accountDeletionEnabled: true
   externalJudgingEnabled: false
   seriesRestrictionsEnabled: true
+  signInRedirectProvider: ""
+  registerRedirectProvider: ""
   externalFetchHosts:
     - onlinejudge.org
 ```
@@ -117,6 +120,10 @@ instance:
   konfiguracyjny zaczyna twierdzić coś, co nie obowiązuje.
 - `externalFetchHosts` to **cała lista**, zastępowana, a nie uzupełniana. Pusta
   lista znaczy, że ta instalacja nie pobiera niczego.
+- `signInRedirectProvider` i `registerRedirectProvider` przyjmują **slug**
+  dostawcy, a pusty łańcuch znaczy „wyłączone” — i tak instalacja przychodzi.
+  Wpisanie sluga tutaj niczego nie rejestruje; patrz *Czego nie obejmuje*
+  niżej.
 
 Wartości tekstowe rozwijają odwołanie `${VARIABLE}` ze środowiska samego Servera
 i nic ponadto — bez wartości domyślnych, bez zagnieżdżania. **Przy nierozwiązanej
@@ -187,6 +194,14 @@ zarejestrowany z pliku to ścieżka logowania skonfigurowana przez każdego, kto
 prawo zapisu do montowanego katalogu, a szablon uprawnień z pliku to przywilej
 z pliku. Jedno i drugie wymaga osobnej decyzji. Dostawcę rejestrujesz w panelu:
 [Tożsamość](/pl/install/identity).
+
+**Wskazanie dostawcy to nie jego rejestracja.** Oba ustawienia przekierowania
+trzymają slug i nic poza nim, a sam slug nie jest ścieżką logowania: nic się nie
+dzieje, dopóki ktoś nie zarejestruje tego dostawcy w panelu i go nie włączy,
+a późniejsze wyłączenie gasi przekierowanie, zostawiając slug zapisany. Właśnie
+dlatego ten plik może wskazać dostawcę, **zanim jakikolwiek istnieje** — i musi
+móc, bo przy pierwszym starcie pustej bazy nie ma żadnego, a to jedyny start,
+przy którym ten plik jest czytany.
 
 Prekonfiguracja to również **nie to samo co środowisko**. Zmienne `AJ_*`
 konfigurują to, czego proces potrzebuje, żeby wystartować — bazę, magazyn
