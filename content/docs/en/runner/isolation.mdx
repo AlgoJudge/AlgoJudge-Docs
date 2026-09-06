@@ -214,15 +214,15 @@ processes or hand controllers to its children, never both. So the shim moves
 under the limit — still inside the container, and still out of the submission's
 reach.
 
-**Inside rather than beside**, which is the arrangement's one constraint. A
-cgroup made next to the container's is not a descendant of anything the
-container can see, and cgroup2 mounted with `nsdelegate` — how systemd mounts
-it, so on virtually every Linux server — refuses to move a task there. What the
-container is given instead is the host's cgroup namespace, so that
-`/proc/self/cgroup` names its own cgroup and the shim can find it again through
-the one directory it is handed. That grants no write it did not have: the only
-cgroup file it can reach is root's, and the submission is `nobody` by the time
-it runs.
+**Inside rather than beside, and the kernel decided that.** A cgroup made next
+to the container's is not a descendant of the container's own namespace root,
+and cgroup2 mounted with `nsdelegate` — how systemd mounts it, so on virtually
+every Linux server — refuses to move a task there at all. Inside, the migration
+is permitted; what is still needed is a **name**, because `/proc/self/cgroup`
+reads `/` in a private cgroup namespace and the shim would have nothing to look
+for. So a judged container is given the host's cgroup namespace. That grants no
+write it did not have: the only cgroup file it can reach is root's, and the
+submission is `nobody` by the time it runs.
 
 Three things follow that a problem author will notice:
 
