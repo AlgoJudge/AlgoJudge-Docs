@@ -5,9 +5,12 @@ import { createMDX } from "fumadocs-mdx/next";
  * site is served by nginx as files, so the deployment carries no Node runtime.
  *
  * The consequence that catches people is that **middleware does not run**.
- * Locale redirection therefore cannot use `createI18nMiddleware`; `/` is
- * redirected to `/en/` by the web server, and `hideLocale: "never"` in
- * `lib/i18n.ts` keeps every URL carrying its locale so nothing needs rewriting.
+ * Locale redirection therefore cannot use `createI18nMiddleware`: `/` is
+ * negotiated from `Accept-Language` by the web server — the `map` in
+ * `deploy/nginx.conf` — and `hideLocale: "never"` in `lib/i18n.ts` keeps every
+ * URL carrying its locale so nothing needs rewriting. `app/(root)/page.tsx` is
+ * the same decision made in the browser, for the development server and for any
+ * host that serves the export without those rules.
  *
  * **This file is `.mjs` rather than `.ts`** because `fumadocs-mdx` is ESM-only
  * and a TypeScript Next config needs Node's native TypeScript resolver.

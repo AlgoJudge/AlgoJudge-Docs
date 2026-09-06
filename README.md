@@ -36,8 +36,17 @@ products release independently. There is no single version of this site.
 | `section` | `install`, `client`, `server`, `runner`, `protocol` |
 | `version` | `v0.1`, `v0.2`, … at minor granularity, or absent |
 
-`/` redirects to `/en/`. That redirect is a web-server rule, not application
-code: a static export runs no middleware.
+**`/` redirects to the language the reader asked for**, `/pl/` or `/en/`, from
+`Accept-Language`. That redirect is a web-server rule, not application code: a
+static export runs no middleware, so it is a `map` in `deploy/nginx.conf` and a
+`location` in `deploy/redirects.conf`. **The first tag in the header decides** —
+browsers send the list in preference order, and ranking `q=` values is not
+something a `map` can do. Anything that is not Polish, and a request with no
+header, is English.
+
+`app/(root)/page.tsx` answers `/` wherever that rule does not run — `next dev`,
+or a host serving `out/` with a configuration of its own — by reading
+`navigator.languages`, which is the browser's own copy of the same list.
 
 **Every section has exactly one owning source and is versioned by that source's
 releases.** A section without one has no honest version axis.
