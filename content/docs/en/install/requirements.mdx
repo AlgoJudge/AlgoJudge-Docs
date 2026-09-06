@@ -86,13 +86,12 @@ What both need, and `AlgoJudge-Ops` supplies all three:
 --user 0:0                           # the tree's directories are root's
 ```
 
-**Both backends need them.** A memory limit is enforced on a cgroup holding the
-submission alone, made **inside the judged container**, so the tree this mount
-exposes has to be writable whichever backend is in use. Under `cgroupfs` the
-Runner proves it at start — it makes a cgroup, removes it again, and **refuses
-to start** if it cannot. Under `systemd` there is nothing for it to make at
-start, so a tree it cannot write into shows up at the first judged run instead,
-as an infrastructure failure naming the write that did not land.
+**Both backends need them, and neither starts without them.** A memory limit is
+enforced on a cgroup holding the submission alone, made **inside the judged
+container**, so the tree this mount exposes has to be writable whichever backend
+is in use. The Runner proves that at start under both: it makes a cgroup,
+removes it again, and **refuses to start** when it cannot — rather than
+registering, answering the protocol and then failing every job it claims.
 
 Root sounds worse than it is: the
 Runner holds the container runtime's socket, which is root-equivalent on the
