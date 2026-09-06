@@ -8,7 +8,7 @@ divergence.
 | File here | Copied from | SHA-256 |
 |---|---|---|
 | `app/icon.svg` | `AlgoJudge-Website/src/app/icon.svg` | `2d7edce6bd38dab790c6bb668a5c1192d60b48e21b1852d01f08823462654a53` |
-| `public/algojudge-dark.svg` | `AlgoJudge-Assets/logo/algojudge-dark.svg` | `e8a17d7f357137801875ab135b8d2bd0b2f194a5e29df55638c9f393c04b507c` |
+| `public/algojudge-dark.svg` | `AlgoJudge-Assets/logo/algojudge-dark.svg` | `c913495f77421da39c64d6dee54b7ed9a8241240dafdd2c88bed2089c50076f7` |
 
 ```bash
 sha256sum app/icon.svg public/algojudge-dark.svg
@@ -25,10 +25,10 @@ git -C ../AlgoJudge-Website show HEAD:src/app/icon.svg | sha256sum
 ```
 
 **The square mark comes from `AlgoJudge-Website` rather than from Assets**, and
-deliberately: Assets holds the wordmark, which is 241×38 and unreadable at 32
-pixels. The Website already derived a square icon from it for `algojudge.pl`,
-and a documentation site on the same domain should carry the same one rather
-than a second interpretation of the same mark.
+deliberately: Assets holds the wordmark, whose proportion is close to 7:1 and
+unreadable at 32 pixels. The Website already derived a square icon from it for
+`algojudge.pl`, and a documentation site on the same domain should carry the
+same one rather than a second interpretation of the same mark.
 
 `public/og.png` is **generated** from `public/algojudge-dark.svg` by
 `npm run og`, and committed. The wordmark is paths rather than text, so the card
