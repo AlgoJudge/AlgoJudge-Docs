@@ -70,10 +70,10 @@ is emitted verbatim, so the two licence texts live there.
 
 | File here | SHA-256 |
 |---|---|
-| `app/fonts/inter-latin.woff2` | `34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956` |
-| `app/fonts/inter-latin-ext.woff2` | `5c66f9e07e90c6d4ac4922cc68d60de26c17b1858e677fb5e603fce3952b3ff2` |
-| `app/fonts/jetbrains-mono-latin.woff2` | `db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52` |
-| `app/fonts/jetbrains-mono-latin-ext.woff2` | `c89b9cc0bc6262bd4f8d8494b6961601f3aefa829d08c2e3635f4d501d3a47c2` |
+| `app/fonts/inter-latin.woff2` | `3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62` |
+| `app/fonts/inter-latin-ext.woff2` | `34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956` |
+| `app/fonts/jetbrains-mono-latin.woff2` | `83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be` |
+| `app/fonts/jetbrains-mono-latin-ext.woff2` | `db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52` |
 | `public/OFL-Inter.txt` | `5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57` |
 | `public/OFL-JetBrainsMono.txt` | `a76abf002c49097d146e86740a3105a5d00450b1592e820a1109a8c5680cd697` |
 
@@ -81,11 +81,20 @@ is emitted verbatim, so the two licence texts live there.
 sha256sum app/fonts/* public/OFL-*.txt
 ```
 
-**This Inter is not the Inter `AlgoJudge-Client` ships.** That repository carries
-Google's older static weight-600 slice, in which "AlgoJudge" at font-size 41
-measures 215.52 user units; the current variable release draws the same string at
-**187.02** — measured here on the rendered page, 2026-09-07. The drawing's
-canvas is 270.1 units wide because it was sized against the wider one, so the
-wordmark now leaves about 28 units of empty canvas to its right. Nothing is
-clipped and nothing overlaps, and a check that asserted the Client's number
-against this site would be asserting the wrong font.
+**Take each subset file from the block its comment introduces, not the one it
+follows.** In Google's stylesheet the `/* latin */` comment sits **before** its
+`@font-face`, and pairing them the other way round hands every file its
+neighbour's name. Nothing about that is visible from a declaration: the family
+resolves, the file downloads, `document.fonts` reports it `loaded`, and every
+letter is drawn by a system font because the file holds none of them. It shipped
+here once, with the wordmark painted 8 glyphs in Times New Roman and 1 in Inter.
+`npm run check:fonts` is what sees it — it asks the browser which face rendered
+each node rather than which one was asked for.
+
+The measured result, once the files are the right way round: "AlgoJudge" at
+font-size 41 is **215.509** user units here, against 215.52 recorded in
+`AlgoJudge-Client` and 215.500 on the Keycloak sign-in screen — the same face,
+the same metrics, on all three surfaces. The drawing's own canvas is 270.1 units
+and the ink ends at 270.124, so a fortieth of a unit hangs over; `components/mark.tsx`
+carries `overflow: visible` for that, and for the larger overhang a fallback face
+would produce in the moment before Inter arrives.
