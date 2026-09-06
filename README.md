@@ -108,9 +108,12 @@ output is not source.
 | `npm run og` | Regenerate the Open Graph card from the wordmark |
 | `npm run snapshot` | The release-day version snapshot |
 
-The theme is Fumadocs' **ocean**. The favicon is the square mark `algojudge.pl`
-already uses and `public/og.png` is generated from the wordmark;
-[BRANDING.md](BRANDING.md) says where both came from and how to check the copies.
+The theme is Fumadocs' **ocean**, set in **Inter** with **JetBrains Mono** for
+code, both shipped with the site rather than named. The mark at the top of the
+sidebar is the wordmark, inlined into the page so that it renders in the face it
+asks for; the favicon is the square mark `algojudge.pl` already uses, and
+`public/og.png` is generated from the outlined drawing.
+[BRANDING.md](BRANDING.md) says where each came from and how to check the copies.
 
 ### Two dependencies are deliberately not the newest
 
