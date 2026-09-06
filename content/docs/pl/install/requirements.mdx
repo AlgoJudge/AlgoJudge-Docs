@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: 63a2b678ce7c7ed122443acf16c1b6dd2398b1a9521f8ff4dadf20406170ee7e
+sourceSha256: 38e680b9c67e8084773b1c168afea3bdbcfc6b075b8f5f0bc63bd6cca651a3b2
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -91,14 +91,13 @@ zapewnia je wszystkie:
 --user 0:0                           # katalogi tego drzewa należą do roota
 ```
 
-**Potrzebują ich oba.** Limit pamięci jest egzekwowany na cgroup mieszczącej
-samo zgłoszenie, a tę zakłada shim **wewnątrz kontenera zadania** — drzewo
-widoczne przez ten montaż musi więc być zapisywalne przy każdym z backendów. Pod
-`cgroupfs` Runner sprawdza to przy starcie: zakłada cgroup, od razu ją usuwa i
-**odmawia uruchomienia**, jeżeli mu się nie uda. Pod `systemd` przy starcie nie ma
-czego zakładać, więc drzewo bez prawa zapisu wychodzi na jaw dopiero przy
-pierwszym ocenianym przebiegu — jako awaria infrastruktury, która mówi, którego
-zapisu nie dało się wykonać.
+**Potrzebują ich oba i żaden bez nich nie wstanie.** Limit pamięci jest
+egzekwowany na cgroup mieszczącej samo zgłoszenie, a tę zakłada shim **wewnątrz
+kontenera zadania** — drzewo widoczne przez ten montaż musi więc być zapisywalne
+przy każdym z backendów. Runner sprawdza to przy starcie pod jednym i drugim:
+zakłada cgroup, od razu ją usuwa i **odmawia uruchomienia**, jeżeli mu się nie
+uda — zamiast się zarejestrować, odpowiadać na protokół i przewracać się na
+każdym zadaniu, jakie weźmie.
 
 Root brzmi groźniej, niż jest. Runner i tak trzyma gniazdo środowiska
 uruchomieniowego kontenerów, co samo w sobie odpowiada rootowi na hoście, więc
