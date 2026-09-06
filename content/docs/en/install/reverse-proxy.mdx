@@ -157,8 +157,52 @@ the Client.
 ## Two different origins
 
 Serving the Client and the Server on different origins works. Then
-`API_BASE_URL` is the Server's public address, and the Client's origin goes in
-the Server's `AJ_Cors__AllowedOrigins`.
+`API_BASE_URL` is the Server's public address, `APP_BASE_URL` is where a browser
+reaches the Client, and the Client's origin goes in the Server's
+`AJ_Cors__AllowedOrigins`.
+
+<Callout type="warn" title="They must be the same site: one registrable domain, one scheme">
+`https://algojudge.example` beside `https://api.algojudge.example` is **one
+site** — different origins, same registrable domain — and everything works.
+`https://algojudge.example` beside `https://algojudge-api.other` is **two**, and
+then nobody can sign in.
+</Callout>
+
+The session cookie is `SameSite=Lax`. A browser will not keep such a cookie when
+the answer that sets it comes from another site, so the sign-in fails in the way
+that is hardest to diagnose: `POST /identity/login` answers **200** and sends a
+`Set-Cookie`, the browser stores **nothing**, the next request is **401**, and
+the application sits on the login screen with no error anywhere.
+
+A `Domain` on the cookie does not rescue it. `Domain` decides which hosts a
+cookie is sent to, and a server may only widen one to its own parent domain —
+`api.algojudge.example` cannot set a cookie for `algojudge-api.other`. It is also
+unnecessary on one site: measured on two hostnames of one domain, the figures in
+a problem statement drew from the API's origin with the cookie host-only, and
+widening it only sent the session to the Client's host on every asset request.
+
+What survives any arrangement is the part that needs no session at all: the
+instance logo, a branded typeface and the documents an operator publishes are
+public files, and they load from anywhere.
+
+### Setting the allowlist
+
+This stack does not set `AJ_Cors__AllowedOrigins`, for the reason it does not set
+`AJ_PublicApiUrl`: an empty list entry is not the same as no list. Write an
+overlay.
+
+```yaml
+# state/origins.compose.yaml
+services:
+  server:
+    environment:
+      AJ_Cors__AllowedOrigins__0: https://algojudge.example
+```
+
+One index per origin — `AJ_Cors__AllowedOrigins=a,b` binds **zero**, silently.
+An `<img>` needs no CORS at all, so a figure can draw while every API call is
+being refused; the symptom of a missing origin is the offline screen, not a
+missing picture.
 
 ## Certificates
 
