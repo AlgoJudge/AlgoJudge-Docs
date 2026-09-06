@@ -17,7 +17,8 @@
     "snapshot": "node scripts/snapshot.mjs",
     "check:no-playground": "node scripts/check-no-playground.mjs",
     "og": "node scripts/generate-og.mjs",
-    "check:section-links": "node scripts/check-section-links.mjs"
+    "check:section-links": "node scripts/check-section-links.mjs",
+    "check:fonts": "node scripts/check-fonts.mjs"
   },
   "dependencies": {
     "fumadocs-core": "16.15.4",

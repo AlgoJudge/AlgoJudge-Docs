@@ -105,6 +105,7 @@ output is not source.
 | `npm run check:structure` | A translation has the same headings, blocks and links as its source |
 | `npm run check:glossary` | Polish uses the interface's own words, and every interface string has one |
 | `npm run check:no-playground` | The built site contacts no installation |
+| `npm run check:fonts` | Every page is painted with the faces this site ships — needs a served site, so it runs locally rather than in CI |
 | `npm run og` | Regenerate the Open Graph card from the wordmark |
 | `npm run snapshot` | The release-day version snapshot |
 
