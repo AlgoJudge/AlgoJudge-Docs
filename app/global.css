@@ -3,3 +3,92 @@
 @import "fumadocs-ui/css/preset.css";
 
 @source "../node_modules/fumadocs-ui/dist/**/*.js";
+
+/* ── the typefaces ──────────────────────────────────────────────────────────
+ *
+ * **Sent, not named.** A stack that names a family the reader may not have
+ * leaves the page to whatever their machine happens to hold, and the site then
+ * looks different on every machine with nobody able to say which one is right.
+ *
+ * **Two files per family, and both are variable.** One file covers the whole
+ * weight range, so `font-medium`, `font-semibold` and `font-bold` all come out
+ * of the face rather than out of a browser's synthetic bolding — and it is four
+ * files instead of the twelve that static per-weight slices would need.
+ *
+ * **`latin` and `latin-ext`, and the reason is not the one it looks like.** `ó`
+ * and `Ó` are U+00F3 and U+00D3 and live in `latin`; the other sixteen Polish
+ * letters live in `latin-ext`. This site ships Polish as a first language, so
+ * both files are required — trimming to one on the strength of "the diacritics
+ * are in latin-ext" would drop the commonest of them.
+ *
+ * **`font-display: swap`, where `AlgoJudge-Client` gives Inter `block`.** There
+ * Inter draws the mark and nothing else, and a fallback overruns the drawing, so
+ * a swap would flash a broken mark on every cold load. Here Inter is the whole
+ * of the page's text, and `block` would mean a page with no letters on it at all
+ * until the face arrives. So: swap, and `components/mark.tsx` carries
+ * `overflow: visible` so its own flash is wider rather than clipped.
+ *
+ * Both families are under the SIL Open Font License 1.1, whose §2 wants the
+ * licence text with every copy of the font software — and the copy that reaches
+ * anybody is the built one, so `public/OFL-Inter.txt` and
+ * `public/OFL-JetBrainsMono.txt` are in `public/`, which is emitted verbatim.
+ * `BRANDING.md` records where the files came from and their checksums. */
+
+@font-face {
+    font-family: Inter;
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("./fonts/inter-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: Inter;
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("./fonts/inter-latin-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+        U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-weight: 100 800;
+    font-display: swap;
+    src: url("./fonts/jetbrains-mono-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-weight: 100 800;
+    font-display: swap;
+    src: url("./fonts/jetbrains-mono-latin-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+        U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* **Two tokens, and they reach everything.** Tailwind's preflight sets `html`
+ * from `--font-sans` and `code, pre, kbd, samp` from `--font-mono`, and
+ * fumadocs-ui declares no `font-family` of its own anywhere — its search box,
+ * its table of contents and its type tables all ask for the `font-mono`
+ * utility, which reads the same token. So overriding the two here is the whole
+ * of it; there is nothing to chase into a component.
+ *
+ * The fallbacks stay behind each face rather than being dropped: a file that
+ * fails to arrive has to land on something sensible, not on the browser's
+ * default serif. */
+@theme {
+    --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
