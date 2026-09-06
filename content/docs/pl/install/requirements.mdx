@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: e2a737036ff6ab88fd278abbf901e31cdc45bad7381220668040dddb30a3180f
+sourceSha256: 0267a9ee7a24f88ad3389bb9c9af5fcefa2b4822c5063982772ab96fab04cddd
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -17,9 +17,11 @@ compose` — wtyczka, nie starszy skrypt `docker-compose`.
 Runner przy starcie pyta środowisko uruchomieniowe kontenerów o wersję cgroup
 i **odmawia uruchomienia na v1**.
 
-Nie chodzi o szczelność sandboxa: **v1 egzekwuje limity całkowicie poprawnie.**
-Kontener zadania, który przekroczy limit pamięci, zostaje zabity i zgłoszony
-jako `OOMKilled`, a cały zestaw testów adwersaryjnych przechodzi.
+Nie chodzi o szczelność sandboxa: **v1 zamyka kontener zadania całkowicie
+poprawnie** i cały zestaw testów adwersaryjnych na nim przechodzi. Nie ma na nim
+natomiast tego, na czym stoi limit pamięci — osobnej cgroup na przebieg,
+mieszczącej samo zgłoszenie — ani sposobu, żeby zmierzyć, ile zużył proces, który
+już się zakończył.
 
 v1 nie potrafi natomiast **mierzyć**. `memory.peak` i `cpu.stat` to interfejsy
 v2, a w v1 nie ma odpowiednika, który powiedziałby prawdę o procesie, który już
@@ -73,8 +75,9 @@ wymaga przestawiania demona.**
 | Kto tworzy cgroup | Runner | systemd, kiedy poprosi go o to demon |
 | Ile ich jest | jedna na przebieg, potem usuwana | jedna na Runnera, przez cały czas jego działania |
 | Czas procesora przebiegu | odczyt z `cpu.stat` | przyrost `cpu.stat` w czasie przebiegu |
-| Szczyt pamięci przebiegu | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.8** |
-| Jądro | 5.19 i nowsze | 5.19, żeby oceniać; **6.12**, żeby podać szczyt |
+| Szczyt pamięci **ocenianego** przebiegu | `memory.peak` cgroup, w której było zgłoszenie, zakładanej na każdy przebieg | tak samo, tyle że wewnątrz slice'a |
+| Szczyt pamięci pozostałych przebiegów | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.8** |
+| Jądro | 5.19 i nowsze | 5.19, żeby oceniać; **6.12** wyłącznie dla szczytu kompilacji, programu weryfikującego i interaktora |
 
 Wpis `native.cgroupdriver` w `/etc/docker/daemon.json` nie jest ani potrzebny,
 ani szkodliwy.
@@ -88,11 +91,11 @@ zapewnia je wszystkie:
 --user 0:0                           # katalogi tego drzewa należą do roota
 ```
 
-Każdy z backendów potrzebuje ich w innym stopniu i warto wiedzieć, w jakim.
-`cgroupfs` tworzy cgroup, więc bez zapisywalnego montażu i roota Runner **odmawia
-uruchomienia**. `systemd` niczego nie tworzy, tylko czyta, więc uruchamia się i
-ocenia tak czy inaczej — te dwa warunki dają mu wyłącznie **liczbę szczytu
-pamięci**. Sprawdzone pomiarem na wszystkich czterech kombinacjach, 2026-09-03.
+**Potrzebują ich oba i żaden bez nich nie wstanie.** Limit pamięci jest
+egzekwowany na cgroup mieszczącej samo zgłoszenie, a tę zakłada Runner — niezależnie
+od backendu. Drzewo, do którego nie umie pisać, jest więc **odmową uruchomienia**
+w obu przypadkach, sprawdzaną przy starcie, a nie odkrywaną po jednym nieudanym
+zadaniu naraz.
 
 Root brzmi groźniej, niż jest. Runner i tak trzyma gniazdo środowiska
 uruchomieniowego kontenerów, co samo w sobie odpowiada rootowi na hoście, więc
@@ -100,12 +103,13 @@ identyfikator użytkownika w jego kontenerze nigdy nie był granicą. To, co Run
 *uruchamia*, nic na tym nie zyskuje: kontener zadania nadal działa jako
 `65534:65534`, z odebranymi wszystkimi uprawnieniami (`capabilities`).
 
-**Host z systemd i jądrem starszym niż 6.12 traci jedno, i nie jest to werdykt.**
-Dotyczy to **Ubuntu 24.04**, które ma 6.8; **Debian 13** ma 6.12 i jest w
-porządku.
-O limicie czasu rozstrzyga czas procesora, na który nie ma to wpływu; brakuje
-jedynie liczby obok, czyli szczytu pamięci. Runner mówi o tym na poziomie
-`ERROR` przy każdym starcie.
+**Host z systemd i jądrem starszym niż 6.12 traci mniej, niż to brzmi.** Dotyczy
+to **Ubuntu 24.04**, które ma 6.8; **Debian 13** ma 6.12 i jest w porządku.
+Ani werdykt, ani liczby samego zgłoszenia na tym nie cierpią — szczyt ocenianego
+przebiegu czyta się z cgroup założonej na ten właśnie przebieg, więc świeżej i
+niewymagającej zerowania. Brakuje szczytu tych przebiegów, które nie są niczyim zgłoszeniem:
+kompilacji, programu weryfikującego i interaktora, a tych nie pokazuje żaden
+ekran. Runner mówi o tym na poziomie `ERROR` przy każdym starcie.
 
 ## Rdzenie i pamięć
 
