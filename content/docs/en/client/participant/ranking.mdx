@@ -60,10 +60,27 @@ Columns: **Place**, **Contestant**, **Solved**, **Penalty**, then a column per
 problem.
 
 A solved cell shows the time of the accepted submission as a clock — `1:58`
-rather than `118` minutes — with `+2` beneath it for the rejected attempts that
-came before. An unsolved cell with attempts shows a dash and the count. Penalty
-is a clock too, and past a day it keeps counting hours rather than starting a day
+rather than `118` minutes — with `+2` beneath it for the rejections that came
+before. An unsolved cell with attempts shows a dash and the count. Penalty is a
+clock too, and past a day it keeps counting hours rather than starting a day
 component, because these numbers are compared against each other.
+
+Penalty is the minute the problem was solved in, plus **twenty minutes for each
+rejection before that**. The minute is the one begun: a submission at 20:30 is in
+the twentieth. Nothing after the accepted submission counts, so sending one more
+out of habit costs nothing — and neither does a problem you never solved.
+
+<Callout title="A submission the judge did not answer costs nothing">
+A rejection is a **verdict**. Where an evaluation failed or a manager cancelled
+it, nobody ruled on your solution, so no twenty minutes are charged and the cell
+shows a `?` rather than counting against you. A compilation error is a verdict
+like any other and does count.
+</Callout>
+
+**Two contestants level on solves and penalty share a place.** There is no
+further tiebreak: the board will show two firsts and then a third rather than
+choosing between them. The points board shares a place the same way, on an equal
+total.
 
 ## A frozen board
 
@@ -77,6 +94,11 @@ shows `?` rather than a nought.
 That distinction is the whole point: a `?` is *tried, and you may not know yet*,
 which is a different thing from *did not try*. A total that is still moving must
 not read as a settled one.
+
+A freeze is not the only reason for one. Hover a `?` and it says which of three
+it is: *Submitted during the freeze*, *Not judged yet*, or *No verdict was
+returned* — withheld, waiting, and never answered are three different things to
+be told, and only the first has a time when it ends.
 
 ## Find me
 
