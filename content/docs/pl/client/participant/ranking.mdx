@@ -2,7 +2,7 @@
 title: Ranking
 description: Kiedy tablica w ogóle jest, co obejmuje i co oznacza zamrożona kolumna.
 source: en/client/participant/ranking.mdx
-sourceSha256: e01a86d46ea88cf094dccda6f1b1c4d16440b7801cdf36fe3e94dea31fa1880c
+sourceSha256: c3367900cc64e1aa5e094859280bddbf65022e29be498cad607bc2127afa0a91
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -63,10 +63,28 @@ Kolumny: **Miejsce**, **Uczestnik**, **Rozwiązane**, **Czas karny**, a potem
 kolumna na zadanie.
 
 Rozwiązana komórka pokazuje czas zaakceptowanego zgłoszenia jako zegar — `1:58`,
-a nie `118` minut — a pod spodem `+2` za odrzucone próby, które były wcześniej.
-Nierozwiązana komórka z próbami pokazuje myślnik i ich liczbę. Czas karny też
-jest zegarem, a powyżej doby dalej liczy godziny, zamiast zaczynać liczyć dni:
-te liczby porównuje się między sobą.
+a nie `118` minut — a pod spodem `+2` za wcześniejsze odrzucenia. Nierozwiązana
+komórka z próbami pokazuje myślnik i ich liczbę. Czas karny też jest zegarem, a
+powyżej doby dalej liczy godziny, zamiast zaczynać liczyć dni: te liczby
+porównuje się między sobą.
+
+Czas karny to minuta, w której zadanie zostało rozwiązane, plus **dwadzieścia
+minut za każde odrzucenie przed nią**. Liczy się minuta rozpoczęta: zgłoszenie o
+20:30 jest w dwudziestej. Nic po zaakceptowanym zgłoszeniu się nie liczy, więc
+wysłanie jeszcze jednego z przyzwyczajenia nic nie kosztuje — tak samo jak
+zadanie, którego nie udało się rozwiązać.
+
+<Callout title="Zgłoszenie bez werdyktu nic nie kosztuje">
+Odrzucenie to **werdykt**. Jeżeli ocenianie się nie powiodło albo prowadzący je
+anulował, nikt nie ocenił Twojego rozwiązania — nie ma więc dwudziestu minut do
+doliczenia, a komórka pokazuje `?`, zamiast liczyć się na Twoją niekorzyść. Błąd
+kompilacji jest werdyktem jak każdy inny i liczy się normalnie.
+</Callout>
+
+**Dwóch uczestników z tą samą liczbą zadań i tym samym czasem karnym zajmuje to
+samo miejsce.** Nie ma dalszego rozstrzygnięcia: tablica pokaże dwa pierwsze
+miejsca, a po nich trzecie, zamiast wybierać między nimi. Tablica punktowa dzieli
+miejsce tak samo, przy równej sumie.
 
 ## Zamrożona tablica
 
@@ -80,6 +98,12 @@ jest wstrzymany, pokazuje `?`, a nie zero.
 O to właśnie chodzi w tym rozróżnieniu: `?` znaczy *próbował i jeszcze nie wolno
 Ci wiedzieć*, co jest czym innym niż *nie próbował*. Suma, która wciąż się
 zmienia, nie może wyglądać na ustaloną.
+
+Zamrożenie nie jest jedynym powodem takiej komórki. Najedź na `?`, a napisze,
+który z trzech to przypadek: *Zgłoszone w czasie zamrożenia*, *Jeszcze
+nieocenione* albo *Brak werdyktu* — wstrzymane, czekające i takie, na które nikt
+nigdy nie odpowiedział, to trzy różne rzeczy, a tylko pierwsza ma termin, w
+którym się kończy.
 
 ## Znajdź mnie
 
