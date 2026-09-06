@@ -44,9 +44,12 @@ browsers send the list in preference order, and ranking `q=` values is not
 something a `map` can do. Anything that is not Polish, and a request with no
 header, is English.
 
-`app/(root)/page.tsx` answers `/` wherever that rule does not run — `next dev`,
-or a host serving `out/` with a configuration of its own — by reading
-`navigator.languages`, which is the browser's own copy of the same list.
+`app/(root)/page.tsx` answers `/` wherever that rule does not run, by reading
+`navigator.languages` — the browser's own copy of the same list, matched by the
+same rule. Three cases reach it: `next dev`, which has no way to read a header; a
+host serving `out/` with a configuration of its own; and **the mark at the top of
+the sidebar**, which links to `/` and is navigated on the client, so no document
+is requested and no server rule runs.
 
 **Every section has exactly one owning source and is versioned by that source's
 releases.** A section without one has no honest version axis.

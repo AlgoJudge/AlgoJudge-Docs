@@ -106,7 +106,10 @@ for (const { lang } of surfaces) {
         // see this page's `@font-face`.
         check(mark.words === "AlgoJudge", `the mark is the live-text drawing — ${mark.words}`);
         check(mark.svgRequests.length === 0, "and the document requested no .svg at all");
-        check(mark.href === "https://algojudge.pl/", `it links to the project's own site — ${mark.href}`);
+        // Compared as a path, because the origin is whatever host is serving:
+        // 127.0.0.1 in development, docs.algojudge.pl in production.
+        check(mark.href !== null && new URL(mark.href).pathname === "/",
+            `it links to the root of the site — ${mark.href}`);
     }
 
     await page.close();
