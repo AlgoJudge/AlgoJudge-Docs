@@ -8,7 +8,7 @@ divergence.
 | File here | Copied from | SHA-256 |
 |---|---|---|
 | `app/icon.svg` | `AlgoJudge-Website/src/app/icon.svg` | `2d7edce6bd38dab790c6bb668a5c1192d60b48e21b1852d01f08823462654a53` |
-| `public/algojudge-dark.svg` | `AlgoJudge-Assets/logo/algojudge-dark.svg` | `c913495f77421da39c64d6dee54b7ed9a8241240dafdd2c88bed2089c50076f7` |
+| `public/algojudge-dark.svg` | `AlgoJudge-Assets/logo/algojudge-dark.svg` | `beec487f41ff47c14b664c69111ed56da656c3ddec5cb1ac594865c325078332` |
 
 ```bash
 sha256sum app/icon.svg public/algojudge-dark.svg
