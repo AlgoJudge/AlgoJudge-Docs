@@ -31,11 +31,25 @@ nothing is updated.
 
 ## What "something new" means
 
-Not the tag. `SERVER_TAG=0` points at a different image after every release, so
-"is the tag the same" would answer yes for ever. Each running container knows the
-reference it was created from and the image id that reference resolved to at the
-time; after a pull, the same reference resolves to whatever arrived. Those two
-ids differing is exactly "something new".
+Not the tag itself. `SERVER_TAG=0` points at a different image after every
+release, so "is the tag the same" would answer yes for ever. The script asks
+Compose which image it **would** run for each service now, and compares that with
+the image id the container is actually running. Those two differing is exactly
+"something new".
+
+**Asked of Compose rather than of the container**, because the container knows
+only the reference it was created from — so an operator who pins `0.1.0` and
+later writes `0.1.1` would be told nothing had changed, while the image Compose
+had just pulled sat unused.
+
+<Callout type="info" title="The four language images are compared separately">
+`lang-gcc`, `lang-clang`, `lang-python` and `lang-pypy` are not services, so
+`docker compose pull` never fetches them and no service comparison can see them.
+The update pulls all four by name and compares them against what
+`state/current.lock` recorded. A new one counts as "something new", because a
+Runner probes each image once and remembers — it picks a replacement up only when
+its container is recreated.
+</Callout>
 
 ## Versions are tags; what is running is a digest
 
@@ -62,7 +76,10 @@ pulled is not a deployment.
 ```
 
 Restores exactly the images in `state/current.lock`, whatever the tags point at
-now, through an override written to `state/rollback.compose.yaml`.
+now, through an override written to `state/rollback.compose.yaml`. That includes
+the four language images: they go back as `AJ_Sandbox__Image__*` on each Runner,
+because putting an old Runner back beside today's sandboxes is the one
+combination the Runner is not tested in.
 
 <Callout type="warn" title="Bring the stack up with both files until the cause is fixed">
 The override is not read by a plain `docker compose up`, so a plain `up` puts the

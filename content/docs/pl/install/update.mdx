@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: 1df9bb35eed6d7b4dc2c90ea62887eeaf66db6603365d86f33ade1b833f33acc
+sourceSha256: e91c8fdd55729d48cbb61e205978483a3ab61afc82edcb8d7428d729e1f1ddf8
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -33,11 +33,25 @@ zawiedzie, nic nie zostaje zaktualizowane.
 
 ## Co znaczy „coś nowego”
 
-Nie tag. `SERVER_TAG=0` wskazuje po każdym wydaniu inny obraz, więc „czy tag jest
-ten sam” odpowiadałoby „tak” w nieskończoność. Każdy działający kontener zna
-referencję, z której powstał, oraz identyfikator obrazu, na jaki ta referencja
-się wtedy rozwiązała; po pobraniu ta sama referencja rozwiązuje się na to, co
-przyszło. Różnica między tymi identyfikatorami to dokładnie „coś nowego”.
+Nie sam tag. `SERVER_TAG=0` wskazuje po każdym wydaniu inny obraz, więc „czy tag
+jest ten sam” odpowiadałoby „tak” w nieskończoność. Skrypt pyta Compose, jaki
+obraz uruchomiłby **teraz** dla każdej usługi, i zestawia go z identyfikatorem
+obrazu, na którym kontener naprawdę działa. Różnica między nimi to dokładnie
+„coś nowego”.
+
+**Pytany jest Compose, a nie kontener**, bo kontener zna wyłącznie referencję,
+z której powstał — więc operator, który przypiął `0.1.0`, a później wpisał
+`0.1.1`, usłyszałby, że nic się nie zmieniło, podczas gdy pobrany przed chwilą
+obraz leżałby nieużywany.
+
+<Callout type="info" title="Cztery obrazy językowe porównuje się osobno">
+`lang-gcc`, `lang-clang`, `lang-python` i `lang-pypy` nie są usługami, więc
+`docker compose pull` nigdy ich nie pobiera i żadne porównanie usług ich nie
+widzi. Aktualizacja pobiera wszystkie cztery po nazwie i zestawia je z tym, co
+zapisał `state/current.lock`. Nowy obraz liczy się jako „coś nowego”, bo Runner
+bada każdy obraz raz i to zapamiętuje — podmieniony zauważy dopiero wtedy, gdy
+jego kontener powstanie na nowo.
+</Callout>
 
 ## Wersje to tagi; to, co działa, to digest
 
@@ -65,7 +79,9 @@ poprawek, wpisuje `0.1`; kto chce decydować o każdej wersji — `0.1.0`.
 
 Przywraca dokładnie te obrazy, które są w `state/current.lock`, niezależnie od
 tego, na co wskazują dziś tagi, przez nakładkę zapisaną do
-`state/rollback.compose.yaml`.
+`state/rollback.compose.yaml`. Dotyczy to także czterech obrazów językowych:
+wracają jako `AJ_Sandbox__Image__*` przy każdym Runnerze, bo stary Runner obok
+dzisiejszych piaskownic to jedyne zestawienie, w którym Runnera się nie testuje.
 
 <Callout type="warn" title="Do czasu usunięcia przyczyny podnoś stos z obu plików">
 Zwykłe `docker compose up` nie czyta nakładki, więc wstawia nowe obrazy

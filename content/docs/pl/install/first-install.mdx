@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 2a3812fb5bbc0b9fc94d7f3f4ab0e8446a6975f19a05a594e15e25acb8c2d1f3
+sourceSha256: 823ca0ea832d2339c7f38b8cf49b023f12421218553d19f54e4f7ba56d4faa5a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -17,31 +17,24 @@ trafiają do logu, na ekran ani w żadne czytelne miejsce.
 ktokolwiek mógłby wejść, a jedyne wyjście to skasować bazę i zacząć od nowa.**
 </Callout>
 
-<Callout type="warn" title="Tej procedury nie da się dziś przejść do końca">
-Nie wydano żadnej wersji. `ghcr.io/algojudge` jest puste, nie istnieje żaden
-z ośmiu pakietów — `algojudge-server`, `algojudge-client`,
-`algojudge-runner`, `lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy`,
-`algojudge-external-runner` — a `docker compose pull` niczego nie znajdzie. Do
-pierwszego wydania zbuduj obrazy samodzielnie i otaguj je tak, jakby były
-opublikowane: patrz [Praca na obrazach zbudowanych
-lokalnie](#praca-na-obrazach-zbudowanych-lokalnie) na końcu tej strony.
+## Obrazy, i dlaczego nowy może się nie pobrać
+
+Osiem pakietów — `algojudge-server`, `algojudge-client`, `algojudge-runner`,
+`lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy` i
+`algojudge-external-runner` — jest **opublikowanych i publicznych**. `docker
+compose pull` nie wymaga logowania do rejestru, z żadnej maszyny.
+
+Pakiet GHCR utworzony pierwszym pushem jest jednak **prywatny** i żaden workflow
+tego nie zmieni: ktoś z dostępem do pakietów organizacji przestawia go raz na
+publiczny. Warto o tym wiedzieć, bo wraca z każdym nowym obrazem, a objawem jest
+`denied` przy `docker compose pull` w skądinąd poprawnej instalacji.
+
+<Callout type="info" title="Cztery obrazy językowe nie są usługami">
+`docker compose pull` pobiera sześć z ośmiu. `lang-gcc`, `lang-clang`,
+`lang-python` i `lang-pypy` to wartości przekazywane Runnerowi, a nie usługi,
+więc Compose ich nie dotyka: Runner pobiera obraz, gdy hosta go nie ma, a
+`scripts/update.sh` pobiera wszystkie cztery przy aktualizacji instalacji.
 </Callout>
-
-## Raz, ręcznie: pakiety muszą być publiczne
-
-Pakiet GHCR utworzony pierwszym pushem jest **prywatny**. Dopóki każdy z ośmiu
-nie zostanie raz przestawiony na publiczny, `docker pull` wymaga tokenu, a wtedy
-nie ma już znaczenia, że ta instrukcja nigdzie nie każe logować się do rejestru.
-Workflow wydania tego nie zrobi; musi to zrobić ktoś z dostępem do pakietów
-organizacji.
-
-**Ósmy różni się od pozostałych siedmiu.** `algojudge-external-runner` jest
-budowany z prywatnego repozytorium, więc to, czy w ogóle zostanie
-upubliczniony, jest decyzją, a nie krokiem. Jeśli nie zostanie, profil
-[zewnętrznego sędziego](/pl/install/external-runner) jest w tym stosie jedynym,
-który przed `up` wymaga `docker login ghcr.io`.
-
-Na razie nie ma tu nic do zrobienia — żaden z ośmiu nie istnieje.
 
 ## 1. Klon i konfiguracja
 
@@ -192,8 +185,11 @@ zakomentowane, opisuje [Praca rutynowa i harmonogram](/pl/install/schedule).
 
 ## Praca na obrazach zbudowanych lokalnie
 
-Dopóki nie ma wydania, zbuduj repozytoria produktowe i otaguj je tak, jakby były
-opublikowane. `compose.yaml` zadziała bez zmian. **Ścieżkę po `-f` liczy się
+**Tak się tego stosu normalnie nie uruchamia** — od tego są obrazy
+opublikowane, które pobierze każdy. To jest sposób na pracę z kodem, który
+**nie jest wydany**: ze zmianą w repozytorium produktowym albo z poprawką w
+drodze do pull requesta. Zbuduj ją, otaguj tam, gdzie stałby obraz opublikowany,
+a `compose.yaml` zadziała bez zmian. **Ścieżkę po `-f` liczy się
 względem katalogu, w którym stoisz, a nie względem kontekstu budowania** — linia
 Servera jako jedyna zawiera ścieżkę, więc to ją warto sprawdzić.
 
