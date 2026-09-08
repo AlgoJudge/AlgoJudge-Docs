@@ -153,7 +153,7 @@ Two values are secrets and have no defaults.
 | `AJ_External__SubmitMinIntervalSeconds` | `5` | |
 | `AJ_External__PendingTimeoutSeconds` | `900` | how long to wait for the judge |
 | `AJ_External__MaxPending` | `20` | submissions in flight. Zero is refused |
-| `AJ_External__LongPollEnabled` | `false` | accepted; the trigger behind it is not built |
+| `AJ_External__LongPollEnabled` | `false` | ask the judge's live stream to say when something was decided, instead of waiting out the interval. UVa only, and off unless set |
 | `AJ_Cache__Path` | `/var/cache/algojudge-external-runner` | where a submission's source is cached on its way to the judge |
 | `AJ_Cache__MaxBytes` | `268435456` (256 MiB) | the cache ceiling. Plain bytes only |
 | `AJ_Lease__RequestSeconds` | `1200` | |
@@ -280,16 +280,21 @@ A submission the activity's rules refuse — a language the manager excluded —
 reported as `PolicyViolation`, the same word `standard-io@1` uses, and **nothing
 is sent to the judge at all**.
 
-## The long-poll flag is accepted and does nothing
+## The long-poll accelerator
 
-**Setting it changes nothing at all today**, and that is the honest sentence
-rather than a description of what it would do. The loop hands the scheduler a
-literal `false` and always has, so the flag has never reached the polling
-behaviour from configuration. What it does reach is **one warning at start-up**,
-saying the trigger behind it is not built.
+**Off unless you set it**, and what it changes is *when* a verdict is noticed,
+never what the verdict is.
 
-It defaults to `false`. A default of `true` would cost nothing — it could not,
-given the above — but it would describe the Runner as doing something it does
-not do.
+Switched on, the Runner takes its position in the judge's live-event stream
+**before it submits**, then holds a request open against that stream — up to a
+minute at a time — and collects as soon as an event about its own account
+arrives, instead of waiting out the polling interval. Switched off, verdicts
+arrive on the interval alone: slower, and not wrong.
 
-Verdicts arrive on the polling interval alone, which is slower but not wrong.
+**It is an accelerator, not a source of truth.** The stream is global to the
+judge and keeps only its most recent events, so it can miss one under load. The
+polling interval stays underneath it and is what actually guarantees a verdict is
+collected — which is why turning this on does not let the interval be shortened.
+
+Only the UVa integration has such a stream. A judge without one ignores the
+setting.
