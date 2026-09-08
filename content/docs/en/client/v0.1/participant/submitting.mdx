@@ -1,0 +1,122 @@
+---
+title: Sending a solution
+description: Three problem types ask for three different things, and what is checked before anything leaves your browser.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The form is at **Submit** in the navigation, on the button beside every problem
+in the list, on the button at the top of a statement, and behind **Send** in the
+submissions panel in the corner. **That last route is not on a phone**: on a
+screen narrower than 768px the corner panel is not drawn at all, because there it
+would sit on top of the form's own **Send** button. Nothing is lost — the
+navigation has both **Submit** and **My submissions**.
+
+Opening **Submit** with no problem chosen gives you a picker. It offers only the
+problems of rounds that are **open**, because those are the only ones that would
+accept anything.
+
+## Three problem types, three forms
+
+<Callout type="warn" title="You meet exactly one of them">
+Which fields the form has is decided by the problem's type. You cannot pick, and
+a form that is missing an editor or a language box is not broken.
+</Callout>
+
+### `standard-io@1` — a program that reads input and writes output
+
+- **A language must be chosen.** The list comes from the assignment; where it
+  names none, the form offers every language this build knows.
+- **An editor or a file**, not both. **Solution file** accepts `.c`, `.cpp`,
+  `.cc`, `.cxx`, `.c++` and `.py` — a superset of what any one toolchain takes,
+  because the browser's filter is a convenience and the Runner is the gate.
+
+### `uva@1` — judged on UVa Online Judge
+
+- **An editor only.** There is no file field: the archive takes source, and only
+  source.
+- **A language must be chosen.**
+- **Two notices sit above the fields, and they are there to be read before you
+  send:**
+
+  > This solution is sent to onlinejudge.org to be judged, and is stored there.
+
+  > The program must return 0 to the shell, or the archive reports a runtime
+  > error whatever it printed.
+
+  The first is the most significant property of the type and not a technical
+  detail: your work leaves this installation and is kept by a third party. The
+  second is a genuine surprise if you are used to a local judge — a correct
+  program that exits with a non-zero status is reported as a runtime error.
+
+### `output-only@1` — the answers, not a program
+
+- **No editor at all.** You send the answers you worked out, by whatever means
+  you worked them out.
+- **A file**. **Answer file** accepts `.zip`, `.out` and `.txt`: one archive with
+  an answer per test, or a single file for a problem with one test.
+- **No language**, because nothing is compiled and nothing is run. Asking for one
+  would be asking about a program that does not exist.
+
+A problem of a type this version does not know still gets a usable form — an
+editor, a file field and a language box — from what the Server declares.
+
+## First field wins
+
+Where both an editor and a file field are offered, filling one locks the other.
+Type in the editor and the file field is disabled; attach a file and the editor
+goes read-only and says *A file is attached, so the editor is disabled*. Clear
+the file to get the editor back.
+
+A submission never carries two sources, so nothing has to guess which one you
+meant.
+
+## What is checked before anything is sent
+
+The form refuses, with the message in red above the button, when:
+
+| Message | Why |
+|---|---|
+| *Choose a programming language* | the type wants one and none is selected |
+| *Provide a solution: paste the code or attach a file* | both are empty |
+| *The selected file is empty* | zero bytes |
+| *The file is larger than the limit of …* | over the activity's upload limit |
+| *The solution is larger than the limit of …* | the same, for pasted source |
+| *Allowed file types: …* | the extension is not on the type's list |
+
+Nothing has left your browser at that point.
+
+Once it passes, a **SHA-256 of exactly what is being sent** is computed here and
+travels with it. The Server recomputes it and refuses a mismatch, so a truncated
+upload fails instead of being judged.
+
+## A round that is not accepting
+
+The button is disabled and an orange notice gives the reason **before** you write
+an answer, rather than after you have finished one:
+
+| State | What it says |
+|---|---|
+| paused | *This series is paused. Nothing is accepted until it starts again.* |
+| ended | *This series has ended. The statements stay readable; nothing more is accepted.* |
+| not started | *This series has not started yet.* |
+
+The Server refuses these too. The form is telling you early, not deciding.
+
+## Your allowance
+
+Where the activity sets a limit, a **Submissions left** badge appears on the
+statement, and the form raises it to a yellow warning at three or fewer. Absent
+means unlimited.
+
+An [excluded](/en/client/v0.1/participant/results) submission still counts against it.
+In a group, the allowance belongs to the group.
+
+## Afterwards
+
+Sending takes you straight to the submission's own screen, so **Queued** is
+something you see rather than something you go looking for. See
+[What happened to my submission](/en/client/v0.1/participant/results).
+
+Where the corner panel is on screen, sending from it leaves you where you were,
+and the panel shows the new row.

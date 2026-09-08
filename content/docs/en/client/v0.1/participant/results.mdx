@@ -1,0 +1,177 @@
+---
+title: What happened to my submission
+description: The six states, the header, the per-test table, and the result that has no table at all.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+## Finding it
+
+**My submissions** lists everything you have sent in this activity, ten to a
+page, with columns **Submission date**, **Problem**, **Language**, **Status** and
+**Result**. Filter by problem, by series, and by status. Clicking a row opens it.
+
+Rows update themselves as verdicts arrive — that is what the screen is for. So
+does the panel in the bottom-right corner, which keeps your last dozen in view
+wherever you are.
+
+## The six states
+
+| State | What it means |
+|---|---|
+| **Queued** | sent, waiting for a Runner to pick it up |
+| **Running** | a Runner is evaluating it |
+| **Completed** | it finished, and there is a verdict |
+| **Failed** | the evaluation itself broke |
+| **Cancelled** | a manager called it off, queued or mid-evaluation |
+| **Superseded** | a rejudge overtook it before a Runner picked it up, so it was never evaluated |
+
+<Mermaid chart={`
+flowchart LR
+    sent(["You send it"]) --> queued["Queued"]
+    queued -->|"a Runner takes it"| running["Running"]
+    running -->|"a verdict"| done["Completed"]
+    running -->|"the evaluation broke"| failed["Failed"]
+    queued -->|"a rejudge overtook it"| superseded["Superseded"]
+    queued -->|"a manager called it off"| cancelled["Cancelled"]
+    running --> cancelled
+`} />
+
+Nothing a Runner already holds is interrupted: an attempt in flight finishes,
+and the new one waits behind it.
+
+**Superseded only ever appears on an *attempt*, never on the submission
+itself.** A rejudge always adds a newer attempt and the submission's badge
+follows the newest, so this is something you meet in the *Evaluation attempts*
+list further down.
+
+While a submission is still being judged, the badge shows the state. Once it is
+done, the badge shows the **verdict** instead — the short label the Runner
+produced, such as `Accepted`.
+
+**The colour comes from the score, never from the verdict text.** Full marks are
+green, some marks yellow, none red. A verdict is a string belonging to the
+problem type, and matching on the word "Accepted" would work for one type and
+quietly mislead for another.
+
+## The header
+
+| Field | What it is |
+|---|---|
+| **Author** | who sent it |
+| **Submission date** | in the activity's own time zone, with the zone shown |
+| **Language** | the toolchain's label, or `—` where the type has none |
+| **ID** | the submission's identifier — quote it when asking about it |
+| **Result** | `score / maximum`, or `—` while there is none |
+| **Status** | the badge described above |
+
+**Problem** leads back to the statement, and is always there. **Source code**,
+to [what you sent](/en/client/v0.1/participant/source-code), appears only when the
+activity shares that submission's files with you. No files, no button — a button
+onto an empty screen is a promise this screen cannot keep.
+
+## While it is still being judged
+
+Instead of an empty table you get a blue panel with a spinner: *Waiting for a
+Runner to pick this up*, then *A Runner is evaluating this submission*. It
+replaces itself with the result when one arrives. You do not have to reload.
+
+## The per-test table
+
+For `standard-io@1` and `output-only@1` — they share the table, because a
+per-test table is a per-test table:
+
+| Column | What is in it |
+|---|---|
+| **Test** | the test's number |
+| **Status** | `OK`, `WARNING`, `ERROR`, coloured accordingly |
+| **Time** | the processor time your program used, and the limit beside it |
+| **Memory** | the same, in MiB |
+| **Result** | the points for that test, against its maximum |
+| **Comments** | why it failed, and the note from whatever judged it — a checker, or an interactor on an interactive problem |
+
+Time and memory turn amber past half the limit and red at or over it.
+
+**Time is processor time, not how long you waited.** It is what the machine
+spent running your program, so starting the container that ran it is not charged
+to you and neither is waiting. Two consequences follow, and both are deliberate:
+a program that sleeps, or that blocks waiting for something, spends none of its
+limit — and a program that uses several threads spends the limit faster, because
+the time of every thread is added together.
+
+Waiting is not free without end. A submission still running long after its limit
+is stopped and marked *Time limit*, the same as one that computed too long; the
+comment says which.
+
+The **Comments** column leads with the reason, in the same words every time, so
+a column of failures can be read straight down: *Wrong answer*, *Time limit*,
+*Memory limit*, *Output limit*, *Runtime error*, *Rule violation*, *Compilation
+error*. A reason this version of the interface does not recognise is not printed
+raw; you get the judging program's note instead, which is where the detail is
+anyway.
+
+Two other things it may say: *No test results are available for this submission*,
+and *Tests will appear here once the evaluation finishes*.
+
+## A `uva@1` result has no per-test table
+
+<Callout type="warn" title="The verdict is somebody else's">
+A `uva@1` problem is judged on onlinejudge.org. AlgoJudge holds your submission
+and the answer that came back, and computes nothing. **There is no per-test
+table because the archive discloses none** — no test count, no percentage, no
+groups — so a table would be a shape invented to look familiar. It is accepted
+or it is not; there is no partial credit.
+</Callout>
+
+What you get instead:
+
+- the archive's **verdict**, with its abbreviation,
+- the sentence *Judged by onlinejudge.org, which is not this installation. The
+  verdict is theirs.*,
+- a small table: **Run time**, **Problem in the archive**, **Submission in the
+  archive**, **Sent**, **Judged**. The archive's identifiers are shown as text,
+  never as links — a participant screen reaches no other host.
+
+Two special cases:
+
+- **Never judged.** *This submission was never judged by the external judge*,
+  with what went wrong underneath. That is a different thing from a wrong
+  answer, and only one of the two is about your solution.
+- **A compilation error.** *The archive reports a compilation error. It does not
+  disclose the compiler's output.* The archive sends that output by email and
+  excludes warnings, so there is nothing here to show.
+
+## The evaluation log
+
+A **Evaluation log** card appears below the result when there is one to show.
+Whether you may read it is the activity's decision: the Server sends the file or
+it does not. When it is absent the card is simply not there, and no distinction
+is drawn between "nothing was logged" and "this is not for you".
+
+## Attempts
+
+A submission is judged more than once when it is rejudged. The source is the same
+bytes; each run is an **attempt** of its own.
+
+An **Evaluation attempts** accordion appears once there is more than one, with
+the count beside its name, carrying each attempt's number, when it started, its
+state and verdict, and its score. Newest first. The result drawn above the
+accordion is the newest attempt's.
+
+## An excluded submission
+
+<Callout type="warn" title="Judged, but not counted">
+An orange notice reading *This submission is not counted in the ranking. It still
+counts against your submission limit.* means a manager ruled that it counts
+towards no standing.
+</Callout>
+
+**The score above stays what it was.** An exclusion rules on what a submission
+counts for, not on what the judge said — so the screen tells you outright,
+because otherwise this screen and the ranking describe one submission
+differently with no way to find out why.
+
+The row in the corner panel carries an orange **Not counted** badge for the same
+reason. The reason for the exclusion is not shown here; it is on the manager's
+screen and in your own data export.

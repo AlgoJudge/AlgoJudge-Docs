@@ -1,0 +1,109 @@
+---
+title: An external judge
+description: Forwarding some problems to an outside archive, and the two switches that are not in .env.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Some problems can be judged by an external archive rather than by this
+installation. The submission is forwarded there, compiled by their compilers
+under their limits against their tests, and what comes back is what they said.
+
+This installation records that verdict and names the judge behind it. It cannot
+explain it, re-run it, or disagree with it.
+
+<Callout type="warn" title="It needs an account at that archive">
+Every submission this installation forwards is made under one account there and
+stays on it, permanently. That is a decision for whoever owns the account. When
+testing, submit something written to be wrong, so its record stays honest.
+</Callout>
+
+## It is an addition, not an arrangement
+
+`external-runner` is a profile you add to whichever of [the
+arrangements](/en/install/v0.1) you already run — or one you give a machine of its
+own, exactly as a [Runner](/en/install/v0.1)
+can have one. It is **not** in the default set, because an installation with no
+account at an archive must not be handed a container that cannot sign in.
+
+```ini
+COMPOSE_PROFILES=edge,app,data,runner,external-runner
+EXTERNAL_JUDGE_USERNAME=
+EXTERNAL_JUDGE_PASSWORD=
+```
+
+`preflight.sh` refuses when the profile is on and those two are empty. It has to:
+the container would otherwise exit while reading its configuration, and behind
+`restart: unless-stopped` that is a crash loop rather than one line in a log —
+in an image with no shell to look into and no health check to go red.
+
+## Two switches that are not in `.env`
+
+Both leave the queue empty with the Runner looking perfectly healthy, which is
+why they are worth knowing before you go looking for a fault.
+
+1. **External judging is off until this installation turns it on.** It is a row
+   in the database. Before the first start, in
+   [`preconfig/`](/en/install/v0.1/preconfiguration):
+
+   ```yaml
+   instance:
+     externalJudgingEnabled: true
+     externalFetchHosts:
+       - onlinejudge.org
+   ```
+
+   Afterwards it is a manager's switch in the panel.
+
+2. **An administrator approves it in the panel**, separately from every other
+   Runner. It has its own identity and its own approval, and it waits with no
+   timeout.
+
+## The problem has to be an external one
+
+Typed for the archive — `uva@1` for the one integration that exists — marked
+external, and with the archive's problem number in its version's `props`. A
+locally typed problem is never offered to a forwarding Runner: the Server pairs
+the two on that flag, by equality in both directions.
+
+**One process serves one judge.** `EXTERNAL_JUDGE` names it, `uva` is the only
+one built, and an unrecognised name is refused at startup rather than defaulted.
+A second archive is a second service with its own account and its own identity
+volume, not a second value in a list.
+
+## What it needs, and what it does not
+
+It dials out twice — to the Server and to the archive — and accepts nothing.
+
+- **No inbound port**, no listener, and no address of its own.
+- **No Docker socket**, no `DOCKER_GID`, no language images, no work directory.
+  It runs nothing; it forwards.
+- **No health check**, and that is the image rather than an omission: it is
+  `distroless/static`, with no shell and no port to ask. `docker compose ps`
+  shows an empty health column for it for ever, and `docker compose exec` does
+  not work on it at all.
+
+```bash
+docker compose logs -f external-runner
+```
+
+is the whole of the instrumentation. It says what it registered as, what it
+declared, and what it is waiting for.
+
+<Callout type="warn" title="A restart can cost a duplicate submission">
+It holds the set of submissions the archive has not answered for **in memory**,
+and an external job may legitimately be held for fifteen minutes. Killed, it
+loses that set; the Server reclaims the leases, requeues the jobs, and each one is
+sent to the archive a second time under your account.
+
+**Stopping it politely does not avoid that, and is still worth doing.** On
+`SIGTERM` it hands every job it is holding back to the queue at once — up to
+twenty, one call each, which is what `EXTERNAL_RUNNER_STOP_GRACE` is sixty
+seconds for. The answers still coming from the archive have nowhere to land
+either way.
+
+Before a window that will restart it, drain first — see
+[Maintenance](/en/install/v0.1/maintenance), which has the arithmetic on why a
+300-second forced close and a fifteen-minute external job do not meet on their
+own.
+</Callout>

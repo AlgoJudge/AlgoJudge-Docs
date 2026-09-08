@@ -1,0 +1,107 @@
+---
+title: Problem and ProblemVersion
+description: A library entry and its append-only content revisions — and the two different things the word "version" means here.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A `Problem` is an entry in the installation's library. Its content lives in
+`ProblemVersion` rows, which are **append-only**: a statement that changes never
+rewrites what an earlier evaluation was judged against.
+
+Attaching a problem to a series produces an
+[assignment](/en/server/v0.1/concepts/assignment), which is a separate row and where
+the per-use configuration lives.
+
+## Two axes both called version
+
+<Callout type="warn" title="`Problem.Type` and `ProblemVersion.Version` version different things">
+`Problem.Type` is `name@version` — `standard-io@1`. It versions the **kind** of
+problem, and with it the renderer and handler contract.
+
+`ProblemVersion.Version` is an integer incrementing from 1. It versions **this
+problem's content** — its statement, its tests, its package.
+
+A problem may sit at `standard-io@1` and be on its ninth content version.
+</Callout>
+
+## Problem
+
+| Field | Meaning |
+|---|---|
+| `Slug` | unique per installation. Copied into a new assignment's slug by default |
+| `Type` | the problem type discriminator. Never parsed by the Server |
+| `External` | whether judging this problem sends a submission **outside** this installation |
+| `OwnerUserId` | who owns it. A problem is **private by default**: only its author sees it and only its author may attach it |
+| `Visibility` | `Private`, `Shared` or `Instance` |
+| `ArchivedAt` | retired: gone from the attach picker, taking no new versions, while every assignment already using it keeps working |
+| `SharedWith` | under `Shared`, who else may see it |
+
+`External` is **set once, at creation, and permanent**. Versions are append-only
+and a republished statement never changes where the work goes, so an
+installation that asks *does anything here leave the building* must not get a
+different answer depending on which version is read. A local equivalent of an
+external problem is a new problem with its own slug, not this flag turned off.
+
+The Server knows nothing else about it: it never asks which service, never
+parses the type, never treats one external problem differently from another. It
+is a boolean it stores and compares against a Runner's own boolean.
+
+**Deletion is refused while any assignment still points at the problem**, and
+the database enforces that on its own through `DeleteBehavior.Restrict` — not
+only the service layer. Archive it instead.
+
+### The one access control list in the product
+
+`ProblemShare` lists the users a `Shared` problem is shared with. It is an ACL,
+and it is the only one.
+
+The permission model settles what a manager may **do** with a problem; the share
+list settles **which** problems that applies to. Keeping the two apart is what
+stops the exception becoming a second authorisation system — nothing else gets a
+list like this.
+
+## ProblemVersion
+
+One immutable revision: statement, tests, limits. A correction publishes a new
+version rather than editing an old one, so a result stays attached to what was
+actually evaluated.
+
+| Field | Meaning |
+|---|---|
+| `Version` | increments from 1 within its problem |
+| `CreatedByUserId` | who published it |
+| `Note` | free note explaining what changed, shown to managers only |
+| `Props` | `jsonb`, **opaque to the Server** |
+| `Files` | everything this version is made of, as references |
+
+### `Props` is identity, not settings
+
+`ProblemVersion.Props` carries what the problem type needs to know about *this
+version of this problem*. The example that earned it: `uva@1` needs the
+archive's problem number, which is a fact about the problem rather than about
+one activity's use of it. Copying it onto every assignment would be one number
+written in as many places as the problem is attached, and wrong in whichever of
+them somebody mistyped.
+
+It is optional here and required by some types. The Server cannot tell which: it
+does not read this and must not branch on a problem type. A Runner that needs it
+and does not find it reports an infrastructure failure naming what is missing.
+
+Null means none; never `{}`.
+
+### There is no statement concept
+
+The Server stores references to files and nothing else. `content.md` is a
+well-known [`FileReference.Name`](/en/server/v0.1/concepts/file), understood by the
+Client and never read by the Server.
+
+The bytes are shared between versions: carrying a figure forward into the next
+version is a second reference, not a second upload.
+
+<Callout type="warn" title="Configuration is a chain of two, not three">
+A version carries no configuration of its own. A version wanting different
+limits is a version with a different package, because limits are calibrated
+against the tests that version ships. What overlays the package's
+own `config.yml` is the assignment, and nothing else.
+</Callout>

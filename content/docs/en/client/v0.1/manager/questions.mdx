@@ -1,0 +1,49 @@
+---
+title: Questions and announcements
+description: Answering one person, publishing the answer to everyone, and announcing.
+---
+
+The area lists questions and announcements across every activity you manage.
+Filter by activity, by series inside it, by kind, or by a search on the topic,
+the body or the author — and there is a **waiting for an answer** switch for the
+one list that matters during a contest. The filters are in the address, so the
+list you are working from is a link.
+
+## Answering and publishing are two acts
+
+**An answer stays private until you publish it.** Most answers concern one team's
+submission and would tell everybody else nothing; the few that are worth
+publishing become the FAQ a contest needs.
+
+The answer dialog carries one switch — **publish to every participant** — so
+answering and publishing can be done in a single step where you already know the
+answer is general. Leave it off when the answer concerns only this person.
+
+An answer can be edited afterwards, and a published question can be unpublished.
+
+**An unanswered question cannot be published**: showing everyone the doubt
+without the answer helps nobody, and the control is refused rather than failing
+after the click.
+
+Answering is `question:answer`; publishing is `question:publish`. Both are in the
+shipped `manager` template, and an installation may hand out one without the
+other.
+
+## Announcements
+
+**New announcement** needs an activity chosen in the filter above it — an
+announcement belongs to one. It takes a topic, a body, and optionally a series;
+empty means the whole activity.
+
+**An announcement is published the moment it is created.** There is no draft
+state for one, and the dialog says so before you save. It can be deleted
+afterwards; a question cannot.
+
+A published item carries a read count, which is how you find out whether the
+thing you announced was seen.
+
+## Turning the whole thing off
+
+Questions and announcements are a **module** on the activity's settings tab.
+Disabled, it leaves the participant's sidebar entirely rather than showing an
+empty screen.

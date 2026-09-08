@@ -1,0 +1,102 @@
+---
+title: External content
+description: Where the installation may fetch documents from, and whether it may at all.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Importing a problem from somewhere else needs its statement, and a host that
+sends no `Access-Control-Allow-Origin` header cannot be read by a browser however
+willing the manager. So the **Server** fetches it — and only from hosts named on
+this screen.
+
+## The switch is not on this screen
+
+<Callout type="warn" title="A list of destinations reads as permission when the door is in fact shut">
+Whether any of this happens at all is *allow judging by services this
+installation does not run*, on the [instance settings](/en/client/v0.1/manager/instance)
+screen. It is **off by default**. While it is off nothing here is fetched and no
+such problem is handed out — the work simply waits — so turning it on later loses
+nothing.
+</Callout>
+
+The page says so at the top when the switch is off, before it shows you the list.
+
+## The list of hosts
+
+Add a host by name, remove one with the button beside it. What is stored is a
+list of names, and the matching is deliberately narrow:
+
+- compared on the **whole host**, so a name that merely ends with one of these
+  does not match;
+- **HTTPS only**, and the **default port** only;
+- removing everything means this installation fetches nothing.
+
+Changing the list saves immediately. `instance:update` is what opens the area, so
+the same person who can turn the switch on decides where it may reach.
+
+## Importing from UVa Online Judge
+
+Two ways in, one way through.
+
+**Paste problem numbers**, separated by commas or spaces. Each number is looked
+up in the public catalogue for its title, its statement is fetched, and each
+becomes a problem of its own — named as the archive names it, and visible to the
+whole installation, because an imported problem is a library entry rather than
+somebody's draft.
+
+**Browse the archive** opens a picker instead. The picker states the number, the
+title and the statement's address, so nothing has to be looked up.
+
+Every number gets its own row in the answer. A batch that half worked is the
+ordinary case, not an error: the ones that landed are problems now.
+
+| What a row can say | |
+|---|---|
+| imported as `UVa-100` | it is in the library |
+| the archive knows no problem with that number | |
+| already imported | the slug is taken, which the Server settles rather than the screen guessing |
+| its statement could not be fetched | the problem may have been withdrawn from the archive |
+
+**Whether a statement still exists is settled by fetching it**, not by reading a
+status field in somebody else's catalogue.
+
+A slug prefix can be **reserved**, and creating a problem in a reserved namespace
+then needs `problem:import:external`. That is what stops somebody hand-making a
+second `UVa-100` beside an imported one — two problems with the same name, one
+imported and one typed in, is a confusion nobody can undo afterwards.
+
+<Callout type="warn" title="The reserved list is configuration, and it ships empty">
+The guard is real; the list of prefixes it reads is the installation's own and
+nothing fills it in for you. Until an operator reserves `UVa-`, nothing refuses a
+hand-made problem with that slug, and nothing asks for `problem:import:external`
+either.
+</Callout>
+
+### The archive's key
+
+An installation may hold a key for the archive, set among the **access keys** on
+the instance screen. It is asked for when the picker is opened and not before, so
+a screen nobody opened has not spent one of the archive's tokens.
+
+**The key itself never reaches a browser.** The picker is an embedded page, and
+whatever it is handed goes into an address — so the Server exchanges the
+long-lived key for a short-lived token and sends only that. The archive says how
+long that token lasts, and an hour is what it gets where the archive says
+nothing. A failed exchange is a refusal
+and **never a fall back to the stored key**, which is the whole reason the
+exchange exists.
+
+Three outcomes, and they are not two:
+
+- a key opens the archive with this installation's private metadata;
+- **no key at all opens the public archive**, and the page says you are browsing
+  what it publishes to everybody. An installation that holds none has decided to
+  browse anonymously, and that is a working mode;
+- anything else is a refusal, and it says which: the key was rejected, this
+  installation's address was refused, the archive has no credential to spare
+  right now, or it could not be reached. The first two are an administrator's to
+  fix; the third passes by itself.
+
+Degrading quietly to anonymous is deliberately not done — it would hide a broken
+configuration behind a picker that merely looks short of metadata.

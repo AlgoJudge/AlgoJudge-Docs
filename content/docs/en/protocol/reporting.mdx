@@ -5,10 +5,6 @@ description: Answering with a result, the failure that must never be scored, and
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.** This page describes **version 1.1** of
-the contract; on any divergence, the specification is right and this page is
-wrong.
-
 ## The call
 
 ```http
@@ -22,8 +18,7 @@ POST /api/v1/runner/jobs/{jobId}/report
   "runnerVersion": "1.0.0",
   "extra": { "cycles": 1200 },
   "props": { "type": "standard-io@1", "toolchain": "g++ 14.2.0" },
-  "infrastructureFailure": false,
-  "failureReason": null
+  "infrastructureFailure": false
 }
 ```
 
@@ -114,22 +109,13 @@ implementation that packs a per-test table into it will find its reports rejecte
 
 ## Order of operations
 
-**Upload, attach, then report.** The Server requires the job to be `Running` to
-accept an attachment, and reporting ends that.
-
-Get the order wrong and the log explaining a failure is the thing that goes
-missing — which is the one attachment anybody wanted.
+**Upload, attach, then report** — reporting ends the job, and an attachment needs
+it `Running`. [Files](/en/protocol/files) has the rule, what it costs to get
+wrong, and the inline path that sidesteps it.
 
 ## What to do when the Server is away mid-report
 
-Two cases, and they are opposite.
-
-- **The answer already exists.** Hold it and keep trying, bounded by the lease.
-  Reporting is idempotent, so a duplicate costs nothing.
-- **The job could not be finished** because the Server stopped answering — the
-  package could not be downloaded, the source could not be fetched. **Report
-  nothing at all** and abandon the job to its lease. Reporting an infrastructure
-  failure here would close somebody's attempt over an outage they had nothing to
-  do with.
-
-[Availability](/en/protocol/availability) states both in full.
+Two cases, and they are opposite: an answer **already computed** is held and
+resent until the lease runs out, and a job that **could not be finished** because
+the Server stopped answering is not reported on at all.
+[Availability](/en/protocol/availability) has both, with the reasoning for each.

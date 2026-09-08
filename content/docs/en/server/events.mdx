@@ -50,10 +50,10 @@ purpose.
 
 The Server sends an event to a session **only if that session may read what the
 event names**, judged by the same permission model that guards the REST endpoint
-carrying the same data. Fan-out runs through one implementation of that
-question — there were three once, and two of them read only the grants belonging
-to the activity, so an administrator holding a system grant and nothing else was
-left out of events they were entitled to.
+carrying the same data. Fan-out runs through **one** implementation of that
+question: a second one that read only the grants belonging to the activity would
+leave out an administrator holding a system grant and nothing else, silently and
+only for events.
 
 The [`OverrideSystem`](/en/server/concepts/grant) flag applies here too, which is
 the easy place to forget it: somebody who stood down to compete in an activity
@@ -116,9 +116,9 @@ refetches.
 They carry different payloads: the participant's requires `series` and `change`,
 the manager's has neither and may carry `deletedId` instead.
 
-The envelope has no scope member, so one name meant one shape had to be guessed
-from its contents — and a router testing the participant shape first never
-reached the manager dispatcher at all. **One wire name, one shape.**
+The envelope carries no scope member, so a shared name could only be told apart
+by its contents — and a router testing the participant shape first would never
+reach the manager dispatcher. **One wire name, one shape.**
 </Callout>
 
 ## The heartbeat
@@ -127,13 +127,14 @@ The Server sends a `ping` frame — `type` is `ping`, `data` is empty — every 
 seconds. Nothing is expected back, and anything the Client sends is ignored: the
 ping exists so that a half-open socket is noticed rather than counted.
 
-`ping` is not one of the three dispatchers' types, so a Client drops it the same
-way it drops any type it does not know.
-
 That count is not incidental. **The number of open sockets for a session is
 counted live** from the connection registry and never stored, and the users
 screen shows it as "active". A socket that died silently and stayed counted
 would make the screen lie about who is present.
+
+`ping` is carried outside the event catalogue and is not one of the three
+dispatchers' types, so a Client drops it the same way it drops any type it does
+not know.
 
 ## Reconnect is a refetch
 

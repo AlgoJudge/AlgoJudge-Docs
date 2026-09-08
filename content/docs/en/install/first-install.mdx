@@ -15,29 +15,25 @@ never stored anywhere readable.
 sign in as, and the only fix is to drop the database and start again.**
 </Callout>
 
-<Callout type="warn" title="This procedure cannot be followed end to end today">
-No release has been cut. `ghcr.io/algojudge` is empty, the eight packages —
-`algojudge-server`, `algojudge-client`, `algojudge-runner`, `lang-gcc`,
-`lang-clang`, `lang-python`, `lang-pypy`, `algojudge-external-runner` — do not
-exist, and `docker compose pull` will find nothing. Until the first release, build the images yourself and
-tag them as published: see [Running against locally built
-images](#running-against-locally-built-images) at the foot of this page.
+## The images, and why a new one may not pull
+
+The eight packages — `algojudge-server`, `algojudge-client`, `algojudge-runner`,
+`lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy` and
+`algojudge-external-runner` — are **published and public**. `docker compose pull`
+needs no registry login, from anywhere.
+
+A GHCR package created by its first push is **private**, though, and no workflow
+can change that: somebody with access to the organisation's packages sets it to
+Public, once. It is worth knowing because it returns with every new image, and
+the symptom is a `denied` on `docker compose pull` in an installation that is
+otherwise correct.
+
+<Callout type="info" title="The four language images are not services">
+`docker compose pull` fetches six of the eight. `lang-gcc`, `lang-clang`,
+`lang-python` and `lang-pypy` are values the Runner is handed rather than
+services, so Compose never touches them: the Runner pulls one when the host has
+none, and `scripts/update.sh` pulls all four when an installation is updated.
 </Callout>
-
-## One time, by hand: the packages must be public
-
-A GHCR package created by its first push is **private**. Until each of the eight
-is set to Public once, `docker pull` needs a token, which defeats the point of
-there being no registry login in these instructions. The release workflow cannot
-do it; somebody with access to the organisation's packages must.
-
-**The eighth is not like the other seven.** `algojudge-external-runner` is built
-from a private repository, so whether it is made public at all is a decision
-rather than a step. If it is not, the [external
-Runner](/en/install/external-runner) is the one profile in this stack that needs
-a `docker login ghcr.io` before `up`.
-
-Nothing to do here yet — none of the eight exists.
 
 ## 1. Clone and configure
 
@@ -77,7 +73,7 @@ passes for the Runner and fails for the job — every submission then fails with
 root and reading back as 65534, and says which one failed.
 
 *`chown 65532:65532` also works and is not needed; the runner service runs as
-root so that it can measure.*
+root so that it can measure. What breaks it is a directory locked down by hand.*
 
 Two more worth reading before the first start:
 
@@ -121,11 +117,16 @@ certificate that is already there.
 docker compose up -d --wait
 ```
 
-`preflight.sh` refuses now, with a sentence, rather than half way up: an empty
+`preflight.sh` refuses with a sentence rather than half way up: an empty
 password, a missing or short token, a CIDR with host bits, a relative work
-directory, a `DOCKER_GID` that does not match the socket, a `.env` that is
-tracked by Git or is not mode 600. `make up` runs it first, so the ordinary path
-is checked whether or not anybody remembers the script exists.
+directory, a work directory a job container cannot read, cgroup v1 or an unknown
+cgroup driver, a `.env` that is tracked by Git. `make up` runs it first, so the
+ordinary path is checked whether or not anybody remembers the script exists.
+
+**The `runner` profile starts four Runners**, `runner-1` to `runner-4`. Four
+suits eight physical cores; on a smaller host run fewer, because more Runners
+than physical cores does not judge faster and does stop judging accurately —
+[What the host needs](/en/install/requirements) has the table.
 
 ## 4. The administrator
 
@@ -155,16 +156,18 @@ answers on the Server's own loopback interface, and a request through nginx —
 **or through the published `127.0.0.1:8080`** — arrives as the bridge gateway
 and gets a 404. That is measured behaviour, not a guess.
 
-## 5. Approve the Runner
+## 5. Approve the Runners
 
 **A new Runner registers and then waits.** It is not a fault and there is no
 timeout. Nothing is judged until an administrator approves it, which is what
 stops somebody attaching a machine of their own to your installation.
 
-In the panel: **Runners**, and approve the one that appeared. Its log says
-`waiting: this Runner has not been approved yet` until you do, backing off
-between attempts because a room of Runners registered together would otherwise
-ask in one burst for as long as it takes somebody to reach the panel.
+In the panel: **Runners**, and approve each of the four that appeared. Their
+logs say `waiting: this Runner has not been approved yet` until you do, backing
+off between attempts because a room of Runners registered together would
+otherwise ask in one burst for as long as it takes somebody to reach the panel.
+An unapproved Runner is simply idle and the others carry the queue, so a
+forgotten approval reads as a slow installation rather than as an error.
 
 Afterwards, submit something and watch it get a verdict. **Until that has
 happened once, the installation is not known to work.**
@@ -182,27 +185,29 @@ leaves commented out.
 
 ## Running against locally built images
 
-Until a release exists, build the product repositories and tag them as
-published. `compose.yaml` then runs unmodified. **`-f` is relative to where you
+**This is not how the stack is normally run** — the published images are, and
+they resolve for anyone. It is for running against code that is **not released**:
+a change in a product repository, a fix on its way to a pull request. Build it,
+tag it where the published one would be, and `compose.yaml` runs unmodified. **`-f` is relative to where you
 are standing, not to the build context** — the Server's line is the only one with
 a path in it, which makes it the one worth checking.
 
 Rebuild rather than reuse a tag you already have: these are pinned by a moving
-tag, so a stale local `:1` is silently whatever you built last month.
+tag, so a stale local `:0` is silently whatever you built last month.
 
 ```bash
-docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
-docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
-docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:0 AlgoJudge-Server
+docker build -t ghcr.io/algojudge/algojudge-client:0 AlgoJudge-Client
+docker build -t ghcr.io/algojudge/algojudge-runner:0 AlgoJudge-Runner
 # The context is `images`, not `images/$lang`: all four build the measuring
 # shim from `images/shim`, so it has to be inside what they are given.
 for lang in gcc clang python pypy; do
-    docker build -t "ghcr.io/algojudge/lang-$lang:1" \
+    docker build -t "ghcr.io/algojudge/lang-$lang:0" \
         -f "AlgoJudge-Runner/images/$lang/Dockerfile" AlgoJudge-Runner/images
 done
 
 # Only for the external Runner's profile.
-docker build -t ghcr.io/algojudge/algojudge-external-runner:1 AlgoJudge-External-Runner
+docker build -t ghcr.io/algojudge/algojudge-external-runner:0 AlgoJudge-External-Runner
 ```
 
 `update.sh` still needs a registry to pull from. A local `registry:2` with

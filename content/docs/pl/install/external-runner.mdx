@@ -2,7 +2,7 @@
 title: Zewnętrzny sędzia
 description: Przekazywanie części zadań do cudzego archiwum i dwa przełączniki, których nie ma w .env.
 source: en/install/external-runner.mdx
-sourceSha256: 0c983d185f4855c32ef6d015cae205697d02add1e4f91e5c8f3b9aea95004f61
+sourceSha256: 9fa4f0143bda2cde9558c6ac55cf9ddd711613e01bb31ead60827acfa5774718
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -71,6 +71,11 @@ wersji. Zadanie z typem lokalnym nigdy nie trafia do Runnera przekazującego:
 Server dobiera te dwie strony po tej właśnie fladze — równość musi zachodzić
 w obie strony.
 
+**Jeden proces obsługuje jednego sędziego.** Nazywa go `EXTERNAL_JUDGE`, `uva`
+to jedyna zbudowana integracja, a nazwa nierozpoznana jest przy starcie
+odrzucana, a nie zastępowana domyślną. Drugie archiwum to druga usługa, z własnym
+kontem i własnym wolumenem tożsamości, a nie druga wartość na liście.
+
 ## Czego wymaga, a czego nie
 
 Sam nawiązuje dwa połączenia — do Servera i do archiwum — i nie przyjmuje
@@ -94,9 +99,15 @@ zadeklarował i na co czeka.
 <Callout type="warn" title="Restart może kosztować zdublowane zgłoszenie">
 Zbiór zgłoszeń, na które archiwum jeszcze nie odpowiedziało, trzyma **w
 pamięci**, a zlecenie zewnętrzne może zupełnie normalnie czekać piętnaście
-minut. Po zabiciu albo restarcie traci ten zbiór; Server odbiera dzierżawy,
-wkłada zlecenia z powrotem do kolejki, a każde z nich idzie do archiwum po raz
-drugi, na Twoim tamtejszym koncie.
+minut. Zabity, traci ten zbiór; Server odbiera dzierżawy, wkłada zlecenia
+z powrotem do kolejki, a każde z nich idzie do archiwum po raz drugi, na Twoim
+tamtejszym koncie.
+
+**Grzeczne zatrzymanie tego nie omija, a i tak warto je zrobić.** Po `SIGTERM`
+oddaje do kolejki od razu wszystko, co trzyma — do dwudziestu zgłoszeń, po jednym
+wywołaniu na każde, i właśnie na to jest sześćdziesiąt sekund
+`EXTERNAL_RUNNER_STOP_GRACE`. Odpowiedzi, które jeszcze idą z archiwum, i tak nie
+mają gdzie wylądować.
 
 Przed oknem, które go zrestartuje, najpierw przeprowadź drenowanie — zobacz
 [Przerwę techniczną](/pl/install/maintenance), gdzie jest rachunek pokazujący,

@@ -1,0 +1,462 @@
+---
+title: Isolation and the host
+description: What contains a submission, what the arrangement deliberately does not buy, and what a host must provide before it can mark anybody's work.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+import { Mermaid } from "@/components/mermaid";
+
+Every submission is untrusted and assumed hostile: attempts to read system files
+and secrets, write outside the working directory, spawn processes, fork-bomb,
+exhaust memory or CPU, produce unbounded output, reach the network, survive past
+the end of a test, or interfere with another job.
+
+## Sibling containers
+
+The Runner starts each step of the pipeline in **its own container**, through the
+container runtime's API. Those containers are **siblings** of the Runner, not
+children of it.
+
+**The Runner holds the container runtime's socket; the containers that run
+submissions never do.** That is one line for a code review, and it is the whole
+of the model: the socket goes to the Runner and to nothing the Runner starts.
+
+Because job containers are siblings, they outlive the process that made them. The
+Runner labels every container it starts and sweeps orphans at start-up; without
+that, a crash-loop would fill the evaluation host with dead sandboxes until it
+ran out of disk.
+
+## What is applied to every step that runs a submission
+
+| | |
+|---|---|
+| `--network=none` | no route anywhere |
+| `--cap-drop=ALL` | no capabilities |
+| `--security-opt=no-new-privileges` | and none may be gained |
+| read-only root filesystem | writes go to a tmpfs or nowhere |
+| tmpfs `rw,noexec,nosuid` | scratch that cannot be executed from |
+| `--user 65534:65534` | never root, even inside |
+| `memory.max` with `memory.swap.max` **zero**, on a cgroup holding the submission alone | without the second the limit means nothing — the program swaps instead of being killed. A kill is told from two places and either is enough: the runtime's `OOMKilled`, and the kernel's own `memory.events` — where it takes **both** `oom_kill` and `oom`, since the first counts kills by any OOM killer including the system one, and the second counts this cgroup reaching its own limit. The container keeps a `--memory` of its own for the shim, unrelated to the problem's |
+| `--pids-limit` | a fork bomb hits a wall |
+| `--cpus`, and `--cpuset-cpus` **only where the Runner was given a set** | capping CPU is not pinning it, and only the cap is unconditional. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast. A set is carried to **every** container the Runner starts — both builds, the judged run, and a checker or interactor beside it — when an operator confined the Runner itself, because they inherit no affinity of their own; given the whole machine the Runner pins nothing, which is what lets the host move a run that is starving |
+| **three deadlines**, and [none of them is the limit](#three-deadlines-and-none-of-them-is-the-limit) | a time limit is processor time, so the sandbox needs its own way of ending a run that is *not* spending any: one stuck in an uninterruptible syscall, one waiting for input that never comes |
+| an output cap counted **as the bytes cross** | nothing stores what a submission prints. It travels on a pipe from the program to whatever is comparing it, and the count is taken in passing. Collected and read afterwards, a flooding program fills the host's disk before anybody looks |
+| **nothing on the container's own streams** | a judged container is started with no log driver at all, and the submission's standard error goes to `/dev/null`. There is nothing for the runtime to write down, which is where a flood used to land. The interactor beside it is silent for the same reason: its conversation is on pipes. The two containers whose output *is* read — the build, whose stdout is the compilation error you are shown, and the checker, whose stdout is its verdict — get a small bounded driver rather than whatever the host was set to |
+
+Every row has a test that asserts two things: the program was stopped correctly,
+**and the host is unchanged afterwards**. A sandbox that contains a program by
+leaking a process has not contained it.
+
+## Three deadlines, and none of them is the limit
+
+A time limit is processor time, and a program that has stopped computing spends
+none — so it would sit there for ever. Three deadlines end it. Write `L` for the
+problem's time limit. **None of the three is the time limit**: that is decided
+afterwards, on the measurement. Two of them do end the run as `Time limit
+exceeded`, and the notes beside them say which happened.
+
+| | Watches | Value | Ends | Reported as |
+|---|---|---|---|---|
+| **no progress** | elapsed time in which the processor time did **not** grow | `4L + 4s` | a program that has stopped computing — waiting for input that never comes, or wedged in an uninterruptible call | `Time limit exceeded`, with a note giving the span it spent no processor time in |
+| **the processor ceiling** | processor time | `L + 2s` | a program still working, plainly past what it was allowed. There is nothing left to learn by waiting; the verdict is still settled on the measurement afterwards | `Time limit exceeded`, with what it spent shown beside the limit |
+| **the absolute cap** | elapsed time, whatever the progress | `5 × (L + 2s)` | the program that wakes for a millisecond a tick: never stalling, never approaching its limit, and resetting the window every time it twitches | `Time limit exceeded`, with a note that it kept running without finishing |
+
+**The window counts consecutive time, and any processor time at all resets it to
+zero** — so it measures time spent *not working* rather than time spent. It has
+a second brake as well: the kernel's own pressure figure for the run is read at
+every look, and while that says something was **runnable and waiting for a
+processor**, the window does not advance at all. A host with no PSI reaps
+exactly as it would without this, and so does a task blocked on I/O — a task
+waiting on a disk is not runnable, so it raises no processor pressure to be
+seen. The window is what covers that case.
+
+The two seconds in the ceiling are what a container may honestly add to the
+reading, which is the cgroup's and so carries the container's own start — three
+times the worst gap ever measured between the two instruments, the same
+population [the floor below](#two-instruments-and-only-one-of-them-is-trusted)
+is drawn from. Added rather than multiplied: a container costs what it costs
+whatever limit the problem set, and doubling the participant's limit instead was
+most generous exactly where that overhead matters least.
+
+The cap is five times what the run was entitled to spend — a problem allowed
+more processor time has earned more wall clock, one allowed less has not — and
+it sits above the window at every limit, which is what keeps the window
+meaningful: `5(L + 2s) − (4L + 4s) = L + 6s`, positive for every `L`. A test
+holds it there.
+
+<Callout type="info" title="A run that never started is not a verdict">
+If a deadline passes and the sandbox recorded **no processor time at all**, the
+program never ran — what took the time was the container, the image or the host,
+never the submission. That is reported as a failure to run the test, not as
+`Time limit exceeded`. A run that spent processor time and then stopped spending
+it has failed; one that never spent any was never given the chance, and telling
+a participant otherwise is an accusation.
+</Callout>
+
+The window is generous on purpose, and the reason is on the [requirements
+page](/en/install/requirements): a program starved of a processor looks, from
+outside, exactly like one that has stopped computing. Four times the limit is
+roughly a host loaded four times past what it can carry, and the four seconds
+are what make the window also the guard against a hang, at a limit small enough
+that four times it would not be.
+
+It is a safety net, not a second time limit — but it is a wide one, and the
+width is the cost of the trade. **Waiting is free right up to it**: under a
+300 ms limit a program may sit on an input that never arrives for 5.2 seconds
+and be judged on nothing but its output. An installation that lets its Runners
+compete for cores will reach the same net with programs that were merely
+waiting, and there the verdict is wrong rather than merely slow.
+
+## One container per test, never reused
+
+Four rules define what one test is:
+
+1. **One test, one container, never reused.** A fresh container is the only
+   answer that does not depend on cleanup having been written correctly.
+2. **The program is given its own test's input and nothing else** — one file,
+   mounted read-only, for a batch problem; a channel with the interactor on the
+   far end for an interactive one. Mounting the whole test directory would put
+   the expected answer inside the submission's own container.
+3. **Nothing a program writes reaches the next test**, for the scratch tmpfs and
+   for `/dev/shm`.
+4. **A package-supplied checker or interactor is contained on the same terms.**
+   It comes from a problem author rather than from the platform, runs with its
+   own limits and no network, and never in the Runner's process. One stopped by
+   a limit is reported as a **broken checker**, never as a wrong answer.
+
+   It also never touches the submission's own channels. The two containers share
+   no directory — they run as the same unprivileged user, so a shared one would
+   be a place each could reach the other's — and every byte between them is
+   copied by the Runner.
+
+Two consequences that are easy to get backwards:
+
+- **`/dev/shm` is writable** and the profile does not ask for it. The runtime
+  mounts a small tmpfs there in every container and a read-only root does not
+  cover it. It breaks none of the four rules — it is new with the container, and
+  tmpfs pages are charged to the memory limit — but it is a surface nobody
+  declared, which is why rule 3 names it explicitly.
+- **The input is a mounted file, not a pipe** — for a batch problem. A pipe
+  would be marginally stricter and is deliberately not used: it is not seekable,
+  so a solution that reads its input twice would work on its author's machine
+  and fail here. An **interactive** problem has no file to mount: its input does
+  not exist until an interactor decides what to send, so there the cost above is
+  inherent and is paid.
+- **The output is a pipe in every case**, which is where that objection stops
+  applying: nobody re-reads their own output. It is read once, forwards, and
+  that is what lets a wrong answer be found at the first differing token and the
+  program stopped there, rather than left to finish an answer nobody would look
+  at.
+
+The build step gets **no writable host path**. It writes to its own container
+layer and the artefact is read back through the runtime API. The alternative was
+opening a directory to every user on the host.
+
+## What a submission is charged for
+
+**The submission, and not the container it arrived in.** A time limit is
+processor time, and the obvious place to read that is the cgroup the container
+ran under. The obvious place is wrong on its own: a container that has run
+nothing of ours has already spent processor time getting there -- namespaces,
+mounts, an init process. Measured 2026-09-03 across all four language images on
+a Docker Desktop host, 40 runs: median 50 ms, worst 66 idle and 74 under load.
+It is setup work rather than contention, so the median hardly moves with load —
+but the tail does, and the floor below is set against that rather than against
+these numbers.
+
+Against a limit of 100 ms that is half the budget, spent before the participant's
+first instruction.
+
+So a small program called the **shim** is the container's entrypoint. It forks the
+submission, waits for it with `wait4`, and reports the accounting for that one
+child: processor time and peak memory, at microsecond resolution, of the program
+and nothing else.
+
+```
+the cgroup says   271 ms      the whole container
+the shim says     222 ms      the program
+                   49 ms      the container getting out of its own way
+```
+
+### Two instruments, and only one of them is trusted
+
+The shim's report leaves through the container's standard error, which the
+submission also holds. So it is treated as **untrusted and precise**, and the
+cgroup reading -- taken by the Runner on the host, where nothing inside can reach
+it -- is kept as **trusted and coarse**:
+
+```
+time = max( the shim's report,  the cgroup total − 1 s )
+```
+
+An honest run is corrected exactly: the floor sits below its real cost, so the
+shim's figure wins. A forged report cannot take the reported time below the
+cgroup total less that constant.
+
+**One second, and every tighter value was measured to fail honest runs.** Across
+7077 runs under load on 2026-09-04 the gap between the two instruments — a
+container's own cost, on top of the program — ran to a median of 77 ms and a
+maximum of 619 ms. An allowance of 120 ms would therefore charge 5% of honest
+runs for work they had not done, by up to half a second, and fail six correct
+submissions in a hundred and fifty. A second stands above the measured maximum
+with room for a slower host, and still catches the forgery worth attempting: a
+program spending **seconds** past a limit of a few hundred milliseconds.
+
+Three things stand between a submission and a forged report, and each holds when
+the one before it does not:
+
+| | What it does |
+|---|---|
+| A per-run nonce | The report carries a value the submission cannot read. It is passed in the shim's environment, never in its arguments — `/proc/1/cmdline` is world-readable and `/proc/1/environ` is not, and the shim overwrites the bytes in place besides, because `unsetenv` does not touch what `/proc` reports |
+| The last line wins | Before reporting, the shim kills every other process in the PID namespace with `kill(-1)`. Not the process group: a child that called `setsid` has left the group and would outlive it. Nothing is then alive to write after the report |
+| The cgroup floor | The rule above, which needs neither of the other two to be true |
+
+### Memory is the submission's too, and by a different route
+
+A memory limit is not compared after the fact; the kernel enforces it while the
+program runs. So it is written on a cgroup that holds **the submission and
+nothing else** — made per run **inside the container's own**, by the shim, which
+then puts the child into it between `fork` and `exec`. `Memory limit exceeded`
+is that cgroup reaching its limit, and the peak reported beside the verdict is
+that cgroup's peak, so the figure a participant reads is the figure they were
+judged on.
+
+**Two cgroups are made and not one**, and the kernel is why: a cgroup may hold
+processes or hand controllers to its children, never both. So the shim moves
+*itself* into one of them first, and the submission's is then the only thing
+under the limit — still inside the container, and still out of the submission's
+reach.
+
+**Inside rather than beside, and the kernel decided that.** A cgroup made next
+to the container's is not a descendant of the container's own namespace root,
+and cgroup2 mounted with `nsdelegate` — how systemd mounts it, so on virtually
+every Linux server — refuses to move a task there at all. Inside, the migration
+is permitted; what is still needed is a **name**, because `/proc/self/cgroup`
+reads `/` in a private cgroup namespace and the shim would have nothing to look
+for. So a judged container is given the host's cgroup namespace. That grants no
+write it did not have: the only cgroup file it can reach is root's, and the
+submission is `nobody` by the time it runs.
+
+<Mermaid chart={`
+flowchart TD
+    socket["The container runtime's socket:<br/>the Runner holds it, and nothing the Runner starts does"]
+    subgraph outlives["A cgroup of the Runner's own, on the host, outliving the container:<br/>where a run's processor time is read and a kill is counted"]
+        subgraph container["The judged container — a sibling of the Runner, not a child.<br/>No network, no capabilities, read-only root"]
+            shim["The shim: PID 1, root for a few dozen lines,<br/>and it moves itself out of the limit's way first"]
+            subgraph own["The submission's own cgroup, made by the shim, inside"]
+                prog["The submission, as 65534.<br/>memory.max is the problem's limit, and its peak<br/>is the figure shown beside the verdict"]
+            end
+        end
+    end
+    socket -.->|"every container is started through it"| container
+    shim -->|"fork, move the child in, then exec"| prog
+`} />
+
+Three things follow that a problem author will notice:
+
+- **A limit may be as small as the problem needs.** The container runtime
+  refuses a container limit under six megabytes; a cgroup has no such floor.
+- **The container's own cost is not in the budget.** The same trivial C++
+  solution reads **1.75 MiB** in its own cgroup and **6.68 MiB** in its
+  container's.
+- **What the submission spends anywhere is its own**: every process it forks,
+  and every byte it writes to a tmpfs, `/dev/shm` included. A figure taken from
+  one process's resident set counts neither, which is why the limit is a
+  cgroup's and not a number in a report.
+
+**The peak is the report's and the kill is not**, which is what lets the figure
+be untrusted without costing anything. That cgroup dies with the container, so
+there is no window afterwards in which the Runner could read its peak from the
+host — the shim reads it from inside and sends it on the same channel as the
+time. Memory needs no counterpart of the floor above, and the reason is not that
+the report is trustworthy: **nothing is decided on that number.** The verdict is
+the kernel's, counted in `memory.events` on a cgroup of the Runner's own that
+outlives the container — and that file is hierarchical, so a kill down in the
+submission's is counted up there, out of reach. A forged peak buys a submission
+a prettier number beside a verdict it cannot change.
+
+A run that carries no shim — a build, a checker, an interactor — is held by its
+container's limit and its peak read from that container's cgroup, by the Runner,
+as before. The shim reports a resident peak as well, and it is kept only where
+it made no cgroup of the submission's own to read.
+
+### The submission does not run as root, and the shim does
+
+The container starts as root so the shim can put the submission back to
+`nobody` before handing over, and it keeps exactly two capabilities to do it:
+`SETUID` and `SETGID`. Everything else is dropped, `no-new-privileges` is set,
+the root filesystem is read-only and there is no network — the table further up
+is unchanged.
+
+Untrusted code never runs as root. The window in which root exists is the shim's
+own few dozen lines, before `execve`. The drop is verified rather than assumed:
+the shim checks that it cannot return to uid 0 and **refuses to start the
+submission** if it can, so a defect there is an infrastructure failure and never
+a submission with privileges.
+
+What the separation buys is one-directional, and that direction is the point: the
+submission cannot read the shim's environment, signal it, or trace it.
+
+<Callout type="info" title="An image without a shim still judges">
+A toolchain may point at an image of your own, and one built before this — or
+without it — is not refused. The report is simply absent, the cgroup reading
+stands on its own, and the container start is inside the number again. The Runner
+says so once per image rather than once per submission.
+</Callout>
+
+
+## cgroup v2 is required, and is checked at start
+
+The Runner asks the **container runtime**, not the filesystem:
+
+```bash
+docker info --format '{{.CgroupVersion}}'
+```
+
+It must print `2`. Asking the daemon is deliberate: the Runner may itself be in a
+container, and what *it* sees is a different question from what the containers
+*it starts* will get.
+
+**The limits are enforced on cgroup v1** — measured, not assumed: a container
+over its memory limit is OOM-killed there and reported as such. What v1 cannot do
+is **measure honestly**. `memory.peak` and `cpu.stat` are v2 interfaces, and
+they are the trusted half of the pair above -- the half a submission cannot
+reach, and so the half a limit ultimately rests on. A number that is
+sometimes wrong is worse than no number.
+
+### What a host must satisfy
+
+| | Required | How to check |
+|---|---|---|
+| Kernel | cgroup v2 compiled in | `grep cgroup2 /proc/filesystems` |
+| Kernel | **≥ 5.19** for peak memory | `memory.peak` arrived in 5.19 |
+| Hierarchy | **unified, not hybrid** | `cat /sys/fs/cgroup/cgroup.controllers` must be non-empty |
+| Controllers | `cpu`, `cpuset`, `memory`, `pids` | one per limit the sandbox sets. A missing controller does not error — the limit is simply not applied |
+| Delegation | switched on for children | `cat /sys/fs/cgroup/cgroup.subtree_control` must list them |
+| Docker | ≥ 20.10 | earlier versions have no cgroup v2 support at all |
+
+Unified is the default on Ubuntu 21.10+, Debian 11+, Fedora 31+ and RHEL 9+. An
+older host boots hybrid and needs the kernel parameter
+`systemd.unified_cgroup_hierarchy=1` and a reboot — which makes "enable v2" a
+maintenance window rather than a command.
+
+<Callout type="warn" title="Test the content of cgroup.controllers, not its size">
+A cgroup pseudo-file reports a size of zero however much it holds, so a size test
+calls every host v1. Read the file and check that it is not empty.
+</Callout>
+
+`AJ_Sandbox__AllowUnmeasured` starts anyway, for a development machine whose
+Docker still reports v1 — and **only starts**: a time limit is decided on
+processor time floored by a reading from the cgroup, so such a Runner registers, answers the
+protocol, and fails every job it claims. It shouts at `ERROR` on every start, and
+[Configuration](/en/runner/v0.1/configuration) records the trap in how it is read.
+`AJ_Sandbox__AllowCgroupV1` is the old name for it and is still read.
+
+### Two ways of getting the numbers, and the driver picks
+
+The sandbox is started **under a cgroup that outlives it** and that cgroup is
+read once the child is gone. What it is depends on the daemon's cgroup driver,
+and the Runner asks at start:
+
+```bash
+docker info --format '{{.CgroupDriver}}'
+```
+
+| | `cgroupfs` | `systemd` |
+|---|---|---|
+| Where it is the default | Docker Desktop | virtually every systemd Linux host |
+| What the daemon is told | a path, `/algojudge/<run>` | a slice name, `algojudge-<fingerprint>.slice` |
+| Who creates the cgroup | the Runner | systemd, when the daemon asks it |
+| How many | one per run, removed afterwards | **one per Runner**, for its whole life |
+| A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
+| A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, read by the shim from inside | the same — the driver decides nothing here, because that cgroup is the container's own child |
+| Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run, less what the slice already held |
+| To start and judge | a writable mount, and root | the same, since a judged submission's cgroup is made inside the container and the tree it is made in is this one |
+| To report a peak as well | the same | the same, and **Linux 6.12** for the runs that are nobody's submission, whose peak still comes from a reset |
+| Kernel | 5.19 and later | 5.19 to judge; **6.12** to report the peak of a build, a checker or an interactor, which no screen shows |
+
+**One slice rather than one per run, and it is not a preference.** A slice
+systemd creates for a container is never collected: it stays loaded
+indefinitely, and removing its directory does not release the unit. A slice per
+test would therefore be a permanent systemd unit per test, growing for as long
+as the installation judges anything. Nothing the Runner can reach takes them
+away — only `systemctl stop` as root does.
+
+What one costs is beside the point, and small: on a host holding 250 leftover
+slices, freeing 238 of them released nothing measurable from `systemd` itself.
+It is that nothing ever ends them. If you have recreated a Runner's identity —
+a lost volume, a `docker compose down -v` — its old slice stays behind, and
+`systemctl stop 'algojudge-<fingerprint>.slice'` is what takes it away.
+
+**One cgroup does outlive the Runner, deliberately.** Its home — the slice under
+`systemd`, the directory under `cgroupfs` — is never removed, because a Runner
+cannot: `rmdir` on a live slice is undone by systemd, and stopping the unit needs
+a D-Bus connection this Runner does not hold. The cost is one empty slice per
+Runner identity that has *judged* something, since the slice is created when a
+container first starts under it rather than when the Runner does. A reboot
+clears them; so does `systemctl stop 'algojudge-*.slice'`.
+
+That is what makes the systemd numbers differences rather than readings, and
+what makes **one run at a time** part of the arrangement: the Runner claims one
+job at a time and judges one test at a time, and a mutex holds the invariant so
+a second caller would wait rather than spoil both readings.
+
+<Callout type="warn" title="A slice is a name, and a dash in it is a level of nesting">
+`algojudge-a-b.slice` is not one slice named with two dashes; it is a slice
+inside `algojudge-a.slice` inside `algojudge.slice`, and systemd creates every
+level. So the Runner's instance id is flattened before it becomes part of a unit
+name.
+</Callout>
+
+Neither driver is a host requirement, and no daemon has to be reconfigured for
+either.
+
+## `linux/amd64` only
+
+That is not an oversight. cgroup v2 on amd64 is what the measurement rests on,
+and a submission's container has to match the architecture of the host running
+it — an arm64 language image could not be used by any Runner that exists.
+
+## What this does not buy — read this part
+
+<Callout type="warn" title="Anything that can reach the container runtime's socket is root on the host">
+The Runner holds that socket. It can start a privileged container that mounts
+`/`. That is not a flaw in the arrangement; it **is** the arrangement.
+
+- **Mounting the socket read-only restricts nothing that matters.** The flag
+  applies to the socket *file*, not to the API spoken over it.
+- **A bug in the Runner is a host compromise**, not a container compromise.
+- **This is reducible, not safe.** The path can be proxied, scoped, moved to
+  rootless Podman, or pushed onto a separate machine. Each narrows it. None
+  removes the rule below.
+</Callout>
+
+**Treat the evaluation host as compromised.** As a deployment instruction, not a
+slogan:
+
+- **No secrets on it.** No Server credentials, no registry tokens, no keys for
+  anything but the Runner's own identity.
+- **Nothing else on it.** Not the Server, not the database, not a reverse proxy
+  for something you care about.
+- **Reproducible.** You should be able to destroy and rebuild it without
+  thinking, because that is the response to any suspicion.
+- **No lateral reach.** It initiates one outbound connection, to the Server, and
+  nothing else.
+
+[Install and operate](/en/install) is where a whole installation's arrangement of
+hosts is chosen.
+
+### Two arrangements that are rejected
+
+- **Privileged Docker-in-Docker.** The privilege the *infrastructure* needs
+  becomes the privilege available to anyone who escapes the inner sandbox.
+- **Passing the socket into the submission container.** This hands untrusted code
+  the host directly. It is not a weaker version of the sibling model; it is a
+  different mistake.
+
+## The policy dictionary is not part of this
+
+[The policy profile](/en/runner/v0.1/policy) refuses to compile certain source. It is
+a **policy** control — every rule in it is expected to be bypassable — and what
+contains a submission that gets past it is everything above.

@@ -2,10 +2,11 @@
 title: Co się stało z moim zgłoszeniem
 description: Sześć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
 source: en/client/participant/results.mdx
-sourceSha256: a477458d6df0679d9e44b3933b008093b390d1d5fbb08415dc25ed297fa1cad8
+sourceSha256: d3c1d4a63e1b6cfa72232091c6a3e46c4429e8a94a2c5a5888ba7ac1453d903e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 ## Gdzie ich szukać
 
@@ -15,26 +16,39 @@ dziesięć na stronę, w kolumnach **Data wysłania**, **Zadanie**, **Język**,
 wiersz, żeby otworzyć zgłoszenie.
 
 Wiersze same się aktualizują, gdy przychodzą werdykty — po to jest ten ekran. Tak
-samo panel w prawym dolnym rogu, który trzyma ostatnich kilkanaście zgłoszeń w
+samo panel w prawym dolnym rogu, który trzyma ostatnich dwanaście zgłoszeń w
 zasięgu wzroku, gdziekolwiek jesteś.
 
 ## Sześć stanów
 
 | Stan | Co oznacza |
 |---|---|
-| *W kolejce* | wysłane, czeka, aż podejmie je Runner |
-| *Sprawdzane* | Runner je ocenia |
-| *Zakończone* | skończyło się i jest werdykt |
-| *Błąd* | zepsuła się sama ocena |
-| *Anulowane* | zostało odwołane |
-| *Zastąpiono* | ponowna ocena wyprzedziła je, zanim podjął je Runner, więc nigdy nie zostało sprawdzone |
+| **W kolejce** | wysłane, czeka, aż podejmie je Runner |
+| **W trakcie** | Runner je ocenia |
+| **Oceniono** | skończyło się i jest werdykt |
+| **Błąd oceny** | zepsuła się sama ocena |
+| **Anulowano** | prowadzący je odwołał — w kolejce albo już w trakcie oceny |
+| **Zastąpiono** | ponowna ocena wyprzedziła je, zanim podjął je Runner, więc nigdy nie zostało sprawdzone |
 
-**Ostatni stan pojawia się wyłącznie przy *próbie*, nigdy przy samym
-zgłoszeniu.** Ponowna ocena zawsze dokłada nowszą próbę, a odznaka zgłoszenia
-idzie za najnowszą — *Zastąpiono* zobaczysz więc na liście *Próby oceny* niżej,
-i znaczy tam, że tę próbę zastąpiono, zanim cokolwiek ją uruchomiło.
+<Mermaid chart={`
+flowchart LR
+    sent(["Wysyłasz zgłoszenie"]) --> queued["W kolejce"]
+    queued -->|"Runner je podejmuje"| running["W trakcie"]
+    running -->|"jest werdykt"| done["Oceniono"]
+    running -->|"ocena się zepsuła"| failed["Błąd oceny"]
+    queued -->|"wyprzedziła je ponowna ocena"| superseded["Zastąpiono"]
+    queued -->|"prowadzący je odwołał"| cancelled["Anulowano"]
+    running --> cancelled
+`} />
 
-Dopóki zgłoszenie jest oceniane, plakietka pokazuje stan. Gdy się skończy,
+Nic, co Runner już trzyma, nie zostaje przerwane: rozpoczęta próba dobiega
+końca, a nowa czeka za nią.
+
+**Stan Zastąpiono pojawia się wyłącznie przy *próbie*, nigdy przy samym
+zgłoszeniu.** Ponowna ocena zawsze dokłada nowszą próbę, a plakietka zgłoszenia
+idzie za najnowszą — zobaczysz go więc na liście *Próby oceny* niżej.
+
+Dopóki zgłoszenie jest oceniane, plakietka pokazuje stan. Gdy ocena się skończy,
 plakietka pokazuje **werdykt** — krótką etykietę od Runnera, na przykład
 `Accepted`.
 
@@ -62,10 +76,10 @@ której ten ekran nie dotrzyma.
 
 ## Kiedy jeszcze trwa ocena
 
-Zamiast pustej tabeli dostajesz niebieski panel z kółkiem ładowania: *Czekamy, aż
-runner podejmie zgłoszenie* dla stanu *W kolejce* i *Runner sprawdza to
-zgłoszenie* dla *Sprawdzane*. Gdy wynik przyjdzie, panel sam ustąpi mu miejsca.
-Nie musisz przeładowywać.
+Zamiast pustej tabeli dostajesz niebieski panel ze wskaźnikiem ładowania:
+*Czekamy, aż Runner podejmie zgłoszenie*, a potem *Runner sprawdza to
+zgłoszenie*. Gdy wynik przyjdzie, panel sam ustąpi mu miejsca. Nie musisz
+przeładowywać.
 
 ## Tabela testów
 
@@ -79,7 +93,7 @@ tabela testów:
 | **Czas** | czas procesora zużyty przez Twój program, a obok limit |
 | **Pamięć** | to samo, w MiB |
 | **Wynik** | punkty za ten test wobec jego maksimum |
-| **Uwagi** | dlaczego nie przeszedł i notatka tego, co go oceniało — checkera albo interaktora w zadaniu interaktywnym |
+| **Uwagi** | dlaczego nie przeszedł, oraz notatka programu, który go oceniał — checkera albo interaktora w zadaniu interaktywnym |
 
 Czas i pamięć robią się bursztynowe powyżej połowy limitu, a czerwone przy
 limicie i powyżej.
@@ -87,20 +101,20 @@ limicie i powyżej.
 **Czas to czas procesora, a nie to, ile czekałeś.** Liczy się to, co maszyna
 faktycznie spędziła na wykonywaniu Twojego programu — uruchomienie kontenera nie
 obciąża Twojego limitu, tak samo jak oczekiwanie. Wynikają z tego dwie rzeczy i
-obie są zamierzone: program, który śpi albo czeka na wejście-wyjście, nie zużywa limitu — a
+obie są zamierzone: program, który śpi albo na coś czeka, nie zużywa limitu — a
 program korzystający z kilku wątków zużywa go szybciej, bo czasy wszystkich
 wątków się sumują.
 
-Czekanie nie jest jednak darmowe w nieskończoność. Zgłoszenie, które długo po swoim
+Czekać jednak nie można w nieskończoność. Zgłoszenie, które długo po swoim
 limicie wciąż działa, zostaje zatrzymane i oznaczone jako *Limit czasu*, tak samo
 jak takie, które za długo liczyło; w uwadze widać, o który przypadek chodzi.
 
 Kolumna **Uwagi** zaczyna się od powodu, za każdym razem tymi samymi słowami,
 więc kolumnę porażek da się przeczytać z góry na dół: *Zła odpowiedź*, *Limit
 czasu*, *Limit pamięci*, *Limit wyjścia*, *Błąd wykonania*, *Naruszenie
-regulaminu*, *Błąd kompilacji*. Powód, którego ta wersja interfejsu nie zna, nie
-jest wypisywany surowo — dostajesz zamiast tego notatkę tego, co oceniało
-zgłoszenie, a w niej i tak jest szczegół.
+regulaminu*, *Błąd kompilacji*. Powodu, którego ta wersja interfejsu nie zna, nie
+wypisuje surowo — dostajesz zamiast niego notatkę programu oceniającego, a
+szczegół i tak jest właśnie w niej.
 
 Tabela może też napisać: *Dla tego zgłoszenia nie ma wyników testów* oraz *Testy
 pojawią się tutaj po zakończeniu oceny*.
@@ -108,8 +122,8 @@ pojawią się tutaj po zakończeniu oceny*.
 ## Wynik `uva@1` nie ma tabeli testów
 
 <Callout type="warn" title="Werdykt należy do kogoś innego">
-Zadanie `uva@1` jest oceniane w onlinejudge.org. AlgoJudge trzyma Twoje
-zgłoszenie i odpowiedź, która wróciła, i niczego nie liczy. **Tabeli testów nie
+Zadanie `uva@1` ocenia onlinejudge.org. AlgoJudge trzyma Twoje zgłoszenie i
+odpowiedź, która wróciła, a sam niczego nie liczy. **Tabeli testów nie
 ma, bo archiwum żadnej nie ujawnia** — ani liczby testów, ani procentów, ani
 grup — więc tabela byłaby kształtem wymyślonym po to, żeby wyglądał znajomo.
 Zadanie jest zaliczone albo nie; nie ma punktów częściowych.
@@ -118,16 +132,16 @@ Zadanie jest zaliczone albo nie; nie ma punktów częściowych.
 Zamiast tego dostajesz:
 
 - **werdykt** archiwum wraz ze skrótem,
-- zdanie *Osądzone przez onlinejudge.org, czyli nie przez tę instalację. Werdykt
-  jest ich.*,
+- zdanie *Ocenione przez onlinejudge.org, czyli nie przez tę instalację. Werdykt
+  należy do nich.*,
 - małą tabelę: **Czas wykonania**, **Zadanie w archiwum**, **Zgłoszenie w
-  archiwum**, **Wysłano**, **Osądzono**. Identyfikatory archiwum są pokazane jako
+  archiwum**, **Wysłano**, **Oceniono**. Identyfikatory archiwum są pokazane jako
   tekst, nigdy jako odnośniki — ekran uczestnika nie sięga do żadnego innego
   hosta.
 
 Dwa przypadki szczególne:
 
-- **Nigdy nie osądzone.** *To zgłoszenie nigdy nie zostało osądzone przez
+- **Nigdy nie ocenione.** *To zgłoszenie nigdy nie zostało ocenione przez
   zewnętrznego sędziego*, a pod spodem to, co poszło nie tak. To co innego niż
   zła odpowiedź, i tylko jedno z dwojga dotyczy Twojego rozwiązania.
 - **Błąd kompilacji.** *Archiwum zgłasza błąd kompilacji. Nie udostępnia wyjścia
@@ -146,13 +160,14 @@ Ciebie”.
 Zgłoszenie jest oceniane więcej niż raz, gdy zostanie przesłane do ponownej
 oceny. Kod źródłowy to te same bajty; każde uruchomienie jest osobną **próbą**.
 
-Rozwijana sekcja **Próby oceny** pojawia się, gdy prób jest więcej niż jedna, i
-podaje numer każdej próby, godzinę jej startu, jej stan i werdykt oraz punkty. Od
-najnowszej. Wynik pokazany nad sekcją należy do najnowszej próby.
+Rozwijana sekcja **Próby oceny** pojawia się, gdy prób jest więcej niż jedna, z
+ich liczbą obok nazwy. Podaje numer każdej próby, godzinę jej startu, jej stan i
+werdykt oraz punkty. Od najnowszej. Wynik pokazany nad sekcją należy do
+najnowszej próby.
 
 ## Wykluczone zgłoszenie
 
-<Callout type="warn" title="Osądzone, ale nieliczone">
+<Callout type="warn" title="Ocenione, ale nieliczone">
 Pomarańczowy komunikat *To zgłoszenie nie jest liczone do rankingu. Nadal liczy
 się do Twojego limitu zgłoszeń.* znaczy, że prowadzący wyłączył to zgłoszenie z
 każdej klasyfikacji.

@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 68e83ba167e631aff941bd4ca719ca919b62e211fda435e975cc7d9e70610275
+sourceSha256: faca8ec5498f7a4a0df41904ede2b3ed13a9025d1b81db2b48200ec67fa51d7a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -17,31 +17,24 @@ trafiają do logu, na ekran ani w żadne czytelne miejsce.
 ktokolwiek mógłby wejść, a jedyne wyjście to skasować bazę i zacząć od nowa.**
 </Callout>
 
-<Callout type="warn" title="Tej procedury nie da się dziś przejść do końca">
-Nie wydano żadnej wersji. `ghcr.io/algojudge` jest puste, nie istnieje żaden
-z ośmiu pakietów — `algojudge-server`, `algojudge-client`,
-`algojudge-runner`, `lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy`,
-`algojudge-external-runner` — a `docker compose pull` niczego nie znajdzie. Do
-pierwszego wydania zbuduj obrazy samodzielnie i otaguj je tak, jakby były
-opublikowane: patrz [Praca na obrazach zbudowanych
-lokalnie](#praca-na-obrazach-zbudowanych-lokalnie) na końcu tej strony.
+## Obrazy, i dlaczego nowy może się nie pobrać
+
+Osiem pakietów — `algojudge-server`, `algojudge-client`, `algojudge-runner`,
+`lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy` i
+`algojudge-external-runner` — jest **opublikowanych i publicznych**. `docker
+compose pull` nie wymaga logowania do rejestru, z żadnej maszyny.
+
+Pakiet GHCR utworzony pierwszym pushem jest jednak **prywatny** i żaden workflow
+tego nie zmieni: ktoś z dostępem do pakietów organizacji przestawia go raz na
+publiczny. Warto o tym wiedzieć, bo wraca z każdym nowym obrazem, a objawem jest
+`denied` przy `docker compose pull` w skądinąd poprawnej instalacji.
+
+<Callout type="info" title="Cztery obrazy językowe nie są usługami">
+`docker compose pull` pobiera sześć z ośmiu. `lang-gcc`, `lang-clang`,
+`lang-python` i `lang-pypy` to wartości przekazywane Runnerowi, a nie usługi,
+więc Compose ich nie dotyka: Runner pobiera obraz, gdy hosta go nie ma, a
+`scripts/update.sh` pobiera wszystkie cztery przy aktualizacji instalacji.
 </Callout>
-
-## Raz, ręcznie: pakiety muszą być publiczne
-
-Pakiet GHCR utworzony pierwszym pushem jest **prywatny**. Dopóki każdy z ośmiu
-nie zostanie raz przestawiony na publiczny, `docker pull` wymaga tokenu, a wtedy
-nie ma już znaczenia, że ta instrukcja nigdzie nie każe logować się do rejestru.
-Workflow wydania tego nie zrobi; musi to zrobić ktoś z dostępem do pakietów
-organizacji.
-
-**Ósmy różni się od pozostałych siedmiu.** `algojudge-external-runner` jest
-budowany z prywatnego repozytorium, więc to, czy w ogóle zostanie
-upubliczniony, jest decyzją, a nie krokiem. Jeśli nie zostanie, profil
-[zewnętrznego sędziego](/pl/install/external-runner) jest w tym stosie jedynym,
-który przed `up` wymaga `docker login ghcr.io`.
-
-Na razie nie ma tu nic do zrobienia — żaden z ośmiu nie istnieje.
 
 ## 1. Klon i konfiguracja
 
@@ -84,7 +77,8 @@ próby zadania, i wtedy każde zgłoszenie kończy się komunikatem `Permission 
 jako 65534 — i mówi, która zawiodła.
 
 *`chown 65532:65532` też zadziała i nie jest potrzebny — usługa Runnera działa
-jako root, żeby móc mierzyć.*
+jako root, żeby móc mierzyć. Psuje to dopiero katalog ręcznie zamknięty przed
+innymi.*
 
 Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
 
@@ -131,9 +125,15 @@ docker compose up -d --wait
 
 `preflight.sh` odmawia od razu i jednym zdaniem, zamiast w połowie podnoszenia
 stosu: puste hasło, brakujący lub zbyt krótki token, CIDR z bitami hosta,
-względny katalog pracy, `DOCKER_GID` niezgodny z gniazdem, `.env` śledzony przez
-Git albo bez trybu 600. `make up` uruchamia go najpierw, więc zwykłą drogę
-sprawdzamy niezależnie od tego, czy ktoś pamięta, że ten skrypt istnieje.
+względny katalog pracy, katalog pracy, którego kontener zadania nie przeczyta,
+cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git. `make up`
+uruchamia go najpierw, więc zwykłą drogę sprawdzamy niezależnie od tego, czy
+ktoś pamięta, że ten skrypt istnieje.
+
+**Profil `runner` uruchamia cztery Runnery**, od `runner-1` do `runner-4`.
+Cztery pasują do ośmiu rdzeni fizycznych; na mniejszej maszynie uruchom mniej,
+bo więcej Runnerów niż rdzeni fizycznych nie przyspiesza oceniania, a psuje jego
+rzetelność — tabelę ma [Czego wymaga host](/pl/install/requirements).
 
 ## 4. Administrator
 
@@ -164,18 +164,20 @@ własnym interfejsie pętli zwrotnej Servera, a żądanie przez nginx — **albo
 opublikowane `127.0.0.1:8080`** — dociera jako brama mostka i dostaje 404. To
 zachowanie zmierzone, nie domysł.
 
-## 5. Zatwierdź Runnera
+## 5. Zatwierdź Runnery
 
 **Nowy Runner rejestruje się i czeka.** To nie jest usterka i nie ma limitu
 czasu. Nic nie zostanie ocenione, dopóki administrator go nie zatwierdzi — i to
 właśnie powstrzymuje kogoś przed podpięciem własnej maszyny do Twojej
 instalacji.
 
-W panelu: **Runnery**, i zatwierdź ten, który się pojawił. Dopóki tego nie
-zrobisz, jego log powtarza `waiting: this Runner has not been approved yet`, za
-każdym razem z dłuższą przerwą — bo cała pracownia Runnerów zarejestrowanych
-naraz zasypywałaby inaczej Server jedną falą pytań przez cały czas, którego ktoś
-potrzebuje, żeby dojść do panelu.
+W panelu: **Runnery**, i zatwierdź każdy z czterech, które się pojawiły. Dopóki
+tego nie zrobisz, ich logi powtarzają `waiting: this Runner has not been approved
+yet`, za każdym razem z dłuższą przerwą — bo cała pracownia Runnerów
+zarejestrowanych naraz zasypywałaby inaczej Server jedną falą pytań przez cały
+czas, którego ktoś potrzebuje, żeby dojść do panelu. Niezatwierdzony Runner po
+prostu stoi bezczynnie, a kolejkę niosą pozostałe, więc zapomniane zatwierdzenie
+wygląda na wolną instalację, a nie na błąd.
 
 Potem wyślij coś i zobacz, jak dostaje werdykt. **Dopóki to się raz nie
 wydarzy, nie wiadomo, czy instalacja działa.**
@@ -192,28 +194,31 @@ zakomentowane, opisuje [Praca rutynowa i harmonogram](/pl/install/schedule).
 
 ## Praca na obrazach zbudowanych lokalnie
 
-Dopóki nie ma wydania, zbuduj repozytoria produktowe i otaguj je tak, jakby były
-opublikowane. `compose.yaml` zadziała bez zmian. **Ścieżkę po `-f` liczy się
+**Tak się tego stosu normalnie nie uruchamia** — od tego są obrazy
+opublikowane, które pobierze każdy. To jest sposób na pracę z kodem, który
+**nie jest wydany**: ze zmianą w repozytorium produktowym albo z poprawką w
+drodze do pull requesta. Zbuduj ją, otaguj tam, gdzie stałby obraz opublikowany,
+a `compose.yaml` zadziała bez zmian. **Ścieżkę po `-f` liczy się
 względem katalogu, w którym stoisz, a nie względem kontekstu budowania** — linia
 Servera jako jedyna zawiera ścieżkę, więc to ją warto sprawdzić.
 
 Buduj od nowa, zamiast sięgać po tag, który już masz: te obrazy są przypięte
-ruchomym tagiem, więc stary lokalny `:1` jest po cichu tym, co zbudowałeś
+ruchomym tagiem, więc stary lokalny `:0` jest po cichu tym, co zbudowałeś
 miesiąc temu.
 
 ```bash
-docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:1 AlgoJudge-Server
-docker build -t ghcr.io/algojudge/algojudge-client:1 AlgoJudge-Client
-docker build -t ghcr.io/algojudge/algojudge-runner:1 AlgoJudge-Runner
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:0 AlgoJudge-Server
+docker build -t ghcr.io/algojudge/algojudge-client:0 AlgoJudge-Client
+docker build -t ghcr.io/algojudge/algojudge-runner:0 AlgoJudge-Runner
 # Kontekstem jest `images`, nie `images/$lang`: wszystkie cztery budują w nim
 # pośrednika pomiarowego z `images/shim`, więc musi się w nim znaleźć.
 for lang in gcc clang python pypy; do
-    docker build -t "ghcr.io/algojudge/lang-$lang:1" \
+    docker build -t "ghcr.io/algojudge/lang-$lang:0" \
         -f "AlgoJudge-Runner/images/$lang/Dockerfile" AlgoJudge-Runner/images
 done
 
 # Tylko dla profilu sędziego zewnętrznego.
-docker build -t ghcr.io/algojudge/algojudge-external-runner:1 AlgoJudge-External-Runner
+docker build -t ghcr.io/algojudge/algojudge-external-runner:0 AlgoJudge-External-Runner
 ```
 
 `update.sh` wciąż potrzebuje rejestru, z którego pobiera. Aktualizację

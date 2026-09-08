@@ -1,0 +1,101 @@
+---
+title: Signing in
+description: A local account or your institution's provider, and what changes depending on which.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+There are two ways into an AlgoJudge installation, and which ones you see on the
+sign-in screen is the operator's decision — including, on some installations,
+seeing no sign-in screen at all.
+
+## A local account
+
+Type your **username or email** and your **password**, then **Sign in**.
+
+A wrong password and an unknown login give the same message, `Invalid login or
+password`. Anything else — a locked account, for example — comes back with the
+Server's own wording.
+
+<Callout type="warn" title="There is no password reset">
+The sign-in screen says so: *Forgotten your password? An administrator will
+issue a new one.* This version sends no email, so there is no self-service
+reset. Ask whoever runs the installation.
+</Callout>
+
+**If there is no password box at all**, the installation expects everybody to
+arrive through a provider. The form is still reachable at `/login?admin=true`,
+which is where administrators, local and temporary contest accounts sign in.
+Hiding the form does not switch password sign-in off.
+
+## Through your institution
+
+Where the operator has registered one or more identity providers, the sign-in
+screen carries a **Continue with …** button for each. It takes you to your
+institution, and your institution sends you back.
+
+Three refusals come back to the sign-in screen under **Signing in was refused**:
+
+| What you see | What it means |
+|---|---|
+| *That provider does not grant you access to this installation. Ask whoever runs it.* | Your account at the provider is fine; it maps onto nothing here. |
+| *That sign-in method is switched off here.* | The operator disabled that provider. |
+| *The sign-in did not complete. Try again, or use a password.* | Something went wrong on the way. |
+
+### When you never see the sign-in screen
+
+Where an installation takes all its sign-ins from one provider, the operator can
+point the screen straight at it. Then there is nothing to press: you read
+*Taking you to …* for a moment and arrive back signed in, having chosen
+nothing.
+
+**Where you were going survives the trip.** A link into an activity, a
+self-enrolment link with its password, a page you had open when your session
+expired — you land on that page and not on the front one.
+
+Two things still bring the screen back. `/login?admin=true` is the form, which is
+how administrators and temporary contest accounts sign in on such an
+installation. And a **refused** sign-in returns here with its reason rather than
+being sent round again, so the three messages in the table above are as readable
+as they are anywhere else.
+
+## Creating an account yourself
+
+Most installations do not allow it. Accounts are made by an organiser or arrive
+through a provider, and the registration screen says so plainly rather than
+offering a form whose answer is always no.
+
+**Sign up** is therefore not a promise of a form. Where the operator has
+pointed registration at a provider it appears even though this installation
+takes no sign-ups of its own, and it leads to the provider, where whoever
+offers accounts offers them. What the button means is *there is a way in*.
+
+Where it is allowed, **Sign up** on the sign-in screen leads to a form:
+
+- **Username** is the only field always required — it is what you sign in as.
+- **First name** and **Last name** are optional. When you give neither, other
+  people see your username instead, including in the ranking.
+- **Email** may be required; the installation decides.
+- The **password needs at least 12 characters**, typed twice.
+- The **terms box appears only where the installation published terms**, and
+  then ticking it is required. It links the terms, and the privacy policy as well
+  where there is one; a link opens the document over the form so you do not lose
+  what you have typed. Where no terms are published there is no box and nothing
+  to accept; a privacy policy on its own is linked from the footer instead.
+
+Afterwards you either sign in straight away or confirm your address first,
+depending on the installation.
+
+## What changes when your account comes from a provider
+
+**Your profile is read-only in AlgoJudge**, and the account screen says so:
+*This account is managed by the identity provider. Your name, login, address and
+password are changed there.* The fields are visible but disabled, and there is
+no password tab you can use.
+
+The provider owns the identity; AlgoJudge only recognises it. Editing a copy
+here would either fail at your next sign-in or quietly disagree with the
+provider.
+
+See [Your account](/en/client/v0.1/participant/account) for what you can still do —
+export your data, and leave.

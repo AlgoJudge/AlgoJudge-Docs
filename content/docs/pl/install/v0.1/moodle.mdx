@@ -1,0 +1,195 @@
+---
+title: Instalacja narzędzia w Moodle
+description: Cała ścieżka, przebyta i uwieczniona na zrzutach w Moodle 5.2 i 5.3 — zaproszenie, rejestracja i trzy ustawienia, bez których nic się nie dzieje.
+source: en/install/v0.1/moodle.mdx
+sourceSha256: 8500212a0b3930d38048c5a21770c9aa940673bbf1f56d00c9bed45ab9b28ec2
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Ta strona prowadzi administratora krok po kroku do tego, by jeden Moodle umiał
+otwierać aktywności tej instalacji. To konkretna wersja
+[Podłączania platformy kursowej](/pl/install/v0.1/lti), która opisuje sam mechanizm.
+
+Co robi potem prowadzący, opisuje
+[Umieszczanie aktywności w kursie Moodle](/pl/client/manager/moodle-activity).
+
+**Każdy krok poniżej został wykonany** 2026-09-08 na Moodle **5.2.2** (build
+20260810) i **5.3dev** (build 20260807). Zrzuty pochodzą z tych przebiegów.
+**Interfejs na zrzutach jest angielski** po obu stronach — nazwy pól podajemy tak,
+jak widać je na ekranie.
+
+## Trzy rzeczy, od których zależy, czy to w ogóle zadziała
+
+Żadna się nie zapowiada, a dwie zawodzą w ciszy.
+
+<Callout type="warn" title="Twoja instalacja nie może wysyłać X-Frame-Options">
+Rejestracja odbywa się **w ramce** na stronie Moodle, tak samo jak każde
+późniejsze uruchomienie. Dostarczany `security-headers.conf` wysyła
+`X-Frame-Options: SAMEORIGIN`, co odrzuca obce pochodzenie — a Moodle jest obcym
+pochodzeniem. Zmierzone: ramka zostaje pusta, a **konsola przeglądarki nie mówi
+nic**.
+
+Zamień to na politykę, która potrafi wskazać platformę, w
+`nginx/snippets/security-headers.conf`:
+
+```nginx
+# zamiast linii z X-Frame-Options
+add_header Content-Security-Policy "frame-ancestors 'self' https://moodle.example.edu;" always;
+```
+
+Uzasadnienie i to, co ta zmiana kosztuje gdzie indziej, opisuje
+[Własne reverse proxy](/pl/install/v0.1/reverse-proxy).
+</Callout>
+
+**HTTPS musi mieć platforma, nie tylko narzędzie.** Server pobiera dokument
+konfiguracyjny platformy, zanim cokolwiek zarejestruje, i odrzuca adres, który
+nie jest `https`. Moodle na czystym HTTP dostaje odprawę *„The platform gave no
+usable configuration address"* — zanim cokolwiek zostanie wybrane, więc w logu
+platformy też nic nie ma.
+
+**Server musi znać swój publiczny adres.** Rejestracja rozpoczęta przez platformę
+odmawia wydania zaproszenia, dopóki `AJ_PublicApiUrl` nie rozwija się
+w bezwzględny adres, a instalacja stojąca pod nietypowym portem bez tego
+ustawienia gubi port w adresach, które rozdaje. Ten stos zostawia je
+nieustawione, więc trafia do nakładki wymienionej w `.env` pod `COMPOSE_FILE` —
+powód, który się liczy, opisuje [Podłączenie platformy
+kursowej](/pl/install/v0.1/lti):
+
+```yaml
+# state/lti.compose.yaml
+services:
+  server:
+    environment:
+      AJ_PublicApiUrl: https://algojudge.example.edu/api/v1
+```
+
+## 1. Zapowiedz rejestrację
+
+W AlgoJudge otwórz **LTI platforms** w panelu zarządzania. W świeżej instalacji
+ekran mówi, że nic nie jest zarejestrowane.
+
+![Ekran platform LTI, zanim cokolwiek zarejestrowano](/screenshots/moodle/platforms-empty.png)
+
+Wpisz nazwę Moodle'a, który za chwilę podłączysz — to tylko etykieta do
+rozpoznania zaproszenia — i naciśnij **Expect a registration**.
+
+![Wpisana nazwa, przed wystawieniem zaproszenia](/screenshots/moodle/expect-a-registration.png)
+
+Dostajesz adres. Jest ważny **raz, przez trzydzieści minut**, i można go odwołać,
+zanim zostanie użyty.
+
+![Zaproszenie z adresem do przekazania](/screenshots/moodle/invitation-issued.png)
+
+## 2. Przekaż adres Moodle'owi
+
+<Tabs items={["Moodle 5.2", "Moodle 5.3"]}>
+<Tab value="Moodle 5.2">
+
+**Site administration → Plugins → Activity modules → External tool → Manage
+tools.** Wklej adres w pole **Tool URL** i naciśnij **Add LTI Advantage**.
+
+</Tab>
+<Tab value="Moodle 5.3">
+
+Ten sam ekran, w tym samym miejscu, i zachowuje się identycznie — ta połowa
+ścieżki nie różni się między wersjami.
+
+</Tab>
+</Tabs>
+
+![Ekran Manage tools w Moodle](/screenshots/moodle/moodle-manage-tools.png)
+
+![Zaproszenie wklejone w Tool URL](/screenshots/moodle/moodle-tool-url.png)
+
+Moodle otwiera w ramce stronę rejestracyjną narzędzia, obie strony wymieniają to,
+czego potrzebują, i pojawia się kafelek narzędzia — **Pending**.
+
+![Narzędzie zarejestrowane, czeka na aktywację](/screenshots/moodle/moodle-tool-pending.png)
+
+Naciśnij **Activate**. Dopóki tego nie zrobisz, nic się nie uruchomi.
+
+## 3. Przyjmuj uruchomienia i zdecyduj o tożsamości
+
+W AlgoJudge platforma jest już na liście — i **wyłączona**. Tak ma być:
+rejestracja to cudze działanie, a to, co z niej powstało, nie zaczyna działać
+dlatego, że przyszło.
+
+![Platforma zarejestrowana i wyłączona](/screenshots/moodle/platform-registered.png)
+
+Naciśnij **Edit**. Liczą się dwa przełączniki.
+
+![Ustawienia platformy](/screenshots/moodle/platform-edit.png)
+
+**Accept launches** to ten, który ją włącza. Zapisz — odznaka *disabled* znika.
+
+**This platform may say who somebody is** to ten, którego lepiej nie ruszać bez
+namysłu. Włączony sprawia, że uruchomienie łączy się z kontem AlgoJudge o nazwie
+użytkownika, którą przysłała platforma — więc gdy ktoś przejmie platformę,
+sięgnie i po te konta.
+
+<Callout type="info" title="Zaufanie platformie w kwestii tożsamości wymaga dostawcy tożsamości">
+Sam przełącznik zostaje odrzucony: *„A platform trusted to assert identity must
+name the namespace it is trusted within"*. Tą przestrzenią nazw jest slug dostawcy tożsamości — platforma może sięgać po konta, które przez niego powstały,
+nigdy po lokalne i nigdy po administratorów. Zarejestruj najpierw dostawcę
+w [Logowaniach zewnętrznych](/pl/client/manager/logins) i wróć tutaj.
+
+Przy przełączniku **wyłączonym** wszystko działa: pierwsze uruchomienie prosi o
+jednorazowe zalogowanie i zapamiętuje je.
+</Callout>
+
+## 4. Udostępnij narzędzie kursom
+
+Zarejestrowane narzędzie to jeszcze nie narzędzie, do którego sięgnie prowadzący.
+W Moodle otwórz jego ustawienia i ustaw **Tool configuration usage** na *Show in
+activity chooser and as a preconfigured tool*.
+
+![Widoczność narzędzia w kursach](/screenshots/moodle/moodle-tool-visibility.png)
+
+Bez tego narzędzie istnieje, jest aktywne i nie pojawia się w żadnym miejscu, w
+które zajrzy prowadzący.
+
+## Druga droga: wpisanie wszystkiego ręcznie
+
+Jeśli platforma nie potrafi zarejestrować się sama — starszy Moodle albo
+administrator, który chce zobaczyć każdą wartość — naciśnij **What to type into
+it** w wierszu platformy. Te cztery adresy są takie same dla każdej platformy.
+
+![Adresy, których potrzebuje platforma](/screenshots/moodle/what-to-type-into-it.png)
+
+Dwa parametry niestandardowe na dole nie są opcjonalne: bez nich uruchomienie nie
+potrafi rozpoznać, kto przyszedł, i ląduje na ekranie logowania zamiast na
+aktywności.
+
+## Więcej niż jeden Moodle
+
+Nic tutaj nie jest jedno na instalację. Wydział z dwoma Moodle'ami rejestruje
+oba, a każdy dostaje własny wiersz, własny identyfikator klienta i własne
+wdrożenie.
+
+![Dwie platformy zarejestrowane w jednej instalacji](/screenshots/moodle/two-platforms.png)
+
+## Kiedy nie działa
+
+**Ramka jest pusta, a konsola milczy.** Polityka ramek, opisana wyżej. To
+najczęstszy przypadek i jedyny, który nie zostawia śladu nigdzie.
+
+**„The platform gave no usable configuration address."** Adres platformy nie jest
+HTTPS albo Server nie potrafi go rozwiązać.
+
+**Adres rejestracyjny odrzucony jako wygasły.** Jest ważny raz, przez trzydzieści
+minut. Wystaw kolejny; platforma, która odpowie źle, nie zużywa zaproszenia.
+
+**Deweloperski Moodle z certyfikatem podpisanym przez siebie** zostanie odrzucony
+przez Server z tego samego powodu co każdy niezaufany certyfikat. To cecha stosu
+deweloperskiego, a nie produktu.
+
+## Dalej
+
+- [Umieszczanie aktywności w kursie Moodle](/pl/client/manager/moodle-activity) —
+  co prowadzący zrobi z tym, co właśnie podłączyłeś.
+- [Podłączanie platformy kursowej](/pl/install/v0.1/lti) — mechanizm oraz to, co
+  zostało i co nie zostało sprawdzone.
+- [Własne reverse proxy](/pl/install/v0.1/reverse-proxy) — polityka ramek i układ z
+  dwoma adresami w całości.

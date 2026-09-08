@@ -19,19 +19,22 @@ export const HOMEPAGE = "https://algojudge.pl/";
 /**
  * **Which version of the product this documentation describes.**
  *
- * `released` is `null` until the first release, and that is the honest state:
- * no product repository carries a `v*` tag, so there is no version to name.
- * The accepted decision of 2026-08-09 says a version directory is created on
- * release day and never retroactively, so until then the site documents what is
- * on `main` and says so rather than implying a version exists.
+ * `released` was `null` until 2026-09-08, which was the honest state while no
+ * product repository carried a `v*` tag. Five of them do now, and
+ * `npm run snapshot -- v0.1` cut the directories that day — 188 files across
+ * all five sections — so this names a version that exists.
  *
- * On the day `v0.1.0` is cut, `npm run snapshot -- v0.1` makes the directory and
- * this becomes `"0.1"`.
+ * The accepted decision of 2026-08-09 says a version directory is created on
+ * release day and never retroactively. **So this value and the directories move
+ * together**: nothing sets it — `scripts/snapshot.mjs` does not touch this file
+ * — and `lib/layout.shared.tsx` renders it under the title on every page, so a
+ * released site left at `null` says *unreleased* on all 266 of them.
  */
 export const documented: { released: string | null; label: Record<Locale, string> } = {
-    released: null,
-    // Short enough to sit on one line beside the name; "przed wydaniem" wrapped
-    // and pushed the title onto two.
+    released: "0.1",
+    // **Unreachable while `released` is set**, and kept for the next line that
+    // has not been cut yet. Short enough to sit on one line beside the name:
+    // "przed wydaniem" wrapped and pushed the title onto two.
     label: { en: "unreleased", pl: "przed 0.1" },
 };
 

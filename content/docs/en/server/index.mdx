@@ -102,14 +102,13 @@ that hangs off a **user**, not off a resource.
 
 ## Some numbers, and where they come from
 
-Quoted because they are the shape of the thing rather than trivia, and each is
-read off the code rather than remembered.
+Each is read off the released code rather than remembered.
 
 | | |
 |---|---|
 | **Nine hosted services** | the maintenance drainer, the lease reaper, the round scheduler, the deletion sweeper, the merge sweeper, the address sweeper, the file collector, the storage migrator, and the LTI module's grade synchroniser |
 | **Thirty-two `DbSet`s** | on top of the framework's own identity context |
-| **Two migrations, plus one for LTI** | squashed before 0.1.0, and the LTI module keeps its own history table |
+| **One migration per context** | the application and the LTI module keep separate migration histories in one database, and each holds exactly one, `version_0_1_0` |
 | **One event catalogue** | `events.json` is committed, so both sides of the socket can diff their names against it rather than against each other |
 
 **Every identifier is a UUIDv7** — time-ordered, so inserts append to an index
@@ -125,4 +124,6 @@ identity framework's own string key.
 | [Identity](/en/server/identity) | how a federated account is keyed, and what a claim may never buy |
 | [The REST API](/en/server/api) | the shape of the surface, and the admin surface that answers 404 |
 | [Change notifications](/en/server/events) | what the socket carries, and what it does not |
+| [Configuration](/en/server/configuration) | every setting, its default, and the seven ways the Server refuses to start |
+| [LTI](/en/server/lti) | how a course platform launches into an activity, and what it may never assert |
 | [REST reference](/en/server/rest) | generated from the Server's own `openapi.json` |

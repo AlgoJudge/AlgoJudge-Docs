@@ -1,6 +1,6 @@
 ---
 title: Backup
-description: What the dump covers, what it now carries, and the two bounds that keep a backup directory from becoming the outage.
+description: What the dump covers, what it carries, and the two bounds that keep a backup directory from becoming the outage.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -55,12 +55,11 @@ ring next refreshes.
 ### The certificate is the mitigation, and here is what it does not do
 
 The key ring can encrypt itself with a certificate you supply
-(`DataProtection:Certificates:0:Path` and `:Password`; the first listed encrypts
-new keys and every one listed decrypts old ones, so rotating means prepending
-and keeping the old certificate). Without one the keys are stored as plain XML.
-That is accepted and documented rather than hidden: whoever can read that table
-can also write a row into the users table, so the certificate buys less than it
-looks. It is there for an installation whose database is somebody else's to hold.
+(`DataProtection:Certificates:0:Path` and `:Password`). Without one the keys are
+stored as plain XML. That is accepted and documented rather than hidden: whoever
+can read that table can also write a row into the users table, so the certificate
+buys less than it looks. It is there for an installation whose database is
+somebody else's to hold.
 
 Two things about it contradict what a reader would expect.
 
@@ -92,8 +91,8 @@ It reports which arrangement is in force, every key with its dates, whether each
 is stored encrypted or plain, and **whether this Server can still read it** —
 which is also the only check that catches a certificate that was dropped instead
 of kept. Reading a key's descriptor is what decrypts it, so a key encrypted with
-a certificate nobody supplies any more fails exactly there. Before this command
-existed, the only symptom was everybody being signed out, after the fact.
+a certificate nobody supplies any more fails exactly there. Without asking, the
+only symptom is everybody being signed out, after the fact.
 </Callout>
 
 `AlgoJudge-Ops` names no key-ring setting in its `.env.example`, so an

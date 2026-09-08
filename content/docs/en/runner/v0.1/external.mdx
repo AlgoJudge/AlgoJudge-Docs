@@ -1,0 +1,321 @@
+---
+title: Forwarding to an external judge
+description: The Runner that judges nothing — what it does instead, the one judging system it can talk to, and the two switches that stop its queue while everything looks healthy.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`AlgoJudge-External-Runner` is a second Runner implementation that **evaluates
+nothing**. It claims jobs of an external problem type, hands the solution to the
+judging system that owns that type, waits for that system to decide, and reports
+its verdict back to the installation.
+
+It runs no code, has no sandbox, and measures nothing.
+
+**In an installation it is the `external-runner` profile**, outside the default
+set because it signs in to that judging system under an account there. [An
+external judge](/en/install/external-runner) is the operator's side of this page:
+what to put in `.env`, and the two switches that leave its queue empty while
+everything looks healthy.
+
+**One judging system is built into it: UVa Online Judge**, serving the problem
+type `uva@1` against [onlinejudge.org](https://onlinejudge.org). Everything below
+that is not marked as UVa's applies to the Runner whichever judge it is pointed
+at.
+
+<Callout type="warn" title="The verdict is somebody else's opinion">
+Nothing about a `uva@1` result was decided by your installation. The compilers,
+the tests, the limits and the judgement belong to onlinejudge.org, and the
+compilers there are pinned at the archive's own versions rather than at yours.
+
+**The submission's own page says so** — the result renderer for an external type
+names the judge and states that the verdict is theirs. The screens that show a
+verdict without resolving a renderer do not: the shared status badge, the
+manager's submissions table and the notification toast render the word alone, so
+somebody reading `WrongAnswer` in a list is not told whose opinion it is.
+</Callout>
+
+## How it differs from the sandboxing Runner
+
+| | `AlgoJudge-Runner` | this one |
+|---|---|---|
+| Where work is judged | in a sandbox it starts | on a service it does not run |
+| How long a job is held | seconds to minutes | up to fifteen minutes, waiting |
+| Registers as | `external: false` | **`external: true`** |
+| Trials | measures them | refuses them |
+| Container runtime socket | required | **not held at all** |
+| State it keeps | the identity key and a package cache | the identity key and a source cache |
+| Jobs held at once | one | up to `AJ_External__MaxPending`, 20 by default |
+| What a stop costs | the work already done | the work already done, **and one duplicate submission per job** |
+
+Because it starts nothing, it needs no socket, no cgroups and no scratch
+directory. The image is smaller for that reason rather than by tuning.
+
+**There is no *package* cache, and there is a source cache** — the two are worth
+keeping apart. An external problem has no package, because its whole
+configuration travels on the job; but the participant's own file is fetched on
+every job and needs somewhere to live. Conflating the two shipped an image
+without the cache directory, and every job failed on it.
+
+So there are two directories, and they differ in what losing them costs. The
+identity key is in `/var/lib/algojudge-external-runner` and is meant to be a
+volume: losing it costs a re-registration and an administrator's approval. The
+source cache is in `/var/cache/algojudge-external-runner`, and losing it costs
+one download.
+
+## Stopping one, and what it costs the archive
+
+**It hands back every job it is holding**, exactly as the sandboxing Runner
+hands back its one. On `SIGTERM` it stops asking for work, tells the Server each
+held job is free, and exits; each of those is claimable immediately and none of
+them spends a delivery. See [Runners](/en/runner/v0.1) for what
+that means on the Server's side, which is the same for both Runners.
+
+**What is different is what it cannot take back.** The submission is already on
+somebody else's service under this installation's account there, and the set of
+what is outstanding lives in memory. So the answer that archive is still
+computing arrives with nowhere to land, and whoever claims the job next sends
+the same solution again. That cost is not new — it is what any restart has
+always cost — and it is not avoided by leaving the Runner to be killed. What a
+polite stop saves is the waiting: without it every held job sits out its lease
+first, up to ten minutes each, on a Runner that is already gone.
+
+**So give it longer than the sandboxing one.** Twenty jobs is twenty calls to
+the Server, and a grace period shorter than they take turns a stop back into a
+kill. `AlgoJudge-Ops` ships `stop_grace_period: 60s` for this service against
+`30s` for the other.
+
+## `external: true` is not a detail
+
+The Server pairs a problem with a Runner on two booleans — the problem's
+`external` flag and the Runner's — **by equality, in both directions**.
+
+- An external problem goes only to a Runner that forwards.
+- A local problem goes only to a Runner that does not. That half is the one worth
+  stating: a local problem reaching a forwarding Runner would send somebody's
+  work out of the building with nobody having chosen that.
+
+**A Runner that forwards and does not declare it is handed nothing at all**, and
+from a log that is indistinguishable from an empty queue. It is one of the three
+filters on [routing](/en/runner/v0.1/routing); the Server reads no problem type to
+decide any of them.
+
+## The two switches that stop the queue while everything looks healthy
+
+Neither produces an error. Both produce an empty queue.
+
+<Callout type="warn" title="External judging ships off, and the Runner still needs approving">
+**The installation's external judging switch is off by default.** That is a
+decision, not an accident of defaulting: sending somebody's submission to a third
+party is a thing an operator chooses. While it is off, no job from an external
+problem is handed out to anybody — the Runner is given an empty queue, the same
+answer a draining Server gives. Nothing is refused, revoked or failed, and the
+work waits. Turning it on later loses nothing: the queue drains.
+
+**And this Runner still has to be approved**, like any other. That is the trust
+decision the whole design rests on, and no configuration substitutes for it.
+
+An operator turning external judging on takes on a disclosure duty: what leaves,
+to whom, and under what terms belongs in the installation's privacy notice. The
+product states the fact and cannot write the notice.
+</Callout>
+
+## One process, one judge
+
+The configuration below holds **one endpoint and one account**. Two judging
+systems are two deployments of this Runner, each with its own problem types and
+its own pools — which is how Runners already scale, and the same answer as
+running two sandboxing Runners on two machines.
+
+## Configuration
+
+The same `AJ_` convention as everywhere else, in two halves. `AJ_Server__*`,
+`AJ_Runner__*` and `AJ_Lease__*` are the Runner's own and mean the same thing
+whatever it forwards to; `AJ_External__*` is the judging system it forwards to.
+Two values are secrets and have no defaults.
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Server__BaseUrl` | **required** | including `/api/v1` |
+| `AJ_Runner__Name` | `$HOSTNAME`, else `algojudge-external-runner` | |
+| `AJ_Runner__ProblemTypes` | the judge's own | leave it unset unless you are narrowing or widening that deliberately |
+| `AJ_Runner__Tags` | empty | pools, seeded at the first registration only |
+| `AJ_Runner__KeyPath` | `/var/lib/algojudge-external-runner/identity.key` | |
+| `AJ_External__Judge` | `uva` | which judging system. An unknown one is refused at start-up, by name, with the list of what the build knows |
+| `AJ_External__Username` | **required, secret** | the robot account submissions are made under |
+| `AJ_External__Password` | **required, secret** | |
+| `AJ_External__UserId` | resolved from the username | the judge's own numeric id for the account |
+| `AJ_External__BaseUrl` | `https://onlinejudge.org/` | where submissions are posted |
+| `AJ_External__ApiBaseUrl` | `https://uhunt.onlinejudge.org/` | where answers are read, when that is a different service |
+| `AJ_External__PollMinSeconds` | `20` | how often the judge is asked while a submission is fresh, and **also the floor**: below it the Runner refuses to start |
+| `AJ_External__PollMaxSeconds` | `60` | how often it is asked after that |
+| `AJ_External__PollEscalateAfterSeconds` | `120` | how long the oldest outstanding submission waits before the interval goes from the one to the other |
+| `AJ_External__SubmitMinIntervalSeconds` | `5` | |
+| `AJ_External__PendingTimeoutSeconds` | `900` | how long to wait for the judge |
+| `AJ_External__MaxPending` | `20` | submissions in flight. Zero is refused |
+| `AJ_External__LongPollEnabled` | `false` | how often the judge is asked for answers: on, a flat `AJ_External__PollMaxSeconds`; off, the escalating pair above. **It does not turn the live stream on or off** — see below |
+| `AJ_Cache__Path` | `/var/cache/algojudge-external-runner` | where a submission's source is cached on its way to the judge |
+| `AJ_Cache__MaxBytes` | `268435456` (256 MiB) | the cache ceiling. Plain bytes only |
+| `AJ_Lease__RequestSeconds` | `1200` | |
+| `AJ_Poll__WaitSeconds` | `25` | how long the **Server** may hold a claim open. `0` asks for none, and **above 300 the Runner refuses to start** |
+
+The two addresses both default to UVa's, because `uva` is the judge the Runner
+selects when nothing says otherwise. They are settings rather than constants so
+that a judge which moves does not need a release.
+
+`AJ_External__PollMinSeconds` cannot go below twenty. The Runner refuses to start
+if it does: onlinejudge.org publishes no rate limit at all, and a judging system
+may publish none, so this one is not lowered. A politeness limit a deployment can
+silently disable is not a limit.
+
+Every submission is made under one robot account, and **every real submission
+stays on that account for ever**. That is a decision for whoever owns it.
+
+## Three numbers checked against each other at start-up
+
+All three failures happen far from their cause, and all three end the same way:
+**the same solution is sent to somebody else's site twice**.
+
+**`AJ_Lease__RequestSeconds` may not exceed 3600.** The Server clamps what it
+grants, so a larger request is a deadline of this Runner's own invention: it
+would renew against a lease it does not have and hold a job past the real one.
+This is checked first, because it bounds the variable the next rule tells you to
+raise — pushing `AJ_External__PendingTimeoutSeconds` up eventually leaves no
+legal lease above it, and the refusal says so.
+
+**`AJ_Lease__RequestSeconds` must exceed `AJ_External__PendingTimeoutSeconds`.**
+Otherwise the Server reclaims the job while this Runner is still waiting on the
+judge, the job returns to the queue, and the next Runner to claim it submits
+again. The defaults — a twenty-minute lease against a fifteen-minute wait —
+satisfy this; a lease left at the sandboxing Runner's ten-minute default would
+not.
+
+**`AJ_External__PollMaxSeconds` must fit four times inside the lease.** A held
+lease is renewed at the top of the same cycle that asks the judge, so slowing the
+polling down to be polite to somebody else's service slows the renewing down with
+it. Four, so that three renewals fit inside every lease and two may fail in a row
+with the deadline still ahead.
+
+**The cycle is the judge's interval *plus* the claim.** A lease is renewed once
+per loop, and the loop's other blocking call is the claim the Server may hold
+open for `AJ_Poll__WaitSeconds` — so both waits are inside one renewal gap, and
+what has to fit four times inside the lease is
+`AJ_External__PollMaxSeconds + AJ_Poll__WaitSeconds`.
+
+That last one is the well-meant change that would have cost a double
+submission, which is exactly why it is refused at start-up rather than discovered
+an hour later. Note the ceiling it implies: with a lease clamped at 3600 seconds
+the cycle cannot exceed 900, so the poll interval cannot exceed **875** at the
+shipped wait — 900 only if the wait is set to `0`.
+
+These are the three an operator meets while tuning. The start-up check refuses
+**seven** configurations in all — the other four are a poll floor below twenty, a
+poll ceiling below the floor, `AJ_External__MaxPending` at zero, which would
+claim no job at all, and an `AJ_Poll__WaitSeconds` above the three hundred the
+Server will hold.
+
+## UVa Online Judge
+
+The one integration there is. The two headings under this one are its own; the
+sections after them are the Runner's again.
+
+It is two services rather than one: submissions are posted to `onlinejudge.org`
+as a web form, and verdicts are read from uHunt as an API. That is why the
+configuration above has both a `BaseUrl` and an `ApiBaseUrl`.
+
+### The six languages
+
+The archive's own list, defined by the problem type rather than by each problem.
+
+| Id | Label | The archive's own |
+|---|---|---|
+| `c89-gcc` | C89 / ANSI C (GCC 5.3.0) | ANSI C 5.3.0 |
+| `java8` | Java 8 (OpenJDK 1.8.0) | JAVA 1.8.0 |
+| `cpp98-gcc` | C++98 (GCC 5.3.0) | C++ 5.3.0 |
+| `pascal-fpc` | Pascal (Free Pascal 3.0.0) | PASCAL 3.0.0 |
+| `cpp11-gcc` | C++11 (GCC 5.3.0) | C++11 5.3.0 |
+| `python3` | Python 3 (CPython 3.5.1) | PYTH3 3.5.1 |
+
+Three of these ids are the same ids `standard-io@1` uses — deliberately, so one
+screen can resolve a label whichever type produced a submission. The three that
+are not name toolchains this project does not run itself; that is the point of
+forwarding.
+
+**The labels are not `standard-io@1`'s, and must not be.** `cpp11-gcc` here is
+GCC 5.3.0 with the archive's flags, and [in the sandboxing
+Runner](/en/runner/v0.1/languages) it is a compiler this project pins with its own.
+Showing the same label in both places would tell a participant the two were built
+by the same compiler.
+
+### What a `uva@1` problem carries
+
+There is no package. The whole of the configuration is documents the Server
+already carries and does not read:
+
+- **the version's `props`** says *which problem this is* — the archive's number.
+  Identity rather than settings, written once at import, inherited by every
+  assignment. Without it the Runner refuses the job **before anything leaves**,
+  and says so by name.
+- **the assignment's `config`** says *how this course judges it* — which of the
+  archive's verdicts count as solved, and which of the six languages are allowed.
+  A course can accept a presentation error where a contest counts only an
+  accepted answer, on the same imported problem.
+
+Statements are fetched through the Server rather than by the manager's browser,
+because the archive sends no cross-origin header. That fetch is governed by an
+allowlist of hosts the installation configures.
+
+## Not judged, and not a wrong answer
+
+A judge can fail to form an opinion — a submission error, or a problem it holds
+no tests for. **Neither is a verdict and neither is scored.** They are reported
+as infrastructure failures, and the Server refuses to score one, because marking
+somebody down for a third party's outage would be a lie about their solution.
+
+A verdict the Runner does not recognise is treated as *not judged yet* rather
+than guessed at: an answer nobody has seen before is not evidence that a person
+was wrong.
+
+A submission the activity's rules refuse — a language the manager excluded — is
+reported as `PolicyViolation`, the same word `standard-io@1` uses, and **nothing
+is sent to the judge at all**.
+
+## How often the judge is asked, and the stream that runs anyway
+
+**The live stream is not a setting.** Whenever anything is outstanding, this
+Runner holds a request open against the archive's event stream and asks for
+answers the moment an event about its own account arrives. Nothing turns that
+off. `AJ_External__LongPollEnabled` decides one thing: how often the judge is
+asked when no event has arrived.
+
+| | The archive is asked for answers |
+|---|---|
+| off, the default | every `AJ_External__PollMinSeconds` (20 s), until the oldest outstanding submission has waited `AJ_External__PollEscalateAfterSeconds` (120 s), then every `AJ_External__PollMaxSeconds` (60 s) |
+| on | every `AJ_External__PollMaxSeconds` (60 s), whatever anything has waited. The other two then decide nothing at all |
+
+So turning it on **slows the safety net down** — one request a minute instead of
+three — on the promise that the stream is what makes a verdict prompt. Measured
+against onlinejudge.org on 2026-09-08, a verdict came back in about 25 s either
+way: the archive's own judging is what that time is, and what the setting buys
+is the requests.
+
+**Which is why it is off unless an operator turns it on.** Behind a proxy that
+cuts a long-held request the stream never fires, the flat minute is all that is
+left, and a verdict then waits a minute rather than twenty seconds. It is a
+value rather than a presence: `true`, `1`, `yes` or `on` against `false`, `0`,
+`no` or `off`, and anything else is refused at start-up by name.
+
+**The stream is a trigger and never a source of truth**, whatever this is set
+to. It is global to the judge and keeps only its last hundred events, so it can
+drop one under load; what arrives is read for one thing — whether this account
+appears — and never for a verdict, because a missed event read as a verdict
+would be a submission that hangs until its timeout. The position in it is taken
+before the first submission of a batch, when nothing is outstanding and nothing
+can be lost by moving it.
+
+Two more properties of the same loop: **the archive is asked nothing at all
+while nothing is outstanding**, and **one request covers every outstanding
+submission**, however many there are.
+
+Only the UVa integration has a stream. An integration without one waits out the
+interval instead, and this setting then decides only how long that is.

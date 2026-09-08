@@ -51,16 +51,22 @@ of the endpoint, before a body is bound.
   the switch is the manager panel's *accept local sign-ups*. With it off,
   accounts are created by an organiser or arrive through a provider.
 - **There is no password reset and no confirmation to resend**, because there is
-  no mail sender in v1. An endpoint that exists and cannot work is worse than
-  one that refuses: it invites a screen to promise something nothing will
-  deliver.
+  no mail sender in v1. `forgotPassword`, `resetPassword` and
+  `resendConfirmationEmail` answer `403 mail.unavailable`. An endpoint that
+  exists and cannot work is worse than one that refuses: it invites a screen to
+  promise something nothing will deliver.
+- **`/identity/manage/info` is refused too**, with `403
+  identity.info.unavailable`, and for a different reason than the mail ones: the
+  framework builds that answer with a throw when an account has no address, and
+  this product allows accounts without one — the seeded administrator is one.
+  `GET /account` is the product's own answer, and it works for every account
+  this product allows.
 - **Two-factor authentication is not wired up.** The endpoints the framework
-  brings are unused rather than half-built, by decision.
-- **`/identity/manage/info` is refused too**, and for a different reason than the
-  mail ones: the framework builds that answer with a throw when an account has no
-  address, and this product allows accounts without one — the seeded
-  administrator is one. `GET /account` is the product's own answer, and it works
-  for every account this product allows.
+  brings are mapped and unused rather than half-built, by decision.
+
+The match is on the whole remaining segment, trailing slash normalised: a suffix
+test would let `POST /identity/register/` through the guard and refuse
+`/identity/manage/2fa/register`, which this rule has nothing to say about.
 
 ## Errors
 
@@ -134,13 +140,18 @@ can still be reopened.
 
 ## The generated reference
 
-[REST reference](/en/server/rest) is built from an `openapi.json` pinned by
-commit, fetched from the Server's repository and checked against a recorded
-SHA-256 — never from a local build, which would document whatever happened to be
+[REST reference](/en/server/rest) is built from the `openapi.json` of a pinned
+Server release — `v0.1.0` — fetched from that tag and checked against a recorded
+SHA-256, never from a local build, which would document whatever happened to be
 on the machine that ran it.
 
-One page per tag rather than one per operation: the pinned document declares 160
-paths over 44 tags, and 160 pages would bury the eight a reader actually wants.
+One page per tag rather than one per operation: that document declares **162
+paths and 199 operations over 44 tags**, and a page per operation would bury the
+eight a reader actually wants.
+
+Its own `info.version` reads `1.0`. That is the framework's default for a
+document nobody versioned; the Server release this reference describes is the
+one named above.
 
 The interactive playground is switched off. Turning it on later is a CORS
 decision, not a framework one.

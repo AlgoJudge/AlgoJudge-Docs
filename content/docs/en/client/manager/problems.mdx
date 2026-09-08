@@ -48,7 +48,7 @@ statements, how many files added and removed, and whether the package changed.
 Until you publish, everything you have staged lives only in that browser tab.
 Give the version a **what changed** note; it is what the history shows.
 
-## The five tabs
+## The tabs
 
 ### Statement
 
@@ -84,8 +84,9 @@ Server before storing.
 
 ### Package
 
-What a Runner needs to judge a submission. See
-[Packages](/en/client/manager/packages).
+What a Runner needs to judge a submission — and the one tab that is not always
+there. A problem type that judges without a package does not get it, and the
+screen says so in its place. See [Packages](/en/client/manager/packages).
 
 ### Versions
 
@@ -107,7 +108,7 @@ can be worth 100 points in a contest and 10 in a practice set at the same time.
 |---|---|
 | Slug in this activity | what a participant sees: `A`. Unique across the activity |
 | Name in this activity | empty keeps the library's name |
-| Statement version | pin one, or follow the current one |
+| Statement version | which version this round is judged against |
 | Worth | points here; empty keeps the problem's own |
 | Maximum upload, files per submission, submissions | empty inherits the activity's |
 | Configuration | what changes the verdict: limits, and the languages that may be submitted. Laid over the package's own |
@@ -120,10 +121,21 @@ than forms.
 
 ### Pinning
 
-**Attaching pins the version that was current at the time**, so a pin is the
-ordinary case and *follows the current one* is the rare one. The badge in the
-assignment list shows both numbers when they have parted — `v2 / v3` means the
-library moved on and this round did not, which is the whole reason to pin.
+**Attaching pins the version that was current at the time.** Publishing a
+correction therefore cannot change what a round already running is judged
+against, and following the library is a deliberate act rather than a side effect
+of fixing a typo.
+
+<Callout type="warn" title="Always the current one does not take a pin off">
+The **Statement version** list offers that entry and choosing it changes nothing:
+a new assignment is pinned to the current version whatever the list said, and an
+existing one keeps the pin it has. To move a round onto a newer version, name
+that version.
+</Callout>
+
+The badge in the assignment list shows both numbers when they have parted —
+`v2 / v3` means the library moved on and this round did not, which is the whole
+reason to pin.
 
 A missing package is called out in the same list. Nothing judges without one,
 and the time to learn that is before the round opens.

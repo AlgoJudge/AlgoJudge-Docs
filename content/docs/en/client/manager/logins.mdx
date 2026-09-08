@@ -30,8 +30,9 @@ worth here.
 | Where people delete their account at the provider | offered beside the button that removes the account here. Left empty, no link is shown |
 
 The screen prints the **redirect URI to register at the provider**, with a copy
-button. Getting it wrong fails at the end of somebody's first sign-in, with an
-error message from the provider rather than from here.
+button. What it prints is the path; the provider wants it behind this
+installation's own address. Getting it wrong fails at the end of somebody's
+first sign-in, with an error message from the provider rather than from here.
 
 An empty secret box is not a loss. It means *leave the stored one alone*, and the
 description says which of the two states you are in.
@@ -57,9 +58,10 @@ the group.
 
 <Callout type="warn" title="Two rules are enforced and cannot be turned off">
 `system:administrator` can never be granted by a claim, and nobody may map onto a
-permission they do not themselves hold. Both are checked by the Server in every
-configuration — including the way round where the rule is written first and the
-permission added to the template afterwards.
+permission they do not themselves hold. The Server checks the first of the two
+both ways round — writing the rule first and adding the key to the template
+afterwards is refused as well, and a token carrying it is stripped at sign-in
+regardless. The second is checked as the rule is written.
 </Callout>
 
 A mapped grant is **rewritten at every sign-in**, which cuts both ways: editing
@@ -86,8 +88,10 @@ back-channel secret.
 Course platforms that may open activities for their students. AlgoJudge
 implements LTI 1.3; it is **not certified by 1EdTech**, and the screen says so.
 
-Registration is **manual, by decision** — the one setting that matters is not
-something a platform may confer on itself.
+**No platform registers itself into service.** It is entered here by hand, or it
+registers itself against an expectation somebody here created — and either way
+it arrives with launches switched off and no authority over identity. Those two
+are not settings a platform may confer on itself.
 
 | | |
 |---|---|
@@ -121,13 +125,14 @@ called off before it is used.
 ### Course placements
 
 Where courses reach the activities of this installation. One activity may be
-placed in more than one course, and a launch **waits until somebody accepts
-that** — accepting means the activity feeds both gradebooks. It cannot be
-withdrawn from here: scores already sent stay where they were sent, so the
-placement is removed in the course instead.
+placed in more than one course: the first course's launches work at once, and
+**from the second on a launch waits until somebody accepts the sharing** —
+accepting means the activity feeds both gradebooks. A placement cannot be
+withdrawn from here: scores already sent stay where they were sent, so it is
+removed in the course instead.
 
-For a course that should not share, **give it its own copy** makes one the same
-way [copying an activity](/en/client/manager/copying) does.
+For a course that should not share, **give this course its own copy** makes one
+the same way [copying an activity](/en/client/manager/copying) does.
 
 **Who is in the course** reads the platform's roster on request — nothing here
 refreshes on its own — and shows how many of them have an account here.
@@ -183,4 +188,9 @@ is retried with a widening gap before it is given up on.
 
 The identity provider itself is not part of this stack. It runs beside it, at its
 own hostname. Choosing one and wiring it up is [Identity](/en/install/identity),
-and the platform's half is [Connecting a course platform](/en/install/lti).
+and the platform's half is [Connecting a course platform](/en/install/lti) — or,
+for a Moodle, [Installing the tool in Moodle](/en/install/moodle) screen by
+screen.
+
+What a teacher does once that is done is
+[Placing an activity in a Moodle course](/en/client/manager/moodle-activity).

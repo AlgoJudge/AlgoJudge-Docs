@@ -93,9 +93,9 @@ Runner that could re-declare its tags on restart would put itself into an
 examination's pool with nobody having approved that — and approval, the trust
 gate, happened before the tags existed.
 
-Both Runner implementations carry the seed:
-[`AlgoJudge-External-Runner`](/en/runner/external) reads the same variable, and is
-the one an installation is most likely to want in a pool of its own.
+Both Runner implementations carry the seed: the
+[forwarding Runner](/en/runner/external) reads the same variable, and is the one
+an installation is most likely to want in a pool of its own.
 
 ## Where the work's tags come from
 
@@ -131,10 +131,15 @@ apart, and neither can its log.** Work through them in this order:
    set of tags reaches, beside where the tags are typed. Zero there promises that
    nothing can be judged. A number above zero promises nothing — it counts tags
    and neither problem types nor `external`.
-3. Does the Runner declare the problem's **type**?
-   `AJ_Runner__ProblemTypes` defaults to `standard-io@1` alone here. On the
-   forwarding Runner it may be left unset, and then declares the problem type
-   of whichever judging system that one is configured for.
+3. Does the Runner declare the problem's **type**? Read the value the service
+   actually has rather than assuming a default, because the two defaults differ.
+   With `AJ_Runner__ProblemTypes` unset the binary declares `standard-io@1`
+   **alone**; an installation stood up from `AlgoJudge-Ops` sets
+   `RUNNER_PROBLEM_TYPES=standard-io@1,output-only@1`, so `output-only@1` work is
+   taken there and is not taken by a Runner started by hand with the variable
+   left out. On the forwarding Runner the variable may be left unset, and then
+   declares the problem type of whichever judging system that one is configured
+   for.
 4. Is the problem **external**? Then it needs an external Runner, and the
    installation's external judging switch on. See
    [Forwarding to an external judge](/en/runner/external).

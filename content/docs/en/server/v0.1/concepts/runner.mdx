@@ -1,0 +1,82 @@
+---
+title: Runner
+description: A registered evaluation worker, as the Server records it — self-registered, approved by hand, and almost entirely self-reported.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A `Runner` row is a registered evaluation worker. A Runner self-registers its
+key and an administrator approves it; **nothing is evaluated before approval**.
+
+This page is the Server's record of a Runner. The machine itself is documented
+in [Runner](/en/runner), and the contract it speaks in
+[Protocol](/en/protocol).
+
+| Field | Meaning |
+|---|---|
+| `Name` | reported by the Runner. **Not unique, and not an identifier** |
+| `Product` | which Runner implementation this is |
+| `Version` | |
+| `PublicKey` | public half of the immutable key pair, as presented at registration |
+| `Fingerprint` | stable digest of the public key; unique, and what an administrator approves |
+| `State` | `PendingApproval`, `Approved`, `Revoked` |
+| `ProblemTypes` | the problem types this Runner can evaluate, as discriminators |
+| `External` | whether this Runner sends submissions outside the installation |
+| `Tags` | free labels an operator sets, e.g. `gpu`, `slow` |
+| `Address` | where the Server saw the connection come from |
+| `Machine` | host facts the panel shows and the Server never interprets. Opaque `jsonb` |
+| `RegisteredAt`, `ApprovedAt`, `RevokedAt`, `LastSeenAt` | |
+| `CompletedJobs` | how many jobs this Runner has carried to a verdict |
+| `Files` | what the Runner uploaded about itself — `runner.log`, `lscpu.txt` |
+
+<Callout type="warn" title="The key is immutable, so there is no rotation">
+It is generated once at the Runner's first start. A leaked key is revoked, the
+Runner's configuration is rolled, and it registers again **as a new identity**.
+</Callout>
+
+## Almost everything here is self-reported
+
+The two exceptions are `Tags`, which an operator sets, and `Address`, which the
+Server reads from the connection. A machine is a bad witness to how it is
+reached, and a Runner behind a proxy that reported its own address would record
+the proxy.
+
+`Address` is correct only when forwarded headers are configured. Without that,
+every Runner behind a proxy records the proxy.
+
+## Matching work to a worker
+
+`ProblemTypes` is a column because the Server matches jobs against it, and it
+matches **by equality only**. It never parses a discriminator, never compares
+versions, never decides that one type is like another. That is what keeps
+"adding a problem type is not a Server change" true while still letting the
+Server route work.
+
+`External` lets the Server pair work with a worker on **one comparison of two
+booleans**: external problems go to external Runners and local problems do not,
+without the Server ever reading a problem type or knowing which service is on
+the other end. It also gives an administrator the fact at approval time, which
+is when it matters.
+
+It is reported by the Runner and taken at its word. A Runner that lied about it
+would be a Runner an administrator approved — a trust decision made earlier, and
+by a person.
+
+## Tags and routing
+
+Tags are free text an operator sets. An
+[activity](/en/server/v0.1/concepts/activity) or a
+[series](/en/server/v0.1/concepts/series) names the tags whose Runners may judge its
+submissions, and the pairing rule — the two lists must share at least one entry,
+with an empty list on either side read as `default` — is stated once, in [Tags
+and routing](/en/runner/routing).
+
+## Authentication
+
+A Runner is not a user and holds no cookie. It authenticates with its own token:
+it presents a fingerprint, receives a single-use challenge that expires, signs
+it, and receives a token with a lifetime.
+
+The Runner is then authorized **against the job it holds**, not against being a
+Runner. Without that, any approved Runner could fetch every test package in the
+installation.

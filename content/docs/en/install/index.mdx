@@ -1,9 +1,10 @@
 ---
 title: What an installation is
-description: Five services, four arrangements, and one Compose file that chooses between them.
+description: Nine services, four arrangements, and one Compose file that chooses between them.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 An AlgoJudge installation is a Docker Compose stack. It is delivered as its own
 repository, `AlgoJudge-Ops`, which you clone, configure through a `.env` file,
@@ -14,18 +15,17 @@ pulled by tag from GHCR, which is what makes an update `docker compose pull` and
 a rollback a digest. The Compose files that build from source live in the
 product repositories and are labelled as development there; they are not this.
 
-<Callout type="warn" title="No release has been cut yet">
-`ghcr.io/algojudge` is empty. No product repository carries a `v*` tag, so none
-of the eight images named in `compose.yaml` exists, and the quick start does not
-work from a clean clone. Today the stack runs only against images you build from
-the product repositories and tag as published — [First
-install](/en/install/first-install) says how. Every `docker pull` instruction in
-this section describes the intended path, not one you can follow today.
+<Callout type="info" title="`0` is the tag an installation asks for">
+The eight images are published and public: `docker compose pull` needs no
+registry login, from anywhere. What `.env.example` asks for is `0` — the
+**moving major**, which every 0.x release moves, breaking changes included.
+[Update and rollback](/en/install/update) says what that costs and how to pin a
+version instead.
 </Callout>
 
 ## The services
 
-Six services, and seven profile names — the Server and the Client each carry two,
+Nine services, and seven profile names — the Server and the Client each carry two,
 which is what lets one half be brought up without the other.
 
 | Service | Profiles | What it is |
@@ -34,12 +34,43 @@ which is what lets one half be brought up without the other.
 | `server` | `app`, `server` | the API at `/api/v1`, published on `127.0.0.1:8080` |
 | `client` | `app`, `client` | the browser application, published on `127.0.0.1:8082` |
 | `nginx` | `edge` | TLS, one origin for both halves, ports 80 and 443 |
-| `runner` | `runner` | evaluates submissions in sibling containers |
+| `runner-1` … `runner-4` | `runner` | one image, four identities. Each evaluates one submission at a time in sibling containers |
 | `external-runner` | `external-runner` | forwards them to an outside archive instead. **Not in the default set** — see [An external judge](/en/install/external-runner) |
 
-There are three Compose networks — `edge`, `backend` and `runner` — so that the
-database is not reachable from the edge and evaluation traffic is separable from
-HTTP. PostgreSQL sits on `backend` alone. **Only nginx publishes a port to the
+**Four is the reference, not a minimum.** It suits eight physical cores and
+leaves four for everything else; on a smaller host run fewer, because more
+Runners than physical cores does not judge faster and does stop judging
+accurately. [What the host needs](/en/install/requirements) has the table.
+
+Three Compose networks carry them, so that the database is not reachable from
+the edge and evaluation traffic is separable from HTTP:
+
+<Mermaid chart={`
+flowchart LR
+    subgraph edge["edge — the only network with a published port"]
+        nginx["nginx"]
+        client["client"]
+    end
+    subgraph backend["backend"]
+        postgres["postgres"]
+    end
+    subgraph runnernet["runner"]
+        r["runner-1 … runner-4"]
+        ext["external-runner"]
+    end
+    server["server"]
+    nginx --> server
+    nginx --> client
+    server --> postgres
+    r --> server
+    ext --> server
+    style edge fill:none
+    style backend fill:none
+    style runnernet fill:none
+`} />
+
+The Server is the only service on all three. PostgreSQL sits on `backend` alone
+and has no host port in any arrangement. **Only nginx publishes a port to the
 network**; the two loopback publications above exist for `curl` and for a proxy
 of your own.
 
@@ -73,16 +104,20 @@ with three values in its `.env`:
 
 ```ini
 SERVER_URL=https://your.domain
-RUNNER_NAME=runner-lab-a       # different on every host
+RUNNER_NAME_PREFIX=lab-a       # different on every host
 RUNNER_WORK_DIR=/srv/algojudge/runner-work
 ```
 
-**The Runner opens every connection itself.** It needs no inbound port and works
+The prefix names all four — `lab-a-1` to `lab-a-4` — and **has to differ per
+host**, or two machines' Runners appear in the panel under one set of names.
+
+**A Runner opens every connection itself.** It needs no inbound port and works
 from behind a domestic router with no address of its own. It has no `depends_on`
 on the Server in `compose.yaml`, deliberately, because on a Runner-only host
 there is no Server service to depend on — it retries its own connection instead.
 
-Each Runner registers separately and each needs its own approval.
+Each Runner registers separately and each needs its own approval, so a
+four-Runner host is four approvals.
 
 <Callout type="warn" title="T2 is the recommended arrangement for a public installation">
 Access to the Docker socket is equivalent to root on the host, and the Runner
@@ -107,11 +142,14 @@ registering one.
 | [First install](/en/install/first-install) | from an empty directory to a verdict |
 | [Pre-configuration](/en/install/preconfiguration) | standing one up without clicking through the panel |
 | [Identity](/en/install/identity) | Keycloak or Authentik, and how to register one |
+| [Connecting a course platform](/en/install/lti) | LTI 1.3, and the browser setting it turns on |
+| [Where the files go](/en/install/storage) | the three stores, and moving between them |
 | [Maintenance mode](/en/install/maintenance) | taking it out of service without stopping it |
-| [Backup](/en/install/backup) | what a dump covers, and what it now carries |
+| [Backup](/en/install/backup) | what a dump covers, and what it carries |
 | [Restore](/en/install/restore) | putting one back |
 | [Update and rollback](/en/install/update) | and what a rollback cannot undo |
 | [Routine work and the schedule](/en/install/schedule) | garbage collection, cron, and what nobody tells you |
 | [Your own reverse proxy](/en/install/reverse-proxy) | the five rules |
+| [An external judge](/en/install/external-runner) | forwarding problems to an outside archive |
 | [Every setting in `.env`](/en/install/configuration) | the whole of it, in one table |
 | [When something does not work](/en/install/troubleshooting) | the failure modes that look like other problems |

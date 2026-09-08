@@ -25,6 +25,13 @@ const config = {
     // sibling site at algojudge.pl answered it the same way.
     trailingSlash: true,
 
+    // **Images are served as they were built, because nothing optimises them
+    // here.** `next/image` otherwise emits `src="/_next/image?url=..."`, an
+    // endpoint that belongs to a running Next server; a static export has none,
+    // so every image on every page answers 404. Measured 2026-09-08, on the
+    // first pages this site gave images to.
+    images: { unoptimized: true },
+
     poweredByHeader: false,
     reactStrictMode: true,
 };

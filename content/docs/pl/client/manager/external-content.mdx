@@ -2,7 +2,7 @@
 title: Zasoby zewnętrzne
 description: Skąd instalacja może pobierać dokumenty i czy w ogóle może.
 source: en/client/manager/external-content.mdx
-sourceSha256: 385fbea79e5f6af8422010da48c52b3de88051cf9b05f09735cc471e7995e760
+sourceSha256: 50f9a92973725b5f5ab507fa732e73066f166d8e823f65bf34beeb0b66604683
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -64,11 +64,17 @@ zadaniami.
 **To, czy treść nadal istnieje, rozstrzyga się przez jej pobranie**, a nie przez
 odczytanie pola statusu w cudzym katalogu.
 
-Slug ma zarezerwowany prefiks, a żeby założyć zadanie w zarezerwowanej
-przestrzeni nazw, trzeba mieć `problem:import:external`. To właśnie powstrzymuje
-kogoś przed ręcznym zrobieniem drugiego `UVa-100` obok zaimportowanego — dwa
-zadania o tej samej nazwie, jedno zaimportowane i jedno wpisane, to pomyłka,
-której potem nikt nie odkręci.
+Prefiks sluga można **zarezerwować**, a wtedy założenie zadania w zarezerwowanej
+przestrzeni nazw wymaga `problem:import:external`. To właśnie powstrzymuje kogoś
+przed ręcznym zrobieniem drugiego `UVa-100` obok zaimportowanego — dwa zadania o
+tej samej nazwie, jedno zaimportowane i jedno wpisane, to pomyłka, której potem
+nikt nie odkręci.
+
+<Callout type="warn" title="Lista rezerwacji jest konfiguracją i przychodzi pusta">
+Zabezpieczenie działa, ale listy prefiksów, którą czyta, nikt za ciebie nie
+wypełni. Dopóki operator nie zarezerwuje `UVa-`, nic nie odmówi ręcznie
+założonemu zadaniu o takim slugu i nic nie zapyta o `problem:import:external`.
+</Callout>
 
 ### Klucz do archiwum
 
@@ -79,8 +85,9 @@ archiwum.
 
 **Sam klucz nigdy nie trafia do przeglądarki.** Przeglądarka zadań jest stroną
 osadzoną, a wszystko, co dostanie, znajdzie się w adresie — dlatego Server
-wymienia klucz długoterminowy na token ważny godzinę i wysyła tylko ten. Nieudana wymiana
-jest odmową i **nigdy powrotem do zapisanego klucza**, i po to właśnie ta wymiana
+wymienia klucz długoterminowy na token krótkotrwały i wysyła tylko ten. Jak
+długo ten token jest ważny, mówi archiwum; gdy nie mówi nic, dostaje godzinę. Nieudana wymiana jest
+odmową i **nigdy powrotem do zapisanego klucza**, i po to właśnie ta wymiana
 istnieje.
 
 Wyniki są trzy, nie dwa:

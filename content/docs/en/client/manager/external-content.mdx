@@ -61,11 +61,17 @@ ordinary case, not an error: the ones that landed are problems now.
 **Whether a statement still exists is settled by fetching it**, not by reading a
 status field in somebody else's catalogue.
 
-The slug carries a reserved prefix, and creating a problem in a reserved
-namespace needs `problem:import:external`. That is what stops somebody
-hand-making a second `UVa-100` beside an imported one — two problems with the
-same name, one imported and one typed in, is a confusion nobody can undo
-afterwards.
+A slug prefix can be **reserved**, and creating a problem in a reserved namespace
+then needs `problem:import:external`. That is what stops somebody hand-making a
+second `UVa-100` beside an imported one — two problems with the same name, one
+imported and one typed in, is a confusion nobody can undo afterwards.
+
+<Callout type="warn" title="The reserved list is configuration, and it ships empty">
+The guard is real; the list of prefixes it reads is the installation's own and
+nothing fills it in for you. Until an operator reserves `UVa-`, nothing refuses a
+hand-made problem with that slug, and nothing asks for `problem:import:external`
+either.
+</Callout>
 
 ### The archive's key
 
@@ -75,9 +81,11 @@ a screen nobody opened has not spent one of the archive's tokens.
 
 **The key itself never reaches a browser.** The picker is an embedded page, and
 whatever it is handed goes into an address — so the Server exchanges the
-long-lived key for a token good for an hour and sends only that. A failed
-exchange is a refusal and **never a fall back to the stored key**, which is the
-whole reason the exchange exists.
+long-lived key for a short-lived token and sends only that. The archive says how
+long that token lasts, and an hour is what it gets where the archive says
+nothing. A failed exchange is a refusal
+and **never a fall back to the stored key**, which is the whole reason the
+exchange exists.
 
 Three outcomes, and they are not two:
 

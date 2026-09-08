@@ -1,0 +1,116 @@
+---
+title: Zapisy
+description: Nadanie w aktywności jest członkostwem. Obok niego nie ma żadnej listy.
+source: en/client/v0.1/manager/enrolment.mdx
+sourceSha256: e410e39008b8e964058f4e64d9c4989528a34e0fee062b9021a8fc6769c474a7
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+W zakładce **Uczestnicy** zapisujesz ludzi do aktywności. Dodajesz kogoś i
+mówisz, co może, w jednej czynności, bo to jeden fakt.
+
+<Callout type="warn" title="Nadanie w aktywności jest członkostwem">
+Obok nadań nie ma żadnej tabeli członkostwa. Mieć nadanie w aktywności **znaczy**
+być w niej, a gdy je odbierzesz, usuwasz stamtąd tę osobę. Dwie tabele
+odpowiadające na pytanie *czy ta osoba jest w tej aktywności* mogą się poróżnić;
+jedna nie może.
+</Callout>
+
+Dlatego, gdy kogoś zapisujesz, otwiera się edytor uprawnień, a nie pole wyboru,
+i dlatego te same wiersze zobaczysz w
+[Nadaniach](/pl/client/v0.1/manager/permissions) przefiltrowanych do tej aktywności.
+
+## Zapisanie jednej osoby
+
+**Zapisz osobę** pyta o:
+
+1. **użytkownika** — konto, które już istnieje i nie jest jeszcze zapisane;
+2. **szablon**, od którego zacząć: wypełnia zestaw, a zostaje po nim tylko
+   nazwa — etykieta mówiąca, skąd ten zestaw się wziął;
+3. sam **zestaw uprawnień**, który możesz dowolnie edytować.
+
+Edytor oferuje to, co **ty** masz w tej aktywności, a nie to, co masz w całej
+instalacji. Nikt nie nada uprawnienia, którego sam nie ma; okno mówi to wprost,
+a Server odmawia niezależnie od tego, co zrobił ekran.
+
+### Członkostwo systemowe
+
+Jeden przełącznik w tym samym oknie: *wysyła zgłoszenia jak każdy, a liczy się
+jak nikt* — nie ma go ani w liczbie uczestników, ani w rankingu.
+
+Włącza się **sam** przy nadaniu, które daje cokolwiek ponad zestaw zwykłego
+uczestnika — z wyjątkiem `trial:run`, które można mieć, nie przestając być
+zawodnikiem. Członek jury w rankingu obok studentów to błąd, a nie preferencja,
+więc Server wylicza to przy każdym zapisie i nigdy nie przyjmuje z ekranu. Przy
+zwykłym członkostwie decydujesz sam: konto testowe albo to, na którym puszczasz
+rozwiązanie wzorcowe, jest dokładnie tym, do czego ten przełącznik służy.
+
+**Żeby sprawdzić zadanie przed zawodami, musisz zapisać się do aktywności.**
+Rozwiązanie wyśle tylko ktoś, kto ma w niej aktywne nadanie; nie pomaga tu nawet
+`system:administrator`, bo to obejście uprawnień, a bycie w aktywności
+uprawnieniem nie jest. W aktywności, w której cię nie ma, nie znajdziesz w
+nawigacji **Wyślij zgłoszenie** ani panelu zgłoszeń w rogu, a sam formularz, gdy
+wejdziesz na jego adres, odmówi tak samo jak Server.
+
+Wystarczy, że zapiszesz się do niej z włączonym przełącznikiem: wysyłasz
+zgłoszenia jak każdy, a nie ma cię ani w liczbie uczestników, ani w rankingu. W
+aktywności, którą sam założyłeś, już jesteś — przy zakładaniu dostajesz w niej
+nadanie prowadzącego — a [pomiar rozwiązania
+wzorcowego](/pl/client/v0.1/manager/packages) to nie zgłoszenie i nic z tego go nie
+dotyczy.
+
+## Nadanie zaproponowane, ale nieprzyjęte
+
+Nadanie jest *aktywne* albo *zaproszone*. Nadanie w stanie zaproszenia nie daje
+niczego — to dopiero oferta, a osoba nie jest w aktywności, dopóki jej nie
+przyjmie.
+
+## Gdy ludzie mają zapisywać się sami
+
+W zakładce ustawień aktywności, **kto może dołączyć**:
+
+| Polityka | Co się dzieje |
+|---|---|
+| zamknięta | nikt nie zapisuje się sam. Zapisuje prowadzący |
+| na hasło | każdy, kto ma konto i kod zapisu, zapisuje się sam |
+| otwarta | każdy, kto ma konto, zapisuje się sam |
+
+Obie polityki, które dopuszczają samodzielny zapis, dają ci **link do
+rozdania**. Gdy ustawisz hasło zapisu, jedzie ono we fragmencie linku, a nie w
+parametrze zapytania — fragmentu przeglądarka nie wysyła do serwera, więc nie
+trafi on do żadnego logu dostępu, proxy ani nagłówka referrer.
+
+Aktywność zamknięta i tak nie pokazuje się na listach osobom, których w niej nie
+ma. Pozostałe dwie też możesz ukryć — zostają wtedy dostępne pod swoim adresem,
+a po to właśnie jest link.
+
+Prowadzący zawsze może zapisać kogoś ręcznie, cokolwiek mówi polityka.
+
+## Klasa, która nie ma jeszcze kont
+
+**Konta tymczasowe** zakłada konta hurtem i zapisuje je tutaj w miarę
+powstawania. Przycisk pojawia się tylko wtedy, gdy możesz zrobić obie połowy:
+`activity:enroll` **w tej aktywności**, bo nadanie dotyczy jednej aktywności,
+oraz `user:create:temporary` gdziekolwiek, bo zakładanie kont nie jest zawężone
+do aktywności, w której konta wylądują.
+
+Hasła, które dostajesz z powrotem, są jedyną kopią, jaka kiedykolwiek będzie, a
+kartka do wydruku wskazuje na tę aktywność, a nie na stronę główną, od której
+ktoś musiałby zacząć szukać.
+
+## Same konta to inny ekran
+
+Obszar **Użytkownicy** to lista kont: tam je zakładasz, edytujesz, blokujesz,
+resetujesz hasło, oglądasz sesje i przenosisz dorobek jednego konta na drugie.
+Co każda z tych czynności znaczy dla zapisanego konta — dlaczego *zatwierdzone*
+to nie *potwierdzone*, dlaczego usunięcie anonimizuje, zamiast kasować, i co
+naprawdę trzyma wiersz sesji — opisuje
+[Użytkownik](/pl/server/concepts/user). Uprawnienia, za którymi te czynności
+stoją, w tym `user:block` i `user:merge`, wymieniają
+[Uprawnienia](/pl/server/permissions).
+
+Blokada w ogóle nie pozwala się zalogować — kończy istniejące sesje i nie
+dopuszcza nowych. To, co ktoś może wewnątrz aktywności, opisuje nadanie, i jedno
+nie zastępuje drugiego: blokujesz na poziomie całej instalacji i potrzebujesz do
+tego `user:block`, którego nie ma w dostarczanym szablonie `manager`.

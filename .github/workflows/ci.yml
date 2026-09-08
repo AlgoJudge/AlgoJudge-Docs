@@ -86,10 +86,23 @@ jobs:
             sleep 1
           done
           curl -sS -o /dev/null -w 'healthz %{http_code}\n' http://localhost:8080/healthz
-          for path in /en/ /pl/ /en/install/ /pl/install/ /en/server/rest/ /api/search/en /api/search/pl; do
+          for path in /en/ /pl/ /en/server/rest/ /api/search/en /api/search/pl; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
             echo "$path $code"
             [ "$code" = "200" ] || { echo "expected 200 at $path" >&2; docker logs docs-ci >&2; exit 1; }
+          done
+
+          # **A versioned section root is a redirect, not a page**, and it became
+          # one the moment `npm run snapshot` first ran — before that these two
+          # answered 200 and this check asked for it. The version is not named
+          # here on purpose: `deploy/redirects.conf` points at the newest, and a
+          # workflow that hardcoded `v0.1` would fail on the day `v0.2` is cut.
+          for path in /en/install/ /pl/install/; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
+            landed=$(curl -sSL -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
+            echo "$path $code -> $landed"
+            [ "$code" = "302" ] || { echo "expected 302 at $path" >&2; docker logs docs-ci >&2; exit 1; }
+            [ "$landed" = "200" ] || { echo "$path redirects somewhere that is not there" >&2; exit 1; }
           done
           # `/` is a redirect, not a page: the URL contract's one standing rule.
           code=$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/)

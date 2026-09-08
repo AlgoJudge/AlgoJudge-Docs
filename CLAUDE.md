@@ -29,9 +29,11 @@ Two known traps:
 - `/manager/workstations` and `/manager/printers` appear in
   `AlgoJudge-Client/src/pages/manager/managerAreas.ts` with `soon: true` and have
   **no route**. They are not features.
-- **No release has been cut.** `ghcr.io/algojudge` is empty, so every
-  `docker pull` instruction describes an intended path, and `/install/` says so
-  rather than letting a reader discover it.
+- **0.1.0 is released and the eight images are public**, so every `docker pull`
+  instruction in `/install/` is followable from a clean clone. What has *not*
+  been cut is this site's own version directory: `documented.released` in
+  `lib/site.ts` is still `null`, the header says *unreleased*, and
+  `docs/RELEASE.md` says when that changes.
 
 ## Language
 

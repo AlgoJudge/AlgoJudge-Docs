@@ -4,6 +4,7 @@ description: One attempt at evaluating a submission, the lease that makes it rec
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 Two rows, and the split is the part most often misread.
 
@@ -27,27 +28,38 @@ One attempt at evaluating a [submission](/en/server/concepts/submission). A
 | `State` | `Queued`, `Running`, `Completed`, `Failed`, `Cancelled`, `Superseded` |
 | `LeaseToken` | handed to the Runner on claim and required back when it reports |
 | `LeaseSeconds` | how long the lease was, as granted at claim |
+| `LeaseExpiresAt` | when the lease runs out. Moved by every renewal, which is why `LeaseSeconds` is kept beside it |
 | `Deliveries` | how many times this job has been handed out |
 | `AcknowledgedAt` | when a Runner was first heard from about this claim, and null while nobody has been |
 | `Refunds` | how many deliveries were given back because nobody was ever heard from about them |
+| `Releases` | how many times a Runner handed this job back because it was stopping, and was given the delivery back for it |
 | `FailureReason` | why it failed, when it failed for a reason that is not a verdict |
 | `RowVersion` | optimistic concurrency for everything that is not the claim |
 | `Files` | what the Runner attached for **this attempt** |
 
 ### The permitted transitions
 
-| From | To | When |
-|---|---|---|
-| `Queued` | `Running` | on claim |
-| `Running` | `Completed` | on a verdict |
-| `Running` | `Failed` | on an infrastructure failure |
-| `Running` | `Cancelled` | by a manager |
-| `Running` | `Queued` | when the lease expires |
-| `Queued` | `Superseded` | when a rejudge overtakes it |
+A job leaves `Queued` by being claimed, by being cancelled, or by a rejudge
+superseding it. From `Running`, a verdict makes it `Completed` and a manager
+makes it `Cancelled`; everything else puts it **back in `Queued`** — an expired
+lease, a Runner handing it back because it is stopping, a revoked Runner key, or
+an infrastructure failure that is going to be tried again. `Failed` is where an
+infrastructure failure lands once the delivery cap is reached. A finished
+attempt never leaves its state: cancelling one is refused with
+`attempt.finished`.
 
-The Server validates them, and a finished job never leaves its state.
+<Mermaid chart={`
+flowchart LR
+    queued["Queued"] -->|"a Runner claims it"| running["Running"]
+    running -->|"a verdict"| completed(["Completed"])
+    running -->|"an infrastructure failure,<br/>at the delivery cap"| failed(["Failed"])
+    running -->|"the lease expired, the Runner handed it back,<br/>its key was revoked, or it will be tried again"| queued
+    queued -->|"a rejudge overtakes it"| superseded(["Superseded"])
+    queued -->|"a manager cancels"| cancelled(["Cancelled"])
+    running -->|"a manager cancels"| cancelled
+`} />
 
-**A rejudge is a new job, and it also ends a queued sibling.** That last row is
+**A rejudge is a new job, and it also ends a queued sibling.** `Superseded` is
 the only terminal state never reached from `Running`, and no Runner ever meets
 one: leaving `Queued` is exactly what takes the row out of the claim's reach, so
 a superseded attempt is one nobody was holding. An attempt a Runner *is* holding
@@ -69,7 +81,9 @@ of overwriting a newer attempt.
 
 `LeaseSeconds` is kept because `LeaseExpiresAt` cannot be read backwards: every
 renewal moves it, so the duration the Runner was granted is gone after the first
-one. Without it a heartbeat had nothing to renew *by*.
+one. Without it a renewal that names no duration — and a progress call, which
+never names one — would have nothing to renew *by*, and would fall back to this
+Server's default instead of the lease this job was actually granted.
 
 `Deliveries` is incremented on every claim, including the ones that followed a
 lease expiry. A job that keeps being reclaimed is a job that keeps killing

@@ -9,7 +9,8 @@ import { useEffect, useId, useRef, useState } from "react";
  * **The library is imported inside the effect and nowhere else.** Mermaid is
  * larger than every other dependency on this site put together, and importing
  * it at the top of this file would put it in the chunk every page loads rather
- * than in one fetched by the two pages that draw something.
+ * than in one fetched by the pages that draw something — twenty-four of them
+ * since 2026-09-08, where there were two.
  *
  * **It renders under the site's own policy, unweakened.**
  * `deploy/security-headers.conf` grants `script-src 'self' 'unsafe-inline'` and

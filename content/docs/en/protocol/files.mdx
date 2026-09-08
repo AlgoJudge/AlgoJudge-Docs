@@ -5,10 +5,6 @@ description: Reading a package, verifying it, uploading what an evaluation produ
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.** This page describes **version 1.1** of
-the contract; on any divergence, the specification is right and this page is
-wrong.
-
 ## Reading
 
 ```http
@@ -23,6 +19,11 @@ installation.
 
 A file belonging to another problem answers **404, not 403**. A file id is
 opaque, and a 403 would confirm the bytes exist.
+
+**That is a rule about file ids and only about them.** The job endpoints answer
+the other way round — a `404` for an id nobody issued, a `403` for a job another
+Runner holds — because a Runner has to be able to tell a reclaimed job from a
+Server that has forgotten it. [Claiming](/en/protocol/claiming) says why.
 </Callout>
 
 ## `sha256`, and where it is checked
@@ -55,9 +56,9 @@ POST /api/v1/runner/files
 ```
 
 Multipart: the bytes as `file`, with a `sha256` text field. The Server recomputes
-the checksum and refuses to store on a mismatch, exactly as it does for anybody
-else. It answers the stored file's id, name, media type, size, checksum and
-creation time.
+the checksum and refuses to store on a mismatch — **422**, `checksum_mismatch` —
+exactly as it does for anybody else. It answers the stored file's id, name, media
+type, size, checksum and creation time.
 
 ## Attaching
 
@@ -69,10 +70,16 @@ POST /api/v1/runner/files/attach            { "fileId": "…", "name": "runner.l
 ```
 
 **A `fileId` must name a file this Runner uploaded through
-`POST /api/v1/runner/files`, and nothing else** — not one another Runner
-uploaded, and not one a person did. Anything else is not an error you will see:
-on a report the attachment is skipped silently, so an implementation reusing an
-id from somewhere else loses its log with nothing said.
+`POST /api/v1/runner/files` and nothing points at yet** — not one another Runner
+uploaded, not one a person did, and not one already attached. One upload, one
+reference: bytes wanted on the attempt *and* on the Runner are uploaded twice.
+
+The two calls above say so — a **422** `file.missing` for a file that is none of
+those, and a **409** `attempt.file.duplicate` for a name the attempt already
+carries. A
+report may also name its attachments inline, which the accepted contract does not
+describe, and **that path skips a bad entry in silence**: an implementation
+reusing an id from somewhere else loses its log with nothing said.
 
 The first attaches to the **attempt** this Runner holds, and needs the lease
 token. The second attaches to the **Runner itself** — a start-up log, a `lscpu`

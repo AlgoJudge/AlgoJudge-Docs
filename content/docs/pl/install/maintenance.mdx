@@ -2,10 +2,11 @@
 title: Przerwa techniczna
 description: Jak wyłączyć instalację z ruchu, nie zatrzymując jej, i droga, która wygląda na oczywistą, a jest błędna.
 source: en/install/maintenance.mdx
-sourceSha256: c0b09fe2ebc9f775f8ee50a0a6f15e2e48c438eed37005f51cea8edab265c0d5
+sourceSha256: ea86ccacd857b15ead4b1d20a62c7156104272c2679b72315deb14acb8b6dbc8
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 ```bash
 ./scripts/maintenance.sh on "nocna kopia" --wait-closed
@@ -34,6 +35,15 @@ Servera**, a cała funkcja opiera się na jednym rozróżnieniu:
   trial, albo po `Maintenance:ForceAfterSeconds` — domyślnie 300 — co nastąpi
   pierwsze.
 - **Wyłączony** wraca do `open` natychmiast, z każdego poziomu.
+
+<Mermaid chart={`
+flowchart LR
+    open(["open"]) -->|"maintenance.sh on"| draining(["draining"])
+    draining -->|"nic już nie działa"| closed(["closed"])
+    draining -->|"ForceAfterSeconds, domyślnie 300"| closed
+    draining -->|"maintenance.sh off"| open
+    closed -->|"maintenance.sh off"| open
+`} />
 
 Poziom to wiersz w bazie, a nie flaga w pamięci, więc **przeżywa restart**.
 Operator, który w oknie zatrzyma Server i uruchomi go ponownie, zastanie okno
@@ -126,13 +136,12 @@ Runner czeka, zamiast kończyć pracę. Zostawia zlecenie jego dzierżawie, zami
 zgłaszać porażkę, której nie zaobserwował, i przetrzymuje gotowy wynik przez
 okno, zamiast go wyrzucać.
 
-<Callout type="warn" title="Nigdy nie używaj `docker stop` na Runnerze jako ostrożności">
-Runner nie obsługuje `SIGTERM`. Zostaje zabity, a jego zlecenie wraca do kolejki,
-gdy wygaśnie dzierżawa. `stop_grace_period` sam w sobie nic nie daje, a płaci się
-go przy każdym zatrzymaniu — patrz [Aktualizacja i
-wycofanie](/pl/install/update). Czyste drenowanie to `maintenance.sh on
---wait-closed` na **Serverze** najpierw — potem nie ma już w locie nic do
-stracenia.
+<Callout type="warn" title="Zatrzymanie Runnera nie jest przejawem ostrożności">
+Po `SIGTERM` Runner oddaje swoje zlecenie prosto do kolejki, więc nic nie czeka
+na wygaśnięcie dzierżawy — ale to i tak praca wyrzucona i wykonana od nowa.
+Czyste drenowanie to `maintenance.sh on --wait-closed` na **Serverze** najpierw,
+bo wtedy do Runnera w ogóle nie trafia nowa praca; patrz [Aktualizacja i
+wycofanie](/pl/install/update).
 </Callout>
 
 ## Czego to celowo nie robi

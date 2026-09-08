@@ -17,7 +17,7 @@ particular.
 
 The Server never calls a Runner. Every request travels outwards: registration,
 the handshake, asking for work, renewing a lease, uploading a log, reporting a
-result.
+result, giving a job back.
 
 Two consequences worth having early:
 
@@ -76,8 +76,11 @@ administrator's attention, which is why it belongs on a volume.
 
 The Client has a socket. A Runner does not, by decision rather than by omission.
 
-A Runner **polls** for work. When there is nothing for it, the Server answers
-`204 No Content`, and the Runner waits and asks again — between
+A Runner **polls** for work, and by default asks the Server to **hold the
+request open** rather than answer an empty queue at once — so a submission is
+taken as it arrives rather than at the next ask. When that wait runs out the
+answer is `204 No Content` and the Runner asks again immediately. It sleeps only
+after a failure, or after an answer that came back unheld: between
 `AJ_Poll__MinSeconds` and `AJ_Poll__MaxSeconds`, backed off and jittered so a
 room of machines started together does not ask in one burst.
 

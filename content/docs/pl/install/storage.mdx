@@ -2,7 +2,7 @@
 title: Gdzie trafiają pliki
 description: Trzy miejsca, w których instalacja może trzymać przesłane pliki, ile każde z nich kosztuje i jak przenieść to, co już leży, niczego nie tracąc.
 source: en/install/storage.mdx
-sourceSha256: 0362c1abcd797ee3d83f27dc4393eedb2a360923dced867b877b4219846a065f
+sourceSha256: 63e96aefc7a76bfa961b5c468c016b1651f5b87734b3c236d54ca32bc591a36a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -51,7 +51,8 @@ nie powie — poza jednym: skrypt kopii raportuje wtedy `coverage=INCOMPLETE`.
 ## Poświadczenia i to, czego nigdy nie ujawniamy
 
 **Poświadczenia są w środowisku i nigdzie indziej.** Żaden endpoint nie ustawia
-magazynu, nic o nim nie trafia do bazy ani do publicznej odpowiedzi: `/health`
+magazynu, nic o nim nie trafia do bazy ani do publicznej odpowiedzi:
+`/api/v1/health`
 mówi, że magazyn jest `ok` albo `degraded`, i **nigdy który to magazyn, backend,
 kubełek czy ścieżka**. Szczegóły są na powierzchni operatora, za pętlą zwrotną i
 tokenem.
@@ -81,7 +82,7 @@ UTC — oraz na opróżnienie kolejki oceniania **i zamknięcie każdej rundy**,
 nic nie ruszało się w trakcie zawodów. `storage status` mówi, na co dokładnie
 czeka.
 
-Każdy plik zostaje odczytany, sprawdzony względem własnej sumy kontrolnej,
+Każdy plik zostaje odczytany, porównany z własną sumą kontrolną,
 zapisany w miejscu docelowym i **dopiero wtedy** jego wiersz zaczyna wskazywać
 nowy magazyn. Stara kopia leży jeszcze przez godzinę, żeby ten, kto odczytał
 wiersz chwilę wcześniej, wciąż znalazł bajty.
@@ -103,9 +104,9 @@ której nikt ich nie uruchomił, po prostu nikt nie sprawdził. Jeśli masz zami
 postawić na niej zawody, uruchom ten zestaw najpierw — to kosztuje najmniej ze
 wszystkiego, co możesz w tej sprawie zrobić.
 
-Jednej pozycji z tego zestawu nie da się uruchomić przeciwko żadnej z dostępnych
-tu implementacji: zapisuje znany ciąg, włącza domyślne szyfrowanie kubełka i
+Jednej pozycji z tego zestawu nie da się uruchomić na żadnej z dostępnych tu
+implementacji: zapisuje znany ciąg, włącza domyślne szyfrowanie kubełka i
 szuka tego ciągu w plikach samego magazynu. SeaweedFS trzyma obiekty czytelnie,
 ale odmawia wywołania szyfrowania; RustFS przyjmuje wywołanie i tak czy inaczej
-trzyma obiekty nieczytelnie. Przeciwko endpointowi, który obsługuje jedno i
-drugie, ta pozycja się wykonuje.
+trzyma obiekty nieczytelnie. Na endpoincie, który obsługuje jedno i drugie, ta
+pozycja daje się uruchomić.

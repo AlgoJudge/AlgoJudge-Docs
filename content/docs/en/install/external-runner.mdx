@@ -66,6 +66,11 @@ external, and with the archive's problem number in its version's `props`. A
 locally typed problem is never offered to a forwarding Runner: the Server pairs
 the two on that flag, by equality in both directions.
 
+**One process serves one judge.** `EXTERNAL_JUDGE` names it, `uva` is the only
+one built, and an unrecognised name is refused at startup rather than defaulted.
+A second archive is a second service with its own account and its own identity
+volume, not a second value in a list.
+
 ## What it needs, and what it does not
 
 It dials out twice — to the Server and to the archive — and accepts nothing.
@@ -87,9 +92,15 @@ declared, and what it is waiting for.
 
 <Callout type="warn" title="A restart can cost a duplicate submission">
 It holds the set of submissions the archive has not answered for **in memory**,
-and an external job may legitimately be held for fifteen minutes. Killed or
-restarted, it loses that set; the Server reclaims the leases, requeues the jobs,
-and each one is sent to the archive a second time under your account.
+and an external job may legitimately be held for fifteen minutes. Killed, it
+loses that set; the Server reclaims the leases, requeues the jobs, and each one is
+sent to the archive a second time under your account.
+
+**Stopping it politely does not avoid that, and is still worth doing.** On
+`SIGTERM` it hands every job it is holding back to the queue at once — up to
+twenty, one call each, which is what `EXTERNAL_RUNNER_STOP_GRACE` is sixty
+seconds for. The answers still coming from the archive have nowhere to land
+either way.
 
 Before a window that will restart it, drain first — see
 [Maintenance](/en/install/maintenance), which has the arithmetic on why a

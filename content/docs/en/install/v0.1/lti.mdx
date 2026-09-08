@@ -1,0 +1,183 @@
+---
+title: Connecting a course platform
+description: Wiring a Moodle to an installation, the browser setting that decides whether it works at all, and what has and has not been verified.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A course platform can open an activity for its students, and their grades travel
+back into its gradebook. The mechanism is **LTI 1.3**; the platform this is
+verified against is **Moodle**.
+
+This page is the administrator's half. What a manager does afterwards — placing
+an activity into a course, reading a roster — is
+[External logins and LTI platforms](/en/client/manager/logins).
+
+**If that platform is a Moodle, the whole path is walked with screenshots** in
+[Installing the tool in Moodle](/en/install/v0.1/moodle), on 5.2 and 5.3. This page is
+the mechanism behind it.
+
+<Callout type="warn" title="Read the browser section first">
+More installations fail on the third-party cookie than on anything else here,
+and it fails **after** everything looks correctly configured. If your
+installation does not serve HTTPS, an embedded launch cannot work at all.
+</Callout>
+
+## Before you start
+
+Three things have to be true.
+
+**The installation is reachable over HTTPS**, at an address the platform can
+resolve. Not optional here, for the reason under *In the browser* below.
+
+**The Server knows its own public address.** Every address handed to a platform
+is built from it. The stack leaves `AJ_PublicApiUrl` unset deliberately, and a
+launch or a platform written out by hand works without it, from the address of
+the request. **An expected registration is the exception**: it refuses to issue
+an invitation unless the value resolves to an absolute `http(s)` address, because
+it is about to hand that address to somebody else's server.
+
+Set it in an overlay rather than by editing `compose.yaml`:
+
+```yaml
+# state/lti.compose.yaml
+services:
+  server:
+    environment:
+      AJ_PublicApiUrl: https://your.domain/api/v1
+```
+
+**Name that overlay in `.env`**, as `COMPOSE_FILE=compose.yaml:state/lti.compose.yaml`,
+and not on one command line. It is how `update.sh`, `rollback.sh` and
+`preflight.sh` learn about it at all: they compose without naming files, so an
+overlay given once with `-f` is invisible to every one of them — and the next
+update composes without it and takes its services away with `--remove-orphans`.
+
+**Somebody holds `provider:manage`.** Registering a platform is the same class of
+decision as registering an identity provider, and it is behind the same
+permission.
+
+## Two ways in
+
+### The platform registers itself
+
+Shorter, and the one to prefer. In AlgoJudge, open **External logins and LTI
+platforms**, press *Expect a registration*, write a note saying which platform
+this is, and copy the address it gives you.
+
+Hand that address to whoever administers the platform. On their side it goes
+wherever the platform accepts a **tool URL** for an external tool it should
+configure itself — in Moodle, the external-tool plugin's tool-management screen.
+They paste the address; nothing else is typed by hand.
+
+The invitation is good **once, for thirty minutes**. It can be called off before
+it is used, and a platform that answers badly does **not** spend it — you do not
+have to issue a second one because the first attempt failed.
+
+<Callout type="warn" title="What arrives is switched off">
+A platform that registers itself arrives **disabled**, with no authority to say
+who anybody is. That is deliberate: somebody proved they hold a live invitation,
+not that they run the university's Moodle. Enabling it, and deciding separately
+whether it may assert identities, are two acts a person takes with the
+consequences in front of them.
+</Callout>
+
+### You write it out by hand
+
+*Register a platform*, and a form. The platform's administrator gives you
+the issuer, the client id, the deployment id, and three addresses — its key set,
+its access-token endpoint and its authorization endpoint.
+
+**Three of those can never be changed afterwards**: issuer, client id and
+deployment id. Every launch and every identity link hangs off that triple, so the
+form disables them when editing rather than letting you find out later.
+
+Then press *What to type into it*, which prints the four addresses to paste back
+into the platform, and the two custom parameters. **A third custom parameter is
+added per placement** — `activity=<slug>` — and it is what tells a launch which
+activity it is opening. Without it the launch is refused with `noActivity`.
+
+## In the browser
+
+**A launch runs inside an iframe on a page from another site**, so the session
+cookie is a third-party cookie, and modern browsers refuse those by default.
+
+The Server answers this: a session established by a launch gets its cookie marked
+`SameSite=None; Secure; Partitioned`, and **only** such a session. That is
+measured rather than assumed — Chrome 141 and Firefox 153 both refuse the cookie
+in a frame without it, in the browser's own words.
+
+Two consequences follow, and the first one is the reason this page opens with a
+warning:
+
+- **`Secure` is not optional.** An installation serving plain HTTP cannot have
+  embedded sessions at all. The cookie will be refused, every launch will land on
+  the fallback page, and nothing in the configuration will look wrong.
+- **Safari is unverified.** There is no Apple hardware here to check it on.
+
+When the cookie is refused anyway, a participant is not left guessing: the page
+says the browser is blocking the sign-in for this frame, offers **Open in a new
+tab**, and tells them what to say to whoever administers the course. The fix on
+the platform's side is to set the tool to open in a new window instead of
+embedding it.
+
+[Your own reverse proxy](/en/install/v0.1/reverse-proxy) explains the other
+half of this — why `X-Frame-Options` is `SAMEORIGIN` rather than `DENY`, and what
+that means if you put your own headers in front.
+
+## What has been verified, and what has not
+
+Stated plainly, because the gap is the part that matters to somebody about to
+deploy this.
+
+| | |
+|---|---|
+| Moodle **4.5.13 LTS** | launches and identity |
+| Moodle **5.2.2** | everything, including deep linking and self-registration |
+| Moodle **5.3dev** | launches and identity |
+| Safari | **not verified** |
+
+**Deep linking and self-registration were driven against 5.2 only**, and 4.5.13
+is what a university is most likely to be running. Everything else was checked on
+all three.
+
+Two Moodle behaviours shape what to expect, and neither is a fault on our side:
+
+- **A copied course is recognised as a copy, but only at course granularity.**
+  Moodle substitutes the course's history and not the individual link's, in every
+  supported version, so *looks like a copy of …* is a strong hint rather than a
+  fact.
+- **The frame does not resize itself.** Moodle implements no frame resizing, so
+  the launch is whatever height the teacher typed into the activity's settings.
+  The embedded interface is built for that — one row of chrome, and the content
+  scrolls inside itself.
+
+## When it does not work
+
+A refused launch lands on a page naming what went wrong, with the raw code beside
+it so a support message can quote it. The ones an administrator meets:
+
+| | |
+|---|---|
+| `unknownPlatform` | the launch matched no registration — or matched several, and did not say which |
+| `platformDisabled` | registered, and never switched on. The commonest outcome after a self-registration |
+| `noActivity` | the placement is missing `activity=<slug>` |
+| `notPublished` | the activity is not published, and whoever launched does not run the course |
+| `sharingNotAcknowledged` | the activity is placed in a second course and nobody has accepted that yet |
+| `platformUnreachable` | the platform's key set could not be fetched from here |
+
+`badState` and `badToken` are the two that look alarming and usually are not: a
+stale browser tab, a launch replayed from history, or clocks more than two
+minutes apart.
+
+**An empty frame with nothing in it at all is none of these.** If the launch
+reaches the browser and the iframe stays blank, with the browser's console
+refusing to display the page, the frame policy is refusing it rather than the
+Server. The bundled edge sends `X-Frame-Options: SAMEORIGIN`, which permits
+framing only from the **same** origin — so an LMS on a different name is refused
+exactly as `DENY` would refuse it. [Your own reverse
+proxy](/en/install/v0.1/reverse-proxy) has what to replace it with; the same applies to
+the bundled nginx, whose header lives in `nginx/snippets/security-headers.conf`.
+
+The model behind all of this — the endpoints, the keys, and what the Server
+refuses to open a connection to — is [LTI](/en/server/lti).

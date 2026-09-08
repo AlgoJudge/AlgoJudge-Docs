@@ -2,7 +2,7 @@
 title: Biblioteka zadań
 description: Zadania, ich wersje i podpięcie, które decyduje o sposobie użycia.
 source: en/client/manager/problems.mdx
-sourceSha256: 27c0d38cece3bb756cdd5bfc908c22d377a9350c2a059f1d09807cd34a2164f0
+sourceSha256: f7185df702663359e0c27ef0df499e3564efcff868b13c6e22ea293c776e3a6c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -50,7 +50,7 @@ paczka się zmieniła.
 Zanim opublikujesz, wszystko, co przygotowałeś, żyje wyłącznie w tej karcie
 przeglądarki. Wpisz **co się zmieniło** — to właśnie pokazuje historia.
 
-## Pięć zakładek
+## Zakładki
 
 ### Treść
 
@@ -86,8 +86,9 @@ przez Server przed zapisem.
 
 ### Paczka
 
-To, czego Runner potrzebuje do oceny zgłoszenia. Zobacz
-[Paczki](/pl/client/manager/packages).
+To, czego Runner potrzebuje do oceny zgłoszenia — i jedyna zakładka, której nie
+ma zawsze. Typ zadania, który ocenia bez paczki, jej nie dostaje, a ekran mówi w
+jej miejsce dlaczego. Zobacz [Paczki](/pl/client/manager/packages).
 
 ### Wersje
 
@@ -110,8 +111,8 @@ zbiorze treningowym naraz.
 |---|---|
 | Slug w tej aktywności | to, co widzi uczestnik: `A`. Unikalny w całej aktywności |
 | Nazwa w tej aktywności | puste zachowuje nazwę z biblioteki |
-| Wersja treści | przypnij jedną albo trzymaj się bieżącej |
-| Warte | punkty tutaj; puste zachowuje własne punkty zadania |
+| Wersja treści | względem której wersji ta runda jest oceniana |
+| Wartość punktowa | punkty tutaj; puste zachowuje własne punkty zadania |
 | Maksymalny rozmiar, plików na zgłoszenie, zgłoszeń | puste dziedziczy po aktywności |
 | Konfiguracja | to, co zmienia werdykt: limity i języki, w których wolno zgłaszać. Nakładane na własne ustawienia paczki |
 | Formularz zgłoszenia | co oferuje formularz. Gdy on i konfiguracja różnią się co do języków, obowiązuje konfiguracja |
@@ -123,10 +124,20 @@ formularze.
 
 ### Przypinanie
 
-**Gdy podpinasz zadanie, przypina się wersja bieżąca w tamtej chwili**, więc
-przypięcie jest przypadkiem zwykłym, a *zawsze bieżąca* — rzadkim. Plakietka na
-liście podpięć pokazuje oba numery, gdy się rozeszły: `v2 / v3` znaczy, że
-biblioteka poszła dalej, a ta runda nie — czyli dokładnie to, po co się przypina.
+**Gdy podpinasz zadanie, przypina się wersja bieżąca w tamtej chwili.** Dzięki
+temu opublikowanie poprawki nie zmienia tego, względem czego oceniana jest
+trwająca już runda, a przejście na nowszą wersję jest świadomą decyzją, a nie
+skutkiem ubocznym poprawienia literówki.
+
+<Callout type="warn" title="Pozycja „zawsze bieżąca” nie zdejmuje przypięcia">
+Lista **Wersja treści** ją oferuje, ale jej wybranie niczego nie zmienia: nowe
+podpięcie i tak przypina się do wersji bieżącej, a istniejące zachowuje swoje
+przypięcie. Żeby przestawić rundę na nowszą wersję, wskaż tę wersję.
+</Callout>
+
+Plakietka na liście podpięć pokazuje oba numery, gdy się rozeszły: `v2 / v3`
+znaczy, że biblioteka poszła dalej, a ta runda nie — czyli dokładnie to, po co
+się przypina.
 
 Brakującą paczkę ta sama lista wytyka osobno. Bez niej nie ma czym oceniać, a
 dowiedzieć się o tym trzeba przed otwarciem rundy.

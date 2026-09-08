@@ -2,7 +2,7 @@
 title: Logowanie
 description: Konto lokalne albo dostawca tożsamości uczelni — i co się przez to zmienia.
 source: en/client/participant/signing-in.mdx
-sourceSha256: b3f86a0d2e2cd52c3cccdffbcbee94b008dfb2c09bfdbf95465c5d36ff934216
+sourceSha256: b8a48680e11bc133874590fb8e24c1dbe5f4c236f6836f17fb6d9b4b8aab4f22
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -32,9 +32,9 @@ tymczasowe. Ukrycie formularza nie wyłącza logowania hasłem.
 
 ## Przez uczelnię
 
-Tam, gdzie operator zarejestrował dostawców tożsamości, ekran logowania ma
-przycisk **Zaloguj przez …** dla każdego z nich. Przycisk przenosi Cię do
-uczelni, a uczelnia odsyła Cię z powrotem.
+Tam, gdzie operator zarejestrował dostawców tożsamości, ekran logowania ma dla
+każdego z nich przycisk **Zaloguj się przez …**. Przenosi on Cię do uczelni, a
+uczelnia odsyła Cię z powrotem.
 
 Trzy odmowy sprowadzają Cię z powrotem na ekran logowania, pod nagłówek
 *Logowanie odrzucone*:
@@ -48,18 +48,17 @@ Trzy odmowy sprowadzają Cię z powrotem na ekran logowania, pod nagłówek
 ### Kiedy w ogóle nie widzisz ekranu logowania
 
 Tam, gdzie instalacja bierze wszystkie logowania od jednego dostawcy, operator
-może wskazać go ekranowi. Naciskasz **Zaloguj się**, przez chwilę czytasz
-*Przenosimy Cię do …* i wracasz zalogowana albo zalogowany, niczego nie
-wybierając.
+może wskazać go ekranowi. Wtedy nie ma czego naciskać: przez chwilę czytasz
+*Przenosimy Cię do …* i wracasz zalogowany, niczego nie wybierając.
 
-**Miejsce, do którego szłaś czy szedłeś, przeżywa tę podróż.** Odnośnik do
-aktywności, link do samodzielnego zapisu wraz z jego hasłem, strona otwarta
-w chwili wygaśnięcia sesji — lądujesz na niej, a nie na stronie głównej.
+**Adres, który otwierałeś, nie ginie po drodze.** Odnośnik do aktywności, link
+do samodzielnego zapisu wraz z jego hasłem, strona otwarta w chwili wygaśnięcia
+sesji — wrócisz na nią, a nie na stronę główną.
 
-Dwie rzeczy nadal przywracają ekran. `/login?admin=true` to formularz i tak na
-takiej instalacji logują się administratorzy oraz konta tymczasowe na zawody.
-A logowanie **odmówione** wraca tutaj wraz z powodem, zamiast iść w kółko, więc
-trzy komunikaty z tabeli powyżej czyta się tak samo jak wszędzie indziej.
+Ekran wraca w dwóch przypadkach. `/login?admin=true` prowadzi do formularza i to
+nim na takiej instalacji logują się administratorzy oraz tymczasowe konta na
+zawody. A odrzucone logowanie wraca tutaj z powodem, zamiast krążyć w kółko,
+więc trzy komunikaty z tabeli powyżej czyta się tak samo jak wszędzie indziej.
 
 ## Zakładanie konta samodzielnie
 

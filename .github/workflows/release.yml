@@ -1,0 +1,161 @@
+name: Release
+
+# **A tag is the only thing here that publishes anything.** Pushing one is a
+# person's act; nothing that lands on `main` reaches the registry on its own.
+#
+# The convention is `v<major>.<minor>.<patch>`, and a prerelease is
+# `v1.2.3-rc.1`. The `v*` filter is what enforces the prefix — the arithmetic
+# below only strips it.
+#
+# **This repository had no release workflow until 2026-09-08**, and the image was
+# built and pushed by whoever deployed the site. That is the one step of the
+# release runbook a person could get wrong silently, so it lives here now.
+#
+# **Nothing an installation runs comes from here.** An operator's stack pulls the
+# eight product images; this ninth one serves `docs.algojudge.pl` and is pulled
+# by whoever deploys that site alone.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  # The one thing in this repository that writes anything outside itself.
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  # **Not cancelled.** A run interrupted between two `docker push` calls leaves
+  # a version half in the registry, which is worse than a duplicate run.
+  cancel-in-progress: false
+
+env:
+  IMAGE: algojudge-docs
+
+jobs:
+  image:
+    name: Publish the container image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The ancestry check below reads history, and a shallow clone has none.
+          fetch-depth: 0
+
+      # A tag on a scratch branch is not a release. This is the cheap half of
+      # the gate; the other half is the CI run on the commit itself, which this
+      # workflow deliberately does not reproduce — a tag points at a commit, and
+      # that commit's own run is the evidence.
+      - name: The tag must be on main
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD || {
+            echo "$GITHUB_REF_NAME does not point at a commit on main" >&2
+            exit 1
+          }
+
+      - name: Work out the version and the tags
+        id: v
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+
+          # Refused rather than guessed at. `+build` metadata is legal semver
+          # and illegal in a Docker tag, so it is caught here rather than
+          # discovered by a push that fails halfway through.
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "$GITHUB_REF_NAME is not v<major>.<minor>.<patch>[-prerelease]" >&2
+            exit 1
+          fi
+
+          case "$version" in
+            # **A prerelease gets its own tag and nothing else.** The point of
+            # one is that somebody has to ask for it by name; `latest` or a
+            # moving major following it would hand it to everybody who did not.
+            *-*) tags="$version" ;;
+            *)   tags="$version ${version%.*} ${version%%.*} latest" ;;
+          esac
+
+          # ghcr rejects a path with a capital letter — `invalid reference
+          # format` — and the owner here is spelled `AlgoJudge`.
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "registry=ghcr.io/$owner" >> "$GITHUB_OUTPUT"
+          echo "Publishing $version as: $tags"
+
+      # **The build reaches the network**, unlike the other four here: `next
+      # build` runs `scripts/sync-sources.mjs`, which fetches the Server's
+      # `openapi.json` at the ref `content-sources.json` pins and checks its
+      # sha256. A pin that has stopped resolving fails the image rather than
+      # quietly publishing a site without its REST reference.
+      #
+      # `image.source` is not decoration: it is what makes GitHub attach the
+      # package to this repository, so the package page links back to the code.
+      - name: Build
+        run: |
+          docker build \
+            -t "$IMAGE:release" \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.version=${{ steps.v.outputs.version }}" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            .
+
+      # The same check CI runs on every commit. **The port is 8080, not 80**:
+      # this image never runs as root, so it cannot bind a privileged port.
+      - name: Serve it and check what the URL contract promises
+        run: |
+          docker run -d --name release-check -p 8080:8080 "$IMAGE:release"
+          for i in $(seq 1 30); do
+            curl -sS -o /dev/null http://localhost:8080/healthz && break
+            sleep 1
+          done
+          curl -fsS -o /dev/null http://localhost:8080/healthz
+
+          for path in /en/ /pl/ /en/server/rest/ /api/search/en /api/search/pl; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
+            echo "$path $code"
+            [ "$code" = "200" ] || { echo "expected 200 at $path" >&2; docker logs release-check >&2; exit 1; }
+          done
+
+          # **A versioned section root is a redirect, not a page.** The version is
+          # not named here: `deploy/redirects.conf` points at the newest, and a
+          # workflow that hardcoded `v0.1` would fail on the day `v0.2` is cut.
+          for path in /en/install/ /pl/install/; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
+            landed=$(curl -sSL -o /dev/null -w '%{http_code}' "http://localhost:8080$path")
+            echo "$path $code -> $landed"
+            [ "$code" = "302" ] || { echo "expected 302 at $path" >&2; docker logs release-check >&2; exit 1; }
+            [ "$landed" = "200" ] || { echo "$path redirects somewhere that is not there" >&2; exit 1; }
+          done
+
+          # `/` is a redirect, not a page: the URL contract's one standing rule.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          echo "/ $code"
+          [ "$code" = "302" ] || { echo "expected 302 at /" >&2; exit 1; }
+
+          # **A header set in one `location` cancels every header inherited from
+          # the server block.** That is nginx's rule, it is silent, and it took
+          # the whole policy off every script and stylesheet on the site once.
+          asset=$(curl -sS http://localhost:8080/en/ | grep -o '/_next/static/chunks/[^"]*\.js' | head -1)
+          echo "asset $asset"
+          for header in content-security-policy x-content-type-options x-frame-options; do
+            curl -sSI "http://localhost:8080$asset" | grep -qi "^$header:" \
+              || { echo "$header missing on $asset" >&2; exit 1; }
+          done
+
+          docker stop release-check
+
+      - name: Log in to ghcr.io
+        run: |
+          printf '%s' '${{ github.token }}' \
+            | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+
+      - name: Push
+        run: |
+          for tag in ${{ steps.v.outputs.tags }}; do
+            docker tag "$IMAGE:release" "${{ steps.v.outputs.registry }}/$IMAGE:$tag"
+            docker push "${{ steps.v.outputs.registry }}/$IMAGE:$tag"
+          done

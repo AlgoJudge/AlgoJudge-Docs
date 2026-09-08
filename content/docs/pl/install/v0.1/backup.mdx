@@ -1,0 +1,273 @@
+---
+title: Kopie zapasowe
+description: Co obejmuje zrzut, co ze sobą niesie i dwie granice, przez które katalog kopii sam nie stanie się awarią.
+source: en/install/v0.1/backup.mdx
+sourceSha256: 5f451be936719172d5dd4af57875e5ada658da7af42198b081bee4f51a38c9f1
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+```bash
+./scripts/backup.sh                 # to, co uruchamia cron
+./scripts/backup.sh --quiesce       # z zamkniętą instalacją
+```
+
+**`pg_dump` nie wymaga zatrzymania Servera.** Produkuje transakcyjnie spójny
+zrzut z działającej bazy, więc nocne uruchomienie nie kosztuje przerwy,
+a `--quiesce` jest domyślnie wyłączone. Użyj go przed migracją albo przed próbą
+odtworzenia, gdzie „nic w locie” jest warte przerwy.
+
+Każde uruchomienie zrzuca do pliku `.partial`, sprawdza go, zmienia nazwę,
+zapisuje obok `.meta`, rotuje i zgłasza każdą przeterminowaną kopię nazwaną.
+
+## Przeczytaj to w dniu, w którym ustawiasz kopie
+
+<Callout type="warn" title="Zrzut bazy wystarcza, żeby wystawić ciasteczko sesji dowolnego konta">
+Klucze szyfrujące każde ciasteczko sesji leżą we własnej bazie instalacji.
+W zrzucie są więc konta **i** sposób, żeby zalogować się na dowolne z nich.
+
+Nic nie zostało osłabione. O klucze, które przeżywają restart, właśnie chodziło:
+bez nich każdy restart wylogowywał wszystkich, a druga instancja nie potrafiła
+odczytać ciasteczka wystawionego przez pierwszą. Ale **instalacja, która oddaje
+kopie podmiotowi trzeciemu albo trzyma je tam, gdzie nie ma bazy, podejmuje dziś
+inną decyzję niż podejmowała wcześniej.**
+</Callout>
+
+W zrzucie jest też każdy hash hasła, każdy wgrany plik i — jeśli zarejestrowałeś
+dostawcę — działający sekret klienta dla każdego dostawcy tożsamości. Traktuj go
+tak, jak traktowałbyś samą bazę.
+
+**Skrypt zapisuje zrzuty z prawami `0600`, a ich katalogi z `0700`**, więc zrzut
+może odczytać konto, które go zrobiło, i root — nikt inny na tym hoście. To
+dotyczy samych praw do pliku; co się dzieje z kopią, która opuści host, jest
+decyzją opisaną wyżej.
+
+Jeśli taki zrzut wycieknie, najpilniejsze są sesje wystawione pod tymi kluczami:
+
+```bash
+docker compose exec -T server aj-admin keyring revoke --yes
+```
+
+To wylogowuje wszystkich, wszędzie, i o to w tym chodzi. Odwołanym kluczem nie
+da się już wystawić ciasteczka, które ten Server przyjmie. Przy kilku instancjach
+działa od razu tam, gdzie zostało uruchomione, a gdzie indziej — gdy ich pęk
+kluczy następnym razem się odświeży.
+
+### Certyfikat ogranicza ryzyko — i czego nie zapewnia
+
+Pęk kluczy może zaszyfrować sam siebie certyfikatem, który dostarczysz
+(`DataProtection:Certificates:0:Path` i `:Password`). Bez certyfikatu klucze
+leżą jako zwykły XML. To jest przyjęte i opisane, a nie ukryte: kto potrafi
+odczytać tę tabelę, potrafi też dopisać wiersz do tabeli użytkowników, więc
+certyfikat daje mniej, niż się wydaje. Jest dla instalacji, której bazę trzyma
+ktoś inny.
+
+Dwie sprawy przeczą temu, czego czytelnik się spodziewa.
+
+- **Włączenie go później nikomu nie przeszkodzi i nic nie da.** Jeśli dodasz to
+  ustawienie w instalacji, która ma już klucz, sesje dalej działają, a ten klucz
+  zostaje **jawnym tekstem**. Data Protection szyfruje klucz, gdy go *zapisuje*,
+  a zapisuje dopiero blisko wygaśnięcia bieżącego — **dziewięćdziesiąt dni
+  dalej**.
+- **Żeby mieć zaszyfrowany klucz już dziś, trzeba więc opróżnić
+  `DataProtectionKeys` i zrestartować, a to raz wyloguje wszystkich**, bo klucz,
+  pod którym wystawiono ich ciasteczka, znika. `aj-admin keyring rotate` zapisuje
+  nowy klucz od razu, nikogo nie wylogowując, ale stary jawny klucz dalej daje
+  się odczytać — właśnie dlatego rotacja nikomu nie przeszkadza i właśnie dlatego
+  kopia zrobiona po niej wciąż zawiera coś, czym da się wystawić ciasteczko.
+
+<Callout type="warn" title="Brak ostrzeżenia niczego nie dowodzi">
+*„No XML encryptor configured. Key \{id\} may be persisted to storage in
+unencrypted form.”* jest logowane w chwili **utworzenia** klucza. Instalacja
+działająca na kluczu sprzed miesięcy nie loguje nic, więc czysty log nie mówi
+niczego o tym, czy klucze są zaszyfrowane.
+
+Zapytaj zamiast tego narzędzia:
+
+```bash
+docker compose exec -T server aj-admin keyring status
+```
+
+Raportuje, który układ obowiązuje, każdy klucz z datami, czy jest zapisany
+zaszyfrowany czy jawnie, oraz **czy ten Server nadal potrafi go odczytać** — a to
+jedyna kontrola, która wyłapuje certyfikat porzucony zamiast zachowanego.
+Deskryptor klucza odszyfrowuje się dopiero przy odczycie, więc klucz zaszyfrowany
+certyfikatem, którego nikt już nie dostarcza, zawodzi dokładnie w tym miejscu.
+Bez zapytania jedynym objawem jest wylogowanie wszystkich, po fakcie.
+</Callout>
+
+`AlgoJudge-Ops` nie wymienia żadnego ustawienia pęku kluczy w swoim
+`.env.example`, więc instalacja, która chce certyfikatu, konfiguruje go na samej
+usłudze Server — oba ustawienia są na stronie
+[Konfiguracja Servera](/pl/server/configuration). Potrzebny jest plik PKCS#12
+zawierający klucz prywatny:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+    -keyout keyring.key -out keyring.crt -subj "/CN=algojudge-key-ring"
+
+openssl pkcs12 -export -inkey keyring.key -in keyring.crt \
+    -out keyring.pfx -passout pass:haslo-ktore-skonfigurujesz
+```
+
+Zamontuj go tylko do odczytu i podaj jego ścieżkę w ustawieniu. Certyfikat
+brakujący, nieczytelny albo **bez klucza prywatnego** zatrzymuje Server przy
+starcie, a nie przy pierwszym logowaniu — inaczej ten ostatni zaszyfrowałby pęk,
+którego nikt by już potem nie odczytał.
+
+**Rotacja polega na dopisaniu nowego na początek i zachowaniu starego.**
+Pierwszy certyfikat z listy szyfruje nowe klucze, a odszyfrować stare potrafi
+każdy z niej. Usuń stary, a klucze zapisane pod nim staną się nieczytelne — co
+wygląda dokładnie tak samo jak brak pęku kluczy. Rozróżnia je `keyring status`,
+bo mówi, czy Server nadal potrafi odczytać każdy klucz.
+
+Dlatego `keyring rotate` uruchamia się **po** wstawieniu certyfikatu w
+instalacji, która miała już klucze — sekcja wyżej mówi, dlaczego samo ustawienie
+przez dziewięćdziesiąt dni niczego nie zmienia.
+
+## Co zrzut obejmuje, a czego nie
+
+**Przy `STORAGE_KIND=postgres` — domyślnie — zrzut jest całym stanem
+instalacji.** I dlatego jest domyślny: jedno miejsce do skopiowania.
+
+Przy `filesystem` albo `s3` już nie jest. `backup.sh` ostrzega przy każdym
+uruchomieniu i zapisuje `coverage=INCOMPLETE` w pliku `.meta` obok zrzutu,
+zamiast produkować coś, co odtworzy się do instalacji, której wiersze wskazują na
+bajty, których nie ma — co objawia się jako 503 przy każdym pobraniu, bez
+niczego, co nazwałoby przyczynę.
+
+Skopiuj magazyn w tym samym oknie albo przenieś pliki do bazy:
+
+```bash
+docker compose exec -T server aj-admin storage status
+docker compose exec -T server aj-admin storage migrate
+```
+
+`storage migrate` przenosi to, co już jest zapisane; zmiana domyślnego magazynu
+decyduje tylko o tym, gdzie trafi następny upload. Migracja czeka na swoje okno
+i na opróżnienie kolejki oceniania, więc nic nie rusza się pod trwającym
+konkursem. Najpierw zrób kopię. Całość opisuje
+[Gdzie trafiają pliki](/pl/install/v0.1/storage).
+
+## Zweryfikowany, zanim dostanie nazwę
+
+Dwie kontrole, bo ta tańsza nie dowodzi tego, na co wygląda.
+
+- **`pg_restore --list`** działa na każdym zrzucie. Archiwum w formacie custom
+  trzyma spis treści z przodu, więc to przechodzi na pliku uciętym w połowie
+  danych — czyta nagłówek i kończy. Warto je mimo to uruchamiać: wyłapuje pusty
+  plik, zapis nieudany na pierwszym bloku i wszystko, co w ogóle nie jest
+  archiwum PostgreSQL.
+- **`BACKUP_VERIFY_FULL=true`** czyta każdy blok z powrotem. Kosztuje to pełne
+  przejście dekompresji na każdej kopii. Warto, dopóki baza mieści się w czasie
+  jednej kawy; nie warto blokować tym nocnego uruchomienia, gdy już się nie mieści.
+
+Zrzut, który nie przejdzie którejkolwiek kontroli, **kasujemy**, zamiast trzymać
+go jako kopię, którą nie jest.
+
+## Retencja: dwie granice, i żadna sama nie wystarcza
+
+Polityka ilościowa odpowiada na *jak daleko wstecz mogę sięgnąć*; budżet
+rozmiaru na *ile to będzie kosztować dysku*. Katalog kopii, który zapełni dysk,
+zatrzymuje zapisy PostgreSQL — i zamienia mechanizm bezpieczeństwa w awarię,
+której miał zapobiec.
+
+| Granica | Ustawiana przez | |
+|---|---|---|
+| Ilość | `BACKUP_PRESET` | jak daleko sięga historia |
+| Rozmiar | `BACKUP_MAX_TOTAL_GB` | ile dysku wolno na to wydać |
+| Podłoga | `BACKUP_MIN_KEEP` | nigdy nieusuwane, cokolwiek mówi rozmiar |
+
+Presety to `minimal` (3/2/0, około dwóch tygodni), `standard` (7/4/2, około dwóch
+miesięcy) i `extended` (14/8/3, około czterech miesięcy).
+
+**Na jedno uruchomienie powstaje jeden zrzut.** `daily`, `weekly` i `monthly` to
+nie trzy rodzaje zrzutu na trzech harmonogramach — to trzy **reguły przetrwania**
+nałożone na jedną istniejącą serię plików, a plik, którego nie obejmie żadna
+reguła, kasujemy.
+
+| Reguła | Zachowuje |
+|---|---|
+| `BACKUP_KEEP_DAILY` | najnowszy zrzut z każdego z ostatnich N **dni, w których zrzut istnieje** |
+| `BACKUP_KEEP_WEEKLY` | najnowszy z każdego z ostatnich N tygodni ISO |
+| `BACKUP_KEEP_MONTHLY` | najnowszy z każdego z ostatnich N miesięcy |
+
+To **suma mnogościowa, nie suma liczb**. Jeden plik może spełniać wszystkie trzy
+i leży wtedy w katalogu raz. Zmierzone na sześćdziesięciodniowym zestawie
+testowym: `standard` ustala się na **jedenastu** plikach, a nie trzynastu, jak
+sugeruje naiwne dodawanie — dzisiejszy zrzut jest jednocześnie najnowszy
+dzienny, najnowszy w swoim tygodniu i najnowszy w swoim miesiącu. Dokładna
+liczba zależy od tego, na który dzień tygodnia wypada dziś.
+
+**„Dni, w których zrzut istnieje”, a nie „ostatnie N dni kalendarza”.** Host
+wyłączony na dwa tygodnie wróciłby przy odczycie kalendarzowym bez żadnej
+historii dziennej; przy tym odczycie wraca z siedmioma najnowszymi zrzutami,
+tyle że rozłożonymi na dłuższym odcinku.
+
+**Kolejność rotacji**: najpierw polityka ilościowa, potem — dopóki katalog
+przekracza budżet rozmiaru — kasujemy najstarszy z pozostałych, ale **nigdy
+poniżej podłogi**. Jeśli nie mieści się nawet podłoga, uruchomienie mówi to
+i zostawia to, co ma.
+
+<Callout type="warn" title="Gdy nie ma miejsca na nowy zrzut, uruchomienie kończy się porażką i nie robi żadnego">
+Skasowanie sprawdzonej kopii po to, żeby spróbować zrobić nową, jest najgorszym,
+co skrypt kopii może zrobić — więc tego nie robi.
+`BACKUP_FREE_SPACE_RESERVE_GB` to margines, który zostawia.
+</Callout>
+
+## Głęboka historia to kopia nazwana, a nie głęboka rotacja
+
+```bash
+./scripts/backup.sh --keep koniec-semestru --until 2027-03-01
+```
+
+Zapisuje do `backups/keep/`, którego rotacja **nigdy nie dotyka**. Na koniec
+konkursu, koniec semestru i chwilę przed dużą migracją.
+
+**`--until` jest obowiązkowe i jest datą przeglądu, a nie datą usunięcia.** Nic
+z `keep/` nie znika automatycznie — skasowanie kopii, którą ktoś świadomie
+zachował, nie jest decyzją, którą może podjąć zadanie crona. Dzieje się za to co
+innego: **każdą przeterminowaną kopię nazwaną zgłaszamy przy każdym
+uruchomieniu**, więc każda głęboka kopia pozostaje decyzją świadomą i odnawianą.
+To właśnie powstrzymuje kopie nazwane przed cichym przywróceniem głębokiej
+historii, którą usunęła granica rozmiaru: rotacja sięgająca dwóch miesięcy nic
+nie znaczy, jeśli obok leży nieprzejrzana kopia sprzed trzech lat.
+
+I dlatego licznik miesięczny wynosi dwa, a nie sześć. Zrotowany zrzut miesięczny
+nie zapisuje, *po co* istnieje, więc po miesiącach nikt nie oceni, czy może
+zniknąć; kopia nazwana, z datą przeglądu, odpowiada na oba pytania sama.
+
+`keep/` liczy się do budżetu rozmiaru, a po przekroczeniu jego połowy dostajesz
+ostrzeżenie — właśnie dlatego, że nic go za Ciebie nie kasuje.
+
+## Konkursy
+
+Jeden zrzut dziennie znaczy, że awaria w trakcie rundy kosztuje całą rundę.
+Uruchom `backup.sh` **przed otwarciem rundy i po zamrożeniu wyników**, a przy
+długim konkursie skróć odstęp na czas jego trwania. Zrzut robiony przy otwartej
+rundzie jest bezpieczny: `pg_dump` nie blokuje.
+
+## Usunięcie danych i jak długo ktoś zostaje w kopiach
+
+**Usunięcie konta to anonimizacja, a kopie nie są anonimizowane ponownie.**
+Zrzut zrobiony wcześniej wciąż zawiera imię i adres tej osoby, więc jeśli go
+odtworzysz, wróci ktoś, kto w międzyczasie skorzystał z prawa do usunięcia.
+Tożsamość nie siedzi zresztą tylko w wierszu użytkownika: jest też w komentarzach
+w kodzie, w treściach pytań i w nazwach plików, a wszystko to zrzut zachowuje
+nietknięte.
+
+**Kopii nie edytuje się, żeby usunąć z nich człowieka.** Wycięcie wierszy
+niszczy to, co czyni zrzut kopią — że odtwarza się do spójnego stanu — i nie
+zostawia nikogo, kto mógłby powiedzieć, czy nadal działa. Zamiast tego robi się
+co innego:
+
+1. **Okno jest krótkie.** `standard` sięga około dwóch miesięcy.
+2. **Kopie nazwane mają datę przeglądu**, więc sufit nie zostaje po cichu
+   podniesiony przez archiwum, do którego nikt nie wraca.
+3. **Polityka prywatności to opisuje**: że kopie istnieją, że są odtwarzane
+   tylko w całości i tylko po awarii, i że dane wychodzą z nich przez wygaśnięcie
+   kopii, a nie przez operację na niej.
+
+Punktu 3 żaden skrypt nie zrobi za Ciebie. Polityka prywatności jest dokumentem
+Twojej instalacji, a Ty jesteś jej administratorem danych. Trzymaj
+`BACKUP_PRESET` nie dłuższy niż okres retencji, który ta polityka deklaruje.

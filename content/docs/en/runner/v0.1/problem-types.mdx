@@ -1,0 +1,229 @@
+---
+title: Problem types
+description: The two kinds of problem this Runner evaluates, what a Runner advertises, and what a trial is.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+import { Mermaid } from "@/components/mermaid";
+
+A problem type is a string of the form `name@version`. The Server stores it,
+matches it against what a Runner declared **by string equality**, and never reads
+inside it. Adding a problem type does not require a Server change.
+
+This Runner evaluates two.
+
+## `standard-io@1`
+
+The ordinary kind. A participant submits source code, the Runner compiles it and
+runs it once per test, feeding each test's input on standard input and comparing
+what came out.
+
+| | |
+|---|---|
+| What the participant sends | source, in one of the [eighteen toolchains](/en/runner/v0.1/languages) |
+| What decides the language | the participant's own declaration, travelling with the submission |
+| Before the build | [the policy profile](/en/runner/v0.1/policy) |
+| Per test | one container, [isolated](/en/runner/v0.1/isolation), never reused |
+| What decides a test | the package's own **checker** where it has one, an **interactor** where it has one instead, and otherwise the Runner comparing token by token. All three read the answer as it is written, so a wrong one stops the program at the first token that differs |
+| What a test needs | both files with no judging program; a checker makes the expected output optional; an interactor makes both optional, and a group may then simply say how many tests it has |
+| Scoring | by group, as the package defines them |
+
+The verdict is one word for the submission as a whole: `Accepted` when every test
+passed and the score is full, and otherwise **the first thing that went wrong, in
+test order** — because that is where a participant starts reading. A per-test
+table is attached separately, and so is the compiler's log.
+
+Per-test outcomes distinguish a wrong answer, a time limit, a memory limit, an
+output limit, a runtime error, a policy violation and a compilation error. The
+Server stores every one of these as an opaque string and branches on none of
+them, which is what lets a problem type introduce a verdict without a Server
+release.
+
+<Callout type="warn" title="A submission that names no language is an infrastructure failure, never a guess">
+The language travels with the submission, and the Runner will not supply one.
+Defaulting to C++ would mean a submission arriving without one is compiled as
+C++20 by GCC and reported as a compilation error in a language nobody chose —
+harmless when C++ was one of two languages, and not with eighteen toolchains.
+
+An absent language means the job arrived incomplete. Reported as an
+infrastructure failure, the submission stays rejudgeable once that is fixed;
+reported as a verdict, it would be a mark against somebody's work.
+</Callout>
+
+### What happens to a submission
+
+Nothing is compiled until the activity's own rules have been read, and nothing
+is run until something has been built. Each box below is a container of its own.
+
+<Mermaid chart={`
+flowchart TD
+    job(["A job: the source, the language it names, the package"])
+    job --> rules["The activity's language list, the file name it was<br/>uploaded under, the size, the policy dictionary"]
+    rules -->|"a rule was broken"| pv["Policy violation, or a compilation error.<br/>A verdict: nothing was offered to a compiler"]
+    rules -->|"nothing to object to"| build["The build, in a container of its own"]
+    build -->|"the compiler refused it"| ce["Compilation error. A verdict"]
+    build -->|"a program"| judge["A checker or an interactor, where the package brought<br/>one: built the same way, in a container of its own"]
+    judge --> tests
+    subgraph tests["Once per test, in a container of its own, never reused"]
+        direction LR
+        inp["1a.in, mounted<br/>read-only at /in/1a.in"] --> prog["The submission,<br/>under the shim"]
+        prog --> read["The Runner reads the pipe<br/>as it is written"]
+        read --> cmp["Compared with 1a.out,<br/>token by token"]
+        cmp --> stop["The first token that differs<br/>stops the run there"]
+    end
+    tests --> score["Scored by group. One verdict for the submission:<br/>the first thing that went wrong, in test order"]
+    style tests fill:none
+`} />
+
+That is the loop with **no judging program**, which is the ordinary case. A
+package that brings one replaces the middle of it, and the two sections below
+are those two wirings.
+
+**The output is a pipe and the input is a file**, and the asymmetry is
+deliberate: nobody re-reads their own output, so reading it forwards costs
+nothing and buys the early stop above — while a solution that reads its input
+twice would work on its author's machine and fail on a pipe.
+[Isolation](/en/runner/v0.1/isolation) has the rest of what a test container is
+given.
+
+### When the package brings a checker
+
+A checker is a program the problem's author wrote. It runs **beside** the
+submission rather than after it, in a container of its own, and it is reading
+the answer while the program is still producing it.
+
+<Mermaid chart={`
+sequenceDiagram
+    autonumber
+    participant S as The submission's container
+    participant R as The Runner
+    participant C as The checker's container
+    Note over S,C: started together, and waited for together
+    R->>S: 1a.in, mounted read-only at /in/1a.in
+    R->>C: argv 1 to 3, being /in/1a.in, /answers/1a.out, /in/1a.out
+    S->>R: what it prints, on /aj-out/stdout
+    R->>C: the same bytes, on /answers/1a.out
+    C->>R: OK or WRONG, a comment, a percentage, on its own stdout
+    Note over R,C: an exit code other than zero is a broken checker:<br/>an infrastructure failure, and never a wrong answer
+`} />
+
+**Two pipes and never one.** The checker is handed a second channel the Runner
+writes into; it never touches the one the submission is writing. The two
+containers share no directory — they run as the same unprivileged user, so a
+shared one would be a place each could reach the other's — and every byte
+between them is copied by the Runner. That is also what keeps the byte counter,
+the output cap and the early stop in code the package did not write.
+
+### When the package brings an interactor
+
+An interactor replaces the checker **and the test's input file**. The submission
+is given nothing at the start: everything it reads is what the interactor sent
+in answer to what it wrote.
+
+<Mermaid chart={`
+sequenceDiagram
+    autonumber
+    participant S as The submission's container
+    participant R as The Runner
+    participant I as The interactor's container
+    Note over S: no input file is mounted, and that is the whole of<br/>what makes a problem interactive
+    R->>I: argv 1 to 3, being /in/1a.in, /answers/verdict, /in/1a.out
+    loop for as long as the two have anything to say
+        S->>R: a question, on /aj-out/stdout
+        R->>I: the same bytes, on /answers/to-the-judge
+        I->>R: an answer, on /answers/from-the-judge
+        R->>S: the same bytes, on /aj-out/stdin
+    end
+    I->>R: what it decided, on /answers/verdict
+    Note over R,I: a third channel, because the interactor's own stdout<br/>is already one half of the conversation
+`} />
+
+`1a.in` is still there and is still read — by the **interactor**, which is where
+a guessing problem keeps its secret. What changed is who it is mounted for.
+
+<Callout type="info" title="An interactor must ignore SIGPIPE">
+A submission that is stopped — by its time limit, or because it crashed — closes
+its end of the conversation, and the interactor's next write raises `SIGPIPE`. An
+interactor killed by it leaves no verdict on the third channel, and the test is
+reported as an infrastructure failure rather than as anything the participant
+did.
+</Callout>
+
+### The configuration chain is two layers
+
+The package states its own limits and groups. The **assignment** may lay its own
+configuration over that — a tighter time limit, a narrower list of languages —
+and the Runner performs that merge. There is no third layer; the Server merges
+nothing.
+
+## `output-only@1`
+
+The participant uploads **answers** rather than a program. Nothing is compiled
+and nothing is executed.
+
+| | |
+|---|---|
+| What the participant sends | a `.zip` of answers, or a single file where the problem has exactly one test |
+| Compiler | none |
+| Run container | none |
+| Policy dictionary | none — there is no source to read |
+| Untrusted code executed | **none at all** |
+
+It is therefore the safest type in the product and the one with the least
+machinery: nothing can escape, because nothing runs. **One untrusted archive is
+opened anywhere in AlgoJudge and it is this one** — a participant's answers,
+unpacked under limits tighter than a package's.
+
+### It is also the evidence for the invariant
+
+*Adding a problem type must not require a Server change* had been asserted from
+the beginning and nothing had tested it: one problem type is not a boundary, it
+is a shape.
+
+`output-only@1` was built to be the test. It differs from `standard-io@1` on all
+three axes that could have forced a Server change — the submission is a file
+rather than source in an editor, the package declares no language and needs no
+compiler, and the evaluation runs no untrusted code at all.
+
+**The Server did not change.** What a type costs is one dispatch arm in the
+Runner and a crate. Everything around it — claiming, leasing, the package cache,
+integrity, reporting — is shared.
+
+## Which types a Runner advertises is configuration
+
+`AJ_Runner__ProblemTypes` is a comma-separated list, and it defaults to
+`standard-io@1` **alone**. A Runner that should also take output-only work is
+told so:
+
+```ini
+AJ_Runner__ProblemTypes=standard-io@1,output-only@1
+```
+
+The list is sent on every registration and is one of the three filters that
+decide [which Runner is given which work](/en/runner/v0.1/routing).
+
+A job whose type this Runner does not know is **refused rather than guessed at**,
+and the refusal names the type. That is a job the Server should not have offered:
+it means the declared list and the Runner's build disagree.
+
+## Trials
+
+A **trial** is a different kind of work on the same connection: *run this
+package's own model solutions and say what they cost*. It is how a manager
+calibrates a problem's limits before anybody submits to it.
+
+Three things about a trial are worth knowing:
+
+- **A trial is not a job.** It has no submission, no attempt and no problem
+  version, and it produces **no verdict and no score** — reporting anything
+  shaped like a result would invite a screen to render it as one.
+- **A Runner asks for a trial only when there is no marking to do.** A trial
+  measures timings for somebody who asked; a job decides somebody's grade.
+- **Only `standard-io@1` is measured.** A trial of any other type is refused by
+  name. A Runner that forwards work measures no trials at all, because "run this
+  package here and time it" is precisely what it cannot do.
+
+A trial calibrates *the package*, so no assignment's configuration is laid over
+it — that layer belongs to one activity's use of a problem, and a trial is not
+about any activity.

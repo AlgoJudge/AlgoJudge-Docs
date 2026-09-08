@@ -1,7 +1,9 @@
 ---
 title: The model at a glance
-description: The twelve concepts the Server stores, how they hang together, and the five things a reader gets wrong without being told.
+description: The eleven concepts the Server stores, how they hang together, and the five things a reader gets wrong without being told.
 ---
+
+import { Mermaid } from "@/components/mermaid";
 
 Every concept below is defined from the model class that stores it, in
 `AlgoJudge.Server/Database/Models/`. Where a page states a rule as an invariant,
@@ -25,17 +27,28 @@ the code enforces it.
 
 ## How they hang together
 
-```
-Activity ─┬─ Series ── SeriesProblem ─── Submission ─── EvaluationJob ─── Result
-          │              │                                   │
-          │              └── Problem ── ProblemVersion ───────┘
-          ├─ ActivityGroup
-          └─ Grant ── User
-```
+<Mermaid chart={`
+flowchart LR
+    activity["Activity"] --> series["Series"]
+    activity --> group["ActivityGroup"]
+    activity --> grant["Grant"]
+    grant --> user["User"]
+    series --> sp["SeriesProblem<br/>the assignment"]
+    sp --> submission["Submission"]
+    sp --> problem["Problem"]
+    problem --> version["ProblemVersion"]
+    submission --> job["EvaluationJob<br/>one attempt"]
+    job --> result["Result"]
+    version -.->|"what this attempt was judged against"| job
+`} />
 
 Read the chain from the right: a `Result` belongs to one `EvaluationJob`, which
 is one attempt at one `Submission`, which was sent against a `SeriesProblem` —
-an **assignment**, not a bare problem — in a `Series` of an `Activity`.
+an **assignment**, not a bare problem — in a `Series` of an `Activity`. Beside
+the series hang the activity's `ActivityGroup` rows and its `Grant` rows, which
+are its membership; the assignment points at a `Problem`, and the version of
+that problem's content an attempt was judged against is pinned onto the job and
+copied onto the result.
 
 ## Five things that are easy to get wrong
 

@@ -1,0 +1,126 @@
+---
+title: Paczki
+description: Co dostaje Runner i skąd zadanie bierze swoje testy i limity.
+source: en/client/v0.1/manager/packages.mdx
+sourceSha256: 7eacc5353f5410d2ef30b09e936033b1e09ac14736910ee0059dc46f7243fdb9
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Paczka to wszystko, czego Runner potrzebuje do oceny zgłoszenia, i nic ponadto:
+testy, oczekiwane wyjście albo checker, limity, punktacja oraz opcjonalnie
+rozwiązanie wzorcowe.
+
+**Treści w niej nie ma.** Treść jedzie jako załącznik o zakresie *uczestnik*, a
+Runner — jedyny komponent, który nigdy nie może jej ujawnić — nigdy jej nie
+dostaje. Z paczką jest odwrotnie: ma zakres *runner* i nigdy nie trafia do
+uczestnika.
+
+Buduje ją zakładka **Paczka** w zadaniu. Nic się stamtąd samo nie wysyła; paczka
+należy do wersji, a wersję publikuje się w całości.
+
+## Co jest w środku
+
+```
+package.zip
+├── config.yml
+├── tests/
+│   ├── 0a.in    0a.out         grupa 0: przykłady
+│   ├── 1a.in    1a.out
+│   └── 2a.in    2a.out
+├── checker/                     jedno albo drugie, nigdy oba
+├── interactor/
+└── solutions/                   opcjonalnie
+```
+
+`config.yml` to YAML i jedyny plik w produkcie, w którym komentarz jest coś wart
+— notatka o tym, dlaczego grupa 3 ma dłuższy limit, zostaje wewnątrz paczki.
+
+| W `config.yml` | Co mówi |
+|---|---|
+| `type` | jaki to format. Runner, który nie zna wersji, odmawia paczki, zamiast zgadywać |
+| `limits.timeMs` | milisekundy **czasu procesora** — użytkownika plus systemowego, dla wszystkiego, co uruchomi zgłoszenie. Nie jest to czas oczekiwania uczestnika: uruchomienie kontenera go nie obciąża, tak samo jak czekanie |
+| `limits.memoryBytes` | **bajty.** W pliku jest jedna jednostka pamięci i żadnej innej; w edytorze wpiszesz KiB albo MiB, a on przeliczy |
+| `languages` | w czym wolno zgłaszać. Puste znaczy, że paczka nic nie narzuca, a wtedy wolno wszystko, co Runner umie zbudować |
+| `overrideLimits` | limity na język, kluczem jest rodzina (`cpp`, `python`) albo jeden toolchain (`pypy3`). Tutaj zapisujesz, że Python jest wolniejszy |
+| `groups` | grupy punktowe, ich punkty i opcjonalnie własne limity |
+| `checker` | brak oznacza, że decydują pliki `.out`. Dostaje odpowiedź uczestnika strumieniowo, w trakcie jej powstawania, więc musi ją czytać sekwencyjnie i tylko raz — nie da się w niej cofnąć. Kiedy jest, plików `.out` w ogóle nie musi być |
+| `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interaktor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok — załączenie jednego z nich w karcie „Programy” blokuje drugi. Kiedy jest, **żaden** z plików testu nie jest wymagany |
+| `groups[].tests` | ile testów ma grupa, gdy nie wysyłasz dla nich plików. Może to podać tylko zadanie interaktywne i najwyżej 26 — gdzie indziej testy liczą się z plików |
+| `modelSolution` | służy do kalibracji limitów, nigdy do oceniania |
+
+Własne limity grupy zastępują globalne dla testów tej jednej grupy; gdy ich nie
+ma, grupa dziedziczy globalne. Edytor przyjmuje milisekundy albo sekundy oraz
+bajty, KiB lub MiB i sam przelicza — nikt nie wpisuje 268435456, żeby powiedzieć
+256 MiB.
+
+## Budowanie
+
+Zakładka bierze luźne pliki i paruje je po nazwie: **`1a.in` idzie z `1a.out`.
+Liczba to grupa, litera to test.** Test możesz też wpisać ręcznie. Pliki, których
+zakładka nie rozpoznaje, wypisuje, zamiast po cichu je pomijać.
+
+W tabeli **Grupy** wpisujesz punkty i tam oznaczasz grupę jako **przykłady** —
+dowolnie wiele grup, na początek grupę 0. Te testy są wycinane do osobnego
+archiwum i publikowane uczestnikom jako `examples.zip`, z tych samych plików,
+więc przykład w treści i przykład do pobrania nie mogą się różnić. Jeśli nie
+oznaczysz żadnej grupy, uczestnik nie dostanie żadnych przykładów — i bywają
+zadania, które właśnie tego chcą.
+
+**Zadanie interaktywne nie publikuje ich tak czy inaczej.** Nie ma pliku z
+wejściem, który można by przekazać — zgłoszenie też go nie dostaje — więc
+archiwum z samymi oczekiwanymi wyjściami, na które nie ma czym odpowiedzieć,
+byłoby gorsze niż jego brak. Pokaż przykładową rozmowę w treści zadania.
+
+Archiwum składa się w twojej przeglądarce, bo jego układ należy do typu zadania,
+a Server nie może odróżniać jednego typu od drugiego. Zbudowaną paczkę i
+przykłady możesz pobrać i obejrzeć, a istniejącą paczkę otworzyć do edycji.
+
+Walidator nie pozwala opublikować zepsutej paczki i przycisk mówi to wprost,
+zamiast zawieść po kliknięciu.
+
+<Callout type="warn" title="Paczki nie da się dołożyć do istniejącej wersji">
+Zmienioną paczkę opublikujesz dopiero z **następną** wersją, razem z treścią i
+załącznikami. Dlatego przypięta wersja jest obietnicą: tego, względem czego
+oceniano, nie da się potem zmienić.
+</Callout>
+
+## Kalibracja limitów
+
+Jeśli paczka zawiera rozwiązanie wzorcowe, **zmierz rozwiązanie wzorcowe** puści
+je na prawdziwym Runnerze i pokaże pomiar osobno dla każdej grupy. Potrzebujesz
+do tego `trial:run`, którego celowo nie ma w szablonie uczestnika — pomiar
+zajmuje Runnera.
+
+Reguła kalibracji zamienia pomiar w limit: mnożnik, stała do dodania i wartość,
+do której zaokrąglić w górę. Sugestia bierze się z **najwolniejszego zmierzonego
+języka**, bo limit grupy musi mieścić każdy język, który aktywność dopuszcza.
+Zastosuj sugestię jednej grupy albo wszystkich.
+
+Mierzysz raz, na żądanie, a wyliczona liczba trafia do paczki. Ocenianie nigdy
+nie uruchamia rozwiązania wzorcowego: limit musi być liczbą, która obowiązywała
+każde zgłoszenie, a nie liczoną od nowa przy każdym uruchomieniu.
+
+## Skąd zadanie bierze testy i limity
+
+Kroki są dwa, a przeczytanie ich w odwrotnej kolejności kosztuje całą rundę.
+
+1. **Dokument Konfiguracja z podpięcia scala się z paczką**, pole po polu — to
+   tam aktywność zawęża języki albo zmienia limit na własny użytek.
+   `limits: { timeMs: 500 }` zawęża czas i zostawia pamięć w spokoju, a tablica
+   `groups` łączy się po numerze grupy, więc jedną grupę zmienisz bez
+   przepisywania pozostałych. Niczego nie da się w ten sposób **usunąć**, a pole,
+   którego format nie zna, jest odrzucane, a nie pomijane.
+2. **Dopiero tak scalony dokument czyta się osobno dla każdego testu, a wygrywa
+   warstwa bardziej szczegółowa**: globalne `limits`, nadpisane przez
+   `overrideLimits` dla języka, a te przez własne limity grupy.
+
+<Callout type="warn" title="Podniesienie limitu globalnego nie ruszy grupy, która ma własny">
+Kroki składają się w tej kolejności, więc `limits.timeMs` wpisane w podpięciu
+zmienia **globalny** limit paczki — a grupa, która ma własny, nadal jest
+oceniana według swojego. Żeby dołożyć czasu jednej grupie, wpisz tę grupę w
+`groups` podpięcia.
+</Callout>
+
+Czasu i pamięci nigdy nie ustawia się na aktywności. Poznasz je dopiero wtedy,
+gdy rozwiązanie się wykona, i należą do zadania.

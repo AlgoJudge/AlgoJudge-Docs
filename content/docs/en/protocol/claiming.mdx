@@ -5,9 +5,7 @@ description: How work is taken, what a claimed job carries, and why the lease is
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.** This page describes **version 1.1** of
-the contract; on any divergence, the specification is right and this page is
-wrong.
+import { Mermaid } from "@/components/mermaid";
 
 ## Claiming
 
@@ -108,7 +106,6 @@ behaving correctly. A `503` there would be correct and noisier for no gain.
   "files": [{ "name": "source", "fileName": "main.py",
               "fileId": "…", "sha256": "…", "sizeBytes": 42 }],
   "props": { "type": "standard-io@1", "language": "python3" },
-  "problemVersionProps": null,
   "config": { "type": "standard-io@1", "languages": ["python3"],
               "limits": { "timeMs": 1000, "memoryBytes": 268435456 } }
 }
@@ -123,7 +120,7 @@ involvement. What is inside belongs to the problem type.
 | | What it is | Whose it is |
 |---|---|---|
 | `props` | what the **participant** declared beside the bytes. For `standard-io@1`, the language | the submission's |
-| `problemVersionProps` | what the type needs to know about the **pinned version** — an external archive's problem number, say. **Identity, not settings** | the problem version's |
+| `problemVersionProps` | what the type needs to know about the **pinned version** — an external archive's problem number, say. **Identity, not settings**, and absent where the type needs none, as the job above shows | the problem version's |
 | `config` | what the **assignment** states, to be laid over the package's own | the assignment's |
 
 Three consequences an implementation has to get right:
@@ -145,8 +142,8 @@ Three consequences an implementation has to get right:
 
 `fileName` is what the submission is called, and it is **load-bearing rather than
 cosmetic**: a Runner may refuse a file whose extension the chosen toolchain does
-not accept. The Server no longer names pasted source, because it no longer knows
-the language — the Client sends the name.
+not accept. The Server does not name pasted source, because it does not know the
+language: the Client sends the name.
 
 `packageFileId` and `packageSha256` are the **empty string, not absent**, when
 the problem version carries no package. Treat that as an infrastructure failure
@@ -195,9 +192,40 @@ closely. A duration is immune to skew; an instant is not.
 ### The lease is the whole recovery story
 
 A Runner that dies holds a job nobody will finish. The Server's reaper returns it
-to the queue when the lease expires. Each delivery is counted, and past a cap the
-job is **failed with a reason** rather than retried for ever — retrying for ever
-is how one bad package stops an installation.
+to the queue when the lease expires. Each delivery is counted, and past the cap —
+five deliveries in this Server — the job is **failed with a reason** rather than
+retried for ever, because retrying for ever is how one bad package stops an
+installation.
+
+So a job is queued, running on exactly one Runner, or finished — and it comes
+back to the queue four ways: a **release**, a lease that **expired**, a report
+carrying an **infrastructure failure**, and a key an administrator **revoked**
+while the Runner held the job. Only the first three are the Runner's own doing;
+the fourth is the Server acting on it, which is why approval is checked on every
+call rather than only at the handshake. A report with a result is the only thing
+that ends a job properly, and the delivery cap is the only thing that ends it
+without one. Which of the four hands the delivery back is what the sections
+below add.
+
+<Mermaid chart={`
+flowchart TD
+    queued(["Queued — waiting for a Runner it matches"])
+    running["Running, on one Runner, under a lease"]
+    back["Back in the queue, and nobody's"]
+    stored(["A result. The submission is judged"])
+    failed(["Failed, with the last reason given.<br/>Not a verdict, and never scored"])
+    queued -->|"claim — a delivery is counted"| running
+    running -->|"report"| stored
+    running -->|"release — this Runner is stopping"| back
+    running -->|"the lease expires"| back
+    running -->|"a report carrying an infrastructure failure"| back
+    running -->|"the Runner's key is revoked"| back
+    back -->|"any Runner may claim it again"| queued
+    back -->|"at the delivery cap"| failed
+`} />
+
+A rejudge is not on it: it makes a **new** job, and ends only a *queued* sibling
+— never one a Runner is holding.
 
 ### Giving a job back
 
@@ -242,26 +270,33 @@ POST /api/v1/runner/jobs/{jobId}/lease      { "leaseToken": "…", "leaseSeconds
 **Renewing never shortens.** The Server keeps the later of the deadline already
 granted and the one now asked for.
 
-That was not always true, and the failure it caused is instructive: while a
-renewal replaced the deadline outright, a Runner that claimed for ten minutes and
-then renewed asking for one moved its own deadline eight minutes *closer* — and
-the obvious implementation, a short ping on a short interval, left itself a
-permanent sixty-second margin. One pause longer than that hands the job to a
-second Runner while the first is still computing.
+Replacing the deadline outright would be a trap worth seeing: a Runner that
+claimed for ten minutes and then renewed asking for one would move its own
+deadline eight minutes *closer*, and the obvious implementation — a short ping on
+a short interval — would leave itself a permanent sixty-second margin. One pause
+longer than that hands the job to a second Runner while the first is still
+computing.
 
 ```http
 POST /api/v1/runner/jobs/{jobId}/progress
 ```
 
-reports progress and **renews nothing**. A Runner still working says so with a
-lease call.
+reports progress. **The contract says it renews nothing**, so a Runner still
+working says so with a lease call and never leaves its deadline to a progress
+note.
+
+This Server is more generous, and that is not something to build on: a progress
+call goes through the same code as a renewal and pushes the deadline out by the
+lease the job was granted — never shortening it, by the rule above. An
+implementation that relied on that would hold its job here and lose it against a
+Server that does only what the contract asks.
 
 | Refusal | Code | Where |
 |---|---|---|
 | The token names another Runner's lease | `runner.lease.foreign` | everywhere |
 | The lease has already been reclaimed | `runner.lease.stale` | everywhere |
 | The token is not a token | `runner.lease.malformed` | the two `report` calls only |
-| The job is not in a state that allows this | `job.state` | everywhere |
+| The job is not in a state that allows this — cancelled by a manager, superseded by a rejudge, or already back in the queue | `job.state` | everywhere |
 
 The third row is narrower than the others. A lease, release or progress call
 folds an unparseable token into `runner.lease.stale` — a token that cannot be a
@@ -273,6 +308,16 @@ deserves the more exact word.
 before the owner, and a Runner's id and its lease token are written together and
 cleared together. A presented token that matches a job this Runner does not own
 is one that leaked from a live Runner.
+
+**A job id nobody issued answers `404`, and a job somebody else holds answers
+`403` with one of the codes above.** That is the opposite of the rule for
+[files](/en/protocol/files), deliberately: there the id *is* the whole
+authorization decision and the bytes are what somebody would want, so the answer
+says as little as it can. Here the audience is a Runner an administrator
+approved, the ids are random, and one bit — *this id names a job* — buys a
+diagnostic every operator needs. Without it, a Runner meeting a `404` where its
+lease used to be could not tell a reclaimed job from a Server that has forgotten
+it, and would retry the renewal for the rest of the evaluation.
 
 ## Why the lease token matters twice
 

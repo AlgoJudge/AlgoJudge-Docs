@@ -1,0 +1,142 @@
+---
+title: Activities
+description: What an activity is, how to find one, and how to get into it.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An **activity** is one contest or one course. It holds the series, the problems,
+your submissions, the ranking and the questions. Everything you do as a
+participant happens inside one.
+
+## Finding yours
+
+**Activities** in the navigation lists them, five to a page. The list is not only
+what you have joined. It carries:
+
+- activities you are **enrolled** in,
+- activities you were **invited** to, badge *Invited*,
+- public activities you **may join**, badge *Open to join*.
+
+An activity you may not see is not in the list at all. That is the Server's
+decision, not a filter you can turn off.
+
+### The filters
+
+Two rows of chips, and you may pick several in each:
+
+- **State** — *Ongoing*, *Upcoming*, *Finished*. Finished activities are dimmed;
+  the other two keep full colour.
+- **Type** — *Contest* or *Course*. A trophy icon marks a contest, a school icon
+  a course, and a question mark a type this version does not recognise.
+
+Changing a filter takes you back to page one.
+
+### What a card shows
+
+The icon, the name, and the **slug** — the short alias that appears in the
+address, such as `AMMPZ-2019`. Free lines of text beside it (*Organiser: …*, and
+anything else) are display metadata the organiser wrote.
+
+Clicking a card opens the activity's own page where its organiser wrote a page
+for participants, and goes straight to the problems where they did not. There is
+no point stopping at a page with nothing on it, so the address does not stop
+either: opening it directly sends you on to the problems.
+
+Somebody who is **not** enrolled gets whatever the organiser wrote for outsiders,
+and the form to enrol.
+
+### A lock on a card
+
+<Callout type="warn" title="Locked by a round">
+A card marked *Locked by …* does not open, and typing the address does not get
+you in either. A round that outranks the rest is running — in this activity, or
+across the whole installation — and everything of lower rank is out of reach
+while it does. The badge names the round that did it.
+</Callout>
+
+Nothing is lost. The activity's own page still loads, under **This activity is
+locked**, carrying the reason and the sentence *The problems, submissions,
+questions and ranking come back when it ends.*
+
+## Getting in
+
+Three ways, and which one applies is the organiser's setting.
+
+| Setting | What the activity page offers |
+|---|---|
+| **closed** | Nothing. It says *Enrolment in this activity is done by its organiser.* |
+| **password** | A **Join password** box and an **Enrol** button. |
+| **open** | An **Enrol** button, no password. |
+
+Where the activity publishes rules, the form also carries **I have read and
+accept the rules**, required. Clicking that text opens the rules **over the
+form**, so going to read them does not lose what you typed.
+
+### A link from your lecturer
+
+An enrolment link looks like `https://host/activities/AMMPZ-2019#thepassword`.
+The part after the `#` is the join password. The page takes it, fills the field
+and clears it out of the address bar. A fragment is never sent to a server, so
+the password does not end up in a log on the way.
+
+The link needs a session. If you are not signed in you are sent to sign in first
+and then brought back — fragment included, which is the part that mattered.
+
+## What you get once you are in
+
+The navigation fills up with the activity's own entries. Each one appears only
+under a condition:
+
+| Entry | Shown when |
+|---|---|
+| **Activity page** | you are enrolled and the organiser wrote a page for participants |
+| **Problems** | you are enrolled |
+| **Submit** | you are enrolled |
+| **My submissions** | you are enrolled |
+| **Ranking** | you are enrolled and scores are not restricted to managers |
+| **Questions and announcements** | you are enrolled and the organiser switched the module on |
+| **Rules** | the organiser published rules — enrolled or not |
+
+Somebody who is not enrolled gets the activity's name and its rules, and nothing
+else. Offering Submit to somebody who is not in the activity would be offering
+screens that refuse.
+
+### The clock in the header
+
+A badge counts down to the **end of the round that is running now** — not to the
+end of the activity, which for a contest of three rounds is not a deadline
+anybody is working against.
+
+It appears only once a round has started. While a round is paused the badge says
+**Paused** instead of counting, because a clock ticking through an interruption
+is worse than one that stops.
+
+### The panel in the corner
+
+Bottom right, collapsed when you arrive: your own last submissions in this
+activity, newest first, with the time, the problem's `[slug]` and name, the score
+and the state. It updates itself as verdicts arrive, so you can watch one finish
+without leaving the statement you are reading.
+
+Its **Send** button opens the submit form in a dialog, on the problem you are
+looking at where you are looking at one. That button is also why the panel
+appears only where you are **enrolled**: it sends, and the Server refuses a
+submission from somebody who is not in the activity.
+
+**Not on a phone.** At 768px and narrower the panel is not drawn at all. It is
+460px pinned to a corner, which on a small screen is nearly the whole width, and
+it would sit on top of whatever the page put in the same corner — the submit
+form's own **Send** button included. Nothing is lost: the list is
+**My submissions** in the navigation, and the form its Send button opens is
+**Submit** beside it.
+
+Whether it is open is remembered for the session.
+
+## Competing as a group
+
+Where a manager has put you in a group, the activity page carries a **You are
+competing as a group** panel with its name, description and members. The group is
+the contestant: it submits, it spends the allowance and it holds the ranking row.
+See
+[Competing in a group](/en/client/v0.1/participant/groups).

@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: 140123969fa94d3e8c4021bb7693a4214eeb03ca1672c319c69da35ed21273a1
+sourceSha256: 7c1113668cddcfaf4d86cb974a84373a8d7d5e47d34772b2bfbdd0240d6b8aab
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -13,9 +13,9 @@ proxy.
 
 ## Pięć reguł
 
-### 1. Jedno origin, `/api/v1/` na Server, reszta na Client
+### 1. Jeden origin, `/api/v1/` na Server, reszta na Client
 
-Dopiero na jednym origin działa `API_BASE_URL=/`, a wtedy **nie ma żadnego CORS
+Dopiero na jednym originie działa `API_BASE_URL=/`, a wtedy **nie ma żadnego CORS
 do popsucia**. Client sam dokleja `/api/v1` — ścieżka jest stała w każdej
 instalacji — więc ta zmienna nazywa origin, a nigdy ścieżkę.
 
@@ -127,12 +127,12 @@ najłatwiej wywołać atakującemu.
 `X-Frame-Options` to celowo `SAMEORIGIN`, a nie `DENY` — tyle że **nie obejmuje
 tego przypadku LTI, dla którego został wybrany**. `SAMEORIGIN` pozwala osadzić
 stronę tylko wtedy, gdy osadza ją
-**to samo origin**. Przy uruchomieniu LTI osadza ją LMS, więc Moodle pod
+**ten sam origin**. Przy uruchomieniu LTI osadza ją LMS, więc Moodle pod
 `moodle.example.edu`, który osadza tę instalację pod `algojudge.example.edu`,
 zostanie odrzucony dokładnie tak samo, jak odrzuciłby go `DENY`. Zmierzone
 w przeglądarce, a nie wyczytane ze specyfikacji.
 
-Dla układu, który ten nagłówek obejmuje — LMS i ta instalacja na jednym origin,
+Dla układu, który ten nagłówek obejmuje — LMS i ta instalacja na jednym originie,
 rozdzielone ścieżką — wartość jest poprawna i dlatego zostaje: domyślne
 rozluźnienie polityki ramek w każdej instalacji nie jest decyzją, którą stos
 podejmuje za Ciebie. **Jeśli Twój LMS stoi pod inną nazwą, zastąp ten nagłówek**,
@@ -159,16 +159,16 @@ zepsułby aplikację, albo byłby `unsafe-inline`, czyli nagłówkiem, który ni
 mówi. Zamknięcie tego należy do Clienta.
 </Callout>
 
-## Dwa różne origins
+## Dwa różne originy
 
-Client i Server mogą też stać na różnych origins i to działa. Wtedy
+Client i Server mogą też stać na różnych originach i to działa. Wtedy
 `API_BASE_URL` to publiczny adres Servera, `APP_BASE_URL` to adres, pod którym
 przeglądarka sięga po Clienta, a origin Clienta trafia do
 `AJ_Cors__AllowedOrigins` Servera.
 
 <Callout type="warn" title="Musi to być ta sama witryna: jedna domena rejestrowalna, jeden schemat">
 `https://algojudge.example` obok `https://api.algojudge.example` to **jedna
-witryna** — inne origins, ta sama domena rejestrowalna — i wszystko działa.
+witryna** — inne originy, ta sama domena rejestrowalna — i wszystko działa.
 `https://algojudge.example` obok `https://algojudge-api.inna` to **dwie** i wtedy
 nikt się nie zaloguje.
 </Callout>
@@ -183,7 +183,7 @@ Atrybut `Domain` tego nie ratuje. `Domain` decyduje, do jakich hostów ciasteczk
 jest wysyłane, a serwer może poszerzyć je najwyżej do własnej domeny nadrzędnej —
 `api.algojudge.example` nie ustawi ciasteczka dla `algojudge-api.inna`. W obrębie
 jednej witryny jest zresztą zbędny: na dwóch nazwach jednej domeny rysunki w
-treści zadania narysowały się z origins API przy ciasteczku host-only, a
+treści zadania narysowały się z originu API przy ciasteczku host-only, a
 poszerzenie `Domain` sprawiło tylko tyle, że sesja zaczęła jechać na host Clienta
 przy każdym żądaniu o zasób.
 
@@ -191,7 +191,33 @@ Każdy układ przetrwa to, co nie potrzebuje sesji w ogóle: znak firmowy
 instalacji, krój pisma i dokumenty publikowane przez operatora są plikami
 publicznymi i wczytają się skądkolwiek.
 
-### Ustawianie listy dozwolonych origins
+### Adres API nie może wysyłać `X-Frame-Options`
+
+To ta część dwóch originów, która z sesją nie ma nic wspólnego, a wchodzi się w
+nią wprost z sekcji o tym, które nagłówki przekazywać: dołączany
+`security-headers.conf` wysyła `X-Frame-Options: SAMEORIGIN`, więc postawienie
+tych samych nagłówków przed **API** psuje treści zadań w PDF.
+
+Client rysuje taką treść znacznikiem `<object data="…/api/v1/files/…">`.
+`<object>` osadza dokument dokładnie tak jak `<iframe>`, a `X-Frame-Options`
+obejmuje oba — przy dwóch originach API jest obcym originem i `SAMEORIGIN` je
+odrzuca.
+
+<Callout type="warn" title="Odmowa jest cicha">
+Blokując `<object>`, `X-Frame-Options` **nie pisze nic** do konsoli; wariant
+`Content-Security-Policy` pisze. Człowiek widzi treść zapasową `<object>` — pusty
+prostokąt z odnośnikiem *pobierz* — i czystą konsolę, czyli dokładnie tak, jak
+wyglądałoby zadanie opublikowane bez treści. Zmierzone 2026-09-08 w Chromium, ten sam
+dokument przy czterech wartościach nagłówka.
+</Callout>
+
+Na adresie API albo nie wysyłaj polityki ramek **wcale**, albo wyślij
+`frame-ancestors` wymieniające origin Clienta **i każdą platformę LMS** — przy
+starcie LTI łańcuch przodków zawiera oba. Brak polityki da się tu obronić:
+osadzenie API nie daje napastnikowi niczego, bo ciasteczko sesji jest
+`SameSite=Lax`, a osadzający z dowolnego innego miejsca dostaje `401`.
+
+### Lista dozwolonych originów
 
 Ten stos nie ustawia `AJ_Cors__AllowedOrigins` z tego samego powodu, dla którego
 nie ustawia `AJ_PublicApiUrl`: pusty wpis listy to nie to samo, co brak listy.
@@ -207,7 +233,7 @@ services:
 
 Jeden indeks na origin — `AJ_Cors__AllowedOrigins=a,b` nie wiąże **żadnego**, po
 cichu. Znacznik `<img>` nie potrzebuje CORS w ogóle, więc rysunek może się
-narysować, gdy wszystkie wywołania API są odrzucane; objawem brakującego origins
+narysować, gdy wszystkie wywołania API są odrzucane; objawem brakującego originu
 jest ekran offline, a nie brakujący obrazek.
 
 ## Certyfikaty

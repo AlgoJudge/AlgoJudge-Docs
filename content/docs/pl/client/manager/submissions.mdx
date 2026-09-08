@@ -2,7 +2,7 @@
 title: Zgłoszenia
 description: Jak je znaleźć, skąd przyszły, jak ocenić ponownie i jak wyłączyć z rankingu.
 source: en/client/manager/submissions.mdx
-sourceSha256: e30b3253b1bd975a18fe00aa90a5436084f3cd745b643f5a29be79a98ccac376
+sourceSha256: 20d5ad4ef4001fc80bd81450d054f839eb3bd5171f9611799d84930c869fb29f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -17,7 +17,7 @@ użytkowniku lub zadaniu. **Filtry są w adresie**, więc *spójrz na próby teg
 uczestnika w zadaniu B* jest linkiem, który wkleisz w wiadomość.
 
 Lista pokazuje stan, werdykt, punkty, liczbę prób oraz plakietkę przy wszystkim,
-co jest **nie liczone**.
+co jest **nieliczone**.
 
 ## Co zawiera jedno zgłoszenie
 
@@ -82,9 +82,9 @@ która okazała się cudza, przebieg względem paczki, która była zła.
 Prosi o **powód**, bo o powód tu chodzi — sędzia czytający ten wiersz za miesiąc
 musi wiedzieć, dlaczego.
 
-<Callout type="warn" title="Powodu nie widzą tylko prowadzący">
-Widzą go prowadzący, ale trafia też do eksportu danych samego uczestnika. Pisz go
-tak, żeby ta osoba mogła go przeczytać.
+<Callout type="warn" title="Powód czytają nie tylko prowadzący">
+Widzą go prowadzący, ale trafia też do eksportu danych samego uczestnika. Pisz
+go tak, żeby ta osoba mogła go przeczytać.
 </Callout>
 
 Co orzeczenie robi, a czego nie:
@@ -103,9 +103,10 @@ widzi.
 **Licz ponownie** cofa orzeczenie i kasuje razem z nim powód: zdanie tłumaczące
 stan, który już nie obowiązuje, jest gorsze niż jego brak.
 
-Uprawnienie to `submission:exclude`, celowo osobne od `submission:rejudge` —
-ponowna ocena prosi Runnera, żeby spojrzał jeszcze raz, wyłączenie rozstrzyga
-wynik ręcznie, a instalacja może oddać pierwsze bez drugiego.
+Uprawnienie to `submission:exclude`. Jest w dostarczanym szablonie `manager` i
+celowo osobne od `submission:rejudge` — ponowna ocena prosi Runnera, żeby
+spojrzał jeszcze raz, wyłączenie rozstrzyga wynik ręcznie, a instalacja, która
+chce wydać jedno bez drugiego, może to zrobić.
 
 ### Co widzi uczestnik
 

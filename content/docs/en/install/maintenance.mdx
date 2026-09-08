@@ -4,6 +4,7 @@ description: Taking an installation out of service without stopping it, and the 
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 ```bash
 ./scripts/maintenance.sh on "nightly backup" --wait-closed
@@ -31,6 +32,15 @@ maintenance**, and the whole feature rests on one distinction:
 - The Server reaches `closed` when no evaluation job and no trial is running, or
   after `Maintenance:ForceAfterSeconds` — 300 by default — whichever comes first.
 - Turning it **off** returns to `open` immediately, from any level.
+
+<Mermaid chart={`
+flowchart LR
+    open(["open"]) -->|"maintenance.sh on"| draining(["draining"])
+    draining -->|"nothing left running"| closed(["closed"])
+    draining -->|"ForceAfterSeconds, 300 by default"| closed
+    draining -->|"maintenance.sh off"| open
+    closed -->|"maintenance.sh off"| open
+`} />
 
 The level is a row in the database, not a flag in memory, so it **survives a
 restart**. An operator who takes the Server down during a window and starts it
@@ -124,12 +134,11 @@ A Runner waits rather than exiting. It abandons a job to its lease rather than
 reporting a failure it did not observe, and it holds a finished result through
 the window instead of throwing it away.
 
-<Callout type="warn" title="Never `docker stop` a Runner as a way of being careful">
-The Runner does not handle `SIGTERM`. It is killed, and its job goes back on the
-queue when the lease expires. `stop_grace_period` buys nothing on its own and is
-paid on every stop — see [Update and rollback](/en/install/update). A clean drain
-is `maintenance.sh on --wait-closed` on the **Server** first, after which there
-is nothing in flight to lose.
+<Callout type="warn" title="Stopping a Runner is not a way of being careful">
+On `SIGTERM` a Runner hands its job straight back to the queue, so nothing waits
+out a lease — but it is still work thrown away and redone. A clean drain is
+`maintenance.sh on --wait-closed` on the **Server** first, which stops new work
+reaching a Runner at all; see [Update and rollback](/en/install/update).
 </Callout>
 
 ## What this deliberately does not do

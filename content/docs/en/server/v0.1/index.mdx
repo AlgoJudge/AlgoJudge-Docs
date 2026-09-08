@@ -1,0 +1,129 @@
+---
+title: What the Server is
+description: The one place persistent state lives, the one place authorisation happens, and the seven things it refuses to do.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The Server holds everything durable in an installation — accounts, activities,
+problems, submissions, jobs, results, files — and decides who may do what with
+it. It is the only part of AlgoJudge that writes to the database, and the only
+part that answers the question *may this person do this*.
+
+It is a single ASP.NET Core process. Everything it serves lives under
+`/api/v1`; see [The REST API](/en/server/v0.1/api).
+
+## What it refuses to be
+
+These are invariants, not defaults. They are enforced in code, they are the
+reason the model is shaped as it is, and each one buys something specific.
+
+### It never compiles or runs a submitted solution
+
+No sandbox, no compiler, no checker or interactor, no per-test comparison. A submission is
+bytes plus a checksum until a [Runner](/en/runner) claims a job for it.
+
+*What it buys:* the Server has no attack surface made of somebody else's code,
+and the machine that stores results is not the machine that executes strangers'
+programs.
+
+### It does not understand what a problem type means
+
+`Problem.Type` is a discriminator of the form `name@version` — `standard-io@1`,
+`uva@1`. The Server stores it, matches it **by string equality** against the
+list a Runner reported, and never parses it, never compares versions, never
+decides that one type resembles another.
+
+Everything a problem type needs to be judged travels in `jsonb` columns the
+Server does not read: `SeriesProblem.Config`, `ProblemVersion.Props`,
+`Submission.Props`, `Result.Extra`, `Result.Props`.
+
+**Adding a problem type does not require a Server change.** The Client learns to
+draw it, a Runner learns to judge it, and the Server routes the work without
+learning anything.
+
+### A Runner always initiates the connection
+
+The Server never calls a Runner. Registration, the challenge-response handshake,
+claiming a job, renewing a lease, uploading a log and reporting a result are all
+requests a Runner makes outwards. A Runner therefore needs no inbound port and
+no address of its own.
+
+*What it buys:* an evaluation machine can sit behind NAT in a laboratory or on
+somebody's desk, and the Server holds no list of addresses to keep correct.
+
+### REST is the source of persistent state; the WebSocket only says something changed
+
+One socket per tab, at `/api/v1/ws`, authenticated by the same session cookie as
+everything else. It carries `{ "type": ..., "data": ... }` envelopes and nothing
+else: no replay, no cursor, no catch-up buffer, no acknowledgements, no
+subscribe frames.
+
+A screen must be correct with the socket permanently down. See [Change
+notifications](/en/server/v0.1/events).
+
+### Every stored file carries a `sha256`
+
+The Client computes it, the Server **recomputes** it over the bytes it received
+and refuses a mismatch with `422 checksum_mismatch`, and a Runner verifies it
+again before evaluating. A checksum that arrives with the bytes is a claim; the
+one the Server computed is evidence.
+
+*What it buys:* a truncated upload is rejected as corrupt instead of being
+judged as a wrong answer.
+
+<Callout type="warn" title="The field is `sha256`, never `hash`">
+It is a lowercase hexadecimal SHA-256 of the stored bytes, and since the bytes
+left the database it is also half of the blob's address — the store derives the
+path from it. A row whose checksum was edited would point at nothing.
+</Callout>
+
+### End-user passwords do not belong here
+
+Ordinary participants authenticate through OIDC. What stays permanently is the
+embedded ASP.NET Core Identity for **administrator, local and temporary
+accounts** — a room of bulk logins handed out on paper has no mailboxes and no
+provider.
+
+<Callout type="warn" title="Local accounts still work for everybody, and that is not the recommendation">
+Nothing stops an installation running entirely on local accounts — the password
+storage is there, and *accept local sign-ups* turns the third door on. **Register
+an identity provider instead.** That is the recommended arrangement for ordinary
+participants, and the embedded accounts are meant for the administrator and for
+the local and temporary ones that have no provider to come from.
+</Callout>
+
+### It does not implement an access control list
+
+With one exception — `ProblemShare`, which says who else may see a shared
+library problem — nothing in the schema lists who may touch a particular row.
+Authorisation is a set of permission strings on a [`Grant`](/en/server/v0.1/concepts/grant)
+that hangs off a **user**, not off a resource.
+
+## Some numbers, and where they come from
+
+Each is read off the released code rather than remembered.
+
+| | |
+|---|---|
+| **Nine hosted services** | the maintenance drainer, the lease reaper, the round scheduler, the deletion sweeper, the merge sweeper, the address sweeper, the file collector, the storage migrator, and the LTI module's grade synchroniser |
+| **Thirty-two `DbSet`s** | on top of the framework's own identity context |
+| **One migration per context** | the application and the LTI module keep separate migration histories in one database, and each holds exactly one, `version_0_1_0` |
+| **One event catalogue** | `events.json` is committed, so both sides of the socket can diff their names against it rather than against each other |
+
+**Every identifier is a UUIDv7** — time-ordered, so inserts append to an index
+instead of fragmenting it. The one exception is the user, which keeps the
+identity framework's own string key.
+
+## Where to go next
+
+| | |
+|---|---|
+| [Domain model](/en/server/v0.1/concepts) | every concept, defined from the model that stores it |
+| [Permissions](/en/server/v0.1/permissions) | the string form, the scopes, the resolution rules, the 52 keys |
+| [Identity](/en/server/v0.1/identity) | how a federated account is keyed, and what a claim may never buy |
+| [The REST API](/en/server/v0.1/api) | the shape of the surface, and the admin surface that answers 404 |
+| [Change notifications](/en/server/v0.1/events) | what the socket carries, and what it does not |
+| [Configuration](/en/server/v0.1/configuration) | every setting, its default, and the seven ways the Server refuses to start |
+| [LTI](/en/server/v0.1/lti) | how a course platform launches into an activity, and what it may never assert |
+| [REST reference](/en/server/v0.1/rest) | generated from the Server's own `openapi.json` |

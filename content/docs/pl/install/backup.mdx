@@ -1,8 +1,8 @@
 ---
 title: Kopie zapasowe
-description: Co obejmuje zrzut, co się w nim teraz znalazło i dwie granice, przez które katalog kopii sam nie stanie się awarią.
+description: Co obejmuje zrzut, co ze sobą niesie i dwie granice, przez które katalog kopii sam nie stanie się awarią.
 source: en/install/backup.mdx
-sourceSha256: c5a6939fabaf13105676e44453e82d488db3a279f5815e9dcb1fdb3ce52f44a8
+sourceSha256: 26edc30ea128ce2640331470f6d67ea5a53e93baf1f05e889ed5f6c6947a38bf
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -18,7 +18,7 @@ a `--quiesce` jest domyślnie wyłączone. Użyj go przed migracją albo przed p
 odtworzenia, gdzie „nic w locie” jest warte przerwy.
 
 Każde uruchomienie zrzuca do pliku `.partial`, sprawdza go, zmienia nazwę,
-zapisuje obok `.meta`, rotuje i zgłasza każde przeterminowane zatrzymanie.
+zapisuje obok `.meta`, rotuje i zgłasza każdą przeterminowaną kopię nazwaną.
 
 ## Przeczytaj to w dniu, w którym ustawiasz kopie
 
@@ -56,9 +56,7 @@ kluczy następnym razem się odświeży.
 ### Certyfikat ogranicza ryzyko — i czego nie zapewnia
 
 Pęk kluczy może zaszyfrować sam siebie certyfikatem, który dostarczysz
-(`DataProtection:Certificates:0:Path` i `:Password`; pierwszy z listy szyfruje
-nowe klucze, a każdy z listy odszyfrowuje stare, więc rotacja polega na
-dostawieniu nowego na początek i zachowaniu starego). Bez certyfikatu klucze
+(`DataProtection:Certificates:0:Path` i `:Password`). Bez certyfikatu klucze
 leżą jako zwykły XML. To jest przyjęte i opisane, a nie ukryte: kto potrafi
 odczytać tę tabelę, potrafi też dopisać wiersz do tabeli użytkowników, więc
 certyfikat daje mniej, niż się wydaje. Jest dla instalacji, której bazę trzyma
@@ -95,8 +93,7 @@ zaszyfrowany czy jawnie, oraz **czy ten Server nadal potrafi go odczytać** — 
 jedyna kontrola, która wyłapuje certyfikat porzucony zamiast zachowanego.
 Deskryptor klucza odszyfrowuje się dopiero przy odczycie, więc klucz zaszyfrowany
 certyfikatem, którego nikt już nie dostarcza, zawodzi dokładnie w tym miejscu.
-Zanim ta komenda istniała, jedynym objawem było wylogowanie wszystkich, po
-fakcie.
+Bez zapytania jedynym objawem jest wylogowanie wszystkich, po fakcie.
 </Callout>
 
 `AlgoJudge-Ops` nie wymienia żadnego ustawienia pęku kluczy w swoim
@@ -218,7 +215,7 @@ co skrypt kopii może zrobić — więc tego nie robi.
 `BACKUP_FREE_SPACE_RESERVE_GB` to margines, który zostawia.
 </Callout>
 
-## Głęboka historia to nazwane zatrzymanie, nie głęboka rotacja
+## Głęboka historia to kopia nazwana, a nie głęboka rotacja
 
 ```bash
 ./scripts/backup.sh --keep koniec-semestru --until 2027-03-01
@@ -230,15 +227,15 @@ konkursu, koniec semestru i chwilę przed dużą migracją.
 **`--until` jest obowiązkowe i jest datą przeglądu, a nie datą usunięcia.** Nic
 z `keep/` nie znika automatycznie — skasowanie kopii, którą ktoś świadomie
 zachował, nie jest decyzją, którą może podjąć zadanie crona. Dzieje się za to co
-innego: **każde przeterminowane zatrzymanie zgłaszamy przy każdym
+innego: **każdą przeterminowaną kopię nazwaną zgłaszamy przy każdym
 uruchomieniu**, więc każda głęboka kopia pozostaje decyzją świadomą i odnawianą.
-To właśnie powstrzymuje nazwane zatrzymania przed cichym przywróceniem głębokiej
+To właśnie powstrzymuje kopie nazwane przed cichym przywróceniem głębokiej
 historii, którą usunęła granica rozmiaru: rotacja sięgająca dwóch miesięcy nic
-nie znaczy, jeśli obok leży nieprzejrzane zatrzymanie sprzed trzech lat.
+nie znaczy, jeśli obok leży nieprzejrzana kopia sprzed trzech lat.
 
 I dlatego licznik miesięczny wynosi dwa, a nie sześć. Zrotowany zrzut miesięczny
 nie zapisuje, *po co* istnieje, więc po miesiącach nikt nie oceni, czy może
-zniknąć; opisane zatrzymanie z datą przeglądu odpowiada na oba pytania samo.
+zniknąć; kopia nazwana, z datą przeglądu, odpowiada na oba pytania sama.
 
 `keep/` liczy się do budżetu rozmiaru, a po przekroczeniu jego połowy dostajesz
 ostrzeżenie — właśnie dlatego, że nic go za Ciebie nie kasuje.
@@ -265,7 +262,7 @@ zostawia nikogo, kto mógłby powiedzieć, czy nadal działa. Zamiast tego robi 
 co innego:
 
 1. **Okno jest krótkie.** `standard` sięga około dwóch miesięcy.
-2. **Nazwane zatrzymania mają datę przeglądu**, więc sufit nie zostaje po cichu
+2. **Kopie nazwane mają datę przeglądu**, więc sufit nie zostaje po cichu
    podniesiony przez archiwum, do którego nikt nie wraca.
 3. **Polityka prywatności to opisuje**: że kopie istnieją, że są odtwarzane
    tylko w całości i tylko po awarii, i że dane wychodzą z nich przez wygaśnięcie

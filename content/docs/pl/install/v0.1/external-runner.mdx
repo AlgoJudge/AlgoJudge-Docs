@@ -1,0 +1,116 @@
+---
+title: Zewnętrzny sędzia
+description: Przekazywanie części zadań do cudzego archiwum i dwa przełączniki, których nie ma w .env.
+source: en/install/v0.1/external-runner.mdx
+sourceSha256: 686af1212b8f43cbaef09a1be54d929348b1fb484e6420ea22cfb8e1f2e70d7d
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Część zadań może ocenić zewnętrzne archiwum, a nie ta instalacja. Zgłoszenie
+jest tam przekazywane, kompilowane ich kompilatorami, w ich limitach i na ich
+testach, a wraca ich werdykt.
+
+Ta instalacja zapisuje ten werdykt i nazywa sędziego, który za nim stoi. Nie
+potrafi go wyjaśnić, powtórzyć ani zakwestionować.
+
+<Callout type="warn" title="Wymaga konta w tym archiwum">
+Każde zgłoszenie, które ta instalacja przekazuje, idzie z jednego tamtejszego
+konta i zostaje na nim na zawsze. To decyzja właściciela konta.
+Testując, wysyłaj coś napisanego tak, żeby było błędne — wtedy historia tego
+konta pozostaje uczciwa.
+</Callout>
+
+## To dodatek, a nie układ
+
+`external-runner` to profil, który dopisujesz do tego z [układów](/pl/install/v0.1),
+który już prowadzisz — albo któremu dajesz osobną maszynę, dokładnie tak, jak
+może ją mieć [Runner](/pl/install/v0.1).
+**Nie ma go** w zestawie domyślnym, bo instalacji, która nie ma konta w żadnym
+archiwum, nie wolno podsuwać kontenera, który nie ma jak się zalogować.
+
+```ini
+COMPOSE_PROFILES=edge,app,data,runner,external-runner
+EXTERNAL_JUDGE_USERNAME=
+EXTERNAL_JUDGE_PASSWORD=
+```
+
+`preflight.sh` odmawia, kiedy profil jest włączony, a te dwa są puste. I
+słusznie: kontener inaczej kończyłby pracę już przy czytaniu konfiguracji, a
+przy `restart: unless-stopped` oznacza to pętlę restartów, a nie jedną linię w
+logu — w obrazie, w którym nie ma powłoki, żeby do niego zajrzeć, i bez
+healthchecku, który mógłby zapalić się na czerwono.
+
+## Dwa przełączniki, których nie ma w `.env`
+
+W obu przypadkach kolejka pozostaje pusta, choć Runner wygląda na zupełnie
+zdrowego — i właśnie dlatego warto o nich wiedzieć, zanim zaczniesz szukać
+usterki.
+
+1. **Ocenianie zewnętrzne jest wyłączone, dopóki instalacja tego nie włączy.**
+   To wiersz w bazie. Przed pierwszym startem, w
+   [`preconfig/`](/pl/install/v0.1/preconfiguration):
+
+   ```yaml
+   instance:
+     externalJudgingEnabled: true
+     externalFetchHosts:
+       - onlinejudge.org
+   ```
+
+   Potem jest to przełącznik prowadzącego w panelu.
+
+2. **Zatwierdza go administrator w panelu**, osobno od każdego innego Runnera.
+   Ma własną tożsamość i własne zatwierdzenie, a czeka bez żadnego limitu czasu.
+
+## Zadanie musi być zewnętrzne
+
+Musi mieć typ archiwum — `uva@1` dla jedynej istniejącej integracji — być
+oznaczone jako zewnętrzne i nieść numer zadania w archiwum w `props` swojej
+wersji. Zadanie z typem lokalnym nigdy nie trafia do Runnera przekazującego:
+Server dobiera te dwie strony po tej właśnie fladze — równość musi zachodzić
+w obie strony.
+
+**Jeden proces obsługuje jednego sędziego.** Nazywa go `EXTERNAL_JUDGE`, `uva`
+to jedyna zbudowana integracja, a nazwa nierozpoznana jest przy starcie
+odrzucana, a nie zastępowana domyślną. Drugie archiwum to druga usługa, z własnym
+kontem i własnym wolumenem tożsamości, a nie druga wartość na liście.
+
+## Czego wymaga, a czego nie
+
+Sam nawiązuje dwa połączenia — do Servera i do archiwum — i nie przyjmuje
+żadnego.
+
+- **Bez portu przychodzącego**, bez nasłuchu i bez własnego adresu.
+- **Bez gniazda Dockera**, bez `DOCKER_GID`, bez obrazów językowych i bez
+  katalogu roboczego. Niczego nie uruchamia; przekazuje.
+- **Bez healthchecku**, i wynika to z obrazu, a nie z przeoczenia: to
+  `distroless/static`, bez powłoki i bez portu, o który dałoby się zapytać.
+  `docker compose ps` na zawsze pokazuje przy nim pustą kolumnę zdrowia,
+  a `docker compose exec` w ogóle na nim nie działa.
+
+```bash
+docker compose logs -f external-runner
+```
+
+to wszystko, czym można go podejrzeć. Widać w nim, jak się zarejestrował, co
+zadeklarował i na co czeka.
+
+<Callout type="warn" title="Restart może kosztować zdublowane zgłoszenie">
+Zbiór zgłoszeń, na które archiwum jeszcze nie odpowiedziało, trzyma **w
+pamięci**, a zlecenie zewnętrzne może zupełnie normalnie czekać piętnaście
+minut. Zabity, traci ten zbiór; Server odbiera dzierżawy, wkłada zlecenia
+z powrotem do kolejki, a każde z nich idzie do archiwum po raz drugi, na Twoim
+tamtejszym koncie.
+
+**Grzeczne zatrzymanie tego nie omija, a i tak warto je zrobić.** Po `SIGTERM`
+oddaje do kolejki od razu wszystko, co trzyma — do dwudziestu zgłoszeń, po jednym
+wywołaniu na każde, i właśnie na to jest sześćdziesiąt sekund
+`EXTERNAL_RUNNER_STOP_GRACE`. Odpowiedzi, które jeszcze idą z archiwum, i tak nie
+mają gdzie wylądować.
+
+Przed oknem, które go zrestartuje, najpierw przeprowadź drenowanie — zobacz
+[Przerwę techniczną](/pl/install/v0.1/maintenance), gdzie jest rachunek pokazujący,
+że wymuszone zamknięcie po 300 sekundach nastąpi na długo przed końcem
+piętnastominutowego zlecenia zewnętrznego.
+</Callout>

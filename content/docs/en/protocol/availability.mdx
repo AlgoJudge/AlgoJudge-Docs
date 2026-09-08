@@ -5,9 +5,9 @@ description: The heartbeat, and what a Runner must do when the Server is up and 
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails**, and unavailability is its §9. A Runner
-that has no notion of a Server which is up and declining to serve will treat one
-as a fault — and the fault it most resembles is *"this submission failed"*.
+Unavailability is **§9** of the contract. A Runner that has no notion of a Server
+which is up and declining to serve will treat one as a fault — and the fault it
+most resembles is *"this submission failed"*.
 
 ## The heartbeat
 
@@ -23,8 +23,9 @@ A Runner holding a job does not need it: renewing a lease says the same thing
 more precisely. The reference implementation sends one only when it has nothing
 to do, on an interval.
 
-A heartbeat refused during a maintenance window is expected rather than worth a
-warning: the Server has withdrawn and already knows.
+A heartbeat is still answered while the Server drains, and refused once it is
+`closed` — where the refusal is expected rather than worth a warning, because the
+Server has withdrawn and already knows.
 
 ## Three levels, travelled in one direction
 
@@ -34,7 +35,7 @@ database can be backed up or a machine shut down cleanly.
 | Level | What answers | What does not |
 |---|---|---|
 | `open` | everything | — |
-| `draining` | `/health`; a Runner's lease, progress, report, file read, upload and attach | the participant API, submissions, **new claims** |
+| `draining` | `/health`; the handshake and the heartbeat; a Runner's lease, progress, report, file read, upload and attach | the participant API, submissions, **new claims** |
 | `closed` | `/health` | everything else |
 
 `draining` is entered immediately when an operator asks. `closed` follows only
@@ -65,9 +66,9 @@ Coming back is immediate.
   existed reads exactly the document it always read.
 
 Health is the one call that is never gated, and both halves of that matter. A
-Runner whose token expired during a window cannot shake hands again — the
-handshake is refused with everything else at the deepest level — so a call that
-needed a token would be the door locking behind it. And it is the only request
+Runner whose token expired while the Server was `closed` cannot shake hands again
+— the handshake goes with everything else at that level — so a call that needed a
+token would be the door locking behind it. And it is the only request
 that answers `200` throughout, which is what makes waiting for a window to end
 distinguishable from waiting for a Server that is never coming back.
 
@@ -107,12 +108,10 @@ attempt over an outage they had nothing to do with.
 
 ### 3. An answer already computed outlives the window
 
-Reporting is idempotent on the lease token, so a Runner that finished judging and
-found the Server away **holds the result and keeps trying** — bounded by the
-lease, not by a small number of attempts.
-
-Throwing it away means the same work is done twice and the participant waits out
-a lease for a verdict that already existed.
+[Reporting is idempotent on the lease token](/en/protocol/reporting), so a Runner
+that finished judging and found the Server away **holds the result and keeps
+trying** rather than throwing it away — bounded by the lease, as every retry of a
+report is.
 
 ## The conformance case worth copying
 

@@ -1,0 +1,215 @@
+---
+title: First install
+description: From an empty directory to an installation that judges a submission.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+<Callout type="warn" title="Set AJ_ADMIN_TOKEN before the first `up`">
+While that value is empty, `/api/v1/admin/**` is closed — and that includes the
+endpoint that sets the administrator's password. The seeded `admin` account's
+password is twenty random characters that are never logged, never printed and
+never stored anywhere readable.
+
+**An installation started without this token has no administrator anybody can
+sign in as, and the only fix is to drop the database and start again.**
+</Callout>
+
+## The images, and why a new one may not pull
+
+The eight packages — `algojudge-server`, `algojudge-client`, `algojudge-runner`,
+`lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy` and
+`algojudge-external-runner` — are **published and public**. `docker compose pull`
+needs no registry login, from anywhere.
+
+A GHCR package created by its first push is **private**, though, and no workflow
+can change that: somebody with access to the organisation's packages sets it to
+Public, once. It is worth knowing because it returns with every new image, and
+the symptom is a `denied` on `docker compose pull` in an installation that is
+otherwise correct.
+
+<Callout type="info" title="The four language images are not services">
+`docker compose pull` fetches six of the eight. `lang-gcc`, `lang-clang`,
+`lang-python` and `lang-pypy` are values the Runner is handed rather than
+services, so Compose never touches them: the Runner pulls one when the host has
+none, and `scripts/update.sh` pulls all four when an installation is updated.
+</Callout>
+
+## 1. Clone and configure
+
+```bash
+git clone https://github.com/AlgoJudge/AlgoJudge-Ops.git /opt/algojudge-ops
+cd /opt/algojudge-ops
+cp .env.example .env
+chmod 600 .env
+```
+
+**Three values have no default** and the stack will not start without them.
+Generate each secret separately — reusing one across two of these means one
+disclosure is two compromises.
+
+```ini
+AJ_ADMIN_TOKEN=          # openssl rand -base64 36
+POSTGRES_PASSWORD=       # openssl rand -base64 36, a different one
+RUNNER_WORK_DIR=         # an ABSOLUTE host path, e.g. /srv/algojudge/runner-work
+```
+
+`RUNNER_WORK_DIR` must be absolute because the Runner hands this string to the
+Docker daemon, and **a path the daemon cannot open becomes an empty directory
+rather than an error**. Every submission then runs against nothing and no test
+fails visibly. `preflight.sh` refuses a relative one for that reason.
+
+**Make it yourself before the first start**, or let Compose make it:
+
+```bash
+sudo mkdir -p /srv/algojudge/runner-work
+```
+
+Compose creates a missing bind-mount source as **root, mode 0755**, which is
+what this needs: the Runner writes there as root, and every job container mounts
+it read-only and reads it as uid **65534**. A directory locked down by hand
+passes for the Runner and fails for the job — every submission then fails with
+`Permission denied (os error 13)`. `preflight.sh` probes both halves, writing as
+root and reading back as 65534, and says which one failed.
+
+*`chown 65532:65532` also works and is not needed; the runner service runs as
+root so that it can measure. What breaks it is a directory locked down by hand.*
+
+Two more worth reading before the first start:
+
+- **`TRUSTED_PROXY_NETWORKS`** decides whose word the Server takes for a
+  visitor's address, and the Server refuses to start without it. It defaults to
+  the Compose network the bundled nginx sits on. It must be a **network**
+  address: `172.28.0.5/24` is refused at startup, by name, with the address it
+  should have been. Behind your own proxy, put that proxy's network here;
+  reached with no proxy at all, `none` is a complete answer.
+- **`DOCKER_GID`** is the group that owns the daemon's socket, and `preflight.sh`
+  tells you if yours is wrong. See [What the host
+  needs](/en/install/v0.1/requirements).
+
+## 2. A certificate
+
+Put `fullchain.pem` and `privkey.pem` in `certs/`. They are mounted read-only;
+nothing here issues a certificate and renewal stays whatever you already use.
+
+`/.well-known/acme-challenge/` is served on **both** ports, so an HTTP-01
+challenge is never redirected away. After a renewal:
+
+```bash
+docker compose exec nginx nginx -s reload
+```
+
+With no certificate, for a first look:
+
+```bash
+./scripts/render-tls.sh your.domain
+```
+
+**Self-signed, and every browser will say so.** It exists so that a first start
+produces a working instance with a warning rather than an nginx that will not
+start and an error nobody can trace back to a missing certificate. It refuses to overwrite a
+certificate that is already there.
+
+## 3. Start
+
+```bash
+./scripts/preflight.sh
+docker compose up -d --wait
+```
+
+`preflight.sh` refuses with a sentence rather than half way up: an empty
+password, a missing or short token, a CIDR with host bits, a relative work
+directory, a work directory a job container cannot read, cgroup v1 or an unknown
+cgroup driver, a `.env` that is tracked by Git. `make up` runs it first, so the
+ordinary path is checked whether or not anybody remembers the script exists.
+
+**The `runner` profile starts four Runners**, `runner-1` to `runner-4`. Four
+suits eight physical cores; on a smaller host run fewer, because more Runners
+than physical cores does not judge faster and does stop judging accurately —
+[What the host needs](/en/install/v0.1/requirements) has the table.
+
+## 4. The administrator
+
+```bash
+docker compose exec -it server aj-admin password
+```
+
+Then sign in at `https://your.domain/` as **`admin`**.
+
+The tool prompts without echoing and **never takes the password as an
+argument** — arguments are visible to every other process through `ps` and land
+in shell history. Scripted, it reads the first line of standard input:
+
+```bash
+printf '%s' "$NEW_PASSWORD" | docker compose exec -T server aj-admin password
+```
+
+The password policy applies, twelve characters minimum, and **a refusal changes
+nothing** — the old password still works, so a typo cannot leave an installation
+with no way in. It also clears the lockout, since ten wrong guesses is what
+somebody does on the way to this command.
+
+`aj-admin` runs inside the Server's container and reads the token from that
+container's own environment, so the token never enters your shell history. It is
+the only supported way to reach the operator's surface: `/api/v1/admin/**`
+answers on the Server's own loopback interface, and a request through nginx —
+**or through the published `127.0.0.1:8080`** — arrives as the bridge gateway
+and gets a 404. That is measured behaviour, not a guess.
+
+## 5. Approve the Runners
+
+**A new Runner registers and then waits.** It is not a fault and there is no
+timeout. Nothing is judged until an administrator approves it, which is what
+stops somebody attaching a machine of their own to your installation.
+
+In the panel: **Runners**, and approve each of the four that appeared. Their
+logs say `waiting: this Runner has not been approved yet` until you do, backing
+off between attempts because a room of Runners registered together would
+otherwise ask in one burst for as long as it takes somebody to reach the panel.
+An unapproved Runner is simply idle and the others carry the queue, so a
+forgotten approval reads as a slow installation rather than as an error.
+
+Afterwards, submit something and watch it get a verdict. **Until that has
+happened once, the installation is not known to work.**
+
+## 6. Optionally, the schedule
+
+```bash
+./scripts/install-cron.sh --print     # what it would install
+./scripts/install-cron.sh
+```
+
+Nothing schedules itself. See [Routine work and the
+schedule](/en/install/v0.1/schedule) for what it installs and what it deliberately
+leaves commented out.
+
+## Running against locally built images
+
+**This is not how the stack is normally run** — the published images are, and
+they resolve for anyone. It is for running against code that is **not released**:
+a change in a product repository, a fix on its way to a pull request. Build it,
+tag it where the published one would be, and `compose.yaml` runs unmodified. **`-f` is relative to where you
+are standing, not to the build context** — the Server's line is the only one with
+a path in it, which makes it the one worth checking.
+
+Rebuild rather than reuse a tag you already have: these are pinned by a moving
+tag, so a stale local `:0` is silently whatever you built last month.
+
+```bash
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:0 AlgoJudge-Server
+docker build -t ghcr.io/algojudge/algojudge-client:0 AlgoJudge-Client
+docker build -t ghcr.io/algojudge/algojudge-runner:0 AlgoJudge-Runner
+# The context is `images`, not `images/$lang`: all four build the measuring
+# shim from `images/shim`, so it has to be inside what they are given.
+for lang in gcc clang python pypy; do
+    docker build -t "ghcr.io/algojudge/lang-$lang:0" \
+        -f "AlgoJudge-Runner/images/$lang/Dockerfile" AlgoJudge-Runner/images
+done
+
+# Only for the external Runner's profile.
+docker build -t ghcr.io/algojudge/algojudge-external-runner:0 AlgoJudge-External-Runner
+```
+
+`update.sh` still needs a registry to pull from. A local `registry:2` with
+`REGISTRY=localhost:5000/algojudge` is how the update and rollback paths are
+exercised without a published one.

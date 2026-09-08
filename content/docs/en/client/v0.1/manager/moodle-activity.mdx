@@ -1,0 +1,146 @@
+---
+title: Placing an activity in a Moodle course
+description: What a teacher does in the course, what a launch looks like from the inside, and where the placement lands in the manager panel.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+import { Mermaid } from "@/components/mermaid";
+
+Once an administrator has connected the Moodle — see
+[Installing the tool in Moodle](/en/install/moodle) — a teacher puts AlgoJudge
+into a course as an **External tool** activity. Students then open it from the
+course, and never type an AlgoJudge address.
+
+**Walked on 2026-09-08** against Moodle **5.2.2** and **5.3dev**. Where the two
+differ, the tabs say so; the screenshots are of the run that produced them.
+
+## Before you start
+
+**The tool has to be visible to courses.** That is one setting on the
+administrator's side, and without it nothing below is offered anywhere. If
+AlgoJudge does not appear in the course, that setting is the first thing to check
+— [Installing the tool in Moodle](/en/install/moodle), under *Let courses see it*.
+
+**Know the slug of the activity you are placing.** It is the one in the address
+of the activity in AlgoJudge, and it is what the course will name.
+
+## 1. Add the activity to the course
+
+<Tabs items={["Moodle 5.2", "Moodle 5.3"]}>
+<Tab value="Moodle 5.2">
+
+Turn **Edit mode** on, press the **+** in the section you want it in, and choose
+**AlgoJudge** from the list of activities. Give it a name — students see this
+name in the course, so name it after what it opens, not after the tool.
+
+</Tab>
+<Tab value="Moodle 5.3">
+
+5.3 asks for one thing first: **a course tool definition**. Adding an external
+tool activity without one is refused outright — *"The manual creation of tools
+without a course tool definition is no longer supported."*
+
+Open **More → LTI External tools** in the course.
+
+![The course's LTI External tools screen](/screenshots/moodle/moodle53-course-tools.png)
+
+Press **Add tool**, name it, and the course now has a tool of its own to build
+activities from.
+
+![The course tool, added](/screenshots/moodle/moodle53-course-tool-added.png)
+
+Then turn **Edit mode** on and add the activity from the section's **+**, which
+5.3 labels **Add content**.
+
+<Callout type="warn" title="Pasting the launch address here makes an LTI 1.0 tool">
+The **Add tool** form accepts a tool URL, and a URL alone gives it no way to know
+about the LTI 1.3 registration the administrator made. Measured: the course tool
+created that way is stored as **LTI 1.0**, which is not what AlgoJudge speaks —
+`mdl_lti_types` shows `ltiversion = LTI-1p0` beside the site tool's `1.3.0`.
+
+Pick the tool the administrator registered rather than describing a new one by
+address.
+</Callout>
+
+</Tab>
+</Tabs>
+
+The activity then sits in the course like any other.
+
+![The course with the AlgoJudge activity in it](/screenshots/moodle/moodle52-course-with-activity.png)
+
+## 2. Say which activity it opens
+
+A launch has to name the AlgoJudge activity it is for. That is one **custom
+parameter** on the Moodle activity:
+
+```
+activity=ads-2026
+```
+
+Without it the launch arrives without a destination, and the person is told so
+rather than being dropped somewhere arbitrary. The other two parameters —
+`username` and `context_history` — belong to the tool as a whole and the
+administrator sets them once; they are listed under
+[Installing the tool in Moodle](/en/install/moodle), under *The other way in*.
+
+## 3. What a launch looks like
+
+Opening the activity keeps the person inside the course page: AlgoJudge renders
+in the frame Moodle gives it.
+
+<Mermaid chart={`
+flowchart TD
+    opened(["Somebody opens the activity in the course"])
+    opened --> post["Moodle signs a launch and posts it to AlgoJudge"]
+    post --> known{"Platform registered here,<br/>with launches accepted?"}
+    known -->|no| refused["Refused, with the reason on the screen"]
+    known -->|yes| dest{"Does the launch carry<br/>the activity custom parameter?"}
+    dest -->|no| nowhere["Told there is no destination,<br/>rather than dropped somewhere arbitrary"]
+    dest -->|yes| linked{"Is this course account linked<br/>to an AlgoJudge account?"}
+    linked -->|no| signin["Sign in once, in a new tab.<br/>The two accounts are connected and this step<br/>does not come back"]
+    linked -->|yes| open
+    signin --> open["The activity, inside the frame Moodle gave it"]
+`} />
+
+![The first launch, inside the Moodle course page](/screenshots/moodle/launched-in-the-course.png)
+
+**The first launch asks for one sign-in**, because the installation is not
+letting the platform say who somebody is. Signing in once connects the two
+accounts, and afterwards the activity opens straight away. The sign-in opens in a
+new tab on purpose — a sign-in inside somebody else's frame is blocked by some
+browsers, and this is the arrangement that works in all of them.
+
+<Callout type="info" title="It can be made seamless, and that is an administrator's decision">
+If the installation trusts the platform to assert identity, no sign-in is asked
+for at all. It needs an identity provider whose accounts the platform may claim,
+and it hands that platform real power over those accounts —
+[Installing the tool in Moodle](/en/install/moodle), under *Accept launches, and decide about identity*.
+</Callout>
+
+## 4. The placement, in the manager panel
+
+Every course that has opened an activity here appears under **Course placements**
+on the **LTI platforms** screen.
+
+![Course placements after the first launch](/screenshots/moodle/course-placements.png)
+
+The row says which course, through which platform, which activity it reaches, and
+how it is shared. **One activity may be placed in more than one course** — a
+lecture stream and a laboratory group, two faculties sharing a contest — and each
+placement is its own row.
+
+*Who is in the course* is the roster the platform reports. It is what lets an
+activity be opened by everybody in the course without anybody being enrolled in
+AlgoJudge by hand; [Enrolment](/en/client/v0.1/manager/enrolment) covers what that
+means beside the other ways in.
+
+## Next
+
+- [Installing the tool in Moodle](/en/install/moodle) — the administrator's half,
+  including everything that must be true before any of this works.
+- [External logins and LTI platforms](/en/client/v0.1/manager/logins) — the same
+  screen, described as a screen.
+- [Activities](/en/client/v0.1/manager/activities) — what you are placing.

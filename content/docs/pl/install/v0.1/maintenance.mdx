@@ -1,0 +1,156 @@
+---
+title: Przerwa techniczna
+description: Jak wyłączyć instalację z ruchu, nie zatrzymując jej, i droga, która wygląda na oczywistą, a jest błędna.
+source: en/install/v0.1/maintenance.mdx
+sourceSha256: 5e6c64ff71b16eb565fc86322856eea07d081b44ad1f11a10e57b61745404b29
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+```bash
+./scripts/maintenance.sh on "nocna kopia" --wait-closed
+./scripts/maintenance.sh status
+./scripts/maintenance.sh off
+```
+
+Skrypt jest nakładką na `aj-admin maintenance`. **Przerwa techniczna należy do
+Servera**, a cała funkcja opiera się na jednym rozróżnieniu:
+
+> Zgłoszenie, którego nie dało się ocenić, bo operator zaczął robić kopię, nie
+> zostało ocenione. Nie było błędne, nie zawiodło i nic o nim nie powinno zostać
+> zapisane. Wraca do kolejki.
+
+## Trzy poziomy, jeden kierunek
+
+| | Poziom | Co odpowiada | Co odmawia |
+|---|---|---|---|
+| **0** | `open` | wszystko | — |
+| **1** | `draining` | `/api/v1/health`; dzierżawa, postęp, raport, odczyt pliku, upload i attach Runnera | API uczestnika, zgłoszenia, zapisy prowadzącego, **nowe pobrania pracy** |
+| **2** | `closed` | `/api/v1/health` | wszystko inne |
+
+- **Włączony** przełącznik wchodzi natychmiast w `draining`, **nigdy prosto
+  w `closed`**. Praca w locie dostaje swoją szansę.
+- Server dochodzi do `closed`, gdy nie działa żadne zlecenie oceny ani żaden
+  trial, albo po `Maintenance:ForceAfterSeconds` — domyślnie 300 — co nastąpi
+  pierwsze.
+- **Wyłączony** wraca do `open` natychmiast, z każdego poziomu.
+
+<Mermaid chart={`
+flowchart LR
+    open(["open"]) -->|"maintenance.sh on"| draining(["draining"])
+    draining -->|"nic już nie działa"| closed(["closed"])
+    draining -->|"ForceAfterSeconds, domyślnie 300"| closed
+    draining -->|"maintenance.sh off"| open
+    closed -->|"maintenance.sh off"| open
+`} />
+
+Poziom to wiersz w bazie, a nie flaga w pamięci, więc **przeżywa restart**.
+Operator, który w oknie zatrzyma Server i uruchomi go ponownie, zastanie okno
+nadal otwarte — i to jedyny bezpieczny kierunek tej niespodzianki.
+
+<Callout type="warn" title="`closed` to jedyny poziom, na którym wolno ruszać bazę">
+Na `draining` Runner może jeszcze zapisywać wynik. Zrzut zrobiony wtedy jest
+wewnętrznie spójny i po cichu gubi ten wynik przy odtworzeniu. `--wait-closed`
+właśnie na to czeka i korzysta z niego `backup.sh --quiesce`.
+</Callout>
+
+**Wymuszone zamknięcie niczego nie gubi.** Porzucone zlecenie zachowuje swoją
+dzierżawę, dzierżawa wygasa, a reaper wkłada je z powrotem do kolejki. Kosztuje
+to jedno ocenianie wykonane dwa razy — wobec kosztu operatora trzymanego jako
+zakładnik przez jednego zakleszczonego Runnera.
+
+**Przy [sędzim zewnętrznym](/pl/install/v0.1/external-runner) to zdanie wymaga
+zastrzeżenia.** Ocenianie wykonane dwa razy to wtedy zgłoszenie wysłane dwa razy
+do cudzego archiwum, na Twoim tamtejszym koncie — archiwum dostało już pierwsze,
+a powtarza się wysłanie, nie ocenianie. Ten Runner trzyma zbiór zgłoszeń, na które
+archiwum jeszcze nie odpowiedziało, wyłącznie w pamięci — restart w trakcie okna
+gubi ten zbiór.
+
+Zlecenie zewnętrzne może zupełnie normalnie czekać piętnaście minut — tyle wynosi
+`AJ_External__PendingTimeoutSeconds` — a `Maintenance:ForceAfterSeconds` to 300,
+więc wymuszone zamknięcie nastąpi na długo przed końcem takiego zlecenia.
+Przed oknem, które zrestartuje ten kontener: podnieś `ForceAfterSeconds` powyżej
+`AJ_External__PendingTimeoutSeconds`, poczekaj, aż kolejka ucichnie, albo przyjmij
+duplikat.
+
+## `/api/v1/health` to drzwi, które nigdy się nie zamykają
+
+Odpowiada **200 na każdym poziomie**, anonimowo, i podaje okno:
+
+```json
+{ "status": "ok", "maintenance": { "level": "draining", "since": "…", "reason": "nocna kopia" } }
+```
+
+Obiektu `maintenance` **nie ma, kiedy instalacja jest otwarta**, więc czytelnik,
+który nigdy o tym nie słyszał, widzi dokładnie ten dokument co zawsze.
+
+Zależą od tego trzy niezależne mechanizmy i każdy z osobna by wystarczył:
+
+- healthcheck kontenera Servera przeszukuje tę odpowiedź, więc 503 tutaj kazałby
+  Dockerowi zabić proces, który celowo utrzymujesz przy życiu;
+- `docker compose up --wait` odpytuje ją, więc stos nie mógłby wstać w oknie;
+- to ją odpytują Client i każdy Runner, żeby się dowiedzieć, że mogą wrócić.
+
+## Nie stawiaj strony przerwy przed nginxem
+
+To pomysł oczywisty i psuje naraz trzy sprawy.
+
+- **`/api/v1/health` znika razem z resztą**, z trzech powodów powyżej.
+- **Client już ma stronę przerwy technicznej**, w brandingu i języku tej
+  instalacji, składaną z odmowy `server.maintenance`, którą zwraca Server.
+  Statyczna strona z proxy zastępuje ją czymś gorszym i ukrywa powód.
+- **Proxy odmawiające wszystkiego odmawia też Runnerowi**, więc nic w locie nie
+  może się dokończyć, a drenowanie nigdy nie dobiega końca. Każde okno
+  kosztowałoby wtedy przerwane ocenianie, czyli dokładnie to, czemu ma
+  zapobiegać.
+
+`nginx/algojudge.conf` ma z tego powodu `proxy_intercept_errors off` przy
+lokalizacji API, a `scripts/check-repository.py` zgłasza błąd, jeśli to się
+zmieni. Jedyne miejsce, gdzie statyczna strona pomaga, to trasa aplikacji, i to
+tylko dla **502 i 504** — przypadku, w którym nie ma kontenera Client i
+przeglądarka nie dostałaby w ogóle niczego.
+
+## Jak wygląda odmowa
+
+W oknie Server odpowiada `503` z kodem `server.maintenance` i nagłówkiem
+`Retry-After`. Wyjątkiem są endpointy pobierania pracy: odpowiadają `204`
+zamiast odmawiać, bo pusta kolejka to coś, co każdy Runner już obsługuje
+poprawnie — więc Runner, którego niczego nie nauczono o przerwach, na `draining`
+zachowa się prawidłowo.
+
+`maintenanceChanged` rozsyłamy do każdej podłączonej sesji w **obie** strony.
+Client, któremu powiedziano tylko, że Server odchodzi, siedziałby na stronie
+przerwy, dopóki ktoś nie przeładowałby karty.
+
+## Całe `/admin` jest zwolnione
+
+Bramka działa po autoryzacji i na poziomie `draining` zostawia osiągalne ścieżki
+operatora oraz Runnera. Każda ścieżka `/api/v1/admin` zostaje otwarta na każdym
+poziomie: okno, z którego nikt nie może wyjść, i konto, na które nikt nie może
+wejść, to ta sama blokada.
+
+## Runner w trakcie okna
+
+Runner czeka, zamiast kończyć pracę. Zostawia zlecenie jego dzierżawie, zamiast
+zgłaszać porażkę, której nie zaobserwował, i przetrzymuje gotowy wynik przez
+okno, zamiast go wyrzucać.
+
+<Callout type="warn" title="Zatrzymanie Runnera nie jest przejawem ostrożności">
+Po `SIGTERM` Runner oddaje swoje zlecenie prosto do kolejki, więc nic nie czeka
+na wygaśnięcie dzierżawy — ale to i tak praca wyrzucona i wykonana od nowa.
+Czyste drenowanie to `maintenance.sh on --wait-closed` na **Serverze** najpierw,
+bo wtedy do Runnera w ogóle nie trafia nowa praca; patrz [Aktualizacja i
+wycofanie](/pl/install/v0.1/update).
+</Callout>
+
+## Czego to celowo nie robi
+
+- **Nie planuje.** Nie ma „zamknij o 22:00”. Okno otwiera człowiek, który jest
+  na miejscu, bo ktoś musi tam być, żeby zauważyć, że poszło źle.
+- **Nie ma okien na aktywność.** Przerwa to sprawa całej instalacji. Konkurs,
+  którego nie wolno przerwać, jest powodem, żeby nie przestawiać przełącznika,
+  a nie powodem, żeby przełącznik był drobniejszy.
+- **Nie ma trybu tylko do odczytu.** Poziom, który serwowałby odczyty i odmawiał
+  zapisów, trzeba by przemyśleć endpoint po endpoincie, a pierwszy źle
+  zaklasyfikowany odkryłby uczestnik.

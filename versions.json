@@ -1,0 +1,32 @@
+{
+  "install": {
+    "newest": "v0.1",
+    "all": [
+      "v0.1"
+    ]
+  },
+  "client": {
+    "newest": "v0.1",
+    "all": [
+      "v0.1"
+    ]
+  },
+  "server": {
+    "newest": "v0.1",
+    "all": [
+      "v0.1"
+    ]
+  },
+  "runner": {
+    "newest": "v0.1",
+    "all": [
+      "v0.1"
+    ]
+  },
+  "protocol": {
+    "newest": "v0.1",
+    "all": [
+      "v0.1"
+    ]
+  }
+}

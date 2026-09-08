@@ -1,0 +1,183 @@
+---
+title: Co się stało z moim zgłoszeniem
+description: Sześć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
+source: en/client/v0.1/participant/results.mdx
+sourceSha256: fbb418522aac65997392d089239d86aeadf4969298b6b973e51d81407fb0b175
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+## Gdzie ich szukać
+
+**Moje zgłoszenia** wypisują wszystko, co wysłałeś w tej aktywności, po
+dziesięć na stronę, w kolumnach **Data wysłania**, **Zadanie**, **Język**,
+**Status** i **Wynik**. Filtrujesz po zadaniu, po serii i po statusie. Kliknij
+wiersz, żeby otworzyć zgłoszenie.
+
+Wiersze same się aktualizują, gdy przychodzą werdykty — po to jest ten ekran. Tak
+samo panel w prawym dolnym rogu, który trzyma ostatnich dwanaście zgłoszeń w
+zasięgu wzroku, gdziekolwiek jesteś.
+
+## Sześć stanów
+
+| Stan | Co oznacza |
+|---|---|
+| **W kolejce** | wysłane, czeka, aż podejmie je Runner |
+| **W trakcie** | Runner je ocenia |
+| **Oceniono** | skończyło się i jest werdykt |
+| **Błąd oceny** | zepsuła się sama ocena |
+| **Anulowano** | prowadzący je odwołał — w kolejce albo już w trakcie oceny |
+| **Zastąpiono** | ponowna ocena wyprzedziła je, zanim podjął je Runner, więc nigdy nie zostało sprawdzone |
+
+<Mermaid chart={`
+flowchart LR
+    sent(["Wysyłasz zgłoszenie"]) --> queued["W kolejce"]
+    queued -->|"Runner je podejmuje"| running["W trakcie"]
+    running -->|"jest werdykt"| done["Oceniono"]
+    running -->|"ocena się zepsuła"| failed["Błąd oceny"]
+    queued -->|"wyprzedziła je ponowna ocena"| superseded["Zastąpiono"]
+    queued -->|"prowadzący je odwołał"| cancelled["Anulowano"]
+    running --> cancelled
+`} />
+
+Nic, co Runner już trzyma, nie zostaje przerwane: rozpoczęta próba dobiega
+końca, a nowa czeka za nią.
+
+**Stan Zastąpiono pojawia się wyłącznie przy *próbie*, nigdy przy samym
+zgłoszeniu.** Ponowna ocena zawsze dokłada nowszą próbę, a plakietka zgłoszenia
+idzie za najnowszą — zobaczysz go więc na liście *Próby oceny* niżej.
+
+Dopóki zgłoszenie jest oceniane, plakietka pokazuje stan. Gdy ocena się skończy,
+plakietka pokazuje **werdykt** — krótką etykietę od Runnera, na przykład
+`Accepted`.
+
+**Kolor bierze się z punktów, nigdy z treści werdyktu.** Komplet jest zielony,
+część żółta, zero czerwone. Werdykt to napis należący do typu zadania, a
+dopasowywanie do słowa „Accepted” działałoby dla jednego typu i po cichu myliło
+przy innym.
+
+## Nagłówek
+
+| Pole | Co to jest |
+|---|---|
+| **Autor** | kto wysłał |
+| **Data wysłania** | w strefie czasowej aktywności, z podaną strefą |
+| **Język** | etykieta toolchainu albo `—`, gdy typ żadnego nie ma |
+| **ID** | identyfikator zgłoszenia — podaj go, gdy o nie pytasz |
+| **Wynik** | `punkty / maksimum` albo `—`, dopóki punktów nie ma |
+| **Status** | plakietka opisana wyżej |
+
+W nagłówku zawsze jest przycisk **Zadanie**, z powrotem do treści. **Kod
+źródłowy**, do [tego, co wysłałeś](/pl/client/v0.1/participant/source-code), pojawia
+się tylko wtedy, gdy aktywność udostępnia Ci pliki tego zgłoszenia. Nie ma
+plików — nie ma przycisku, bo przycisk prowadzący na pusty ekran to obietnica,
+której ten ekran nie dotrzyma.
+
+## Kiedy jeszcze trwa ocena
+
+Zamiast pustej tabeli dostajesz niebieski panel ze wskaźnikiem ładowania:
+*Czekamy, aż Runner podejmie zgłoszenie*, a potem *Runner sprawdza to
+zgłoszenie*. Gdy wynik przyjdzie, panel sam ustąpi mu miejsca. Nie musisz
+przeładowywać.
+
+## Tabela testów
+
+Dla `standard-io@1` i `output-only@1` — mają wspólną tabelę, bo tabela testów to
+tabela testów:
+
+| Kolumna | Co jest w środku |
+|---|---|
+| **Test** | numer testu |
+| **Status** | `OK`, `WARNING`, `ERROR`, z odpowiednim kolorem |
+| **Czas** | czas procesora zużyty przez Twój program, a obok limit |
+| **Pamięć** | to samo, w MiB |
+| **Wynik** | punkty za ten test wobec jego maksimum |
+| **Uwagi** | dlaczego nie przeszedł, oraz notatka programu, który go oceniał — checkera albo interaktora w zadaniu interaktywnym |
+
+Czas i pamięć robią się bursztynowe powyżej połowy limitu, a czerwone przy
+limicie i powyżej.
+
+**Czas to czas procesora, a nie to, ile czekałeś.** Liczy się to, co maszyna
+faktycznie spędziła na wykonywaniu Twojego programu — uruchomienie kontenera nie
+obciąża Twojego limitu, tak samo jak oczekiwanie. Wynikają z tego dwie rzeczy i
+obie są zamierzone: program, który śpi albo na coś czeka, nie zużywa limitu — a
+program korzystający z kilku wątków zużywa go szybciej, bo czasy wszystkich
+wątków się sumują.
+
+Czekać jednak nie można w nieskończoność. Zgłoszenie, które długo po swoim
+limicie wciąż działa, zostaje zatrzymane i oznaczone jako *Limit czasu*, tak samo
+jak takie, które za długo liczyło; w uwadze widać, o który przypadek chodzi.
+
+Kolumna **Uwagi** zaczyna się od powodu, za każdym razem tymi samymi słowami,
+więc kolumnę porażek da się przeczytać z góry na dół: *Zła odpowiedź*, *Limit
+czasu*, *Limit pamięci*, *Limit wyjścia*, *Błąd wykonania*, *Naruszenie
+regulaminu*, *Błąd kompilacji*. Powodu, którego ta wersja interfejsu nie zna, nie
+wypisuje surowo — dostajesz zamiast niego notatkę programu oceniającego, a
+szczegół i tak jest właśnie w niej.
+
+Tabela może też napisać: *Dla tego zgłoszenia nie ma wyników testów* oraz *Testy
+pojawią się tutaj po zakończeniu oceny*.
+
+## Wynik `uva@1` nie ma tabeli testów
+
+<Callout type="warn" title="Werdykt należy do kogoś innego">
+Zadanie `uva@1` ocenia onlinejudge.org. AlgoJudge trzyma Twoje zgłoszenie i
+odpowiedź, która wróciła, a sam niczego nie liczy. **Tabeli testów nie
+ma, bo archiwum żadnej nie ujawnia** — ani liczby testów, ani procentów, ani
+grup — więc tabela byłaby kształtem wymyślonym po to, żeby wyglądał znajomo.
+Zadanie jest zaliczone albo nie; nie ma punktów częściowych.
+</Callout>
+
+Zamiast tego dostajesz:
+
+- **werdykt** archiwum wraz ze skrótem,
+- zdanie *Ocenione przez onlinejudge.org, czyli nie przez tę instalację. Werdykt
+  należy do nich.*,
+- małą tabelę: **Czas wykonania**, **Zadanie w archiwum**, **Zgłoszenie w
+  archiwum**, **Wysłano**, **Oceniono**. Identyfikatory archiwum są pokazane jako
+  tekst, nigdy jako odnośniki — ekran uczestnika nie sięga do żadnego innego
+  hosta.
+
+Dwa przypadki szczególne:
+
+- **Nigdy nie ocenione.** *To zgłoszenie nigdy nie zostało ocenione przez
+  zewnętrznego sędziego*, a pod spodem to, co poszło nie tak. To co innego niż
+  zła odpowiedź, i tylko jedno z dwojga dotyczy Twojego rozwiązania.
+- **Błąd kompilacji.** *Archiwum zgłasza błąd kompilacji. Nie udostępnia wyjścia
+  kompilatora.* Archiwum wysyła to wyjście pocztą i pomija ostrzeżenia, więc nie
+  ma tu czego pokazać.
+
+## Log oceny
+
+Karta **Log oceny** pojawia się pod wynikiem, gdy jest co pokazać. O tym, czy
+możesz go czytać, decyduje aktywność: Server albo przysyła plik, albo nie. Gdy go
+nie ma, nie ma też karty i nic nie rozróżnia „nic nie zalogowano” od „to nie dla
+Ciebie”.
+
+## Próby
+
+Zgłoszenie jest oceniane więcej niż raz, gdy zostanie przesłane do ponownej
+oceny. Kod źródłowy to te same bajty; każde uruchomienie jest osobną **próbą**.
+
+Rozwijana sekcja **Próby oceny** pojawia się, gdy prób jest więcej niż jedna, z
+ich liczbą obok nazwy. Podaje numer każdej próby, godzinę jej startu, jej stan i
+werdykt oraz punkty. Od najnowszej. Wynik pokazany nad sekcją należy do
+najnowszej próby.
+
+## Wykluczone zgłoszenie
+
+<Callout type="warn" title="Ocenione, ale nieliczone">
+Pomarańczowy komunikat *To zgłoszenie nie jest liczone do rankingu. Nadal liczy
+się do Twojego limitu zgłoszeń.* znaczy, że prowadzący wyłączył to zgłoszenie z
+każdej klasyfikacji.
+</Callout>
+
+**Punkty powyżej zostają takie, jakie były.** Wykluczenie rozstrzyga o tym, do
+czego zgłoszenie się liczy, a nie o tym, co powiedziała sprawdzarka — dlatego
+ekran mówi to wprost. Inaczej ten ekran i ranking opisywałyby jedno zgłoszenie
+inaczej i nie byłoby jak się dowiedzieć dlaczego.
+
+Z tego samego powodu wiersz w panelu w rogu ma pomarańczową plakietkę
+*Nieliczone*. Powodu wykluczenia tu nie ma; jest na ekranie prowadzącego i w
+Twoim własnym eksporcie danych.

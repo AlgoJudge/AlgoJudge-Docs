@@ -2,13 +2,31 @@
 title: Aktywności
 description: Zawody, kurs albo zbiór treningowy i cztery zakładki, w których się je buduje.
 source: en/client/manager/activities.mdx
-sourceSha256: 068c3c2412c78b24884964a65396c5df015faf1bf0ec1fcc20f80916c1730696
+sourceSha256: d6896ecabbcc5d3e94ebf988991cba01cc536df53299330803bebe94ced52e97
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
+import { Mermaid } from "@/components/mermaid";
+
 Aktywność to jedno miejsce, w którym zadania trafiają do ludzi: zawody, kurs,
 zbiór treningowy. Wszystko inne w tym panelu albo ją zasila, albo z niej czyta.
+
+Zadania trzyma w **seriach**, czyli rundach, a seria trzyma nie zadania, tylko
+**podpięcia**. Podpięcie to wiersz, który powstaje przy podpinaniu, i siedzi w
+nim wszystko, co dotyczy *tego jednego użycia zadania*; samo zadanie zostaje w
+bibliotece, gdzie może wskazywać na nie kilka aktywności naraz.
+
+<Mermaid chart={`
+flowchart TD
+    act["Aktywność: zawody, kurs, zbiór treningowy"]
+    act --> ser["Seria: runda, tydzień, zajęcia.<br/>Kiedy się otwiera, kiedy zamyka, które Runnery ją oceniają"]
+    ser --> asg["Podpięcie: wiersz, który powstaje przy podpinaniu.<br/>Litera, przypięta wersja, ile jest warte,<br/>limity i języki nałożone na paczkę"]
+    asg --> prob["Zadanie w bibliotece.<br/>Żadna aktywność go nie posiada"]
+    prob --> ver["Wersja: treść, załączniki, paczka.<br/>Publikowana w całości i już nieedytowalna"]
+    other["Podpięcie w innej rundzie<br/>albo na innym kursie"] --> prob
+    style other stroke-dasharray:4
+`} />
 
 ## Tworzenie
 
@@ -82,12 +100,13 @@ Wszystko, czym aktywność jest skonfigurowana:
 | Moduły | pytania i ogłoszenia. Wyłączony moduł znika z paska uczestnika w całości |
 | | czy zadania zakończonej serii pozostają do czytania — wyłączone znaczy, że runda jest skończona, a nie tajna |
 | Widoczność i zapisy | kto widzi punkty i ranking, kto może dołączyć, czy aktywność jest ukryta na liście, czy wiersz grupy wymienia jej skład, hasło zapisu i link do rozdania |
-| Runnery | tagi, które decydują, jakie maszyny to oceniają — zobacz [Runnery](/pl/client/manager/runners) |
-| Limity | maksymalny rozmiar, plików na zgłoszenie, zgłoszeń na zadanie |
+| Które Runnery oceniają tę aktywność | tagi decydujące o tym, jakie maszyny biorą jej pracę — zobacz [Runnery](/pl/client/manager/runners) |
+| Limity pilnowane przez Server | maksymalny rozmiar, plików na zgłoszenie, zgłoszeń na zadanie |
 
-Trzech limitów na dole pilnuje **Server**. Czas i pamięć należą do zadania:
-poznasz je dopiero wtedy, gdy rozwiązanie się wykona, i ustawia się je w
-[paczce](/pl/client/manager/packages).
+Ostatnia karta nazywa się tak, jak działa: te trzy wartości są kolumnami
+aktywności i Server sprawdza je przy każdym wysłaniu pliku. **Czasu i pamięci
+tam nie ma.** Poznasz je dopiero wtedy, gdy rozwiązanie się wykona, więc należą
+do zadania i ustawia się je w [paczce](/pl/client/manager/packages).
 
 ### Dokumenty
 
@@ -98,7 +117,7 @@ napiszesz:
 |---|---|
 | strona dla niezapisanych | ktoś spoza aktywności, kto ogląda ją z zewnątrz |
 | strona dla uczestników | ktoś, kto jest w środku |
-| regulamin | strona z regulaminem |
+| regulamin | [strona z regulaminem](/pl/client/participant/rules) |
 
 To ten sam edytor, w którym instalacja publikuje własne dokumenty, i działa tak
 samo: publikujesz, wycofujesz, a każdy rodzaj ma własną historię. Język bez

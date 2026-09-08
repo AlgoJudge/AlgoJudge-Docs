@@ -26,12 +26,14 @@ closed and the administrator's password unreachable.
 | `COMPOSE_PROFILES` | `edge,app,data,runner` | which services run. See [the four arrangements](/en/install); `external-runner` is an addition to any of them |
 | `TZ` | `Europe/Warsaw` | anchors the [scheduled work](/en/install/schedule) to local time |
 | `REGISTRY` | `ghcr.io/algojudge` | where the images are pulled from |
-| `SERVER_TAG` | `1` | a **moving major**, and no `v`. See [Updating](/en/install/update) |
-| `CLIENT_TAG` | `1` | |
-| `RUNNER_TAG` | `1` | the Runner **and** its four `lang-*` images |
-| `EXTERNAL_RUNNER_TAG` | `1` | its own version and its own repository, so its own tag |
+| `SERVER_TAG` | `0` | a **moving major**, and no `v`. See [Updating](/en/install/update) |
+| `CLIENT_TAG` | `0` | |
+| `RUNNER_TAG` | `0` | the Runner **and** its four `lang-*` images |
+| `EXTERNAL_RUNNER_TAG` | `0` | its own version and its own repository, so its own tag |
 | `POSTGRES_TAG` | `18` | the major is pinned on purpose — 18 moved the data directory |
-| `NGINX_TAG` | `1.27-alpine` | |
+| `NGINX_TAG` | `1.30-alpine` | nginx's stable line. Even minors are stable, odd ones mainline. **Judge a base tag by when it was last built, not by whether it pulls** |
+| `LOG_MAX_SIZE` | `20m` | each container's log, bounded by the stack itself rather than by your daemon |
+| `LOG_MAX_FILES` | `5` | Docker's `local` driver, which compresses what it rotates |
 
 ## The database
 
@@ -50,10 +52,12 @@ closed and the administrator's password unreachable.
 | `HTTPS_PORT` | `443` | |
 | `SERVER_PORT` | `8080` | published on loopback only |
 | `CLIENT_PORT` | `8082` | published on loopback only |
-| `API_BASE_URL` | `/` | the Server's address as a **browser** reaches it. `/` when one origin serves both. Two origins must be the **same site** — one registrable domain, one scheme — or nobody can sign in. See [Behind your own proxy](/en/install/reverse-proxy) |
+| `API_BASE_URL` | `/` | the Server's address as a **browser** reaches it. `/` when one origin serves both. Two origins must be the **same site** — one registrable domain, one scheme — or nobody can sign in. See [Your own reverse proxy](/en/install/reverse-proxy) |
 | `APP_BASE_URL` | empty | its mirror image: where a browser reaches the **application**. Empty is right on one origin. On two, leaving it empty ends a federated sign-in at a bare `/activities`, resolved against the API's origin |
 | `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | whose word to take for a visitor's address. A **network**, not an address; `none` for a Server reached directly |
 | `EDGE_SUBNET` | `172.28.0.0/24` | the Compose network the bundled nginx sits on |
+| `SERVER_STOP_GRACE` | `40s` | long enough for the Server to answer the claims it is holding open. Raise it beside `AJ_Poll__WaitSeconds` if you raise that |
+| `SERVER_LOG` | `Warning` | **not `Information`**: at that level the Server logs every SQL statement, measured at 91–98% of everything a judging stack writes — over a gigabyte for a three-thousand-submission contest, on the database's own disk |
 
 **`EDGE_SUBNET` and `TRUSTED_PROXY_NETWORKS` must agree.** The default pair does.
 Changing one without the other means the Server stops believing the proxy in
@@ -75,14 +79,15 @@ front of it, and every visitor is recorded as arriving from that proxy.
 
 | Key | Default | |
 |---|---|---|
-| `RUNNER_WORK_DIR` | **required** | an **absolute host path**, and one **owned by uid 65532**: Compose creates a missing one as root, and every job then fails with `Permission denied (os error 13)`. A path the daemon cannot open becomes an empty directory rather than an error |
-| `RUNNER_NAME` | `runner-1` | what the manager panel shows |
-| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | what this Runner offers to evaluate |
+| `RUNNER_WORK_DIR` | **required** | an **absolute host path**. Letting Compose create it is right — it makes one as root, mode 0755, which the Runner writes to as root and every job container reads as uid 65534. A directory locked down by hand fails the second half and every job then reports `Permission denied (os error 13)`. A path the daemon cannot open becomes an empty directory rather than an error |
+| `RUNNER_NAME_PREFIX` | `runner` | what the four register as: this with `-1` to `-4` after it. **A second host running Runners needs a different prefix**, or the panel shows two rows called the same thing |
+| `RUNNER_1_CPUSET` … `RUNNER_4_CPUSET` | empty | which processors each Runner may use. Empty lets the host's scheduler place every job. The division worth making is one Runner per physical core, given both of that core's threads — see [What the host needs](/en/install/requirements) |
+| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | what this Runner offers to evaluate. A value that names nothing — a stray comma — is refused at startup |
 | `RUNNER_TAGS` | empty | pools. **Read at the first registration only**; naming one takes the Runner out of the general queue |
-| `RUNNER_STOP_GRACE` | `30s` | how long Docker waits before killing a Runner. It **buys nothing**: the Runner ignores `SIGTERM`, so it finishes nothing in that time — every second is one `down`, `stop` and `update.sh` spend waiting. A clean stop is a drain first. See [Update and rollback](/en/install/update) |
+| `RUNNER_STOP_GRACE` | `30s` | how long Docker waits before killing a Runner. On `SIGTERM` it hands its job back so another takes it at once; **shortening this below what those calls take turns a stop into a kill**, and a killed Runner leaves its job to the lease. See [Update and rollback](/en/install/update) |
 | `RUNNER_LOG` | `info` | becomes `RUST_LOG` |
-| `DOCKER_GID` | `999` | the group that owns the daemon's socket. `0` on Docker Desktop |
-| `SERVER_URL` | `http://server:8080` | only for a Runner on its own machine; `/api/v1` is appended |
+| `DOCKER_GID` | `999` | the group that owns the daemon's socket. `0` on Docker Desktop. Not load-bearing — the service runs as root — but `preflight.sh` warns when it is wrong |
+| `SERVER_URL` | `http://server:8080` | only for a host with no `server` container; `/api/v1` is appended |
 
 ## The external Runner
 
@@ -94,14 +99,17 @@ judge](/en/install/external-runner).
 | `EXTERNAL_JUDGE_USERNAME` | **required with the profile** | the account at the archive. Every forwarded submission is made under it and stays on it |
 | `EXTERNAL_JUDGE_PASSWORD` | **required with the profile** | refused by `preflight.sh`, not by `compose.yaml`: Compose interpolates the whole file before it applies profiles, so a required marker here would break every arrangement that does not run this service |
 | `EXTERNAL_JUDGE` | `uva` | which archive. One process serves one judge; a second is a second service |
-| `EXTERNAL_RUNNER_NAME` | `external-runner-1` | **not** `RUNNER_NAME`. It is a second Runner with its own identity and its own approval |
+| `EXTERNAL_RUNNER_NAME` | `external-runner-1` | a whole name, not a prefix: this is one Runner, with its own identity and its own approval |
 | `EXTERNAL_PROBLEM_TYPES` | empty | empty declares the archive's own type. A typo here is silence, not an error |
 | `EXTERNAL_RUNNER_TAGS` | empty | pools, read at the first registration only |
 | `EXTERNAL_RUNNER_LOG` | `info` | becomes `RUST_LOG` |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | twice the sandboxing Runner's, because it hands back up to twenty pending submissions at one call each |
 
-Its five timings are deliberately not offered: they check one another at startup,
-the image's defaults satisfy all of it, and the well-meant change — polling
-somebody else's service more gently — is the one that breaks it.
+Its lease and its polling intervals are deliberately not offered: they check one
+another at startup, the image's defaults satisfy all of it, and the well-meant
+change — polling somebody else's service more gently — is the one that breaks it.
+A lease that could expire between two renewals is a submission the archive
+receives twice.
 
 ## Backups
 

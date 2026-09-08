@@ -8,7 +8,7 @@ name: algojudge-docs
 
 services:
   docs:
-    image: ${DOCS_IMAGE:-ghcr.io/algojudge/algojudge-docs:latest}
+    image: ${DOCS_IMAGE:-ghcr.io/algojudge/algojudge-docs:0.1.0}
     restart: unless-stopped
 
     # Loopback by default. The host terminates TLS and proxies to this; binding

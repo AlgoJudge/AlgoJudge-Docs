@@ -17,11 +17,10 @@ model: there is no field, branch or discriminator for either. What differs
 between them is which of the optional switches an operator sets, and every one
 of those already exists.
 
-The evidence is a change that did not happen. In August 2026 one deployment
-gained an account-deletion back channel it had been documented as unable to
-have, built a completely different way from the other one — and not one line of
-the Server changed. A model that had grown a field for *how this product reports
-a deletion* would have had to.
+The evidence is a change that did not happen. Measured 2026-08-27: one
+deployment gained an account-deletion back channel built a completely different
+way from the other's, and not one line of the Server changed. A model carrying a
+field for *how this product reports a deletion* would have had to.
 </Callout>
 
 ## The addresses
@@ -134,10 +133,11 @@ screen turns into a sentence, at `/login?provider=<slug>&error=<code>`.
 The external cookie is signed out **before** any of them is decided. A refusal
 that left one behind would let a later request be mistaken for a fresh ticket.
 
-Registering or editing one refuses at the write instead, and names why: `provider.slug.invalid` and
-`provider.slug.taken`; `provider.issuer.required`, `.invalid` and `.insecure`;
-`provider.clientId.required` and `provider.clientSecret.required`, the second on
-creation only; `provider.claimPath.invalid`;
+Registering or editing one refuses at the write instead, and names why:
+`provider.slug.invalid` and `provider.slug.taken`;
+`provider.displayName.required`; `provider.issuer.required`, `.invalid` and
+`.insecure`; `provider.clientId.required` and `provider.clientSecret.required`,
+the second on creation only; `provider.claimPath.invalid`;
 `provider.unmappedBehavior.unknown` and `provider.defaultTemplate.required`;
 `provider.deletionSecret.required` for a channel enabled without one; six
 `provider.rule.*` for a rule with no claim value, a value mapped twice, a

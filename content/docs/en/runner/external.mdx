@@ -147,13 +147,13 @@ Two values are secrets and have no defaults.
 | `AJ_External__UserId` | resolved from the username | the judge's own numeric id for the account |
 | `AJ_External__BaseUrl` | `https://onlinejudge.org/` | where submissions are posted |
 | `AJ_External__ApiBaseUrl` | `https://uhunt.onlinejudge.org/` | where answers are read, when that is a different service |
-| `AJ_External__PollMinSeconds` | `20` | **also the floor.** Below it the Runner refuses to start |
-| `AJ_External__PollMaxSeconds` | `60` | |
-| `AJ_External__PollEscalateAfterSeconds` | `120` | |
+| `AJ_External__PollMinSeconds` | `20` | how often the judge is asked while a submission is fresh, and **also the floor**: below it the Runner refuses to start |
+| `AJ_External__PollMaxSeconds` | `60` | how often it is asked after that |
+| `AJ_External__PollEscalateAfterSeconds` | `120` | how long the oldest outstanding submission waits before the interval goes from the one to the other |
 | `AJ_External__SubmitMinIntervalSeconds` | `5` | |
 | `AJ_External__PendingTimeoutSeconds` | `900` | how long to wait for the judge |
 | `AJ_External__MaxPending` | `20` | submissions in flight. Zero is refused |
-| `AJ_External__LongPollEnabled` | `false` | accepted; the trigger behind it is not built |
+| `AJ_External__LongPollEnabled` | `false` | how often the judge is asked for answers: on, a flat `AJ_External__PollMaxSeconds`; off, the escalating pair above. **It does not turn the live stream on or off** — see below |
 | `AJ_Cache__Path` | `/var/cache/algojudge-external-runner` | where a submission's source is cached on its way to the judge |
 | `AJ_Cache__MaxBytes` | `268435456` (256 MiB) | the cache ceiling. Plain bytes only |
 | `AJ_Lease__RequestSeconds` | `1200` | |
@@ -280,16 +280,42 @@ A submission the activity's rules refuse — a language the manager excluded —
 reported as `PolicyViolation`, the same word `standard-io@1` uses, and **nothing
 is sent to the judge at all**.
 
-## The long-poll flag is accepted and does nothing
+## How often the judge is asked, and the stream that runs anyway
 
-**Setting it changes nothing at all today**, and that is the honest sentence
-rather than a description of what it would do. The loop hands the scheduler a
-literal `false` and always has, so the flag has never reached the polling
-behaviour from configuration. What it does reach is **one warning at start-up**,
-saying the trigger behind it is not built.
+**The live stream is not a setting.** Whenever anything is outstanding, this
+Runner holds a request open against the archive's event stream and asks for
+answers the moment an event about its own account arrives. Nothing turns that
+off. `AJ_External__LongPollEnabled` decides one thing: how often the judge is
+asked when no event has arrived.
 
-It defaults to `false`. A default of `true` would cost nothing — it could not,
-given the above — but it would describe the Runner as doing something it does
-not do.
+| | The archive is asked for answers |
+|---|---|
+| off, the default | every `AJ_External__PollMinSeconds` (20 s), until the oldest outstanding submission has waited `AJ_External__PollEscalateAfterSeconds` (120 s), then every `AJ_External__PollMaxSeconds` (60 s) |
+| on | every `AJ_External__PollMaxSeconds` (60 s), whatever anything has waited. The other two then decide nothing at all |
 
-Verdicts arrive on the polling interval alone, which is slower but not wrong.
+So turning it on **slows the safety net down** — one request a minute instead of
+three — on the promise that the stream is what makes a verdict prompt. Measured
+against onlinejudge.org on 2026-09-08, a verdict came back in about 25 s either
+way: the archive's own judging is what that time is, and what the setting buys
+is the requests.
+
+**Which is why it is off unless an operator turns it on.** Behind a proxy that
+cuts a long-held request the stream never fires, the flat minute is all that is
+left, and a verdict then waits a minute rather than twenty seconds. It is a
+value rather than a presence: `true`, `1`, `yes` or `on` against `false`, `0`,
+`no` or `off`, and anything else is refused at start-up by name.
+
+**The stream is a trigger and never a source of truth**, whatever this is set
+to. It is global to the judge and keeps only its last hundred events, so it can
+drop one under load; what arrives is read for one thing — whether this account
+appears — and never for a verdict, because a missed event read as a verdict
+would be a submission that hangs until its timeout. The position in it is taken
+before the first submission of a batch, when nothing is outstanding and nothing
+can be lost by moving it.
+
+Two more properties of the same loop: **the archive is asked nothing at all
+while nothing is outstanding**, and **one request covers every outstanding
+submission**, however many there are.
+
+Only the UVa integration has a stream. An integration without one waits out the
+interval instead, and this setting then decides only how long that is.

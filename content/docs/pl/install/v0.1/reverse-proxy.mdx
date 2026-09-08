@@ -1,0 +1,244 @@
+---
+title: Własne reverse proxy
+description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
+source: en/install/v0.1/reverse-proxy.mdx
+sourceSha256: 7c1113668cddcfaf4d86cb974a84373a8d7d5e47d34772b2bfbdd0240d6b8aab
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`COMPOSE_PROFILES=app,data`. Dołączony nginx nie startuje; Server i Client są
+publikowane na `127.0.0.1:8080` i `127.0.0.1:8082`, a Ty kierujesz na nie własne
+proxy.
+
+## Pięć reguł
+
+### 1. Jeden origin, `/api/v1/` na Server, reszta na Client
+
+Dopiero na jednym originie działa `API_BASE_URL=/`, a wtedy **nie ma żadnego CORS
+do popsucia**. Client sam dokleja `/api/v1` — ścieżka jest stała w każdej
+instalacji — więc ta zmienna nazywa origin, a nigdy ścieżkę.
+
+**Jest stała, bo pomyłka w tym miejscu jest cicha.** Tam, gdzie jedna domena
+obsługuje obie połowy, API nie może stać w korzeniu, bo korzeniem jest aplikacja;
+a prefiks, który raz jest, a raz go nie ma, każde wdrożenie musiałoby odgadywać
+na własną rękę. Pomyl się, a Client zapyta właściwy host o niewłaściwą ścieżkę i
+dostanie w odpowiedzi `index.html` aplikacji zamiast błędu. Wartość zapisana w
+jednej ze starszych postaci — kończąca się na `/v1` albo `/api/v1` — jest
+normalizowana, a nie odrzucana.
+
+Gniazdo zdarzeń to `/api/v1/ws`, pod tym samym prefiksem, więc nie potrzebuje
+własnej reguły poza nagłówkami upgrade i timeoutem odczytu dłuższym niż cicha
+sesja gniazda.
+
+### 2. Nie kieruj ruchu na `/api/v1/admin`
+
+<Callout type="warn" title="`/api/v1/admin` nigdy nie może przechodzić przez proxy">
+Odpowiada wyłącznie na **własnym interfejsie pętli zwrotnej** Servera. Żądanie
+przez proxy dociera do tego kontenera jako brama mostka, więc i tak dostałoby 404
+jeden przeskok dalej.
+
+Odrzucaj je na krawędzi mimo to. Odmowa, która nie kosztuje połączenia w górę
+strumienia, jest lepsza niż taka, która je kosztuje, a ktoś czytający Twoją
+konfigurację powinien widzieć, że powierzchnia operatora celowo nie jest
+proxowana, zamiast zastanawiać się, czy o niej zapomniano. Dołączony nginx zwraca
+dla tej ścieżki 404 dokładnie z tych dwóch powodów.
+</Callout>
+
+Wchodzi się przez `docker compose exec -T server aj-admin …` i to cała wspierana
+droga. Opublikowane `127.0.0.1:8080` nie jest tylnymi drzwiami: połączenie do
+pętli zwrotnej hosta również dociera jako brama mostka.
+
+### 3. Nie zamieniaj 502, 503 ani 504 od Servera na własną stronę
+
+Client je czyta. Przerwa techniczna **jest** odpowiedzią `503` Servera z ciałem
+`server.maintenance` i nagłówkiem `Retry-After`, a Client zamienia dokładnie to
+we własną stronę przerwy, w brandingu i języku tej instalacji, i odpytuje
+`/api/v1/health`, żeby dowiedzieć się, że może wrócić.
+
+Jeśli je przechwycisz, zastąpisz to czymś gorszym i ukryjesz powód, a gdy Twoja
+reguła jest na tyle szeroka, że łapie też Runnera — zniweczysz drenowanie, więc
+kopia ruszyłaby, gdy Runner jeszcze zapisuje wynik. W terminach nginxa:
+`proxy_intercept_errors off` na trasie API.
+
+Jedyny przypadek, w którym statyczna strona pomaga, to trasa **aplikacji** i tylko
+dla 502 oraz 504: nie ma kontenera Client, więc przeglądarka dostaje błąd
+połączenia i nie ma już aplikacji, która pokazałaby komunikat. Nigdy 503 — tak
+odzywa się Server przez trasę API.
+
+### 4. Ustaw `TRUSTED_PROXY_NETWORKS` na sieć swojego proxy
+
+Server odmawia startu, dopóki nie wskażesz mu, czyim informacjom o adresie
+odwiedzającego ma wierzyć. Jeśli zaufasz każdemu nadawcy `X-Forwarded-For`,
+odwiedzający sam poda swój adres; jeśli tylko pętli zwrotnej, zapisze się proxy
+zamiast człowieka.
+
+Domyślna wartość nazywa sieć Compose, w której stoi dołączony nginx. **Za
+własnym proxy ta domyślna jest zła** — wpisz tam sieć swojego proxy. Jeśli proxy
+nie ma w ogóle, `none` jest pełną odpowiedzią.
+
+Wpisz adres **sieci**, nie hosta: `172.28.0.5/24` odrzucamy przy starcie,
+podając nazwę zmiennej i adres, który powinien się tam znaleźć. .NET normalizuje
+CIDR z bitami hosta bez słowa, co zamieniłoby „jedną maszynę” w „całą
+pracownię”.
+
+### 5. Wysyłaj `X-Forwarded-Proto`
+
+Bez tego Server widzi `http`, a jego przekierowanie na HTTPS odpowiada
+przekierowaniem na siebie. To nieskończona pętla i wygląda jak aplikacja, która
+nigdy się nie ładuje.
+
+## Co jeszcze przekazywać
+
+Dołączony nginx wysyła `Host`, `X-Real-IP`, `X-Forwarded-For`,
+`X-Forwarded-Proto`, `X-Forwarded-Host` i `X-Forwarded-Port`, ustawia
+`client_max_body_size` na 128 MB, żeby pasowało do własnego limitu żądania
+Servera, i wyłącza buforowanie w obie strony — Client niczego nie streamuje,
+a pobrania Servera są już strumieniowane i bez sensu lądowałyby najpierw na
+dysku.
+
+**Wyłączenie buforowania nie wyłącza bufora nagłówków** — i lepiej wiedzieć
+o tym, zanim się zdarzy. Nagłówki odpowiedzi zawsze muszą zmieścić się
+w `proxy_buffer_size`, domyślnie 4 kB, a gdy się nie mieszczą, nginx odpowiada
+**502** i zapisuje w logu `upstream sent too big header`. Do przeglądarki nie
+dociera nic, więc wygląda to na awarię usługi za proxy, a nie na odmowę samego
+proxy.
+
+Najbliżej granicy jest odpowiedź kończąca logowanie federacyjne: kasuje
+`.AspNetCore.Correlation.*` i `.AspNetCore.OpenIdConnect.Nonce.*`, ustawiając
+przy tym `.AspNetCore.Identity.Application`, który sam bywa dzielony na `C1`
+i `C2`, gdy claimy go wydłużą. Gorzej jest z systemem tożsamości za tym samym
+proxy — zmierzone 2026-09-01: odpowiedź autoryzacyjna Keycloaka z
+`AUTH_SESSION_ID`, `KC_AUTH_SESSION_HASH` i `KC_RESTART`, gdzie ten ostatni jest
+tokenem JWT, nie zmieściła się w 4 kB i każde logowanie kończyło się 502.
+Dołączony nginx to ustawia; Twoje proxy też musi.
+
+```nginx
+proxy_buffer_size       16k;
+proxy_buffers         4 16k;
+proxy_busy_buffers_size 16k;
+```
+
+Wysyła `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`,
+`X-Frame-Options: SAMEORIGIN` i `Permissions-Policy`, każdy z `always`, żeby
+nagłówek nie znikał na odpowiedziach błędu — czyli dokładnie na tych, które
+najłatwiej wywołać atakującemu.
+
+`X-Frame-Options` to celowo `SAMEORIGIN`, a nie `DENY` — tyle że **nie obejmuje
+tego przypadku LTI, dla którego został wybrany**. `SAMEORIGIN` pozwala osadzić
+stronę tylko wtedy, gdy osadza ją
+**ten sam origin**. Przy uruchomieniu LTI osadza ją LMS, więc Moodle pod
+`moodle.example.edu`, który osadza tę instalację pod `algojudge.example.edu`,
+zostanie odrzucony dokładnie tak samo, jak odrzuciłby go `DENY`. Zmierzone
+w przeglądarce, a nie wyczytane ze specyfikacji.
+
+Dla układu, który ten nagłówek obejmuje — LMS i ta instalacja na jednym originie,
+rozdzielone ścieżką — wartość jest poprawna i dlatego zostaje: domyślne
+rozluźnienie polityki ramek w każdej instalacji nie jest decyzją, którą stos
+podejmuje za Ciebie. **Jeśli Twój LMS stoi pod inną nazwą, zastąp ten nagłówek**,
+bo `X-Frame-Options` nie umie wskazać obcego origin, a
+[`Content-Security-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors)
+umie:
+
+```nginx
+# zamiast linii X-Frame-Options
+add_header Content-Security-Policy "frame-ancestors https://moodle.example.edu" always;
+```
+
+Wymień w `frame-ancestors` każdą platformę, która ma prawo Cię osadzić, i usuń
+`X-Frame-Options`, żeby nagłówki nie mogły sobie przeczyć. Innego
+`Content-Security-Policy` tu nie ma — patrz niżej — więc ten jeden nagłówek jest
+całą polityką ramek, jaką dostajesz domyślnie.
+
+<Callout type="warn" title="Nie ma Content-Security-Policy i jest to decyzja">
+Obraz Client wpisuje swoją konfigurację uruchomieniową do `index.html` jako
+skrypt inline przy starcie kontenera — i to właśnie pozwala jednemu obrazowi
+obsłużyć dowolną instalację — a polityka na tyle ścisła, żeby była coś warta,
+potrzebowałaby na nim nonce'a. Client żadnego nie emituje, więc CSP albo
+zepsułby aplikację, albo byłby `unsafe-inline`, czyli nagłówkiem, który nic nie
+mówi. Zamknięcie tego należy do Clienta.
+</Callout>
+
+## Dwa różne originy
+
+Client i Server mogą też stać na różnych originach i to działa. Wtedy
+`API_BASE_URL` to publiczny adres Servera, `APP_BASE_URL` to adres, pod którym
+przeglądarka sięga po Clienta, a origin Clienta trafia do
+`AJ_Cors__AllowedOrigins` Servera.
+
+<Callout type="warn" title="Musi to być ta sama witryna: jedna domena rejestrowalna, jeden schemat">
+`https://algojudge.example` obok `https://api.algojudge.example` to **jedna
+witryna** — inne originy, ta sama domena rejestrowalna — i wszystko działa.
+`https://algojudge.example` obok `https://algojudge-api.inna` to **dwie** i wtedy
+nikt się nie zaloguje.
+</Callout>
+
+Ciasteczko sesji ma `SameSite=Lax`. Przeglądarka nie zapisze takiego ciasteczka,
+gdy odpowiedź, która je ustawia, przychodzi z innej witryny — więc logowanie
+zawodzi w sposób najtrudniejszy do rozpoznania: `POST /identity/login` odpowiada
+**200** i odsyła `Set-Cookie`, przeglądarka **nie zapisuje nic**, kolejne żądanie
+dostaje **401**, a aplikacja zostaje na ekranie logowania **bez żadnego błędu**.
+
+Atrybut `Domain` tego nie ratuje. `Domain` decyduje, do jakich hostów ciasteczko
+jest wysyłane, a serwer może poszerzyć je najwyżej do własnej domeny nadrzędnej —
+`api.algojudge.example` nie ustawi ciasteczka dla `algojudge-api.inna`. W obrębie
+jednej witryny jest zresztą zbędny: na dwóch nazwach jednej domeny rysunki w
+treści zadania narysowały się z originu API przy ciasteczku host-only, a
+poszerzenie `Domain` sprawiło tylko tyle, że sesja zaczęła jechać na host Clienta
+przy każdym żądaniu o zasób.
+
+Każdy układ przetrwa to, co nie potrzebuje sesji w ogóle: znak firmowy
+instalacji, krój pisma i dokumenty publikowane przez operatora są plikami
+publicznymi i wczytają się skądkolwiek.
+
+### Adres API nie może wysyłać `X-Frame-Options`
+
+To ta część dwóch originów, która z sesją nie ma nic wspólnego, a wchodzi się w
+nią wprost z sekcji o tym, które nagłówki przekazywać: dołączany
+`security-headers.conf` wysyła `X-Frame-Options: SAMEORIGIN`, więc postawienie
+tych samych nagłówków przed **API** psuje treści zadań w PDF.
+
+Client rysuje taką treść znacznikiem `<object data="…/api/v1/files/…">`.
+`<object>` osadza dokument dokładnie tak jak `<iframe>`, a `X-Frame-Options`
+obejmuje oba — przy dwóch originach API jest obcym originem i `SAMEORIGIN` je
+odrzuca.
+
+<Callout type="warn" title="Odmowa jest cicha">
+Blokując `<object>`, `X-Frame-Options` **nie pisze nic** do konsoli; wariant
+`Content-Security-Policy` pisze. Człowiek widzi treść zapasową `<object>` — pusty
+prostokąt z odnośnikiem *pobierz* — i czystą konsolę, czyli dokładnie tak, jak
+wyglądałoby zadanie opublikowane bez treści. Zmierzone 2026-09-08 w Chromium, ten sam
+dokument przy czterech wartościach nagłówka.
+</Callout>
+
+Na adresie API albo nie wysyłaj polityki ramek **wcale**, albo wyślij
+`frame-ancestors` wymieniające origin Clienta **i każdą platformę LMS** — przy
+starcie LTI łańcuch przodków zawiera oba. Brak polityki da się tu obronić:
+osadzenie API nie daje napastnikowi niczego, bo ciasteczko sesji jest
+`SameSite=Lax`, a osadzający z dowolnego innego miejsca dostaje `401`.
+
+### Lista dozwolonych originów
+
+Ten stos nie ustawia `AJ_Cors__AllowedOrigins` z tego samego powodu, dla którego
+nie ustawia `AJ_PublicApiUrl`: pusty wpis listy to nie to samo, co brak listy.
+Napisz nakładkę.
+
+```yaml
+# state/origins.compose.yaml
+services:
+  server:
+    environment:
+      AJ_Cors__AllowedOrigins__0: https://algojudge.example
+```
+
+Jeden indeks na origin — `AJ_Cors__AllowedOrigins=a,b` nie wiąże **żadnego**, po
+cichu. Znacznik `<img>` nie potrzebuje CORS w ogóle, więc rysunek może się
+narysować, gdy wszystkie wywołania API są odrzucane; objawem brakującego originu
+jest ekran offline, a nie brakujący obrazek.
+
+## Certyfikaty
+
+Nic w stosie nie wystawia certyfikatu, a przy własnym proxy z przodu dołączony
+nginx w ogóle nie działa — TLS jest Twoje. Jeśli używasz dołączonej krawędzi,
+`/.well-known/acme-challenge/` jest serwowane na obu portach, więc wyzwanie
+HTTP-01 nigdy nie zostanie przekierowane.

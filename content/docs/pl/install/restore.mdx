@@ -65,7 +65,7 @@ takie zgłoszenie zostaje wysłane drugi raz, co opisuje
 Kontrole są dwie, a działa ta druga.
 
 Skrypt liczy potem tabele i kończy się porażką, jeśli jest ich mniej niż dwie.
-To wyłapuje pustą bazę i **nie jest w stanie** wyłapać odtwarzania, które nic nie
+To wyłapuje pustą bazę, ale **nie wyłapie** odtwarzania, które nic nie
 zrobiło: Server zakłada cały schemat przy pierwszym starcie, więc wszystkie
 tabele są na miejscu, zanim odtwarzanie się zacznie.
 
@@ -82,8 +82,8 @@ zupełnie nic**, podczas gdy każda kontrola po nim przechodziła na danych,
 których nikt nawet nie tknął.
 
 W `state/restore.log` leży to, co powiedział `pg_restore`. Część jest rutynowa —
-rozszerzenie, którego rola nie może usunąć, komentarz do czegoś, czego nie
-posiada — i uruchomienie nie zatrzymuje się na pierwszym, bo baza odtworzona
+rozszerzenie, którego rola nie może usunąć, komentarz do obiektu, którego ta
+rola nie jest właścicielem — i uruchomienie nie zatrzymuje się na pierwszym, bo baza odtworzona
 w połowie jest wyraźnie gorsza niż kompletna z ostrzeżeniami. Jedna z tych linii
 mówiąca `relation does not exist` o tabeli, na której Ci zależy, rutynowa nie
 jest.

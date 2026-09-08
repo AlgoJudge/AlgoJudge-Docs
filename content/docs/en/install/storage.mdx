@@ -50,8 +50,8 @@ the only warning you get.
 
 **Credentials live in the environment and nowhere else.** No endpoint sets a
 store, nothing about one is kept in the database, and none of it reaches a public
-answer: `/health` says storage is `ok` or `degraded` and **never which store,
-backend, bucket or path**. The detail is on the operator surface, behind loopback
+answer: `/api/v1/health` says storage is `ok` or `degraded` and **never which
+store, backend, bucket or path**. The detail is on the operator surface, behind loopback
 and a token.
 
 The settings themselves are on

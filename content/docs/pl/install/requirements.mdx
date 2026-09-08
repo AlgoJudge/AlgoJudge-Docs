@@ -1,13 +1,17 @@
 ---
 title: Czego wymaga host
-description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki i dysk na kopie. Logi stack ogranicza sobie sam.
+description: Docker z Compose v2.15.0, cgroup v2, polecenia coreutils używane przez skrypty i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: 38e680b9c67e8084773b1c168afea3bdbcfc6b075b8f5f0bc63bd6cca651a3b2
+sourceSha256: 766320a5a39723c41b2b0e34219988b4018d4f5b13dcfa72aa8346478200ce0c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-## Docker z Compose v2 lub nowszym
+## Docker z Compose v2.15.0 lub nowszym
+
+**Próg 2.15.0 bierze się z `cgroup: host`**, które ustawia usługa Runnera i które
+Compose dostał dopiero w tej wersji. `up -d --wait`, używane przez skrypty
+instalacji i aktualizacji, wymaga 2.1.1.
 
 Cały stos to jeden `compose.yaml` z profilami. Wszystko w tej sekcji to `docker
 compose` — wtyczka, nie starszy skrypt `docker-compose`.
@@ -17,15 +21,11 @@ compose` — wtyczka, nie starszy skrypt `docker-compose`.
 Runner przy starcie pyta środowisko uruchomieniowe kontenerów o wersję cgroup
 i **odmawia uruchomienia na v1**.
 
-Nie chodzi o szczelność sandboxa: **v1 zamyka kontener zadania całkowicie
-poprawnie** i cały zestaw testów adwersaryjnych na nim przechodzi. Nie ma na nim
-natomiast tego, na czym stoi limit pamięci — osobnej cgroup na przebieg,
-mieszczącej samo zgłoszenie — ani sposobu, żeby zmierzyć, ile zużył proces, który
-już się zakończył.
-
-v1 nie potrafi natomiast **mierzyć**. `memory.peak` i `cpu.stat` to interfejsy
-v2, a w v1 nie ma odpowiednika, który powiedziałby prawdę o procesie, który już
-się zakończył. Odmowa Runnera brzmi dokładnie tak:
+Nie chodzi o szczelność sandboksa: **v1 zamyka kontener zadania całkowicie
+poprawnie** i cały zestaw testów adwersaryjnych na nim przechodzi. Nie potrafi
+natomiast **mierzyć**. `memory.peak` i `cpu.stat` to interfejsy v2, a w v1 nie ma
+odpowiednika, który powiedziałby prawdę o procesie, który już się zakończył.
+Odmowa Runnera brzmi dokładnie tak:
 
 > the limits are enforced on v1, but a time limit is decided on processor time
 > read from cpu.stat, which is a v2 interface — so what cannot be done here is
@@ -49,7 +49,10 @@ from this host's cgroups, so this Runner registers and answers the protocol and
 then fails every job it claims.
 ```
 
-`AJ_Sandbox__AllowCgroupV1` to jego stara nazwa i nadal jest czytana.
+`AJ_Sandbox__AllowCgroupV1` to ten sam przełącznik pod starszą nazwą i nadal
+jest czytany. `preflight.sh` wprost odmawia na hoście z v1 i odmawia przy
+sterowniku cgroup innym niż `cgroupfs` albo `systemd`, zamiast pozwolić stosowi
+wstać wokół Runnera, który nie umie oceniać.
 
 <Callout type="warn" title="Tego obejścia nie da się zgłosić do panelu">
 `MachineDto` to struktura zamknięta i pomija każde pole, którego sama nie
@@ -115,7 +118,7 @@ ekran. Runner mówi o tym na poziomie `ERROR` przy każdym starcie.
 
 ## Rdzenie i pamięć
 
-**Runner sądzi jedno zgłoszenie naraz**, a każdy test dostaje `--cpus=1` — tyle
+**Runner ocenia jedno zgłoszenie naraz**, a każdy test dostaje `--cpus=1` — tyle
 czasu procesora, ile daje jeden rdzeń, niezależnie od tego, ile wątków uruchomi
 program, bo rozliczenie sumuje całe poddrzewo. Rachunek nie dotyczy więc
 przepustowości: **jeden Runner to jedno równoległe zgłoszenie i praca za jeden
@@ -129,28 +132,38 @@ Limit jest czasem procesora, a czas procesora nie zmienia się pod obciążeniem
 dwa zgłoszenia dzielące rdzeń naliczają swój czas poprawnie, choćby czekały na
 niego długo. Zmienia się wszystko, co mierzy zegar — a przebieg, który spędza
 czas w kolejce po procesor, wygląda z zewnątrz dokładnie jak taki, który
-przestał liczyć. Piaskownica zatrzymuje takie przebiegi, żeby program naprawdę
-zawieszony nie trzymał Runnera bez końca, i zagłodzony dobija do tego samego
-progu, nigdy nie będąc wolnym. Werdykt brzmi `Time limit exceeded`.
+przestał liczyć. Sandbox zatrzymuje takie przebiegi, żeby program naprawdę
+zawieszony nie trzymał Runnera bez końca — a zagłodzony dochodzi do tego samego
+progu, choć ani razu nie zwolnił. Werdykt brzmi `Time limit exceeded`.
 
-Zmierzone na maszynie o szesnastu procesorach, z dwunastoma Runnerami bez
-podziału między nimi: 80% z 8409 osądzonych testów przekroczyło swój limit na
-zegarze, mieszcząc się w nim na procesorze, a **pięć werdyktów na 150 było
-błędnych** — trzy z nich dla programów, które zużyły około ćwierci tego, na co
-im pozwolono.
+Zmierzone 2026-09-03 na szesnastu procesorach, czyli ośmiu rdzeniach fizycznych,
+z dwunastoma Runnerami bez podziału między nimi: **piętnaście zgłoszeń na sto
+pięćdziesiąt wróciło jako `Time limit exceeded`, mieszcząc się w swoich
+limitach** — w tym rozwiązania, o których wiadomo, że są poprawne.
 
-Rdzenie liczone niżej muszą więc być rdzeniami, na których nie ma nic innego.
-Oddanie ponad połowy maszyny jest do obrony; dwa Runnery na jednym rdzeniu nie.
+Górna granica jest więc regułą o poprawności, a nie o przepustowości, i rdzenie
+liczone niżej muszą być rdzeniami, na których nie ma nic innego:
+
+| Rdzenie fizyczne | Runnery |
+|---|---|
+| 4 | 2 |
+| 8 | **4** — tyle uruchamia profil `runner` |
+| 16 | 8 |
+
+Ile ich jest, powie `lscpu`: *Core(s) per socket* razy *Socket(s)*, co **nie**
+jest liczbą procesorów, gdy rdzeń niesie dwa wątki. Żeby uruchomić mniej, usuń
+z `compose.yaml` usługi, których nie chcesz, i zostaw ich `RUNNER_*_CPUSET`
+puste.
 
 | Składnik | Rdzenie | Pamięć | Uwagi |
 |---|---|---|---|
-| Server | 1, wspólny z Postgresem | 512 MiB | zmierzone 228 MiB pod obciążeniem sądzenia |
+| Server | 1, wspólny z Postgresem | 512 MiB | zmierzone 228 MiB pod obciążeniem oceniania |
 | Postgres | wspólny z Serverem | 512 MiB | zmierzone 115 MiB; przy dużej instalacji daj więcej |
 | Client | — | 32 MiB | nginx i statyczne pliki |
 | nginx na brzegu | — | 32 MiB | |
 | External Runner | — | 64 MiB | przekazuje do zewnętrznego sędziego i czeka na sieć; nie uruchamia kontenerów |
 | **każdy Runner** | **1** | **0,6 GiB** | własny proces plus jeden kontener sandboksa naraz |
-| demon Dockera i system | 1 | 750 MiB | to nie jest zaokrąglenie: podczas sądzenia powstaje kilka kontenerów na sekundę |
+| demon Dockera i system | 1 | 750 MiB | to nie jest zaokrąglenie: podczas oceniania powstaje kilka kontenerów na sekundę |
 
 Te 0,6 GiB na Runnera to jego proces i największy kontener, jaki utrzyma —
 budowanie, ograniczone do 512 MiB. Utrzymuje jeden naraz, ale budżet musi
@@ -246,7 +259,7 @@ systemctl is-enabled docker
 ```
 </Callout>
 
-**Trzech rzeczy to nie rozwiązuje**, a każda z nich ma inną odpowiedź:
+**Trzech rzeczy nie załatwia**, a każda z nich ma inną odpowiedź:
 
 | | Co się dzieje |
 |---|---|
@@ -258,10 +271,18 @@ Restart nie gubi stanu, bo wolumeny są nazwane. Runner zachowuje klucz tożsamo
 pozostaje zatwierdzony, zamiast zgłosić się jako nowy,
 którego menedżer musi dopuścić od nowa.
 
-## Pięć narzędzi powłoki
+## Polecenia, których używają skrypty
 
-`bash`, `openssl`, `find`, `du`, `df`. Skrypty w `AlgoJudge-Ops` nie używają
-niczego więcej. Dołóż `crontab`, jeśli chcesz, żeby zainstalowały harmonogram.
+`bash` i `openssl` to te dwa, które warto zainstalować świadomie. Reszta jest na
+każdym linuksowym hoście z coreutils: `awk`, `sed`, `stat`, `sha256sum`,
+`mktemp`, `date`, `find`, `du`, `df`, `cut`, `tr`, `grep`, `sort`, `head`,
+`tail`, `wc`.
+
+**`sed -i` i `stat -c` to zapis GNU**, więc host BSD ani macOS nie jest jednym
+z tych hostów. `git`, `flock` i `crontab` są opcjonalne i każde ustępuje
+z komunikatem, zamiast przerywać pracę: bez `git` w manifeście kopii nie ma
+numeru rewizji, bez `flock` dwa skrypty mogą się nałożyć, bez `crontab`
+harmonogram instalujesz sam.
 
 ## Dysk na kopie, najlepiej nie ten od bazy
 

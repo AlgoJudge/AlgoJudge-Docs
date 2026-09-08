@@ -1,0 +1,60 @@
+---
+title: Zarządzanie
+description: Dwanaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
+source: en/client/v0.1/manager/index.mdx
+sourceSha256: 4fa848b6690cf0eb53b3dfbd4de76b224d2039c3303714db6a2bf6688e1c79f1
+---
+
+Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
+otworzyć, i nic poza tym: *wszystko, czym możesz tu zarządzać — czego nie
+możesz, tego nie ma na liście*.
+
+Nie jest to ozdoba: nawigacja, ekran startowy i kontrola dostępu przy każdym
+adresie czytają tę samą tabelę, więc kafelek nie zaproponuje ci ekranu, który
+potem odpowie 403, a ekran, do którego masz dostęp, nie zniknie z menu.
+
+## Dwanaście obszarów
+
+Obszar otworzy ci **którekolwiek jedno** z uprawnień w ostatniej kolumnie.
+
+| Obszar | Do czego służy | Wpuszcza którekolwiek z nich |
+|---|---|---|
+| [Użytkownicy](/pl/client/v0.1/manager/enrolment) | Konta, hurtowe tworzenie loginów tymczasowych, blokowanie i notatki. | `user:read:all` |
+| [Nadania](/pl/client/v0.1/manager/permissions) | Kto co może — w systemie i w każdej aktywności. | `grant:read:all` |
+| [Szablony uprawnień](/pl/client/v0.1/manager/permissions) | Zestawy, od których zaczyna się nadanie, w tym te dostarczone z produktem. | `template:read` |
+| [Zadania](/pl/client/v0.1/manager/problems) | Biblioteka: treści, załączniki, paczki i wersje. | `problem:read:own`, `problem:read:all` |
+| [Aktywności](/pl/client/v0.1/manager/activities) | Zawody i kursy: serie, podpięcia zadań, terminy i zapisy. | `activity:create`, `activity:update`, `activity:archive` |
+| [Zgłoszenia](/pl/client/v0.1/manager/submissions) | Wszystkie zgłoszenia, ich kod, próby oceny i ponowna ocena. | `submission:read:all` |
+| [Pytania i ogłoszenia](/pl/client/v0.1/manager/questions) | Odpowiadanie, publikowanie odpowiedzi dla wszystkich, ogłoszenia. | `question:read:all`, `question:answer` |
+| [Runnery](/pl/client/v0.1/manager/runners) | Maszyny, które oceniają: zatwierdzanie, tagi i ich raporty. | `runner:read` |
+| [Instancja](/pl/client/v0.1/manager/instance) | Jak nazywa się ta instalacja, jaki znak pokazuje i jakie dokumenty publikuje. | `instance:update` |
+| [Logowania zewnętrzne](/pl/client/v0.1/manager/logins) | Dostawcy tożsamości, uprawnienia nadawane przez ich claimy i konta zgłoszone do usunięcia. | `provider:manage` |
+| [Platformy LTI](/pl/client/v0.1/manager/logins) | Platformy kursowe, które mogą otwierać aktywności swoim studentom. | `provider:manage` |
+| [Zasoby zewnętrzne](/pl/client/v0.1/manager/external-content) | Skąd ta instalacja może pobierać dokumenty i czy w ogóle może. | `instance:update` |
+
+Jeśli nie masz żadnego z nich, panel nie ma dla ciebie nic: nie pojawi się ani
+wpis w nawigacji, ani ekran startowy.
+
+## Co znaczy tutaj „masz uprawnienie”
+
+Obszar zobaczysz, gdy masz jego uprawnienie **gdziekolwiek** — wystarczy w
+jednej aktywności. Kto prowadzi jeden kurs, i tak potrzebuje panelu, w którym
+ten kurs się znajduje.
+
+Same ekrany są surowsze. Wewnątrz aktywności możesz nadać to, co masz *w tej
+aktywności*, a to nie jest ten sam zestaw co twoje prawa w całej instalacji.
+Zobacz [Uprawnienia i nadania](/pl/client/v0.1/manager/permissions).
+
+## Gdzie kończy się rola prowadzącego
+
+Siedem z dwunastu obszarów dotyczy instalacji, a nie pojedynczej aktywności:
+Użytkownicy, Szablony uprawnień, Runnery, Instancja, Logowania zewnętrzne,
+Platformy LTI i Zasoby zewnętrzne. Razem potrzebują pięciu uprawnień —
+`user:read:all`, `template:read`, `runner:read`, `instance:update` i
+`provider:manage` — i **żadnego z tych pięciu nie ma w dostarczanym szablonie
+`manager`**. Prowadzenie aktywności to co innego niż prowadzenie instalacji, w
+której ta aktywność działa.
+
+A jest jeszcze trzeci czytelnik. Instalacji AlgoJudge, kopii zapasowych,
+aktualizacji i odzyskiwania po awarii nie robi się z tego panelu w ogóle — to
+[Instalacja i utrzymanie](/pl/install).

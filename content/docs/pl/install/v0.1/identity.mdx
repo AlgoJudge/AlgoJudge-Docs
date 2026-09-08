@@ -1,0 +1,325 @@
+---
+title: Tożsamość
+description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
+source: en/install/v0.1/identity.mdx
+sourceSha256: 2ec23389f961dc9ff9470bd0d4d14c91bef7f08c70f53e473e3c6aa8770787d5
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Instalacja potrzebuje dostawcy OIDC. AlgoJudge na stałe prowadzi własne konta —
+administratora, konta lokalne i tymczasowe — ale ludzie, którzy biorą udział,
+logują się przez katalog prowadzony przez Ciebie.
+
+**Wspierane są dwa produkty: Keycloak i Authentik.** Żaden nie jest awaryjnym
+zamiennikiem drugiego i żaden drugiego nie zastępuje. Każdy działa obok stosu
+AlgoJudge, a nie w nim — **żaden nie jest usługą w `compose.yaml`** — a
+instalacja uruchamia jeden z nich.
+
+Uczelnia, która ma już własnego dostawcę OIDC, rejestruje właśnie jego. AlgoJudge
+oczekuje discovery i claimu, który umie odczytać, a dalsza część tej strony
+wygląda tak samo, cokolwiek stoi po drugiej stronie.
+
+AlgoJudge ich nie odróżnia. W obu przypadkach widzi zwykłego dostawcę OIDC
+i w całym modelu nie ma pola, gałęzi ani dyskryminatora, który mówiłby, jaki
+produkt stoi za rejestracją. Różnica między nimi jest operacyjna.
+
+## Zacznij od Keycloaka
+
+**Keycloak sugerujemy każdej instalacji, która nie ma powodu, żeby wybrać
+drugie.** Zanim zdecydujesz, przeczytaj dwie kolejne sekcje; jeśli żadna nie
+mówi nic o Twojej sytuacji, uruchom Keycloaka.
+
+Sam `auth.algojudge.app` działa na wdrożeniu Keycloak. Rozstrzyga to wybór
+jednej instalacji i niczego nie wycofuje.
+
+## Porównanie
+
+| | Keycloak | Authentik |
+|---|---|---|
+| Kontenery | **2** — Keycloak, PostgreSQL | 4 — server, worker, PostgreSQL, Redis |
+| Licencja | Apache-2.0 w całości; projekt CNCF | open core: rdzeń MIT, własnościowy katalog `enterprise/` w tym samym repozytorium |
+| Log audytowy z wartościami przed i po oraz eksport logu | w komplecie | funkcja Enterprise |
+| Konfiguracja stosowana ponownie sama z siebie | **nie** — import zakłada realm i pomija istniejący; dryf trzeba zauważyć samemu | **tak** — blueprinty są stosowane ponownie wedle harmonogramu |
+| Zgłaszanie usuniętego konta z powrotem do AlgoJudge | tak, **Event Listener SPI provider** | tak, dopasowanie zdarzeń i transport webhook |
+| Zgłoszenie przeżywające restart serwera tożsamości | **nie** — ponawiane w pamięci, potem `ERROR` do ręcznego powtórzenia | tak, kolejka w jego bazie |
+| Serwowanie katalogu przez **LDAP** | **niemożliwe** — Keycloak korzysta z LDAP, sam go nie udostępnia | tak, przez outpost LDAP |
+| Ograniczenie listy języków | konfiguracja | CSS sięgający do shadow roota |
+| Nasze teksty osobno dla każdego języka | prawdziwe tłumaczenia | jedno pole na oba języki |
+
+## Dlaczego Keycloak pasuje instytucji
+
+**Licencja.** Keycloak jest na Apache-2.0 w całości i jest projektem CNCF.
+Authentik to open core: rdzeń na MIT i własnościowy katalog `enterprise/` w tym
+samym repozytorium, a **log audytowy z wartościami przed i po oraz eksport logu
+są funkcjami Enterprise**. Dla oprogramowania, które instaluje podmiot
+publiczny, to cecha, na którą trudno się zgodzić — zapis, kto zmienił które
+konto, i możliwość wyciągnięcia tego zapisu z produktu, to dokładnie to, o co
+pyta audyt.
+
+**W instytucji zwykle jest tak: katalog LDAP już stoi, a endpointu OIDC nie
+ma.** Zwykłą odpowiedzią jest wtedy **Keycloak z federacją użytkowników LDAP**:
+korzysta z katalogu, który już masz, i stawia przed nim standardowy front OIDC —
+czyli dokładnie to, czego potrzebuje AlgoJudge, a czego Twój katalog nie daje.
+
+Dwa kontenery zamiast czterech nie są argumentem, ale też nie są niczym — to
+jedna baza do kopiowania i jeden proces do aktualizowania.
+
+## Ile kosztuje Keycloak
+
+Porównanie, które wymienia słabości tylko jednej strony, jest reklamą. Trzy
+sprawy wypadają tu gorzej, a jedna może przesądzić o wyborze.
+
+**Nie potrafi zapisać, którą wersję regulaminu ktoś zaakceptował.** Wbudowana
+w Keycloaka akcja regulaminowa zapisuje, **że** ktoś zaakceptował i kiedy, ale
+nie jaki tekst wtedy obowiązywał, a atrybut profilu wypełniony w formularzu to
+tyle, ile prześle przeglądarka. Akceptację i jej znacznik czasu przenosi
+`terms_accepted_at`; jaki to był tekst, odczytasz z historii repozytorium
+wdrożenia, gdzie odnośnik do regulaminu jest wersjonowany. Wdrożenie Authentik
+zapisuje wersję po stronie serwera, wewnątrz polityki, celowo poza zasięgiem
+przeglądarki. To jest mocniejsze.
+
+**Zgłoszenie usunięcia nie przeżywa restartu serwera tożsamości.** Oba wdrożenia
+zgłaszają usunięte konto z powrotem do AlgoJudge. Authentik przekazuje swój
+webhook workerowi z kolejką w bazie, a rozszerzenie Keycloaka ponawia w pamięci
+przez około dziewięćdziesiąt sekund, po czym wypisuje jeden `ERROR` ze
+wszystkim, co potrzebne do ręcznego powtórzenia. Jeśli nikt nie przeczyta tej
+linii, to usunięcie nie zostaje zgłoszone.
+
+**Nie potrafi serwować LDAP.** Keycloak korzysta z katalogu; sam go nie
+udostępnia. Ma to znaczenie dla instalacji, której LMS uwierzytelnia się
+w katalogu — referencyjny stos Moodle zależy od tego widoku i dlatego
+wdrożenie Authentik nie zostało wycofane.
+
+<Callout type="warn" title="Jeśli cokolwiek w Twojej instalacji czyta LDAP, to przesądza sprawę">
+Jeśli LMS, logowanie do maszyn w pracowni albo system pocztowy uwierzytelniają
+się w katalogu udostępnianym przez Twoje wdrożenie tożsamości, nie
+skierujesz ich na Keycloaka. Authentik serwuje LDAP przez outpost; Keycloak nie
+ma na to sposobu.
+</Callout>
+
+## Zanim zaczniesz
+
+**Ktoś ma uprawnienie `provider:manage`.** Rejestracja dostawcy to decyzja tej
+samej wagi co [podłączenie platformy kursowej](/pl/install/v0.1/lti) i stoi za tym
+samym uprawnieniem.
+
+**Do dostawcy sięga Server, nie przeglądarka.** Discovery, zestaw kluczy i wymiana
+kodu wychodzą z kontenera Servera. Adres osiągalny z Twojego laptopa, ale nie
+z wnętrza kontenera, zawiedzie przy czyimś pierwszym logowaniu, a nie przy
+zapisie formularza.
+
+**`issuer` jest adresem `https`**, poza pętlą zwrotną, gdzie deweloperski dostawca
+nie ma certyfikatu, któremu ktokolwiek by ufał. Wszystko inne formularz odrzuca z kodem
+`provider.issuer.insecure`.
+
+**Jeśli Client i API stoją pod dwoma adresami**, ustaw najpierw `APP_BASE_URL` —
+inaczej udane logowanie kończy się błędem 404 samego API. Patrz
+[Konfiguracja](/pl/install/v0.1/configuration).
+
+## U dostawcy
+
+Jeden klient i jeden mapper. Nic z tego nie jest wymysłem AlgoJudge.
+
+**Klient poufny**, authorization code z PKCE. Sekret klienta jest wymagany: bez
+niego wymiana kodu się nie powiedzie, a to jedyny moment, w którym ten sekret jest
+do czegokolwiek potrzebny.
+
+**Jeden adres powrotny**, który ekran rejestracji pokazuje razem z przyciskiem
+do skopiowania:
+
+```
+https://twoja.domena/api/v1/identity/providers/<slug>/callback
+```
+
+Slug jest częścią tego adresu, więc powrotu od jednego dostawcy nie da się wziąć
+za powrót od innego — i dlatego właśnie zmiana sluga tyle kosztuje.
+
+**Zakresy.** `openid` idzie w żądaniu niezależnie od tego, czy go wpiszesz. Dodaj
+`profile` dla nazwy użytkownika i nazwiska, `email` dla adresu oraz ten zakres,
+który u Ciebie zawiera claim z grupami. O tym, czy adres liczy się tutaj jako
+potwierdzony, decyduje `email_verified`.
+
+<Callout type="warn" title="Claimu z grupami nie ma w tokenie, dopóki go tam nie umieścisz">
+Domyślnie żaden z tych produktów nie wysyła przynależności do grup: Keycloak
+potrzebuje mappera group membership, Authentik własnego scope mappingu. Bez tego
+token jest poprawny, mapowanie nie ma w co trafić, a **każde logowanie zostaje
+odrzucone** komunikatem *Ten dostawca nie daje Ci dostępu do tej instalacji*.
+Wygląda to na kłopot z uprawnieniami, a jest brakującym claimem.
+</Callout>
+
+Claimy przychodzą pod nazwami, które nadał im dostawca — nic nie jest po drodze
+przemianowywane. Claim `groups` leży pod ścieżką `groups`.
+
+## Rejestracja dostawcy w AlgoJudge
+
+Trzy kroki, w panelu Zarządzanie, za uprawnieniem `provider:manage`, i czwarty
+dla instalacji, w której ten dostawca jest jedyną drogą wejścia. Ekrany, na
+których się to robi, to
+[Logowania zewnętrzne i platformy LTI](/pl/client/manager/logins).
+
+1. **Zarejestruj dostawcę** i skopiuj **adres powrotny**, który pokazuje ekran,
+   na listę dozwolonych u samego dostawcy. AlgoJudge tę ścieżkę wylicza i zwraca;
+   nie wymyślasz jej.
+2. **Napisz mapowanie** — które grupy katalogu stają się którym szablonem
+   uprawnień. Zacznij od `deny`, które nie wpuszcza nikogo, kogo mapowanie nie
+   nazywa.
+3. **Jeśli dostawca umie zgłaszać usunięcia**, ustaw sekret kanału zwrotnego
+   i włącz kanał.
+4. **Jeśli nikt tutaj nie loguje się inaczej**, wskaż go ekranowi logowania,
+   w [Instancji](/pl/client/manager/instance). Bez tego ekran jest stroną
+   z jednym przyciskiem; z tym przeglądarka idzie prosto do dostawcy.
+   `?admin=true` nadal prowadzi do formularza lokalnego, a odrzucone logowanie
+   nadal ląduje na ekranie z kodem z listy niżej, zamiast iść w kółko.
+
+### Pola
+
+| Pole | Uwagi |
+|---|---|
+| `slug` | pojawia się w ścieżce logowania i w adresie powrotnym; drogo go potem zmieniać |
+| `issuer` | discovery znajduje endpointy i klucze. **Adres `https`, albo `http` w pętli zwrotnej** — i nic poza tym, w tym żadnych danych logowania w adresie |
+| `clientId`, `clientSecret` | sekret jest **tylko do zapisu** |
+| `scopes` | `openid` żądamy niezależnie od tego, czy jest tu wymieniony |
+| `claimPath` | ścieżka z kropkami — `groups`, `realm_access.roles`. **Nigdy wyrażenie** |
+| `unmappedBehavior` | `deny` *(domyślnie)* albo `defaultTemplate` |
+| `accountUrl` | konfiguracja, nie discovery: OIDC nie standaryzuje takiego adresu |
+| `deletionChannelEnabled`, `deletionSecret` | kanał zwrotny, osobno na dostawcę |
+| `callbackPath` | **wyliczany i zwracany**, do wklejenia u dostawcy |
+
+**`claimPath` to ścieżka z kropkami i nigdy wyrażenie.** Wyrażenie
+w konfiguracji dostawcy to kod wykonywany na zawartości tokenu. Czytamy dwa
+kształty claimu, żeby instalacja nie musiała wiedzieć, który ma u siebie: kilka
+claimów o tej samej nazwie albo jeden claim z tablicą lub obiektem JSON.
+
+Reguła mapowania to **wartość** claimu i **nazwa** szablonu uprawnień,
+porównywane jako napisy, znak w znak. Nie ma wzorców, bo znak wieloznaczny na
+liście dozwolonych to sposób, w jaki lista dozwolonych przestaje nią być. Dwie
+zasady są egzekwowane i nie da się ich wyłączyć: **`system:administrator` jest
+nieosiągalny przez mapowanie** w każdej konfiguracji, a **nikt nie zmapuje
+uprawnienia, którego sam nie ma**.
+
+### Sekret jest tylko do zapisu
+
+Projekcja, którą AlgoJudge zwraca dla dostawcy, **nie ma pola na sekret** — i to
+jest egzekwowanie, a nie filtr gdzieś po drodze. Panel dostaje zamiast tego
+`hasClientSecret`, bo formularz, który pokazuje puste pole tam, gdzie wartość
+jest zapisana, wygląda, jakby ta wartość przepadła. Przy aktualizacji brak
+sekretu znaczy „zostaw zapisany”.
+
+<Callout type="warn" title="W kopii zapasowej bazy leży działające poświadczenie dostawcy">
+Sekret klienta przechowujemy jawnym tekstem — tak zdecydowaliśmy. Szyfrowanie
+przeniosłoby sekret w inne miejsce, a nie usunęło — klucz musiałby leżeć poza
+bazą, inaczej kopia ma w środku obie połowy — więc wolimy o tym ryzyku powiedzieć
+wprost, niż je obchodzić. Traktuj zrzut tak, jak traktowałbyś samo
+poświadczenie. Patrz [Kopie zapasowe](/pl/install/v0.1/backup), gdzie to samo dotyczy
+pęku kluczy.
+</Callout>
+
+## Co robi logowanie
+
+Kluczem tożsamości federacyjnej jest **issuer plus `sub`**, nigdy adres e-mail.
+Adres człowiek zmienia u swojego dostawcy, a federacja oparta na adresie oddaje
+konto temu, kto ten adres po nim przejmie.
+
+Dwie konsekwencje zaskakują ludzi i obie są celowe:
+
+- **Dostawca nigdy nie przejmuje istniejącego konta po nazwie ani po adresie.**
+  Kolidująca nazwa użytkownika dostaje krótki skrót wartości `sub`, a kolidujący
+  adres pomijamy i konto powstaje bez niego.
+- **Konto może mieć kilka powiązań, a logowanie samo z siebie nie łączy dwóch.**
+  Login uczelniany i `auth.algojudge.app` to dwie drogi do tej samej osoby i jedno
+  konto trzyma oba powiązania. Żadne logowanie nie rozstrzyga natomiast
+  samodzielnie, że nowy `sub` należy do konta, które już istnieje — jedynym
+  dowodem, jakim by dysponowało, jest adres, którego nikt nie zweryfikował, a
+  automatyczne kojarzenie po takim adresie to przejęcie konta, a nie ułatwienie.
+  Konta łączy się uprawnieniem `user:merge`: to czynność administracyjna, którą
+  ktoś podejmuje świadomie i którą da się cofnąć, dopóki opróżnione konto jest
+  jeszcze całe.
+
+Kolejność przy każdym logowaniu jest taka: zwaliduj, rozwiąż mapowanie, zastosuj
+zmianę uprawnień, dopiero potem zdecyduj o wpuszczeniu. Najbardziej widać to
+w jednym przypadku: **znany subject, który przy `deny` nie mapuje się na nic, ma
+swój wkład odebrany i dopiero potem dostaje odmowę.** Odmowa, która zostawiałaby
+wczorajszy wkład, trzymałaby kogoś wśród prowadzących na zawsze — wystarczyłoby
+nigdy więcej się nie logować.
+
+Dostawca **wyłączony** to przypadek odwrotny i też celowy: nic nie jest
+zapisywane i nikt nie traci uprawnień. Kiedy wyłączasz dostawcę, żeby go
+przekonfigurować, mówisz coś o rejestracji, a nie o czyichkolwiek uprawnieniach.
+
+Konto założone przez dostawcę jest zatwierdzone od razu i **nie ma hasła** —
+i właśnie dlatego nie jest kontem lokalnym. Konto, które ma i powiązanie,
+i hasło, zostaje lokalne: ktoś świadomie dał mu własne poświadczenie.
+
+## Kanał zwrotny usunięć
+
+Dostawca wysyła do AlgoJudge `{ subject, requestedAt, requestId }` z sekretem
+przypisanym do siebie, a żądanie jest **idempotentne po `requestId`** — webhook
+jest ponawiany przy każdym potknięciu, a trzy dostarczenia muszą usunąć jedno
+konto raz. Na wszystko, czego odmawia, odpowiada **404**: tak samo na zły sekret
+i na nieznany subject, żeby dostawca nie mógł dowiedzieć się, kto ma tu konto,
+pytając o ludzi po kolei.
+
+Otwiera **okno dwudziestoczterogodzinne**, które administrator może zatrzymać.
+`requestedAt` zapisujemy i celowo nie liczymy z niego tego okna: zegar, który nie
+należy do tej instalacji, nie może skrócić administratorowi doby do zera.
+
+<Callout type="warn" title="Authentik wymaga `sub_mode = user_id`, inaczej kanał nikogo nie rozwiąże">
+Jego webhook usunięcia zawiera klucz główny konta, a jego `sub` jest skrótem
+tego klucza — chyba że dostawca jest tak skonfigurowany. Przy ustawieniu
+domyślnym te dwie wartości nigdy się nie zgadzają, każde zgłoszenie rozwiązuje
+się na nikogo i nic nigdzie tego nie mówi. `sub` w Keycloaku jest już własnym,
+stabilnym identyfikatorem konta, więc nie ma tam odpowiedniego ustawienia, które
+dałoby się przestawić źle.
+</Callout>
+
+Tam, gdzie nie kontrolujesz dostawcy, zostaw jego kanał wyłączony.
+
+## Co zostało sprawdzone, a co nie
+
+| | |
+|---|---|
+| **Keycloak 26.7.0** | przebieg na działającym Serverze, z dwóch pustych baz: założenie konta, mapowanie, wkład nadpisany przy kolejnym logowaniu, kanał usunięcia wraz z kaskadą i rejestracja od początku do końca |
+| **Authentik 2026.5.6** | to samo przejechane ręcznie w przeglądarce, a ekrany logowania sprawdzone w Chromium, Firefoksie i WebKicie |
+| Dowolny inny dostawca | **niesprawdzone** |
+
+**Nie testowaliśmy żadnego uczelnianego SSO**, a to właśnie dla takiego dostawcy
+istnieje `unmappedBehavior` — dla tego, nad którym nikt tutaj nie panuje.
+Przećwiczyliśmy dwa produkty, które konfigurujemy sami.
+
+**Nie wyszedł stąd ani jeden prawdziwy e-mail.** Deweloperskie stosy przyjmują
+wszystko i nie doręczają niczego, więc `email_verified` nigdy nie przyszło od
+dostawcy, który naprawdę wysyła. Zanim uznasz adres z federacji za potwierdzony,
+upewnij się, że Twój dostawca wystawia ten claim zgodnie z prawdą.
+
+Żaden z tych przebiegów nie jest częścią ciągłej integracji, bo oba potrzebują
+działającego Servera. Uruchamiamy je ręcznie przed wydaniem i po każdej zmianie
+dotykającej tożsamości po którejkolwiek ze stron.
+
+## Kiedy to nie działa
+
+Odrzucone logowanie wraca na ekran logowania jako
+`/login?provider=<slug>&error=<kod>`. Człowiek widzi zdanie, a kod warto
+zacytować w zgłoszeniu do administratora.
+
+**Działa to również na instalacji, która przekierowuje.** `error` w adresie jest
+jedną z dwóch rzeczy gaszących przekierowanie — właśnie po to, żeby odmowę dało
+się przeczytać, zamiast oddawać ją dostawcy, który ją wystawił. Przekierowanie
+nigdy nie zasłania diagnozy.
+
+| | |
+|---|---|
+| `provider.unmapped` | nic w tokenie nie trafiło w mapowanie. Najczęściej brakuje claimu z grupami, a nie samej grupy |
+| `provider.subject.missing` | w tokenie nie było `sub`. Źle skonfigurowany klient, nie człowiek |
+| `provider.ticket.missing` | w wywołaniu zwrotnym nie było zweryfikowanego biletu — stara karta przeglądarki albo powtórka z historii |
+| `provider.ticket.mismatch` | bilet wystawiono dla innego dostawcy, zwykle po zmianie sluga w trakcie trwającego logowania |
+| `provider.disabled` | dostawcę wyłączono w trakcie tego logowania. Wyłączony nie pokazuje przycisku, a jego challenge odpowiada 404, więc zostaje tylko ten jeden przypadek |
+
+Przy `provider.unmapped` warto pamiętać o kolejności: pod `deny` Server najpierw
+odbiera wczorajszy wkład, a dopiero potem odmawia. Dlaczego — mówi *Co robi
+logowanie*.
+
+Formularz odmawia gdzie indziej — przy zapisie — i wtedy nazywa powód:
+`provider.issuer.insecure`, `provider.rule.administrator`, `provider.linked`
+przy usuwaniu dostawcy, przez którego ktoś się jeszcze loguje. Cały spis i model,
+który za tym stoi, to [Tożsamość](/pl/server/identity).

@@ -73,11 +73,14 @@ act of being added. A demotion has to be somebody's decision, and a decision
 needs a field.
 
 <Callout type="warn" title="Not even `system:administrator` bypasses it">
-But only its holder may have set it on an administrator's grant, so an
-administrator's rights cannot be trimmed from below.
+Setting it on an administrator's grant is **self-initiated only** — anybody else
+is refused with `grant.override.administrator` — so an administrator's rights
+cannot be trimmed from below. Clearing it stays open to anybody holding
+`grant:update` in the activity, because the flag suppresses the very permissions
+its holder would need to undo it.
 
-It can strand its holder: inside that activity they are whatever the grant says
-— typically a participant, holding no `grant:update` — so clearing it needs
+It can still strand its holder: inside that activity they are whatever the grant
+says — typically a participant, holding no `grant:update` — so clearing it needs
 another manager of that activity or a system administrator.
 </Callout>
 

@@ -1,0 +1,334 @@
+---
+title: What the host needs
+description: Docker with Compose v2.15.0, cgroup v2, the coreutils the scripts use, and disk for backups. The stack bounds its own logs.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Docker with Compose v2.15.0 or later
+
+The stack is one `compose.yaml` with profiles. Everything in this section is
+`docker compose`, the plugin, not the older `docker-compose` script.
+
+**2.15.0 is the floor because of `cgroup: host`**, which the Runner service sets
+and which Compose first shipped in that version. `up -d --wait`, used by the
+install and update scripts, needs 2.1.1.
+
+## cgroup v2, and it is not optional
+
+The Runner asks the container runtime for its cgroup version at startup and
+**refuses to start on v1**.
+
+This is not about whether the sandbox holds: **v1 confines a job container
+perfectly well**, and the whole adversarial test suite passes on it. What it
+cannot do is **measure**. `memory.peak` and `cpu.stat` are v2 interfaces, and
+there is no v1 equivalent that tells the truth about a process that has already
+exited. The Runner's refusal says exactly this:
+
+> the limits are enforced on v1, but a time limit is decided on processor time
+> read from cpu.stat, which is a v2 interface — so what cannot be done here is
+> reach a verdict at all
+
+**That last clause is the whole reason.** A time limit is processor time, read
+from the cgroup, so a Runner that cannot read one cannot judge. The refusal is
+not about a number missing from beside a verdict; it is about the verdict.
+
+There is an override, `AJ_Sandbox__AllowUnmeasured`. It exists because a
+developer's machine is often Docker Desktop, which may still report v1, and the
+alternative is a development stack that cannot start at all. **It only makes the
+process start**: such a Runner registers, answers the protocol, and then fails
+every job it claims with an infrastructure error. When it is set the Runner logs
+on every start, at `ERROR`:
+
+```
+STARTING BELOW SPECIFICATION — … A time limit is decided on processor time read
+from this host's cgroups, so this Runner registers and answers the protocol and
+then fails every job it claims.
+```
+
+`AJ_Sandbox__AllowCgroupV1` is the same switch under its older name and is
+still read. `preflight.sh` refuses a host on v1 outright, and refuses a cgroup
+driver that is neither `cgroupfs` nor `systemd`, rather than letting the stack
+come up around a Runner that cannot judge.
+
+<Callout type="warn" title="The override cannot be reported to the panel">
+`MachineDto` is a closed shape and drops anything it does not name, so a Runner
+running below specification looks exactly like any other Runner in the manager
+panel. The only place it says so is its own log. Do not set this on an
+installation anybody else uses.
+</Callout>
+
+### Either cgroup driver, and a writable cgroup tree
+
+Even on v2, the numbers come out sideways. The sandbox is started **under a
+cgroup that outlives it**, with `--cgroup-parent`, and that cgroup is read once
+the child is gone — because the runtime API reports no peak, and a container's
+own cgroup is destroyed the moment its process exits.
+
+What that cgroup is depends on the daemon's cgroup driver. The Runner asks at
+start and chooses; **neither driver needs the daemon reconfigured.**
+
+| | `cgroupfs` | `systemd` |
+|---|---|---|
+| Where it is the default | Docker Desktop | virtually every systemd Linux host |
+| Who creates the cgroup | the Runner | systemd, when the daemon asks it |
+| How many | one per run, removed afterwards | one per Runner, for its whole life |
+| A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
+| A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, made inside the judged container | the same — the driver decides nothing here |
+| Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run and measured from what the slice already held, which needs **Linux 6.12** |
+| Kernel | 5.19 and later | 5.19 to judge; **6.12** only for the peak of a build, a checker or an interactor |
+
+A `native.cgroupdriver` line in `/etc/docker/daemon.json` is neither needed nor
+harmful.
+
+What both need, and `AlgoJudge-Ops` supplies all three:
+
+```
+-v /sys/fs/cgroup:/sys/fs/cgroup     # writable
+--cgroupns=host                      # `cgroup: host` in Compose
+--user 0:0                           # the tree's directories are root's
+```
+
+**Both backends need them, and neither starts without them.** A memory limit is
+enforced on a cgroup holding the submission alone, made **inside the judged
+container**, so the tree this mount exposes has to be writable whichever backend
+is in use. The Runner proves that at start under both: it makes a cgroup,
+removes it again, and **refuses to start** when it cannot — rather than
+registering, answering the protocol and then failing every job it claims.
+
+Root sounds worse than it is: the
+Runner holds the container runtime's socket, which is root-equivalent on the
+host by itself, so the uid inside its container was never the boundary — and
+nothing it *starts* gains anything, because a job container still runs as
+`65534:65534` with every capability dropped.
+
+**What a `systemd` host below Linux 6.12 loses is smaller than it sounds.** That
+excludes **Ubuntu 24.04**, which ships 6.8; **Debian 13** ships 6.12 and is fine.
+Neither a verdict nor a submission's own numbers are affected — a judged run's
+peak is read from a cgroup made for it, which is fresh and needs no reset. What
+is lost is the peak of the runs that are nobody's submission: a build, a checker,
+an interactor, none of which any screen shows. The Runner says so at `ERROR` on
+every start.
+
+## Cores and memory
+
+**A Runner judges one submission at a time**, and every test runs under
+`--cpus=1` — one processor's worth of time, whatever the program does with
+threads, because the accounting sums the whole subtree. So the arithmetic is not
+a throughput calculation: **one Runner is one concurrent submission and one
+core's worth of work**, and the question is only how many cores you can spare.
+
+**That is a quota, not a pin.** Which processors a submission actually runs on
+is the kernel's business, unless you divide the host yourself — see below.
+
+**Contention costs wall clock, and the wall clock is where the safety net is.**
+A limit is processor time and processor time does not move under load: two
+submissions sharing a core each accrue their own correctly, however long they
+wait for it. What does move is everything measured on the clock — and a run that
+spends its time waiting for a processor looks, from outside, exactly like one
+that has stopped computing. The sandbox stops such a run so that a genuinely
+wedged program cannot hold a Runner for ever, and a starved one reaches that stop
+without ever having been slow. The verdict says `Time limit exceeded`.
+
+Measured 2026-09-03 on sixteen processors — eight physical cores — running
+twelve Runners with no division between them: **fifteen submissions in a hundred
+and fifty came back `Time limit exceeded` while inside their limits**, including
+solutions known to be correct.
+
+So the ceiling is a rule about correctness rather than about throughput, and the
+cores counted below have to be cores nothing else is on:
+
+| Physical cores | Runners |
+|---|---|
+| 4 | 2 |
+| 8 | **4** — what the `runner` profile starts |
+| 16 | 8 |
+
+`lscpu` says how many there are — *Core(s) per socket* times *Socket(s)*, which
+is **not** the CPU count when a core carries two threads. To run fewer, remove
+the services you do not want from `compose.yaml` and leave their
+`RUNNER_*_CPUSET` unset.
+
+| Component | Cores | Memory | Notes |
+|---|---|---|---|
+| Server | 1, shared with Postgres | 512 MiB | 228 MiB measured under judging load |
+| Postgres | shared with the Server | 512 MiB | 115 MiB measured; give it more if the installation is large |
+| Client | — | 32 MiB | nginx and a static bundle |
+| nginx, the edge | — | 32 MiB | |
+| External Runner | — | 64 MiB | it forwards to the external judge and waits on the network; it starts no containers |
+| **each Runner** | **1** | **0.6 GiB** | its own process, plus one sandbox container at a time |
+| the Docker daemon and the operating system | 1 | 750 MiB | not a rounding: several containers a second are created while judging |
+
+A Runner's 0.6 GiB is its process and the largest container it will hold — a
+build, capped at 512 MiB. It holds one at a time, but the budget has to be the
+largest.
+
+### A worked example: four Runners
+
+One Client, one Server, four Runners and one External Runner:
+
+| | Cores | Memory |
+|---|---|---|
+| four Runners | 4 | 2.4 GiB |
+| Server and Postgres | 1 | 1 GiB |
+| Client, edge, External Runner | — | 128 MiB |
+| daemon and operating system | 1 | 750 MiB |
+| **total** | **6** | **~4.3 GiB** |
+
+**Six cores and 8 GiB**, and the gap between 4.3 and 8 is not waste: it becomes
+page cache, and a problem whose tests are read once per submission and again for
+the next one is the difference between memory and a disk read per test.
+
+The rule underneath, for a size not in the table: **2 GiB of base, 0.6 GiB per
+Runner**, and one core per Runner on top of two for everything else.
+
+An identity deployment is not part of this stack — it is [its own
+installation](/en/install/v0.1/identity) — but if you run one on the same host, a
+Keycloak or Authentik wants **another core and about 1 GiB**.
+
+<Callout type="warn" title="Physical cores, not vCPU">
+Two hyperthreads of one physical core share execution units. The measurement
+stays honest — processor time is billed to each correctly — but the work done per
+processor-second falls when the sibling is busy, so the same solution measures
+differently depending on what is beside it. For a judge that is a
+reproducibility problem, and it is why contest hosts commonly disable SMT.
+
+On a shared VPS the neighbour is invisible and nothing can be done about it.
+</Callout>
+
+<Callout type="warn" title="Divide the host between the Runners">
+**A Runner never chooses processors for itself**, and that is deliberate:
+several of them choosing independently, with nothing to coordinate them, is
+worse than letting the host place the work. Given the whole machine it pins
+nothing and the scheduler decides, which is all it can do on a host nobody has
+divided.
+
+**Confine a Runner's container with `cpuset` and it carries that set to every
+job container it starts.** It has to: a job container is the daemon's child
+rather than the Runner's, so it inherits no affinity and would otherwise spread
+over the whole host, quietly undoing the division you drew.
+
+**The division worth making is one Runner per physical core, given both of that
+core's threads.** Two threads of one core share their caches, so a job moving
+between them costs nothing; two *different* Runners on one core take each
+other's execution units, and a program then spends more processor time than it
+should for the same work — which is a wrong verdict, not a slow one.
+`AlgoJudge-Ops` exposes this as `RUNNER_1_CPUSET` and its siblings, and its
+`.env.example` shows how to read the pairs off the machine:
+`thread_siblings_list` says `0-1` on one host and `0,8` on another, and a list
+copied from an example is exactly wrong on the second.
+
+What a pin does not buy is time. `--cpus=1` is on every job container either
+way, so a run cannot win processor time by spreading over cores. And a set
+narrower than a core takes away the one repair the host has, because the kernel
+cannot then move a starved run to a free processor.
+</Callout>
+
+Disk is covered under [backups](#disk-for-backups-ideally-not-the-databases)
+below. Beyond that a Runner keeps a package cache bounded at 10 GiB and the
+External Runner one bounded at 256 MiB.
+
+## What keeps it running
+
+Every service is `restart: unless-stopped`. **A container that exits for any
+reason is started again**, a crash included, and no supervisor of your own is
+needed: the Docker daemon is the supervisor.
+
+`unless-stopped` rather than `always`, and the difference is narrow: after a host
+restart, `always` brings back even a container you had deliberately stopped.
+`unless-stopped` respects the stop, which is what an operator taking a Runner out
+for maintenance wants.
+
+<Callout type="warn" title="The daemon has to start at boot, and that part is not ours">
+`restart: unless-stopped` only applies if `dockerd` itself comes up. Packages
+normally arrange it, but an installation whose daemon does not start at boot
+simply does not come back, and nothing says why:
+
+```bash
+systemctl is-enabled docker
+```
+</Callout>
+
+**Three things it does not do**, and each has a different answer:
+
+| | What happens |
+|---|---|
+| A service that **hangs** rather than exits | Nothing restarts it: a restart policy acts on exit. A hung Runner's *job* is recovered by the Server's lease — it expires and the job returns to the queue — but the Runner stays hung until somebody looks |
+| A container **crash-looping** | It is restarted for ever, with the delay growing to a minute. Nothing escalates and nothing tells you. A flapping container is the first thing to look for when an installation is up but does nothing |
+| A **failed health check** | Nothing. In Compose a health check reports and does not restart; that is an orchestrator's behaviour, not this one's |
+
+State survives a restart because the volumes are named. A Runner keeps its
+identity key across one, so it stays approved rather than arriving as a new
+Runner a manager has to admit again.
+
+## The commands the scripts use
+
+`bash` and `openssl` are the two worth installing deliberately. The rest are on
+any Linux host that has coreutils: `awk`, `sed`, `stat`, `sha256sum`, `mktemp`,
+`date`, `find`, `du`, `df`, `cut`, `tr`, `grep`, `sort`, `head`, `tail`, `wc`.
+
+**`sed -i` and `stat -c` are the GNU spellings**, so a BSD or macOS host is not
+one of these hosts. `git`, `flock` and `crontab` are optional and each degrades
+with a message rather than failing: no `git` means no revision in a backup's
+manifest, no `flock` means two scripts can overlap, no `crontab` means the
+schedule is yours to install.
+
+## Disk for backups, ideally not the database's
+
+**Put the backup directory on a different filesystem from the PostgreSQL
+volume.** On one filesystem no reserve setting can guarantee that a backup will
+not starve the database it is backing up.
+
+`preflight.sh` writes `BACKUP_MAX_TOTAL_GB` for you if it is empty — 25% of the
+filesystem the backups live on, never more than 50% — so that a count policy,
+which does not bound disk usage at all, is not the only thing standing between
+the backup directory and a full disk.
+
+## Container logs, which the stack bounds itself
+
+<Callout title="Nothing to do before you install">
+The stack sets a log driver on every service it starts — Docker's `local`, sized
+by `LOG_MAX_SIZE` and `LOG_MAX_FILES` in your `.env` — so it does not depend on
+what your daemon is set to.
+</Callout>
+
+Docker's own default is a JSON file with no size limit, and it used to be the
+commonest way one of these hosts filled its disk. Setting a bound on the daemon
+is still worth doing for **whatever else runs on the machine**, and it is no
+longer a step to take first. In `/etc/docker/daemon.json`:
+
+```json
+{ "log-driver": "json-file", "log-opts": { "max-size": "50m", "max-file": "5" } }
+```
+
+Then restart the daemon.
+
+**One consequence, if you ship logs somewhere.** `docker logs` and `docker
+compose logs` read `local` exactly as they read `json-file`, so every command in
+these pages works unchanged. But the file on disk is a compact binary format —
+so **a collector that tails `*-json.log` off the host filesystem will not find
+these**. If you run one, change `logging.driver` in `compose.yaml` back to
+`json-file`; the size options mean the same thing under both.
+
+`gc.sh` rotates the scripts' own logs under `/var/log/algojudge/`, and never
+touches container logs: those are the daemon's, bounded by the block in
+`compose.yaml`.
+
+## The group that owns the Docker socket
+
+On a host running a Runner, `DOCKER_GID` should be the group that owns
+`/var/run/docker.sock`. It is not load-bearing: the runner service runs as root
+so that it can measure, and root opens the socket whatever groups it is in — so
+`preflight.sh` warns rather than refusing. Set it correctly anyway; it is what
+the service would need if it ever ran unprivileged.
+
+```bash
+getent group docker | cut -d: -f3
+```
+
+On Docker Desktop the socket is `root:root`, so it is `0`. `preflight.sh` reads
+the real number — by asking a container, because on Docker Desktop and under WSL
+the socket this shell can see is not the one the daemon serves — and warns if
+yours disagrees. On an installation whose `compose.yaml` has been edited back to
+an unprivileged Runner, a wrong value produces `Permission denied (os error 13)`
+from deep inside an HTTP client, naming neither the socket nor the group.

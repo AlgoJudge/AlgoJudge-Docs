@@ -2,7 +2,7 @@
 title: Zapisy
 description: Nadanie w aktywności jest członkostwem. Obok niego nie ma żadnej listy.
 source: en/client/manager/enrolment.mdx
-sourceSha256: 1303d8c566b48f04f443ea379fa79dc67d91abfaba9f07cbb0e851dbc7401ba3
+sourceSha256: a9f1b635351bc391b7cb252572b16a9aa487417fa49acc0562232c7ca9f52a10
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -26,7 +26,8 @@ i dlatego te same wiersze zobaczysz w
 **Zapisz osobę** pyta o:
 
 1. **użytkownika** — konto, które już istnieje i nie jest jeszcze zapisane;
-2. **szablon**, od którego zacząć: wypełnia zestaw i zostaje zapomniany;
+2. **szablon**, od którego zacząć: wypełnia zestaw, a zostaje po nim tylko
+   nazwa — etykieta mówiąca, skąd ten zestaw się wziął;
 3. sam **zestaw uprawnień**, który możesz dowolnie edytować.
 
 Edytor oferuje to, co **ty** masz w tej aktywności, a nie to, co masz w całej
@@ -39,7 +40,8 @@ Jeden przełącznik w tym samym oknie: *wysyła zgłoszenia jak każdy, a liczy 
 jak nikt* — nie ma go ani w liczbie uczestników, ani w rankingu.
 
 Włącza się **sam** przy nadaniu, które daje cokolwiek ponad zestaw zwykłego
-uczestnika. Członek jury w rankingu obok studentów to błąd, a nie preferencja,
+uczestnika — z wyjątkiem `trial:run`, które można mieć, nie przestając być
+zawodnikiem. Członek jury w rankingu obok studentów to błąd, a nie preferencja,
 więc Server wylicza to przy każdym zapisie i nigdy nie przyjmuje z ekranu. Przy
 zwykłym członkostwie decydujesz sam: konto testowe albo to, na którym puszczasz
 rozwiązanie wzorcowe, jest dokładnie tym, do czego ten przełącznik służy.
@@ -60,7 +62,7 @@ dotyczy.
 
 ## Nadanie zaproponowane, ale nieprzyjęte
 
-Nadanie jest *aktywne* albo *zaproszony*. Nadanie w stanie zaproszenia nie daje
+Nadanie jest *aktywne* albo *zaproszone*. Nadanie w stanie zaproszenia nie daje
 niczego — to dopiero oferta, a osoba nie jest w aktywności, dopóki jej nie
 przyjmie.
 
@@ -101,6 +103,12 @@ ktoś musiałby zacząć szukać.
 
 Obszar **Użytkownicy** to lista kont: tam je zakładasz, edytujesz, blokujesz,
 resetujesz hasło, oglądasz sesje i przenosisz dorobek jednego konta na drugie.
+Co każda z tych czynności znaczy dla zapisanego konta — dlaczego *zatwierdzone*
+to nie *potwierdzone*, dlaczego usunięcie anonimizuje, zamiast kasować, i co
+naprawdę trzyma wiersz sesji — opisuje
+[Użytkownik](/pl/server/concepts/user). Uprawnienia, za którymi te czynności
+stoją, w tym `user:block` i `user:merge`, wymieniają
+[Uprawnienia](/pl/server/permissions).
 
 Blokada w ogóle nie pozwala się zalogować — kończy istniejące sesje i nie
 dopuszcza nowych. To, co ktoś może wewnątrz aktywności, opisuje nadanie, i jedno

@@ -127,6 +127,32 @@ In order of how often it is each one:
    sides. **Tags are read once, at the first registration** — changing the
    variable later does nothing, and re-registering is what changes them.
 
+## Every job fails with `carries no /usr/local/bin/aj-shim`
+
+The Runner says it of one of the four language images, and means it: `aj-shim` is
+what makes a judged run measurable, so an image from before it existed cannot
+judge anything.
+
+**The host has an old copy.** Two things keep that quiet, and both are by design:
+`docker compose pull` does not fetch the language images — they are values the
+Runner is handed, not services — and the Runner pulls one only when the host has
+**none at all**, never because a newer one exists.
+
+```bash
+docker pull ghcr.io/algojudge/lang-gcc:0     # and clang, python, pypy
+docker compose restart runner-1              # every runner-N you run
+```
+
+<Callout type="warn" title="The restart is not optional">
+A Runner probes each image once, the first time it uses it, and remembers the
+answer for as long as the process lives. One that has already decided an image
+has no shim goes on failing every job against the corrected copy until it is
+recreated.
+</Callout>
+
+`scripts/update.sh` pulls all four, so an installation kept up to date with it
+does not meet this.
+
 ## Nothing **external** is being judged
 
 A different list, because the ordinary causes are not the causes here. The first
@@ -143,21 +169,40 @@ The other three:
    refused by name, before anything leaves this installation.
 3. **Tags**, exactly as for any Runner, and read once at the first registration.
 
-## The external Runner restarts every few seconds
+## A Runner restarts every few seconds
 
-The account at the judging system is empty or wrong. It refuses while reading its
-configuration — before the identity key, before registration — and
-`restart: unless-stopped` turns that into a loop.
+`restart: unless-stopped` turns any refusal at startup into a loop, and
+`preflight.sh` cannot see most of these because nothing is wrong with the
+configuration. Read the log:
 
 ```bash
 docker compose logs external-runner | tail -20
+docker compose logs runner-1 | tail -5
 ```
 
-The refusal names the setting. `preflight.sh` refuses ahead of it when the
-profile is on, so a stack brought up through the scripts never gets this far.
+**The account at the judging system is empty or wrong.** The external Runner
+refuses while reading its configuration — before the identity key, before
+registration — and names the setting. `preflight.sh` refuses ahead of it when the
+profile is on, so a stack brought up through the scripts never gets this far. A
+leading or trailing space in the password is **not** the cause: it is passed
+through exactly as written, deliberately, because trimming one broke a sign-in
+once.
 
-**A leading or trailing space in the password is not the cause.** It is passed
-through exactly as written, deliberately: trimming one broke a sign-in once.
+**`the Server refused with 403: runner.nonce.unknown`** is a different fault with
+the same symptom, and it applies to both Runners: **this image is older than the
+Server it is registering against.** It appears only from the second start
+onwards, because the identity volume is what makes the Server recognise the key,
+and a refused registration is not one a Runner retries. Pull both images from the
+same release rather than letting the moving tags drift — [Update and
+rollback](/en/install/update) says why they have to move together.
+
+**A named poll or lease setting** is the third: a Runner checks its intervals
+against one another before it does anything. None of these can be reached with
+the values this stack ships; they are what a `.env` of your own can produce.
+`AJ_Poll__WaitSeconds` above 300 is refused because 300 is the Server's own
+ceiling, and a Runner tells a held claim from an immediate answer by how long it
+took — so it would read every held claim as an empty one. To poll less often, the
+setting is `AJ_Poll__MaxSeconds`.
 
 ## The archive says the account does not exist
 
@@ -204,7 +249,7 @@ started under. A Runner that cannot read one refuses to judge without it, so thi
 is a startup message rather than a per-job one:
 
 ```bash
-docker compose logs runner | head -40
+docker compose logs runner-1 | head -40
 ```
 
 | What it says | What to do |
@@ -213,25 +258,32 @@ docker compose logs runner | head -40
 | a cgroup driver it knows neither of | `docker info --format '{{.CgroupDriver}}'` must print `cgroupfs` or `systemd`. Anything else means cgroups are off |
 | it cannot read the hierarchy | `compose.yaml` has been edited: the `/sys/fs/cgroup` mount, `cgroup: host`, or `user: "0:0"` on the runner service is missing |
 
-**Both cgroup drivers work, and neither needs the daemon reconfigured.** Until
-2026-09-03 the Runner required `cgroupfs`, and `systemd` is the default almost
-everywhere, so an installation of that vintage may still carry a
-`native.cgroupdriver` line in `/etc/docker/daemon.json`. It does no harm.
+**Both cgroup drivers work, and neither needs the daemon reconfigured.** A
+`native.cgroupdriver` line in `/etc/docker/daemon.json` does no harm and buys
+nothing.
 
 ## The verdicts are right but no memory is reported
 
 Only on a host using the **`systemd`** cgroup driver, and the Runner says so at
-`ERROR` on every start. One slice serves every run there, so a per-run peak is
-taken by resetting `memory.peak` — a kernel interface that arrived in **Linux
-6.8**. A time limit is processor time, so every verdict stands.
+`ERROR` on every start. One slice serves every run there, so a peak is taken by
+resetting `memory.peak` — a kernel interface that arrived in **Linux 6.12**,
+which excludes Ubuntu 24.04 and includes Debian 13. A time limit is processor
+time, so every verdict stands, and a judged submission's own peak is unaffected:
+that one is read from a cgroup made fresh for the run. What is missing is the
+peak of the runs that are nobody's submission — a build, a checker, an
+interactor.
 
 ```bash
 uname -r
 ```
 
 On an older kernel, either accept it or give the daemon the `cgroupfs` driver,
-where the peak comes from a fresh cgroup per run and needs nothing past Linux
-5.19.
+where every peak comes from a fresh cgroup and needs nothing past Linux 5.19:
+
+```json
+// /etc/docker/daemon.json
+{ "exec-opts": ["native.cgroupdriver=cgroupfs"] }
+```
 
 ## nginx will not start
 
@@ -242,7 +294,7 @@ docker run --rm --add-host server:127.0.0.1 --add-host client:127.0.0.1 \
   -v "$PWD/nginx/algojudge.conf:/etc/nginx/conf.d/default.conf:ro" \
   -v "$PWD/nginx/snippets:/etc/nginx/snippets:ro" \
   -v "$PWD/certs:/etc/nginx/certs:ro" \
-  nginx:1.27-alpine nginx -t
+  nginx:1.30-alpine nginx -t
 ```
 
 `--add-host` is needed because **nginx resolves every upstream while parsing**,
@@ -307,6 +359,8 @@ Compose invocation failed, its one-line error was reported as a `pg_restore`
 warning, and the restore **did nothing at all** while every check afterwards
 passed on data that had never been touched at all.
 
-`restore.sh` now counts the tables afterwards and refuses to report success on an
-empty database. But the real test is the one that caught it: **change something
-first**, then restore, then check the change is gone.
+`restore.sh` takes the identity of every table before and compares it after:
+`--clean --if-exists` gives every restored table a new one, and a restore that
+did nothing leaves the old ones where they were. But the real test is the one
+that caught it: **change something first**, then restore, then check the change
+is gone.

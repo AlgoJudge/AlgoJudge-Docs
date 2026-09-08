@@ -44,10 +44,10 @@ histories in one database, so a value that reached only one of them still refuse
 the start.
 
 **The switch exists because nothing else shipped can apply a migration.**
-`aj-admin` has no migrate command and the image carries no SDK, so the documented
+`aj-admin` has no migrate command and the image carries no SDK, and the
 alternative needs a workstation with the source — which a self-hosted stack does
-not have. Before it existed, a fresh installation had every migration pending and
-never started.
+not have. Without the switch, a fresh installation would have its migration
+pending and never start.
 
 **It takes a PostgreSQL advisory lock while it works**, and that is not
 decoration. Several instances against one database is a supported arrangement and
@@ -127,7 +127,7 @@ Both accept a comma-separated list.
 |---|---|---|
 | `App:BaseUrl` | `AJ_App__BaseUrl` | empty — a relative path is used |
 | `PublicApiUrl` | `AJ_PublicApiUrl` | derived from the request |
-| `Cors:AllowedOrigins` | `AJ_Cors__AllowedOrigins__0`, `__1`, … | none — no CORS policy is added |
+| `Cors:AllowedOrigins` | `AJ_Cors__AllowedOrigins__0`, `__1`, … | `https://localhost:5173`, from the shipped `appsettings.json`. With no origins at all, no CORS policy is added |
 
 `App:BaseUrl` is where the Client is served from; it ends a federated sign-in and
 an LTI launch by sending the browser back. `PublicApiUrl` is the address given to
@@ -169,7 +169,7 @@ commas. Two adjacent settings, two different rules.
 is what decides whether the demo world is seeded, whether Swagger is mapped, and
 whether two of the refusals below apply at all.
 
-## Six ways the Server refuses to start
+## Seven ways the Server refuses to start
 
 Each is deliberate, and each replaces a failure that would otherwise arrive much
 later and look like something else.
@@ -193,6 +193,11 @@ later and look like something else.
    `redis`, which is refused **by name**: it would be a second stateful service
    to back up and restore, and this product does not ask an installation for
    one.
+7. **A migration is pending outside Development.** The only one an operator can
+   wave through, and `Database:MigrateOnStart` is how.
 
-A pending migration is the sixth, and the only one an operator can wave through:
-`Database:MigrateOnStart` is how.
+A named `DataProtection:Certificates` entry this Server cannot use — no `Path`,
+a file that is not there, one it cannot open, one carrying no private key — is
+refused at startup as well. A key ring that cannot be read is an installation
+nobody can sign in to, and it should say so while somebody is still watching the
+deployment rather than at the first sign-in.

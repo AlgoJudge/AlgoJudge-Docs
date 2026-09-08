@@ -4,6 +4,7 @@ description: The six states, the header, the per-test table, and the result that
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 ## Finding it
 
@@ -19,18 +20,31 @@ wherever you are.
 
 | State | What it means |
 |---|---|
-| `queued` | sent, waiting for a Runner to pick it up |
-| `running` | a Runner is evaluating it |
-| `completed` | it finished, and there is a verdict |
-| `failed` | the evaluation itself broke |
-| `cancelled` | it was called off |
-| `superseded` | a rejudge overtook it before a Runner picked it up, so it was never evaluated |
+| **Queued** | sent, waiting for a Runner to pick it up |
+| **Running** | a Runner is evaluating it |
+| **Completed** | it finished, and there is a verdict |
+| **Failed** | the evaluation itself broke |
+| **Cancelled** | a manager called it off, queued or mid-evaluation |
+| **Superseded** | a rejudge overtook it before a Runner picked it up, so it was never evaluated |
 
-**The last one only ever appears on an *attempt*, never on the submission
+<Mermaid chart={`
+flowchart LR
+    sent(["You send it"]) --> queued["Queued"]
+    queued -->|"a Runner takes it"| running["Running"]
+    running -->|"a verdict"| done["Completed"]
+    running -->|"the evaluation broke"| failed["Failed"]
+    queued -->|"a rejudge overtook it"| superseded["Superseded"]
+    queued -->|"a manager called it off"| cancelled["Cancelled"]
+    running --> cancelled
+`} />
+
+Nothing a Runner already holds is interrupted: an attempt in flight finishes,
+and the new one waits behind it.
+
+**Superseded only ever appears on an *attempt*, never on the submission
 itself.** A rejudge always adds a newer attempt and the submission's badge
-follows the newest — so `superseded` is something you meet in the *Evaluation
-attempts* list further down, where it means that attempt was replaced before
-anything ran it.
+follows the newest, so this is something you meet in the *Evaluation attempts*
+list further down.
 
 While a submission is still being judged, the badge shows the state. Once it is
 done, the badge shows the **verdict** instead — the short label the Runner
@@ -60,9 +74,8 @@ onto an empty screen is a promise this screen cannot keep.
 ## While it is still being judged
 
 Instead of an empty table you get a blue panel with a spinner: *Waiting for a
-runner to pick this up* for `queued`, *A runner is evaluating this submission*
-for `running`. It replaces itself with the result when one arrives. You do not
-have to reload.
+Runner to pick this up*, then *A Runner is evaluating this submission*. It
+replaces itself with the result when one arrives. You do not have to reload.
 
 ## The per-test table
 
@@ -141,10 +154,10 @@ is drawn between "nothing was logged" and "this is not for you".
 A submission is judged more than once when it is rejudged. The source is the same
 bytes; each run is an **attempt** of its own.
 
-An **Evaluation attempts** accordion appears once there is more than one,
-carrying each attempt's number, when it started, its state and verdict, and its
-score. Newest first. The result drawn above the accordion is the newest
-attempt's.
+An **Evaluation attempts** accordion appears once there is more than one, with
+the count beside its name, carrying each attempt's number, when it started, its
+state and verdict, and its score. Newest first. The result drawn above the
+accordion is the newest attempt's.
 
 ## An excluded submission
 

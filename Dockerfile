@@ -17,7 +17,7 @@ COPY . .
 # fumadocs-mdx generates have to be made here, before the build reads them.
 RUN npx fumadocs-mdx && npm run build
 
-FROM nginx:1.29-alpine AS runtime
+FROM nginx:1.30-alpine AS runtime
 
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/redirects.conf /etc/nginx/redirects.conf

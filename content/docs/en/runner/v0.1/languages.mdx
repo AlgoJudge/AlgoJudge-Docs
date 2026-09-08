@@ -1,0 +1,189 @@
+---
+title: Languages
+description: The eighteen toolchains a Runner ships with, why an id names a compiler as well as a standard, and the four images without which it judges nothing.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The Runner ships with **eighteen toolchains in three families**, and they share
+**four images**. The catalogue is data: adding a row is a table change, not a
+redesign.
+
+## An id has two levels, because it answers two questions
+
+A participant reading a problem header wants the **standard** — "C++17". A
+participant choosing on the submit form needs the **toolchain**, because `g++`
+and `clang++` disagree about enough that a submission accepted by one is
+occasionally rejected by the other.
+
+So the id carries both: `cpp17-gcc`, never `cpp17`. **A standard is not a
+toolchain.** `cpp17` on its own resolves to nothing and is refused, because
+guessing which compiler somebody meant is exactly what two levels exist to
+prevent.
+
+## The catalogue
+
+| Id | Label | Family | Image |
+|---|---|---|---|
+| `c89-gcc` | C89 / ANSI C (GCC) | C | GCC |
+| `c89-clang` | C89 / ANSI C (Clang) | C | Clang |
+| `c99-gcc` | C99 (GCC) | C | GCC |
+| `c99-clang` | C99 (Clang) | C | Clang |
+| `c11-gcc` | C11 (GCC) | C | GCC |
+| `c11-clang` | C11 (Clang) | C | Clang |
+| `c23-gcc` | C23 (GCC) | C | GCC |
+| `c23-clang` | C23 (Clang) | C | Clang |
+| `cpp11-gcc` | C++11 (GCC) | C++ | GCC |
+| `cpp11-clang` | C++11 (Clang) | C++ | Clang |
+| `cpp17-gcc` | C++17 (GCC) | C++ | GCC |
+| `cpp17-clang` | C++17 (Clang) | C++ | Clang |
+| `cpp20-gcc` | C++20 (GCC) | C++ | GCC |
+| `cpp20-clang` | C++20 (Clang) | C++ | Clang |
+| `cpp23-gcc` | C++23 (GCC) | C++ | GCC |
+| `cpp23-clang` | C++23 (Clang) | C++ | Clang |
+| `python3` | Python 3 (CPython) | Python | CPython |
+| `pypy3` | Python 3 (PyPy) | Python | PyPy |
+
+Every C and C++ standard is offered through **both** compilers, which is what a
+course teaching a particular standard may legitimately want to pin.
+
+PyPy is a separate row rather than a footnote because the gap changes what a
+participant can do: a Python solution that times out on CPython frequently does
+not on PyPy.
+
+### What each family accepts, and how it is built
+
+| Family | File extensions | Built with |
+|---|---|---|
+| C | `.c` | the compiler, `-O2 -std=…` and `-static` |
+| C++ | `.cpp`, `.cc`, `.cxx`, `.c++` | the compiler, `-O2 -std=…` and `-static` |
+| Python | `.py` | `py_compile` |
+
+Extensions are matched case-insensitively. **A file the chosen toolchain does not
+accept is refused as a compilation error, not as an infrastructure failure**:
+choosing C++ and uploading `main.py` is the participant's own mistake, the
+compiler would have said the same thing thirty seconds later, and a message
+naming the extensions is more use than a parse error in a language nobody thought
+they were writing.
+
+`-O2` is on every compiled row because a limit is stated against optimised code;
+judging a debug build would make every limit a different limit.
+
+Python is not compiled, but it does have a build step. `py_compile` turns a syntax
+error into **one** failure a participant can read, rather than into every test
+failing with the same traceback.
+
+### Two ids that resolve but are not offered
+
+`cpp` and `python` were the whole catalogue once, and a problem package's
+`config.yml` names the language of a checker, an interactor and a model solution
+using them. They still resolve — `cpp` to `cpp20-gcc`, `python` to `python3` — so
+that packages written against the documented format keep building their own
+judging programs. A checker and an interactor are built by the same path, in the
+same image, with the same command as a submission.
+They are not offered on any form.
+
+`cpp` resolves to C++20 specifically because that is the standard the single C++
+entry carried before the catalogue existed, so a package judged yesterday is
+judged the same way today.
+
+### What is not here
+
+Java and Rust are not in the catalogue and are not accepted. Java was considered
+and left out for a measurement reason: the JVM reserves address space rather than
+allocating it, so a memory limit would measure something different for it than
+for everything else.
+
+[Forwarding to an external judge](/en/runner/v0.1/external) offers six languages
+including Java and Pascal — by forwarding to a service that runs them, not by
+running them.
+
+## Four images, and a Runner without them judges nothing
+
+| Image key | Variable |
+|---|---|
+| GCC | `AJ_Sandbox__Image__Gcc` |
+| Clang | `AJ_Sandbox__Image__Clang` |
+| CPython | `AJ_Sandbox__Image__Python` |
+| PyPy | `AJ_Sandbox__Image__Pypy` |
+
+Eighteen toolchains share four images because every C and C++ standard is a
+`-std` flag rather than an image of its own.
+
+The defaults, and the older `AJ_Sandbox__Image__Cpp` spelling that is still read,
+are on [Configuration](/en/runner/v0.1/configuration) — stated once, so that the two
+pages cannot drift apart.
+
+<Callout type="warn" title="The language images are pulled separately from the Runner, and a Runner without them judges nothing">
+The Runner image contains no compiler. Every submission is built and run inside
+one of the four images above, and a Runner that cannot pull them starts, is
+approved, claims work, and fails every job it is given.
+
+The defaults are the tags a **development** stack builds locally. A deployment
+names all four explicitly and pins the same version as the Runner — that pairing
+is what the release was tested as.
+</Callout>
+
+The compiler version is a capability the Runner **reports**, which is why the
+images are the project's own and pinned rather than a stock compiler image that
+moves. A tag that moves means two submissions to the same problem were judged by
+two different compilers.
+
+## Building an image of your own
+
+`AJ_Sandbox__Image__*` will take any image, which is how you pin a compiler
+version we do not ship or add one to a fork. Four things are expected of it.
+
+| | What, and why |
+|---|---|
+| `/etc/algojudge-toolchain` | one line per compiler, whatever `--version` prints. The Runner reports it as a capability, and it is how two submissions to one problem can be shown to have met the same compiler |
+| `/out`, owned by `65534:65534` | where a build puts what it made. Part of the image because the container is unprivileged and cannot create a directory at the root of its own filesystem |
+| `USER 65534:65534` | the safe default, and the one a step that is not measured runs as |
+| `/usr/local/bin/aj-shim` | the measuring shim, below |
+
+### The shim, and how to get one
+
+A measured run is started as `aj-shim <input-file> <program> [args...]`. The shim
+becomes PID 1, opens the input file onto the submission's standard input, drops
+to `65534`, forks, and reports the child's own processor time and peak memory —
+see [Isolation](/en/runner/v0.1/isolation) for what that is worth and why it is not
+trusted on its own.
+
+**Copy ours rather than writing one.** It is statically linked and depends on
+nothing in the image around it:
+
+```dockerfile
+COPY --from=ghcr.io/algojudge/lang-gcc:0.1.0 /usr/local/bin/aj-shim /usr/local/bin/aj-shim
+```
+
+Pin the same version as the Runner, for the reason the callout above gives about
+tags that move.
+
+<Callout type="info" title="An image without it still judges">
+Leave the shim out and nothing breaks: the report is absent, the reading from the
+cgroup stands on its own, and the container's own start is inside the measurement
+again — 33 to 74 ms of it, against limits that can be 100. The Runner says so
+once per image rather than once per submission.
+
+What you must not do is ship a *different* program under that name. The Runner
+reads what the report says; a shim that reports less than the program spent is a
+submission that beats the time limit, and one that reports more is a correct
+solution refused.
+</Callout>
+
+## What decides which toolchains a problem allows
+
+Not the Runner. An assignment's configuration may list the languages it accepts,
+and the Runner refuses anything outside that list as a **policy violation** — a
+verdict rather than an infrastructure failure, because the participant chose it,
+their code may be perfect, and what they broke is a rule of the activity. The
+submission stays rejudgeable if a manager widens the set afterwards.
+
+An empty list means the assignment said nothing, which allows anything this
+Runner can build. It is not a way of allowing none.
+
+The list may name a **family** as well as a toolchain: `cpp` in an assignment's
+languages accepts every C++ row. That two-level lookup exists to close a silent
+failure — a rule keyed on the whole id alone would have found nothing for
+`cpp17-gcc` and reported no violations, which reads exactly like a clean
+submission.

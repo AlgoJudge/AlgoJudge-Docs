@@ -102,9 +102,9 @@ harmonogram rządzi obydwoma.
 Kopia, która nie udaje się od trzech tygodni, wychodzi na jaw w trakcie awarii,
 którą miała pozwolić przeżyć.
 
-**Samo `MAILTO` by tego nie przeniosło.** Cron wysyła to, co zadanie wypisze,
+**Samo `MAILTO` by nie wystarczyło.** Cron wysyła to, co zadanie wypisze,
 a każda linia dostarczanego crontaba wypisuje do pliku dziennika przez `2>&1` —
-więc nie zostawało nic do wysłania. Dlatego każda linia kończy się `|| echo`:
+więc nie zostaje nic do wysłania. Dlatego każda linia kończy się `|| echo`:
 przy kodzie niezerowym trafia na stdout crona jedno zdanie, a przy zwykłym
 przebiegu nie trafia nic. To właśnie dostaje adres wpisany w `MAILTO`.
 

@@ -2,8 +2,10 @@
 title: Rundy, tygodnie i zajęcia
 description: Skąd bierze się nazwa serii, co pokazują jej cztery stany i które z nich przyjmują zgłoszenia.
 source: en/client/participant/series.mdx
-sourceSha256: 810533fb34703c3d3fde944a1bf09bc0ef95ee3c8c3e32a120ab30af5c5eb711
+sourceSha256: af4c831a48453f7f7772a067a2356285c3f81d9aa380751e89e45868735bae43
 ---
+
+import { Mermaid } from "@/components/mermaid";
 
 **Seria** to grupa zadań wewnątrz aktywności. W zawodach nazywa się ją **rundą**,
 na zajęciach **tygodniem** albo **zajęciami**.
@@ -36,15 +38,29 @@ Clienta nie byłaby żadną odmową.
 | **wstrzymana** | widoczne, chyba że prowadzący je zabrał, wstrzymując serię | nie |
 | **zakończona** | widoczne, na zawsze | nie |
 
+<Mermaid chart={`
+flowchart LR
+    upcoming["Nierozpoczęta<br/>nic o niej nie jest ujawniane"]
+    open["Otwarta<br/>do czytania i przyjmuje zgłoszenia"]
+    paused["Wstrzymana<br/>do czytania, chyba że prowadzący ukrył zadania"]
+    ended["Zakończona<br/>do czytania na zawsze"]
+    upcoming -->|"mija jej start"| open
+    open -->|"prowadzący ją wstrzymuje"| paused
+    paused -->|"prowadzący ją wznawia"| open
+    open -->|"mija jej koniec"| ended
+`} />
+
+Wrócić można tylko ze wstrzymania.
+
 Warto powiedzieć wprost, co z tego wynika:
 
 - **Zakończona runda dalej jest do czytania.** Skończyła się, ale nie stała się
   tajna — możesz wrócić do tego, co rozwiązywałeś. Organizator, który za rok
   użyje tych samych zadań, może zamknąć zakończoną rundę — wtedy ukrywa zadania
   tak jak runda, która się nie zaczęła, a panel mówi, o który przypadek chodzi.
-- **Adres treści zadania niczego nie omija.** Link do zadania w rundzie, która się
-  nie zaczęła, albo w takiej, której treści prowadzący właśnie ukrył, jest odrzucany
-  tak samo jak wszystko inne.
+- **Adres treści zadania niczego nie omija.** Link do zadania w rundzie, która
+  się nie zaczęła, albo w takiej, której treści prowadzący właśnie ukrył, zostaje
+  odrzucony tak samo jak wszystko inne.
 
 ## Co pokazuje zamknięta runda
 
@@ -56,7 +72,7 @@ Nad miejscem, w którym byłyby zadania, panel mówi, o który przypadek chodzi:
   przysłał Server.
 - **Seria jest wstrzymana** — prowadzący ją zatrzymał.
 - **Seria się zakończyła.**
-- **Zablokowane przez: …** — trwa runda o wyższej randze.
+- **Zablokowane przez …** — trwa runda o wyższej randze.
 
 Jeżeli runda się nie zaczęła i ma godzinę startu, panel pokazuje też tę godzinę i
 odliczanie na żywo. Gdy odliczanie dojdzie do zera, strona pyta Server jeszcze

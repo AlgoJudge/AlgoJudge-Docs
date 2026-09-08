@@ -1,14 +1,18 @@
 ---
 title: What the host needs
-description: Docker with Compose v2, cgroup v2, five shell tools, and disk for backups. The stack bounds its own logs.
+description: Docker with Compose v2.15.0, cgroup v2, the coreutils the scripts use, and disk for backups. The stack bounds its own logs.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-## Docker with Compose v2 or later
+## Docker with Compose v2.15.0 or later
 
 The stack is one `compose.yaml` with profiles. Everything in this section is
 `docker compose`, the plugin, not the older `docker-compose` script.
+
+**2.15.0 is the floor because of `cgroup: host`**, which the Runner service sets
+and which Compose first shipped in that version. `up -d --wait`, used by the
+install and update scripts, needs 2.1.1.
 
 ## cgroup v2, and it is not optional
 
@@ -17,13 +21,9 @@ The Runner asks the container runtime for its cgroup version at startup and
 
 This is not about whether the sandbox holds: **v1 confines a job container
 perfectly well**, and the whole adversarial test suite passes on it. What it
-cannot do is carry the arrangement a memory limit is enforced with — a cgroup
-per run holding the submission alone — or measure what a process that has
-already exited used.
-
-What v1 cannot do is **measure**. `memory.peak` and `cpu.stat` are v2
-interfaces, and there is no v1 equivalent that tells the truth about a process
-that has already exited. The Runner's refusal says exactly this:
+cannot do is **measure**. `memory.peak` and `cpu.stat` are v2 interfaces, and
+there is no v1 equivalent that tells the truth about a process that has already
+exited. The Runner's refusal says exactly this:
 
 > the limits are enforced on v1, but a time limit is decided on processor time
 > read from cpu.stat, which is a v2 interface — so what cannot be done here is
@@ -46,7 +46,10 @@ from this host's cgroups, so this Runner registers and answers the protocol and
 then fails every job it claims.
 ```
 
-`AJ_Sandbox__AllowCgroupV1` is the old name for it and is still read.
+`AJ_Sandbox__AllowCgroupV1` is the same switch under its older name and is
+still read. `preflight.sh` refuses a host on v1 outright, and refuses a cgroup
+driver that is neither `cgroupfs` nor `systemd`, rather than letting the stack
+come up around a Runner that cannot judge.
 
 <Callout type="warn" title="The override cannot be reported to the panel">
 `MachineDto` is a closed shape and drops anything it does not name, so a Runner
@@ -127,14 +130,24 @@ that has stopped computing. The sandbox stops such a run so that a genuinely
 wedged program cannot hold a Runner for ever, and a starved one reaches that stop
 without ever having been slow. The verdict says `Time limit exceeded`.
 
-Measured on a sixteen-processor host running twelve Runners with no division
-between them: 80% of 8409 judged tests ran past their limit on the wall clock
-while staying inside it on the processor, and **five verdicts in 150 were
-wrong** — three of them programs that had used about a quarter of what they were
-allowed.
+Measured 2026-09-03 on sixteen processors — eight physical cores — running
+twelve Runners with no division between them: **fifteen submissions in a hundred
+and fifty came back `Time limit exceeded` while inside their limits**, including
+solutions known to be correct.
 
-So the cores counted below have to be cores nothing else is on. More than half
-the host is defensible; two Runners on one core is not.
+So the ceiling is a rule about correctness rather than about throughput, and the
+cores counted below have to be cores nothing else is on:
+
+| Physical cores | Runners |
+|---|---|
+| 4 | 2 |
+| 8 | **4** — what the `runner` profile starts |
+| 16 | 8 |
+
+`lscpu` says how many there are — *Core(s) per socket* times *Socket(s)*, which
+is **not** the CPU count when a core carries two threads. To run fewer, remove
+the services you do not want from `compose.yaml` and leave their
+`RUNNER_*_CPUSET` unset.
 
 | Component | Cores | Memory | Notes |
 |---|---|---|---|
@@ -248,10 +261,17 @@ State survives a restart because the volumes are named. A Runner keeps its
 identity key across one, so it stays approved rather than arriving as a new
 Runner a manager has to admit again.
 
-## Five shell tools
+## The commands the scripts use
 
-`bash`, `openssl`, `find`, `du`, `df`. The scripts in `AlgoJudge-Ops` use
-nothing else. Add `crontab` if you want the schedule installed for you.
+`bash` and `openssl` are the two worth installing deliberately. The rest are on
+any Linux host that has coreutils: `awk`, `sed`, `stat`, `sha256sum`, `mktemp`,
+`date`, `find`, `du`, `df`, `cut`, `tr`, `grep`, `sort`, `head`, `tail`, `wc`.
+
+**`sed -i` and `stat -c` are the GNU spellings**, so a BSD or macOS host is not
+one of these hosts. `git`, `flock` and `crontab` are optional and each degrades
+with a message rather than failing: no `git` means no revision in a backup's
+manifest, no `flock` means two scripts can overlap, no `crontab` means the
+schedule is yours to install.
 
 ## Disk for backups, ideally not the database's
 
@@ -297,10 +317,10 @@ touches container logs: those are the daemon's, bounded by the block in
 ## The group that owns the Docker socket
 
 On a host running a Runner, `DOCKER_GID` should be the group that owns
-`/var/run/docker.sock`. It stopped being load-bearing on 2026-09-03: the runner
-service runs as root so that it can measure, and root opens the socket whatever
-groups it is in. Set it correctly anyway — it is what the service would need
-again if it ever went back to running unprivileged.
+`/var/run/docker.sock`. It is not load-bearing: the runner service runs as root
+so that it can measure, and root opens the socket whatever groups it is in — so
+`preflight.sh` warns rather than refusing. Set it correctly anyway; it is what
+the service would need if it ever ran unprivileged.
 
 ```bash
 getent group docker | cut -d: -f3

@@ -1,0 +1,153 @@
+---
+title: Biblioteka zadań
+description: Zadania, ich wersje i podpięcie, które decyduje o sposobie użycia.
+source: en/client/v0.1/manager/problems.mdx
+sourceSha256: 1e4a7ca68d47aa4da6907a9c918f7f192e81b619384cc1154ce87884a0e6e5ac
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Biblioteka trzyma zadania. Aktywności na nie wskazują, ale ich nie posiadają, a
+to samo zadanie może być postawione w kilku rundach i kilku kursach naraz.
+
+## Widoczność i kto co widzi
+
+Zadanie jest **prywatne, dopóki go nie udostępnisz**, a prywatne może podpiąć do
+serii tylko jego autor. W zakładce **Udostępnianie**:
+
+| Widoczność | Kto je widzi |
+|---|---|
+| prywatne | właściciel |
+| udostępnione | właściciel oraz prowadzący z listy |
+| cała instancja | każdy prowadzący w instalacji |
+
+Udostępnianie decyduje, które zadania prowadzący **widzi**. O tym, co może z
+nimi zrobić, decydują jego uprawnienia — to dwa osobne pytania.
+
+## Tworzenie
+
+**Nowe zadanie** pyta o nazwę, slug i **typ**, wybierany z listy. Typ decyduje,
+które komponenty rysują treść i wynik; a napis, pod którym nic nie jest
+zarejestrowane, da ci zadanie, którego żaden ekran nie pokaże.
+
+Slug jest używany w adresach i wpisuje się domyślnie jako etykieta podpięcia.
+
+## Wersję publikuje się w całości
+
+<Callout type="warn" title="Wersje są tylko dopisywane">
+Każda poprawka publikuje **nową** wersję. Starsze są tylko do odczytu:
+przeczytasz je, ale każda kontrolka, która by je zmieniła, jest wyłączona. Runda
+przypięta do starszej wersji nadal jest oceniana dokładnie względem tego, do
+czego ją przypięto.
+</Callout>
+
+Treść, załączniki i paczka są publikowane **razem**, jako jedna wersja, jednym
+przyciskiem na dole ekranu — poza zakładkami, żeby zmiany zrobionej w jednej
+zakładce nie dało się zapomnieć, publikując z innej. Plakietki obok mówią, co
+będzie w kolejnej wersji: ile treści, ile plików dodanych i usuniętych oraz czy
+paczka się zmieniła.
+
+Zanim opublikujesz, wszystko, co przygotowałeś, żyje wyłącznie w tej karcie
+przeglądarki. Wpisz **co się zmieniło** — to właśnie pokazuje historia.
+
+## Zakładki
+
+### Treść
+
+Markdown, pisany obok żywego podglądu, który rysuje ten sam komponent co u
+uczestnika. Jedna zakładka na język; wersja zawiera każdy język, w którym ją
+opublikowano. Tekst możesz wgrać i pobrać jako plik.
+
+Zadanie zaimportowane z archiwum może mieć treść w postaci dokumentu, a nie
+tekstu — PDF-a. Zakładka mówi to wprost, zamiast pokazywać pusty edytor: taki
+dokument uczestnicy dostają w niezmienionej postaci i tutaj się go nie edytuje.
+
+### Załączniki
+
+Pliki jadące razem z wersją, każdy z **zakresem**:
+
+- **uczestnik** — rysunki i pliki z danymi, na które wskazuje treść, dostarczane
+  temu, kto otworzy zadanie;
+- **prowadzący** — trzymane dla tego, kto prowadzi aktywność.
+
+Ani treść, ani paczka nie są załącznikami; jedno i drugie powstaje gdzie indziej
+i odbudowuje się przy publikacji wersji. Nazwę już użytą w tej wersji ekran
+odrzuca, zamiast podmieniać plik, żeby treść odwołująca się do tej nazwy nie
+zmieniła znaczenia pod spodem.
+
+Z treści wskazujesz plik jego nazwą. `![opis](<nazwa>)` pokazuje go wewnątrz
+treści — obrazek się wyświetli, PDF otworzy się w ramce; `[opis](<nazwa>)` jest
+zamiast tego linkiem. Nawiasy ostre są potrzebne, gdy nazwa zawiera spację, a
+przycisk kopiowania obok pliku wstawia gotowe odwołanie. Wskazać możesz
+wyłącznie pliki o zakresie *uczestnik*.
+
+Każdy plik ma swoje SHA-256, liczone tam, gdzie są bajty, i przeliczane ponownie
+przez Server przed zapisem.
+
+### Paczka
+
+To, czego Runner potrzebuje do oceny zgłoszenia — i jedyna zakładka, której nie
+ma zawsze. Typ zadania, który ocenia bez paczki, jej nie dostaje, a ekran mówi w
+jej miejsce dlaczego. Zobacz [Paczki](/pl/client/v0.1/manager/packages).
+
+### Wersje
+
+Każda wersja z datą, autorem, notatką i informacją, czy ma paczkę. **Pokaż**
+przestawia zakładki treści, załączników i paczki na tę wersję — wybór jest w
+adresie, więc *spójrz na wersję 2 tego zadania* jest linkiem.
+
+### Udostępnianie
+
+Widoczność i lista udostępnień, opisane wyżej.
+
+## Gdzie mieszka konfiguracja na jeden użytek
+
+Nic z tego, *jak zadanie jest używane*, nie zapisuje się na samym zadaniu.
+Zapisuje się na **podpięciu** — wierszu, który powstaje, gdy podpinasz zadanie
+do serii — więc jedno zadanie może być warte 100 punktów w zawodach i 10 w
+zbiorze treningowym naraz.
+
+| Na podpięciu | Co to jest |
+|---|---|
+| Slug w tej aktywności | to, co widzi uczestnik: `A`. Unikalny w całej aktywności |
+| Nazwa w tej aktywności | puste zachowuje nazwę z biblioteki |
+| Wersja treści | względem której wersji ta runda jest oceniana |
+| Wartość punktowa | punkty tutaj; puste zachowuje własne punkty zadania |
+| Maksymalny rozmiar, plików na zgłoszenie, zgłoszeń | puste dziedziczy po aktywności |
+| Konfiguracja | to, co zmienia werdykt: limity i języki, w których wolno zgłaszać. Nakładane na własne ustawienia paczki |
+| Formularz zgłoszenia | co oferuje formularz. Gdy on i konfiguracja różnią się co do języków, obowiązuje konfiguracja |
+| Wyświetlanie | pokazywane nad treścią. Błąd tutaj to nieporządna strona i nic więcej |
+
+Trzy ostatnie to dokumenty w słowniku samego typu zadania. Server przechowuje
+wszystkie trzy i nie czyta żadnego, dlatego są to pola tekstowe, a nie
+formularze.
+
+### Przypinanie
+
+**Gdy podpinasz zadanie, przypina się wersja bieżąca w tamtej chwili.** Dzięki
+temu opublikowanie poprawki nie zmienia tego, względem czego oceniana jest
+trwająca już runda, a przejście na nowszą wersję jest świadomą decyzją, a nie
+skutkiem ubocznym poprawienia literówki.
+
+<Callout type="warn" title="Pozycja „zawsze bieżąca” nie zdejmuje przypięcia">
+Lista **Wersja treści** ją oferuje, ale jej wybranie niczego nie zmienia: nowe
+podpięcie i tak przypina się do wersji bieżącej, a istniejące zachowuje swoje
+przypięcie. Żeby przestawić rundę na nowszą wersję, wskaż tę wersję.
+</Callout>
+
+Plakietka na liście podpięć pokazuje oba numery, gdy się rozeszły: `v2 / v3`
+znaczy, że biblioteka poszła dalej, a ta runda nie — czyli dokładnie to, po co
+się przypina.
+
+Brakującą paczkę ta sama lista wytyka osobno. Bez niej nie ma czym oceniać, a
+dowiedzieć się o tym trzeba przed otwarciem rundy.
+
+## Odpinanie, archiwizacja i usuwanie
+
+Podpięcia nie da się odpiąć, gdy coś zostało już do niego zgłoszone.
+
+**Archiwizacja to zwykły sposób wycofania zadania.** Zarchiwizowane zadanie
+znika z listy wyboru przy podpinaniu i nie przyjmuje nowych wersji, a każde
+podpięcie, które już go używa, działa dalej. Usunięcia odmawia i warstwa usług,
+i sama baza, dopóki zadanie jest gdziekolwiek podpięte — więc archiwizuj je
+zamiast tego.

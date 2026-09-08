@@ -35,6 +35,12 @@ with an empty body, so there would be nothing to read.
 work is told to: `standard-io@1,output-only@1`. Which types a Runner advertises
 is configuration, not code.
 
+The default in that table is the **binary's**, for a process started with the
+variable unset. `AlgoJudge-Ops` ships `RUNNER_PROBLEM_TYPES=standard-io@1,output-only@1`,
+so an installation's Runners declare both — which is why a queue that looks stuck
+is diagnosed against the value the service actually has and not against this
+column.
+
 ## Polling and the lease
 
 | Variable | Default | |
@@ -82,9 +88,19 @@ job is renewing its lease instead, which says the same thing more precisely.
 | `AJ_Cache__MaxBytes` | `10737418240` (10 GiB) | Cache ceiling |
 | `AJ_Work__Path` | `/var/lib/algojudge-runner/work` | Scratch, as **this process** sees it |
 | `AJ_Work__HostPath` | the value of `AJ_Work__Path` | Scratch, as the **container runtime's daemon** sees it |
+| `AJ_Pipes__Path` | unset | Where a judged run's channels are made, when the work directory cannot hold them. Unset leaves them in the job's own scratch |
+| `AJ_Pipes__HostPath` | the value of `AJ_Pipes__Path` | The same directory as the **daemon** sees it. Set both or neither |
 
 The package cache is the only state a Runner keeps besides its key. Losing it
 costs a re-download, nothing more.
+
+The pipes pair is not about space: a judged run's output travels on a **named
+pipe**, which holds no bytes at all, so what it needs is a filesystem that can
+*make* one. A bind mount of a Windows or macOS directory cannot — a developer's
+checkout, not a deployment. A `tmpfs:` entry on the Runner's own service will
+not do either: that is private to the Runner's mount namespace, and the daemon
+would make an empty directory instead, which is the failure the callout below
+describes.
 
 <Callout type="warn" title="AJ_Work__HostPath is the path the Docker daemon can open, not the path the Runner sees">
 A bind mount is resolved by the container runtime's **daemon**. When the Runner
@@ -143,7 +159,7 @@ reported beside a verdict on such a host are not to be trusted.
 
 ## The variables that are not ours
 
-Six more are read, by the libraries the Runner is built on rather than by its own
+These are read by the libraries the Runner is built on rather than by its own
 configuration. They carry no `AJ_` prefix, and the Runner never validates them.
 
 | Variable | |
