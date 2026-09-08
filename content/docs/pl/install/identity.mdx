@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
 source: en/install/identity.mdx
-sourceSha256: 75e26dced3f810f67c4f75d926f2717e8124b06d2ac362f91311fa3415472da0
+sourceSha256: 8455f33c9636d87a3693ede48130802ccc15a4496ca34abbbaa528236e2a9389
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -224,18 +224,24 @@ konto temu, kto ten adres po nim przejmie.
 Dwie konsekwencje zaskakują ludzi i obie są celowe:
 
 - **Dostawca nigdy nie przejmuje istniejącego konta po nazwie ani po adresie.**
-  Kolidująca nazwa użytkownika dostaje krótki skrót wartości `sub`, a kolidujący adres
-  pomijamy i konto powstaje bez niego.
-- **Dwóch dostawców ręczących za jedną osobę to dziś dwa konta.** Jedna osoba,
-  jedno konto, którymi drzwiami by nie weszła, to wymaganie, które produkt
-  przyjął i którego jeszcze nie zbudował.
+  Kolidująca nazwa użytkownika dostaje krótki skrót wartości `sub`, a kolidujący
+  adres pomijamy i konto powstaje bez niego.
+- **Konto może mieć kilka powiązań, a logowanie samo z siebie nie łączy dwóch.**
+  Login uczelniany i `auth.algojudge.app` to dwie drogi do tej samej osoby i jedno
+  konto trzyma oba powiązania. Żadne logowanie nie rozstrzyga natomiast
+  samodzielnie, że nowy `sub` należy do konta, które już istnieje — jedynym
+  dowodem, jakim by dysponowało, jest adres, którego nikt nie zweryfikował, a
+  automatyczne kojarzenie po takim adresie to przejęcie konta, a nie ułatwienie.
+  Konta łączy się uprawnieniem `user:merge`: to czynność administracyjna, którą
+  ktoś podejmuje świadomie i którą da się cofnąć, dopóki opróżnione konto jest
+  jeszcze całe.
 
 Kolejność przy każdym logowaniu jest taka: zwaliduj, rozwiąż mapowanie, zastosuj
 zmianę uprawnień, dopiero potem zdecyduj o wpuszczeniu. Najbardziej widać to
 w jednym przypadku: **znany subject, który przy `deny` nie mapuje się na nic, ma
 swój wkład odebrany i dopiero potem dostaje odmowę.** Odmowa, która zostawiałaby
-wczorajszy wkład, trzymałaby kogoś wśród prowadzących na zawsze — wystarczyłoby, żeby
-nigdy więcej się nie zalogował.
+wczorajszy wkład, trzymałaby kogoś wśród prowadzących na zawsze — wystarczyłoby
+nigdy więcej się nie logować.
 
 Dostawca **wyłączony** to przypadek odwrotny i też celowy: nic nie jest
 zapisywane i nikt nie traci uprawnień. Kiedy wyłączasz dostawcę, żeby go

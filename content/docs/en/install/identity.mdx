@@ -222,9 +222,14 @@ Two consequences surprise people, and both are deliberate:
 - **A provider never inherits an existing account by name or address.** A
   colliding username is decorated with a short hash of the subject; a colliding
   address is dropped and the account is provisioned without one.
-- **Two providers vouching for one person are two accounts today.** One person,
-  one account, whichever door they came through, is a requirement the product has
-  taken and not yet built.
+- **An account may hold several links, and nothing joins two of them at
+  sign-in.** A university login and `auth.algojudge.app` are two ways into one
+  person, and one account carries both. What no sign-in does is decide on its own
+  that a new subject belongs to an account that already exists: the only evidence
+  it would have is an address nobody has verified, and correlating automatically
+  on one of those is account takeover rather than a convenience. Joining two
+  accounts is `user:merge` — an administrative act somebody takes deliberately,
+  and one that can be undone while the emptied account is still whole.
 
 The order at every sign-in is: validate, resolve the mapping, apply the
 permission change, then decide whether to admit. It matters most in one case:

@@ -7,10 +7,6 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 import { Mermaid } from "@/components/mermaid";
 
-**The accepted specification prevails.** This page describes **version 1.1** of
-the contract; on any divergence, the specification is right and this page is
-wrong.
-
 ## Claiming
 
 ```http
@@ -202,11 +198,14 @@ retried for ever, because retrying for ever is how one bad package stops an
 installation.
 
 So a job is queued, running on exactly one Runner, or finished — and it comes
-back to the queue three ways: a **release**, a lease that **expired**, and a
-report carrying an **infrastructure failure**. A report with a result is the
-only thing that ends it properly, and the delivery cap is the only thing that
-ends it without one. Which of the three hands the delivery back is what the
-sections below add.
+back to the queue four ways: a **release**, a lease that **expired**, a report
+carrying an **infrastructure failure**, and a key an administrator **revoked**
+while the Runner held the job. Only the first three are the Runner's own doing;
+the fourth is the Server acting on it, which is why approval is checked on every
+call rather than only at the handshake. A report with a result is the only thing
+that ends a job properly, and the delivery cap is the only thing that ends it
+without one. Which of the four hands the delivery back is what the sections
+below add.
 
 <Mermaid chart={`
 flowchart TD
@@ -220,6 +219,7 @@ flowchart TD
     running -->|"release — this Runner is stopping"| back
     running -->|"the lease expires"| back
     running -->|"a report carrying an infrastructure failure"| back
+    running -->|"the Runner's key is revoked"| back
     back -->|"any Runner may claim it again"| queued
     back -->|"at the delivery cap"| failed
 `} />
@@ -281,15 +281,22 @@ computing.
 POST /api/v1/runner/jobs/{jobId}/progress
 ```
 
-reports progress and **renews nothing**. A Runner still working says so with a
-lease call.
+reports progress. **The contract says it renews nothing**, so a Runner still
+working says so with a lease call and never leaves its deadline to a progress
+note.
+
+This Server is more generous, and that is not something to build on: a progress
+call goes through the same code as a renewal and pushes the deadline out by the
+lease the job was granted — never shortening it, by the rule above. An
+implementation that relied on that would hold its job here and lose it against a
+Server that does only what the contract asks.
 
 | Refusal | Code | Where |
 |---|---|---|
 | The token names another Runner's lease | `runner.lease.foreign` | everywhere |
 | The lease has already been reclaimed | `runner.lease.stale` | everywhere |
 | The token is not a token | `runner.lease.malformed` | the two `report` calls only |
-| The job is not in a state that allows this | `job.state` | everywhere |
+| The job is not in a state that allows this — cancelled by a manager, superseded by a rejudge, or already back in the queue | `job.state` | everywhere |
 
 The third row is narrower than the others. A lease, release or progress call
 folds an unparseable token into `runner.lease.stale` — a token that cannot be a

@@ -35,6 +35,12 @@ with an empty body, so there would be nothing to read.
 work is told to: `standard-io@1,output-only@1`. Which types a Runner advertises
 is configuration, not code.
 
+The default in that table is the **binary's**, for a process started with the
+variable unset. `AlgoJudge-Ops` ships `RUNNER_PROBLEM_TYPES=standard-io@1,output-only@1`,
+so an installation's Runners declare both — which is why a queue that looks stuck
+is diagnosed against the value the service actually has and not against this
+column.
+
 ## Polling and the lease
 
 | Variable | Default | |

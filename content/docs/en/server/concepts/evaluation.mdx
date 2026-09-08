@@ -81,7 +81,9 @@ of overwriting a newer attempt.
 
 `LeaseSeconds` is kept because `LeaseExpiresAt` cannot be read backwards: every
 renewal moves it, so the duration the Runner was granted is gone after the first
-one. Without it a heartbeat had nothing to renew *by*.
+one. Without it a renewal that names no duration — and a progress call, which
+never names one — would have nothing to renew *by*, and would fall back to this
+Server's default instead of the lease this job was actually granted.
 
 `Deliveries` is incremented on every claim, including the ones that followed a
 lease expiry. A job that keeps being reclaimed is a job that keeps killing

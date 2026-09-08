@@ -16,6 +16,8 @@ results. It is not a description of the Runner that ships — that is
 This section describes **version 1.1** of the contract. It is written here for a
 reader, and the accepted specification is what a Server is built to: on any
 divergence, **the specification is right and this section is wrong**.
+
+It holds for every page in this section, which is why none of them repeats it.
 </Callout>
 
 ## What a Runner is, on the wire
@@ -46,10 +48,12 @@ anonymous ────────> pendingApproval ────────> ap
                         (refused a token)      revoked ──> forget        holding a job
 ```
 
-A Runner may register at any time and evaluates nothing until a manager approves
-it. A **re-registration** — which is what every restart is — asks for a challenge
-first and signs the nonce; the challenge endpoint does not itself require
-approval, so a Runner still waiting to be approved can restart like any other. **Revocation is permanent**: there is no rotation, so a leaked key means a
+A Runner may register at any time and evaluates nothing until an **administrator**
+approves it — `runner:approve` is a global permission, and no manager template
+carries it. A **re-registration** — which is what every restart is — asks for a
+challenge first and signs the nonce; the challenge endpoint does not itself
+require approval, so a Runner still waiting to be approved can restart like any
+other. **Revocation is permanent**: there is no rotation, so a leaked key means a
 new configuration, a new key and a new registration.
 
 The whole conversation runs in one order, and two parts of it are requirements
@@ -62,14 +66,14 @@ sequenceDiagram
     autonumber
     participant R as A Runner
     participant S as The Server
-    participant M as A manager
+    participant A as An administrator
     R->>S: register — the public key, and what it evaluates
     S-->>R: pendingApproval
     loop until somebody reaches the panel
         R->>S: auth/challenge, then auth/token
         S-->>R: runner.notApproved — waiting is not a fault
     end
-    M->>S: approve, on the manager's own surface
+    A->>S: approve, in the panel
     R->>S: auth/challenge, then auth/token — the nonce, signed with the key
     S-->>R: a bearer token
     loop for as long as it runs
@@ -105,7 +109,7 @@ Everything is JSON over HTTP, under `/api/v1`.
 | Heartbeat | `POST /api/v1/runner/heartbeat` | bearer |
 
 The token goes in `Authorization: Bearer`. It has a lifetime, and it authorizes
-this Runner's own surface and nothing a manager may do.
+this Runner's own surface and nothing on the panel a person signs in to.
 
 ## Two conventions that govern every document
 

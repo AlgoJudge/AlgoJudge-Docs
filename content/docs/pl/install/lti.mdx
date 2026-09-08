@@ -22,8 +22,8 @@ opisuje mechanizm, który za tym stoi.
 <Callout type="warn" title="Najpierw przeczytaj sekcję o przeglądarce">
 O ciasteczko trzeciej strony rozbija się więcej instalacji niż o cokolwiek
 innego na tej stronie — i rozbija się **dopiero wtedy**, gdy wszystko wygląda już
-na poprawnie skonfigurowane. Jeśli Twoja instalacja nie serwuje HTTPS, osadzony start nie może
-zadziałać w ogóle.
+na poprawnie skonfigurowane. Jeśli Twoja instalacja nie serwuje HTTPS,
+osadzone uruchomienie nie może zadziałać w ogóle.
 </Callout>
 
 ## Zanim zaczniesz
@@ -36,7 +36,8 @@ poniżej.
 
 **Server zna swój publiczny adres.** Każdy adres podawany platformie jest z niego
 budowany. Stos celowo zostawia `AJ_PublicApiUrl` nieustawione i bez tego działa
-zarówno start, jak i platforma wypisana ręcznie — biorą adres z żądania.
+zarówno uruchomienie, jak i platforma wypisana ręcznie — biorą adres z
+żądania.
 **Wyjątkiem jest oczekiwana rejestracja**: odmawia wydania zaproszenia, dopóki
 wartość nie rozwija się w bezwzględny adres `http(s)`, bo właśnie ma go podać
 cudzemu serwerowi.
@@ -94,39 +95,42 @@ identyfikator klienta, identyfikator wdrożenia oraz trzy adresy — jej zestaw
 kluczy, punkt wydawania tokenów i punkt autoryzacji.
 
 **Trzech z nich nie da się już zmienić**: wydawcy, identyfikatora klienta i
-identyfikatora wdrożenia. Każdy start i każde powiązanie tożsamości wisi na tej
-trójce, więc formularz blokuje je przy edycji, zamiast pozwolić Ci odkryć to
-później.
+identyfikatora wdrożenia. Na tej trójce wisi każde uruchomienie i każde
+powiązanie tożsamości, więc formularz blokuje je przy edycji, zamiast pozwolić Ci
+odkryć to później.
 
 Potem naciśnij *Co w niej wpisać*, co wypisze cztery adresy do wklejenia z
 powrotem do platformy oraz dwa parametry własne. **Trzeci parametr własny
-dochodzi przy każdym osadzeniu** — `activity=<slug>` — i to on mówi startowi,
-którą aktywność otwiera. Bez niego start jest odrzucany z kodem `noActivity`.
+dochodzi przy każdym osadzeniu** — `activity=<slug>` — i to on mówi
+uruchomieniu, którą aktywność otwiera. Bez niego uruchomienie zostaje odrzucone
+z kodem `noActivity`.
 
 ## W przeglądarce
 
-**Start działa w ramce na stronie z innej witryny**, więc ciasteczko sesji jest
-ciasteczkiem trzeciej strony, a współczesne przeglądarki domyślnie takie
+**Uruchomienie działa w ramce na stronie z innej witryny**, więc ciasteczko sesji
+jest ciasteczkiem trzeciej strony, a współczesne przeglądarki domyślnie takie
 odrzucają.
 
-Server na to odpowiada: sesja założona przez start dostaje ciasteczko oznaczone
-`SameSite=None; Secure; Partitioned` — i **tylko** taka sesja. To jest zmierzone,
-a nie założone: Chrome 141 i Firefox 153 bez tego odrzucają ciasteczko w ramce,
-własnymi słowami przeglądarki.
+Server na to odpowiada: sesja założona przez uruchomienie dostaje ciasteczko
+oznaczone `SameSite=None; Secure; Partitioned` — i **tylko** taka sesja. To jest
+zmierzone, a nie założone: Chrome 141 i Firefox 153 bez tego odrzucają ciasteczko
+w ramce, własnymi słowami przeglądarki.
 
 Wynikają z tego dwie rzeczy, a pierwsza jest powodem ostrzeżenia na początku tej
 strony:
 
 - **`Secure` nie jest opcjonalne.** Instalacja serwująca zwykłe HTTP nie może
-  mieć osadzonych sesji w ogóle. Ciasteczko zostanie odrzucone, każdy start
-  wyląduje na stronie zapasowej, a w konfiguracji nic nie będzie wyglądało źle.
+  mieć osadzonych sesji w ogóle. Ciasteczko zostanie odrzucone, każde
+  uruchomienie wyląduje na stronie zapasowej, a w konfiguracji nic nie będzie
+  wyglądało źle.
 - **Safari nie jest sprawdzone.** Nie ma tu sprzętu Apple, na którym dałoby się
   to zrobić.
 
 Kiedy ciasteczko i tak zostanie odrzucone, uczestnik nie zostaje bez wyjaśnienia:
 strona mówi, że przeglądarka blokuje logowanie dla tej ramki, proponuje **Otwórz
-w nowej karcie** i podaje zdanie do przekazania osobie administrującej kursem. Naprawa po stronie platformy polega na ustawieniu narzędzia tak, by
-otwierało się w nowym oknie zamiast w ramce.
+w nowej karcie** i podaje zdanie do przekazania osobie administrującej kursem.
+Po stronie platformy naprawia się to, ustawiając narzędzie tak, żeby otwierało się
+w nowym oknie zamiast w ramce.
 
 [Własne reverse proxy](/pl/install/reverse-proxy) opisuje drugą połowę tego —
 dlaczego `X-Frame-Options` to `SAMEORIGIN`, a nie `DENY`, i co to znaczy, jeśli
@@ -138,9 +142,9 @@ Napisane wprost, bo dla kogoś, kto zaraz to wdroży, liczy się właśnie luka.
 
 | | |
 |---|---|
-| Moodle **4.5.13 LTS** | starty i tożsamość |
+| Moodle **4.5.13 LTS** | uruchomienia i tożsamość |
 | Moodle **5.2.2** | wszystko, łącznie z deep linkingiem i samorejestracją |
-| Moodle **5.3dev** | starty i tożsamość |
+| Moodle **5.3dev** | uruchomienia i tożsamość |
 | Safari | **nie sprawdzone** |
 
 **Deep linking i samorejestracja były prowadzone wyłącznie na 5.2**, a 4.5.13 to
@@ -154,31 +158,32 @@ usterką po naszej stronie:
   Moodle podstawia historię kursu, a nie pojedynczego osadzenia, we wszystkich
   wspieranych wersjach — więc *wygląda na kopię…* jest mocną poszlaką, a nie
   faktem.
-- **Ramka nie zmienia wysokości.** Moodle nie implementuje zmiany rozmiaru
-  ramki, więc start ma tę wysokość, którą prowadzący wpisał w ustawieniach
+- **Ramka nie zmienia wysokości.** Moodle nie implementuje zmiany rozmiaru ramki,
+  więc uruchomienie ma tę wysokość, którą prowadzący wpisał w ustawieniach
   aktywności. Osadzony interfejs jest pod to zbudowany — jeden rząd nagłówka, a
   treść przewija się w środku.
 
 ## Kiedy to nie działa
 
-Odrzucony start ląduje na stronie nazywającej to, co poszło źle, z surowym kodem
-obok, żeby dało się go zacytować w zgłoszeniu. Te, które spotyka administrator:
+Odrzucone uruchomienie ląduje na stronie nazywającej to, co poszło źle, z surowym
+kodem obok, żeby dało się go zacytować w zgłoszeniu. Te, które spotyka
+administrator:
 
 | | |
 |---|---|
-| `unknownPlatform` | start nie pasował do żadnej rejestracji — albo pasował do kilku i nie powiedział, do której |
+| `unknownPlatform` | uruchomienie nie pasowało do żadnej rejestracji — albo pasowało do kilku i nie powiedziało, do której |
 | `platformDisabled` | zarejestrowana i nigdy niewłączona. Najczęstszy wynik po samorejestracji |
 | `noActivity` | osadzeniu brakuje `activity=<slug>` |
-| `notPublished` | aktywność nie jest opublikowana, a startujący nie prowadzi kursu |
+| `notPublished` | aktywność nie jest opublikowana, a osoba, która ją otworzyła, nie prowadzi kursu |
 | `sharingNotAcknowledged` | aktywność jest osadzona w drugim kursie i nikt jeszcze tego nie zaakceptował |
 | `platformUnreachable` | nie udało się stąd pobrać zestawu kluczy platformy |
 
 `badState` i `badToken` wyglądają groźnie, a zwykle nie są niczym groźnym:
-przeterminowana karta przeglądarki, start powtórzony z historii albo zegary
-rozjechane o więcej niż dwie minuty.
+przeterminowana karta przeglądarki, uruchomienie powtórzone z historii albo
+zegary rozjechane o więcej niż dwie minuty.
 
-**Zupełnie pusta ramka to żaden z tych przypadków.** Jeśli start dociera do
-przeglądarki, ale ramka pozostaje pusta, a w konsoli przeglądarki pojawia się
+**Zupełnie pusta ramka to żaden z tych przypadków.** Jeśli uruchomienie dociera
+do przeglądarki, ale ramka pozostaje pusta, a w konsoli przeglądarki pojawia się
 odmowa wyświetlenia strony — odrzuca ją polityka ramek, nie Server. Dołączony
 nginx wysyła `X-Frame-Options: SAMEORIGIN`, który pozwala osadzić stronę
 wyłącznie wtedy, gdy osadza ją **ten sam** origin, więc LMS pod inną nazwą

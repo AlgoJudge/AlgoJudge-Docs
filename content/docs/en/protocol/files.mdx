@@ -5,10 +5,6 @@ description: Reading a package, verifying it, uploading what an evaluation produ
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.** This page describes **version 1.1** of
-the contract; on any divergence, the specification is right and this page is
-wrong.
-
 ## Reading
 
 ```http
@@ -60,9 +56,9 @@ POST /api/v1/runner/files
 ```
 
 Multipart: the bytes as `file`, with a `sha256` text field. The Server recomputes
-the checksum and refuses to store on a mismatch, exactly as it does for anybody
-else. It answers the stored file's id, name, media type, size, checksum and
-creation time.
+the checksum and refuses to store on a mismatch — **422**, `checksum_mismatch` —
+exactly as it does for anybody else. It answers the stored file's id, name, media
+type, size, checksum and creation time.
 
 ## Attaching
 

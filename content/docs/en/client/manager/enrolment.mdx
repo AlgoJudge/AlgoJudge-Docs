@@ -99,7 +99,11 @@ have to search from.
 
 The **Users** area is the account list: creating one, editing it, blocking it,
 resetting a password, reading its sessions, and merging one account's work onto
-another.
+another. What each of those means to the stored account — why *approved* is not
+*confirmed*, why a deletion anonymises rather than removes, and what a session
+row actually holds — is [User](/en/server/concepts/user). The permissions
+those acts sit behind, `user:block` and `user:merge` among them, are listed in
+[Permissions](/en/server/permissions).
 
 Blocking stops somebody signing in at all — it ends their sessions and stops new
 ones. What they may do once inside an activity is a grant, and the two are not

@@ -5,10 +5,6 @@ description: The four things the contract deliberately leaves out, what the impl
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-**The accepted specification prevails.** This page describes **version 1.1** of
-the contract; on any divergence, the specification is right and this page is
-wrong.
-
 An absence in a contract is a decision, and each of these is written down so that
 nobody reads it as an oversight.
 
@@ -44,8 +40,8 @@ identity.
 ## Token scopes beyond the Runner itself
 
 A token authorizes this Runner's own surface and nothing else. It is not a
-session, it does not carry roles, and it cannot reach anything a manager may do —
-including the approval endpoint that admitted it.
+session, it does not carry roles, and it cannot reach anything a person signed
+into the panel may do — including the approval endpoint that admitted it.
 
 ## The package format
 
@@ -73,8 +69,9 @@ POST /api/v1/runner/trials/{trialId}/report
 
 The accepted contract v1.1 **does not describe them**. It mentions a trial only in
 passing, in §9.3, where a Server may not reach `closed` while one is running.
-Routing across both claim paths is specified separately; see
-[Routing by tags](/en/runner/routing).
+How the reference implementation divides its attention between the two claim
+paths — trials only when there is no marking to do — is on
+[Problem types](/en/runner/problem-types).
 
 <Callout type="warn" title="Trials are optional, and a Runner that ignores them is a conforming Runner">
 Nothing in the contract obliges an implementation to claim a trial, and a Runner
