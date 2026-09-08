@@ -3,8 +3,9 @@
 For whoever cuts the release. A reader of the site wants the site.
 
 Everything below was checked against this repository on **2026-09-07**, on
-`release/0.1.0`. Nothing has been released: `ghcr.io/algojudge` is empty and no
-repository carries a `v*` tag.
+`release/0.1.0`. **The five product repositories carry `v0.1.0` since 2026-09-08
+and their eight images are public** — this site is the one that has not been
+released, which is what the list below is for.
 
 ## This site has no single version
 
@@ -93,15 +94,16 @@ Then, still on that day:
       until it is changed a released site says *unreleased* and *przed 0.1*.
       It names the product rather than a section, so it changes once, on the
       first of these releases.
-- [ ] **The pre-release warnings come out of the pages the release makes true.**
-      `content/docs/{en,pl}/install/index.mdx` each carry a *No release has been
-      cut yet* callout; `content/docs/{en,pl}/install/first-install.mdx` each
-      carry a second one and a *Nothing to do here yet — none of the eight
-      exists* line. Four files, and the Polish pair moves with the English pair.
-- [ ] **The eight GHCR packages are public.** A package created by its first push
-      is private, no workflow can change that, and `install/first-install`
-      promises a reader they will not need a token. Somebody with access to the
-      organisation's packages sets each to Public once.
+- [x] **The pre-release warnings are out.** They stopped being true when the
+      products released rather than when this site does, so they came out then:
+      `content/docs/{en,pl}/install/first-install.mdx`,
+      `content/docs/{en,pl}/install/index.mdx`, and the *Which version this is*
+      paragraph on both front pages. Nothing anywhere still says nothing has
+      been released.
+- [x] **The eight GHCR packages are public.** A package created by its first push
+      is private and no workflow can change that; somebody with access to the
+      organisation's packages set each to Public on 2026-09-08. It returns with
+      every new image, so it stays on this list.
 - [ ] **Commit the copied pages, `versions.json` and `deploy/redirects.conf`.**
       All three are read from the build context: `versions.json` by `next build`
       inside the image, `deploy/redirects.conf` by the runtime stage's `COPY`.

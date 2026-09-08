@@ -14,13 +14,12 @@ pulled by tag from GHCR, which is what makes an update `docker compose pull` and
 a rollback a digest. The Compose files that build from source live in the
 product repositories and are labelled as development there; they are not this.
 
-<Callout type="warn" title="No release has been cut yet">
-`ghcr.io/algojudge` is empty. No product repository carries a `v*` tag, so none
-of the eight images named in `compose.yaml` exists, and the quick start does not
-work from a clean clone. Today the stack runs only against images you build from
-the product repositories and tag as published — [First
-install](/en/install/first-install) says how. Every `docker pull` instruction in
-this section describes the intended path, not one you can follow today.
+<Callout type="info" title="`0` is the tag an installation asks for">
+The eight images are published and public: `docker compose pull` needs no
+registry login, from anywhere. What `.env.example` asks for is `0` — the
+**moving major**, which every 0.x release moves, breaking changes included.
+[Update and rollback](/en/install/update) says what that costs and how to pin a
+version instead.
 </Callout>
 
 ## The services
