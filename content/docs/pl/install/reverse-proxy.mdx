@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: 140123969fa94d3e8c4021bb7693a4214eeb03ca1672c319c69da35ed21273a1
+sourceSha256: 7c1113668cddcfaf4d86cb974a84373a8d7d5e47d34772b2bfbdd0240d6b8aab
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -190,6 +190,32 @@ przy każdym żądaniu o zasób.
 Każdy układ przetrwa to, co nie potrzebuje sesji w ogóle: znak firmowy
 instalacji, krój pisma i dokumenty publikowane przez operatora są plikami
 publicznymi i wczytają się skądkolwiek.
+
+### Adres API nie może wysyłać `X-Frame-Options`
+
+To ta część dwóch origins, która z sesją nie ma nic wspólnego, a wchodzi się w
+nią wprost z sekcji o tym, które nagłówki przekazywać: dołączany
+`security-headers.conf` wysyła `X-Frame-Options: SAMEORIGIN`, więc postawienie
+tych samych nagłówków przed **API** psuje treści zadań w PDF.
+
+Client rysuje taką treść znacznikiem `<object data="…/api/v1/files/…">`.
+`<object>` osadza dokument dokładnie tak jak `<iframe>`, a `X-Frame-Options`
+obejmuje oba — przy dwóch origins API jest obcym origin i `SAMEORIGIN` je
+odrzuca.
+
+<Callout type="warn" title="Odmowa jest cicha">
+Blokując `<object>`, `X-Frame-Options` **nie pisze nic** do konsoli; wariant
+`Content-Security-Policy` pisze. Człowiek widzi treść zapasową `<object>` — pusty
+prostokąt z odnośnikiem *pobierz* — i czystą konsolę, czyli dokładnie tak, jak
+wyglądałoby zadanie opublikowane bez treści. Zmierzone 2026-09-08 w Chromium, ten sam
+dokument przy czterech wartościach nagłówka.
+</Callout>
+
+Na adresie API albo nie wysyłaj polityki ramek **wcale**, albo wyślij
+`frame-ancestors` wymieniające origin Clienta **i każdą platformę LMS** — przy
+starcie LTI łańcuch przodków zawiera oba. Brak polityki da się tu obronić:
+osadzenie API nie daje napastnikowi niczego, bo ciasteczko sesji jest
+`SameSite=Lax`, a osadzający z dowolnego innego miejsca dostaje `401`.
 
 ### Ustawianie listy dozwolonych origins
 

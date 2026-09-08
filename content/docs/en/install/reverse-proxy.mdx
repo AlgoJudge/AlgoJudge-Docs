@@ -185,6 +185,31 @@ What survives any arrangement is the part that needs no session at all: the
 instance logo, a branded typeface and the documents an operator publishes are
 public files, and they load from anywhere.
 
+### The API's address must not send `X-Frame-Options`
+
+This is the part of two origins that has nothing to do with sessions, and it is
+easy to walk into from the section above about which headers to carry: the
+bundled `security-headers.conf` sends `X-Frame-Options: SAMEORIGIN`, and putting
+those same headers in front of the **API** breaks problem statements in PDF.
+
+The Client draws one with `<object data="…/api/v1/files/…">`. An `<object>` is an
+embedding, exactly as an `<iframe>` is, and `X-Frame-Options` covers both — so on
+two origins the API is a foreign origin and `SAMEORIGIN` refuses it.
+
+<Callout type="warn" title="The refusal is silent">
+`X-Frame-Options` writes **nothing** to the console when it blocks an `<object>`;
+the `Content-Security-Policy` form does. What a person sees is the `<object>`'s
+fallback — an empty box with a *download* link — and a console with nothing in
+it, which looks exactly like a problem published without a statement. Measured
+2026-09-08 in Chromium against the same document under four header values.
+</Callout>
+
+Either send **no** frame policy on the API's address, or send `frame-ancestors`
+naming the Client's origin **and every LMS platform** — an LTI launch puts both
+in the ancestor chain. Sending nothing is defensible here: embedding the API
+gains an attacker nothing, because the session cookie is `SameSite=Lax` and an
+embedder from anywhere else is answered `401`.
+
 ### Setting the allowlist
 
 This stack does not set `AJ_Cors__AllowedOrigins`, for the reason it does not set
