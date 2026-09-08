@@ -40,18 +40,27 @@ The version axis is **minor granularity**: `v0.1`, `v0.2`. A patch release
 updates the directory it already has, and `npm run snapshot -- v0.1.0` is refused
 as usage.
 
-## There is no release workflow here
+## The tag publishes the image
 
-Server, Client, Runner and External-Runner each carry
-`.github/workflows/release.yml`, triggered `on: push: tags: ['v*']`, and each
-pushes an image on a tag. **`AlgoJudge-Ops` and this repository carry none** —
-Ops has only `check.yml`, and CI here builds `algojudge-docs:ci` as a check and
-pushes nothing. So the image `compose.yaml` runs is built and pushed by whoever
-deploys the site, which is what `.env.example` means when it points here.
+`.github/workflows/release.yml`, added 2026-09-08, triggers `on: push: tags:
+['v*']` and does what Server, Client, Runner and External-Runner each do: refuse
+a tag that is not on `main`, build the image, prove it serves, and push it as
+`0.1.0`, `0.1`, `0` and `latest`. **`AlgoJudge-Ops` is now the only repository of
+the six with no release workflow**, and it needs none — it publishes no image.
 
-That is the honest state today: `docs.algojudge.pl` has **no DNS record and no
-chosen host**. Until it has both, a release here means the snapshot below, the
-commits, and nothing more.
+Until 2026-09-08 the image here was built and pushed by whoever deployed the
+site. That was the one step of this runbook a person could get wrong in silence,
+which is why it moved into a workflow.
+
+**Nothing an installation runs comes from this image.** An operator's stack pulls
+the eight product images; this ninth serves `docs.algojudge.pl` and is pulled by
+whoever deploys that site alone. So its package being private on its first push —
+as every new one is — costs a `docker login ghcr.io` and nothing else.
+
+`docs.algojudge.pl` still has **no DNS record and no chosen host**. The tag
+therefore publishes an image that nothing serves yet, which is the right order:
+the image exists on the day the host is found, rather than being built from
+whatever `main` had become by then.
 
 ## The order across repositories is fixed
 
@@ -85,6 +94,14 @@ refused a second run over a directory that already existed. Cutting one section
 rewrites both generated files from **every** version directory present, so a
 later section does not undo an earlier one. The suite stayed green afterwards
 (523 links, 64 Polish pages).
+
+**Cutting the snapshot changes the URL contract, and a check asked for the old
+one.** `deploy/redirects.conf` starts sending `/{locale}/{section}/` to the
+newest version, so those addresses stop being pages and become 302s. Both
+workflows' serve checks asserted **200** at `/en/install/` and `/pl/install/` and
+would have failed on the first tag — found on 2026-09-08 by running the image
+rather than by reading it. They now assert the redirect and follow it, and name
+no version, so `v0.2` will not break them again.
 
 Then, still on that day:
 
@@ -159,19 +176,22 @@ Then, still on that day:
       wrong value there fails nothing and misleads whoever reads it next.
       Checked 2026-09-07 by deleting the cache: the pin fetched from GitHub and
       the checksum matched.
-- [ ] **The image builds and serves.** Checked 2026-09-07:
+- [ ] **Every image this repository pins is a tag somebody still builds**, read
+      by the date it was last built rather than by whether `docker pull` works.
+      See *The two images this repository pins*.
+- [ ] **The image builds and serves.** Checked 2026-09-08:
       `docker build -t algojudge-docs:ci .` succeeds, and the run CI does
       afterwards passes — `/healthz`, `/en/`, `/pl/`, `/en/install/`,
       `/pl/install/`, `/en/server/rest/` and both search endpoints answer 200,
       `/` answers 302, and the three security headers reach a `_next` chunk.
       `/` negotiates: `Accept-Language: pl` to `/pl/`, anything else and an
       absent header to `/en/`.
-- [ ] **Then the tag it deploys under**, which no workflow will do for you:
-      `docker build -t ghcr.io/algojudge/algojudge-docs:0.1.0 .` and a push. The
-      package will be private on its first push like the others, and it is a
-      ninth rather than one of the eight an installation needs — an installation
-      never pulls it. Leaving it private only means whoever deploys the site
-      needs `docker login ghcr.io`.
+- [ ] **The tag pushes it, and nobody does it by hand.** `release.yml` builds
+      the image, runs the serve check above against it, and pushes `0.1.0`,
+      `0.1`, `0` and `latest`. So **pushing the tag is the act that publishes**;
+      there is nothing left to do afterwards and nothing to remember. Watch the
+      run rather than assuming it: the build reaches the network for
+      `openapi.json`, and a pin that has stopped resolving fails there.
 - [ ] **`.env.example` and `compose.yaml` name the same image tag, and it is a
       version rather than `latest`.** Both say
       `ghcr.io/algojudge/algojudge-docs:0.1.0`, and the three keys match in both
@@ -213,7 +233,41 @@ Then, still on that day:
       refreshed to silence the check.** `check:translations` compares a hash and
       `check:structure` an outline; **neither reads the prose**.
 
-## Tools and dependencies, checked 2026-09-07
+## The two images this repository pins
+
+Both are somebody else's, and neither moves on our schedule.
+
+| Image | Where | Line |
+|---|---|---|
+| `node:24-alpine` | `Dockerfile`, build stage | **Active LTS**, and that is the rule |
+| `nginx:1.30-alpine` | `Dockerfile`, runtime stage | the stable branch |
+
+**A tag that still pulls is not a tag anybody still builds.** Judge by
+`last_updated`, which is what the registry will tell you and what `docker pull`
+will not:
+
+```bash
+curl -s https://hub.docker.com/v2/repositories/library/nginx/tags/1.30-alpine \
+  | python -c "import sys,json; print(json.load(sys.stdin)['last_updated'])"
+```
+
+**nginx numbers even minors stable and odd ones mainline**, so 1.30 is stable and
+1.31 is mainline. This repository serves the public internet from that image, so
+it takes the stable branch and raises it when the branch moves.
+
+**This is not hypothetical here.** The pin was `nginx:1.29-alpine` until
+2026-09-08 — last built 2026-04-17, while pulling cleanly the whole time.
+`AlgoJudge-Client` had moved to 1.30 and `AlgoJudge-Ops` had moved `NGINX_TAG` to
+it; this repository was the third place and the one left behind.
+`AlgoJudge-Ops/docs/RELEASE.md` names all three, so a raise is a decision about
+three repositories rather than one.
+
+**Node is the Active LTS line at release, never a maintenance one.** 24 is
+Krypton and is Active LTS today; it stops being so on 2026-10-20, which is inside
+the 0.1 line's likely life. Three places move together and CI reads one of them:
+`.nvmrc`, the `Dockerfile`, and `node-version-file` in the workflow.
+
+## Tools and dependencies, checked 2026-09-08
 
 Run `npm outdated` and `npm audit` **read-only**. The lockfile must not move: no
 `npm install`, no `npm update`, no `npm audit fix`.
@@ -226,16 +280,21 @@ Run `npm outdated` and `npm audit` **read-only**. The lockfile must not move: no
   **ESLint 9.39.5, not 10.10.0**: `eslint-plugin-react` calls
   `context.getFilename()`, which ESLint 10 removed. Do not raise either to clear
   `npm outdated`; raise them when the other half of the toolchain has caught up.
-- **Eight more are behind and are not held**: `next` and `eslint-config-next`
-  16.3.3 against 16.3.4, `fumadocs-core` and `fumadocs-ui` 16.15.4 against
-  16.15.7, `fumadocs-openapi` 11.3.5 against 11.4.1, `postcss` 8.5.26 against
-  8.5.28, `@types/node` 26.4.0 against 26.4.1, `@types/react-dom` 19.2.5 against
-  19.2.7. Every one is a patch or a minor. `README.md` still says everything
-  outside the two holds is the current release.
-- **The nginx base is a superseded stable branch.** The `Dockerfile` pins
-  `nginx:1.29-alpine`, last pushed 2026-04-17. `stable-alpine` is now
-  `1.30.4-alpine`, pushed 2026-09-03. This is the image that faces the public
-  internet, so raise it before publishing rather than after.
+- **`postcss` is pinned twice and the two must move together.** It is a direct
+  dependency *and* the only entry in `overrides`, which forces the whole tree to
+  one copy. Raising one alone stops `npm install` dead with `EOVERRIDE: Override
+  for postcss@x conflicts with direct dependency` — which is a good failure, but
+  nothing outside this line says the second pin is there. Both went to 8.5.28 on
+  2026-09-08.
+- **Eight were behind on 2026-09-07 and were raised on 2026-09-08**, each a patch
+  or a minor, with `npm audit` clean before and after: `next` and `eslint-config-next`
+  to 16.3.4, `fumadocs-core` and `fumadocs-ui` to 16.15.8,
+  `fumadocs-openapi` to 11.4.1, `postcss` to 8.5.28, `@types/node` to 26.5.0 and
+  `@types/react-dom` to 19.2.7. `README.md`'s claim that everything outside the
+  two holds is the current release is true again.
+- **The nginx base was raised on 2026-09-08**, from `1.29-alpine` — last built
+  2026-04-17 — to `1.30-alpine`, built 2026-09-03. See *The two images this
+  repository pins*, which is the check that found it.
 
 ## The one thing a green suite does not tell you
 

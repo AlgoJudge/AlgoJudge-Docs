@@ -1,0 +1,160 @@
+---
+title: The instance
+description: What the installation is called, the mark it shows, its documents, and its colours.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The **Instance** area is what this installation says about itself. It is one
+permission, `instance:update`, held across the installation and deliberately not
+part of the shipped `manager` template: running an activity is not running the
+installation it lives in.
+
+Four tabs.
+
+## Settings
+
+| Setting | What it does |
+|---|---|
+| Name | shown beside the product's mark and in the window title. Empty shows only AlgoJudge |
+| Accept local sign-ups | off by default: accounts are created by an organiser or arrive by SSO |
+| Require an address | whether an account must carry an email address |
+| Require a confirmed address before signing in | |
+| Show the mark in the application | |
+| Open the home page with an introduction to AlgoJudge | on by default. Shown above your own welcome page, to a visitor who is not signed in |
+| Show the password form on the sign-in screen | |
+| Send the sign-in screen straight to a provider | none by default. The browser goes to the provider and comes back signed in |
+| Send the registration screen straight to a provider | none by default, for an installation whose accounts come from a directory |
+| Let people remove their own account | on by default |
+| Allow judging by services this installation does not run | off by default |
+
+<Callout type="warn" title="Hiding the password form does not close the door">
+It hides the form and nothing more. The password endpoint stays open,
+administrators and temporary accounts still need it, and `?admin=true` brings the
+form back for them.
+</Callout>
+
+Two of these are decisions rather than preferences, and the screen says so.
+**Letting people remove their own account** is a data-protection right before it
+is a feature; closing it should be a decision. **Judging by services this
+installation does not run** means sending somebody's submission to a third party
+— while it is off no such problem is handed out and the work simply waits, so
+turning it on later loses nothing, and turning it on is what the privacy notice
+has to account for. Where those services may be reached is [External
+content](/en/client/v0.1/manager/external-content).
+
+### The introduction on the home page
+
+What the software is, above what the installation is. It opens the home page for
+a visitor who is not signed in, and your own welcome document renders directly
+underneath it. Turn it off and the document is on its own.
+
+**The switch travels and the words do not.** The heading, the sentence, the two
+links and the drawing belong to the Client and are translated with the rest of
+its interface; this installation stores a setting and no text. So an institution
+that wants to say something else says it in its welcome document rather than by
+editing this — and that is also why the introduction ships on: an installation
+that has published no welcome document would otherwise greet a visitor with an
+empty page.
+
+### Pointing the sign-in and registration screens at a provider
+
+Two lists, each offering *None* and every external login this installation
+currently accepts. Choose one and that screen stops drawing itself: the browser
+goes to the provider and comes back signed in. It is what an installation whose
+accounts all come from one directory wants, where the sign-in screen is
+otherwise a page with a single button on it.
+
+They are two settings rather than one because the answers differ. An institution
+may take every sign-in from its directory and still run its own sign-ups, or
+accept several ways in and send only new people to the directory.
+
+<Callout type="warn" title="A redirect is not a lock, and it cannot become a dead end">
+`?admin=true` still reaches the local form. An installation that redirects still
+has administrators, local accounts and temporary contest accounts.
+
+**A refused sign-in still lands on the screen with its reason**, rather than
+being sent back to the provider that has just refused it — which would be a
+browser bouncing between two sites with nothing on it to read.
+
+**Disabling the provider turns the redirect off the same minute**, and the
+setting keeps the slug, so switching that provider back on restores it.
+</Callout>
+
+**On the registration screen `?admin=true` does not open registration.** It only
+suppresses the redirect; what you then see is whatever *Accept local sign-ups*
+says, which on this kind of installation is the refusal.
+
+Below the settings sit the **access keys**: named secrets this installation holds
+for services it talks to. They are **write-only here**. Nothing on the page can
+read one back, so the screen states which keys are set and when, and offers to
+replace them; saving an empty value removes one.
+
+## Mark
+
+The installation's own logo, and one per language for an institution whose
+wordmark differs between them. A language with no mark of its own uses the
+default; an installation with none shows the placeholder that ships with the
+software, which is visibly a placeholder.
+
+## Appearance
+
+A closed set of colours and a typeface — not arbitrary CSS. A closed set is the
+only thing that can be kept legible across every screen and the only thing that
+can be validated.
+
+Fifteen colour keys, each stated for **both** the light and the dark scheme, in
+three groups:
+
+- **Brand** — primary, secondary, accent, links. One hex each; the ten shades a
+  screen needs are worked out from it, so one value reaches a pale panel, a rule
+  and dark text on it. `link` is its own key because in an identity system a link
+  is usually a different hue rather than a lighter brand colour.
+- **Surface and text** — the page background, panels and cards, text, secondary
+  text, borders.
+- **The shell** — the navigation and the bar above a signed-out page. Their hover
+  and quiet states are worked out from these.
+
+<Callout type="warn" title="An empty field is the default, and clearing one is how you undo it">
+Nothing here has a value until somebody types one. An untouched field is sent as
+absent and the screen draws what AlgoJudge ships — it is never black and never
+empty.
+</Callout>
+
+Sizes, spacing, rounding and the **status colours** stay the product's. A green
+*wrong answer* is a defect rather than a preference, and no validation could
+catch it, because every hex is formally valid.
+
+**The typeface** is `fontFamily` and `fontFamilyHeadings`, the same in both
+schemes. A family is either one of four generic names — `system-ui`,
+`sans-serif`, `serif`, `monospace` — or one this installation has stored a face
+for. Anything else would resolve to whatever the reader's machine happens to
+have, which is not a theme.
+
+Faces are uploaded as **WOFF2** and served by this installation; nothing is
+fetched from anybody else's server. Uploading and declaring are two steps,
+because they are two facts: a file is stored, and the theme says what to draw
+with it. A weight and a style are read from the file name where it says so —
+`example-700-italic.woff2`.
+
+Saving writes a theme **file** and publishes it. It is the same document an
+operator can write by hand and drop into a pre-configuration directory, which is
+why the tab offers **import a theme file**, **download it**, and **withdraw the
+theme**. One thing is in force, and it can be downloaded.
+
+## Documents
+
+Six documents the installation publishes, each in as many languages as you write:
+a welcome page, a home page, terms, a privacy policy, a cookie notice and an
+accessibility statement.
+
+Whether one exists is whether it is published — there is no separate flag. Each
+kind has a history, and a language without its own text falls back to the
+default. The one attachment such a document may point at is the installation's
+own mark, under a fixed name.
+
+## Where the administrator's half is
+
+Everything above is configuration made from inside the application. Standing the
+installation up, backing it up, updating it, and pre-configuring any of this
+before anybody clicks a screen is [Install and operate](/en/install).

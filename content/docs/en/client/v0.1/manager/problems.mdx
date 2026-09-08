@@ -1,0 +1,150 @@
+---
+title: The problem library
+description: Problems, their versions, and the assignment that decides how one is used.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The library holds problems. Activities point at them; they do not own them, and
+the same problem can be set in several rounds and several courses at once.
+
+## Visibility, and who can see what
+
+A problem is **private until you share it**, and only its author can attach a
+private problem to a series. On the **Sharing** tab:
+
+| Visibility | Who can see it |
+|---|---|
+| private | its owner |
+| shared | its owner, plus the managers on a list |
+| instance | every manager in the installation |
+
+Sharing decides which problems a manager can **see**. What they may do with one
+is decided by their permissions, and the two are separate questions.
+
+## Creating one
+
+**New problem** asks for a name, a slug and a **type**, chosen from a list. The
+type decides which renderers draw the statement and the result; a string nothing
+is registered for produces a problem every screen refuses to show.
+
+The slug is used in addresses and is copied into an assignment as its default
+label.
+
+## A version is published whole
+
+<Callout type="warn" title="Versions are append-only">
+A correction publishes a **new** version. Older ones are read-only: they can be
+read, and every control that would change one is disabled. A round pinned to an
+older version goes on being judged against exactly what it was pinned to.
+</Callout>
+
+The statement, the attachments and the package are published **together**, as
+one version, by the single control at the bottom of the screen — outside the
+tabs, so a change made in one tab cannot be forgotten while publishing from
+another. The badges beside it say what the next version will hold: how many
+statements, how many files added and removed, and whether the package changed.
+
+Until you publish, everything you have staged lives only in that browser tab.
+Give the version a **what changed** note; it is what the history shows.
+
+## The tabs
+
+### Statement
+
+Markdown, edited beside a live preview drawn by the same renderer the
+participant gets. One tab per language; a version carries every language it was
+published with. You can upload and download the text as a file.
+
+A problem imported from an archive may carry its statement as a document rather
+than as text — a PDF. The tab says so instead of showing an empty editor: it is
+shown to participants as it is, and is not edited here.
+
+### Attachments
+
+Files that travel with the version, each with a **scope**:
+
+- **participant** — the figures and data files a statement points at, delivered
+  to whoever opens the problem;
+- **manager** — kept for whoever runs the activity.
+
+Neither the statement nor the package is an attachment; both are written
+elsewhere and rebuilt when the version is published. A name already used in the
+version is refused rather than replaced, so a statement referring to a name
+cannot change meaning under it.
+
+Point at a file from the statement by its name. `![description](<name>)` shows
+it inside the statement — a picture appears, a PDF opens in a frame;
+`[description](<name>)` is a link to it instead. The angle brackets are needed
+when the name contains a space, and the copy button beside a file writes the
+whole reference. Only participant-scoped files can be pointed at.
+
+Every file carries a SHA-256, computed where the bytes are and recomputed by the
+Server before storing.
+
+### Package
+
+What a Runner needs to judge a submission — and the one tab that is not always
+there. A problem type that judges without a package does not get it, and the
+screen says so in its place. See [Packages](/en/client/v0.1/manager/packages).
+
+### Versions
+
+Each version with its date, its author, its note and whether it has a package.
+**Show** points the statement, attachment and package tabs at that version — the
+choice is in the address, so *look at version 2 of this problem* is a link.
+
+### Sharing
+
+Visibility and the share list, above.
+
+## Where per-use configuration lives
+
+Nothing about *how a problem is used* is on the problem. It is on the
+**assignment** — the row created when you attach it to a series — so one problem
+can be worth 100 points in a contest and 10 in a practice set at the same time.
+
+| On the assignment | What it is |
+|---|---|
+| Slug in this activity | what a participant sees: `A`. Unique across the activity |
+| Name in this activity | empty keeps the library's name |
+| Statement version | which version this round is judged against |
+| Worth | points here; empty keeps the problem's own |
+| Maximum upload, files per submission, submissions | empty inherits the activity's |
+| Configuration | what changes the verdict: limits, and the languages that may be submitted. Laid over the package's own |
+| Submit form | what the submit form offers. Where this and the configuration disagree about languages, the configuration is what happens |
+| Display | shown above the statement. Wrong here means an untidy page and nothing else |
+
+The last three are documents in the problem type's own vocabulary. The Server
+stores all three and reads none of them, which is why they are text areas rather
+than forms.
+
+### Pinning
+
+**Attaching pins the version that was current at the time.** Publishing a
+correction therefore cannot change what a round already running is judged
+against, and following the library is a deliberate act rather than a side effect
+of fixing a typo.
+
+<Callout type="warn" title="Always the current one does not take a pin off">
+The **Statement version** list offers that entry and choosing it changes nothing:
+a new assignment is pinned to the current version whatever the list said, and an
+existing one keeps the pin it has. To move a round onto a newer version, name
+that version.
+</Callout>
+
+The badge in the assignment list shows both numbers when they have parted —
+`v2 / v3` means the library moved on and this round did not, which is the whole
+reason to pin.
+
+A missing package is called out in the same list. Nothing judges without one,
+and the time to learn that is before the round opens.
+
+## Detaching, archiving and deleting
+
+An assignment cannot be detached once something has been submitted to it.
+
+**Archive is the ordinary retirement.** An archived problem leaves the attach
+picker and takes no new versions, while every assignment already using it keeps
+working. Deleting is refused while the problem is attached anywhere — the
+database refuses it too, not only the service — so archive it instead.

@@ -1,0 +1,159 @@
+---
+title: Czym jest instalacja
+description: Dziewięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
+source: en/install/v0.1/index.mdx
+sourceSha256: d246c535af1d0ab483e56886db81074c523e0a8e9621abcd83e4fff4e874fcd0
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+Instalacja AlgoJudge to stos Docker Compose. Dostarczamy go jako osobne
+repozytorium, `AlgoJudge-Ops`: klonujesz je, konfigurujesz przez plik `.env`
+i uruchamiasz.
+
+**To repozytorium nie zawiera kodu aplikacji i niczego nie buduje.** Każdy obraz
+pobieramy z GHCR po tagu i właśnie dlatego aktualizacja sprowadza się do `docker
+compose pull`, a wycofanie do wskazania digestu. Pliki Compose, które budują ze
+źródeł, leżą w repozytoriach produktowych i są tam oznaczone jako deweloperskie;
+to co innego.
+
+<Callout type="info" title="Instalacja prosi o tag `0`">
+Osiem obrazów jest opublikowanych i publicznych: `docker compose pull` nie
+wymaga logowania do rejestru, z żadnej maszyny. W `.env.example` stoi `0` —
+**ruchoma wersja główna**, którą przesuwa każde wydanie 0.x, razem ze zmianami
+niezgodnymi wstecz. [Aktualizacja i wycofanie](/pl/install/v0.1/update) mówi, co to
+kosztuje i jak zamiast tego przypiąć konkretną wersję.
+</Callout>
+
+## Usługi
+
+Dziewięć usług i siedem nazw profili — Server i Client mają po dwie, dzięki czemu
+można podnieść jedną połowę bez drugiej.
+
+| Usługa | Profile | Czym jest |
+|---|---|---|
+| `postgres` | `data` | PostgreSQL 18. **Bez portu na hoście, w żadnym układzie** |
+| `server` | `app`, `server` | API pod `/api/v1`, publikowane na `127.0.0.1:8080` |
+| `client` | `app`, `client` | aplikacja w przeglądarce, publikowana na `127.0.0.1:8082` |
+| `nginx` | `edge` | TLS, jeden origin dla obu połówek, porty 80 i 443 |
+| `runner-1` … `runner-4` | `runner` | jeden obraz, cztery tożsamości. Każdy ocenia jedno zgłoszenie naraz, w kontenerach siostrzanych |
+| `external-runner` | `external-runner` | zamiast oceniać, przekazuje je do zewnętrznego archiwum. **Nie ma go w domyślnym zestawie** — patrz [Zewnętrzny sędzia](/pl/install/v0.1/external-runner) |
+
+**Cztery to punkt odniesienia, a nie minimum.** Tyle pasuje do ośmiu rdzeni
+fizycznych i zostawia cztery na całą resztę; na mniejszej maszynie uruchom mniej,
+bo więcej Runnerów niż rdzeni fizycznych nie przyspiesza oceniania, a psuje jego
+rzetelność. Tabelę znajdziesz w [Czego wymaga host](/pl/install/v0.1/requirements).
+
+Niosą je trzy sieci Compose, żeby baza nie była osiągalna z krawędzi, a ruch
+oceniania dał się oddzielić od HTTP:
+
+<Mermaid chart={`
+flowchart LR
+    subgraph edge["edge — jedyna sieć z portem publikowanym na zewnątrz"]
+        nginx["nginx"]
+        client["client"]
+    end
+    subgraph backend["backend"]
+        postgres["postgres"]
+    end
+    subgraph runnernet["runner"]
+        r["runner-1 … runner-4"]
+        ext["external-runner"]
+    end
+    server["server"]
+    nginx --> server
+    nginx --> client
+    server --> postgres
+    r --> server
+    ext --> server
+    style edge fill:none
+    style backend fill:none
+    style runnernet fill:none
+`} />
+
+Server jako jedyny stoi we wszystkich trzech. PostgreSQL siedzi wyłącznie
+w `backend` i w żadnym układzie nie ma portu na hoście. **Port do sieci publikuje
+tylko nginx**; dwie publikacje na pętli zwrotnej wymienione wyżej są po to, żeby
+dało się użyć `curl` i podstawić własne proxy.
+
+Sieć `edge` ma jawnie zapisaną podsieć, domyślnie `172.28.0.0/24`. To nie
+kwestia porządku: Server odmawia startu, dopóki nie wskażesz mu, czyim słowom
+o adresie odwiedzającego ma wierzyć, a podsieci wylosowanej przez Dockera nie
+dałoby się nazwać.
+
+## Cztery układy
+
+Wybierasz je przez `COMPOSE_PROFILES` w `.env`. Żaden nie wymaga edycji pliku
+Compose.
+
+| | `COMPOSE_PROFILES` | |
+|---|---|---|
+| **T1** | `edge,app,data,runner` | jeden host, cały produkt. Domyślny |
+| **T2** | `edge,app,data`, a `runner` gdzie indziej | Runnery na własnych maszynach |
+| **T3** | `app,data` | [własne reverse proxy](/pl/install/v0.1/reverse-proxy) z przodu |
+| — | `client,server,data` | po jednej połowie, do debugowania i etapowych aktualizacji |
+
+**`external-runner` to dodatek do każdego z nich, a nie piąty układ.** Dopisz go
+obok `runner` albo daj mu osobną maszynę. Nie ma go w zestawie domyślnym, bo
+loguje się do zewnętrznego archiwum na tamtejsze konto — [Zewnętrzny
+sędzia](/pl/install/v0.1/external-runner) mówi, czego wymaga i czego za Ciebie nie
+zrobi.
+
+## Runner może działać na zupełnie innej maszynie
+
+Każdy host z Runnerem klonuje to samo repozytorium i uruchamia
+`COMPOSE_PROFILES=runner` z trzema wartościami w swoim `.env`:
+
+```ini
+SERVER_URL=https://twoja.domena
+RUNNER_NAME_PREFIX=lab-a       # inny na każdym hoście
+RUNNER_WORK_DIR=/srv/algojudge/runner-work
+```
+
+Przedrostek nazywa wszystkie cztery — `lab-a-1` do `lab-a-4` — i **musi się
+różnić między hostami**, inaczej Runnery z dwóch maszyn pojawią się w panelu pod
+tymi samymi nazwami.
+
+**Każde połączenie nawiązuje sam Runner.** Nie potrzebuje portu przychodzącego
+i pracuje zza domowego routera, bez własnego adresu. W `compose.yaml` celowo nie
+ma `depends_on` na Server: na hoście z samym Runnerem nie ma usługi Server, na
+której można by polegać — Runner sam ponawia próby połączenia.
+
+Każdy Runner rejestruje się osobno i każdy wymaga osobnego zatwierdzenia, więc
+host z czterema Runnerami to cztery zatwierdzenia.
+
+<Callout type="warn" title="Dla instalacji publicznej zalecany jest układ T2">
+Dostęp do gniazda Dockera daje na hoście uprawnienia roota, a Runner potrzebuje
+tego gniazda, żeby uruchamiać kontenery zadań. W T1 na tym samym hoście stoi
+baza, więc kto wyrwie się z kontenera zadania, ląduje na maszynie ze wszystkimi
+zgłoszeniami i wszystkimi hashami haseł. Na hoście z samym Runnerem w najgorszym
+razie dostaje maszynę, na której nic nie ma.
+</Callout>
+
+## Co działa obok stosu, a nie w nim
+
+Instalacja potrzebuje dostawcy OIDC i **żadne z dwóch wspieranych wdrożeń
+tożsamości nie jest usługą w `compose.yaml`**. Działa obok tego stosu, pod
+własną nazwą hosta. [Tożsamość](/pl/install/v0.1/identity) to rozdział o wyborze
+i rejestracji dostawcy.
+
+## Dokąd dalej
+
+| | |
+|---|---|
+| [Czego wymaga host](/pl/install/v0.1/requirements) | Docker, cgroup v2, dysk, logi |
+| [Pierwsza instalacja](/pl/install/v0.1/first-install) | od pustego katalogu do werdyktu |
+| [Prekonfiguracja](/pl/install/v0.1/preconfiguration) | jak postawić instalację bez klikania w panelu |
+| [Tożsamość](/pl/install/v0.1/identity) | Keycloak albo Authentik i jak zarejestrować dostawcę |
+| [Podłączenie platformy kursowej](/pl/install/v0.1/lti) | LTI 1.3 i ustawienie przeglądarki, od którego wszystko zależy |
+| [Gdzie trafiają pliki](/pl/install/v0.1/storage) | trzy magazyny i przenoszenie plików między nimi |
+| [Przerwa techniczna](/pl/install/v0.1/maintenance) | jak wyłączyć instalację z ruchu, nie zatrzymując jej |
+| [Kopie zapasowe](/pl/install/v0.1/backup) | co obejmuje zrzut i co ze sobą niesie |
+| [Odtwarzanie](/pl/install/v0.1/restore) | jak wgrać kopię z powrotem |
+| [Aktualizacja i wycofanie](/pl/install/v0.1/update) | i czego wycofanie nie cofa |
+| [Praca rutynowa i harmonogram](/pl/install/v0.1/schedule) | sprzątanie, cron i to, czego nikt nie mówi |
+| [Własne reverse proxy](/pl/install/v0.1/reverse-proxy) | pięć reguł |
+| [Zewnętrzny sędzia](/pl/install/v0.1/external-runner) | przekazywanie zadań do zewnętrznego archiwum |
+| [Wszystkie ustawienia w `.env`](/pl/install/v0.1/configuration) | całość w jednej tabeli |
+| [Kiedy coś nie działa](/pl/install/v0.1/troubleshooting) | awarie, które wyglądają na inne problemy |

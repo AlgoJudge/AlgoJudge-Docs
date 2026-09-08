@@ -1,0 +1,126 @@
+---
+title: Packages
+description: What a Runner is given, and where a problem's tests and limits come from.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A package is everything a Runner needs to judge a submission, and nothing else:
+tests, expected output or a checker, limits, scoring, and optionally a model
+solution.
+
+**The statement is not in it.** It travels as a participant-scoped attachment,
+and the Runner — the one component that must never disclose it — never receives
+it. The package itself is the other way round: it is stored with Runner scope,
+and a participant never receives that.
+
+The **Package** tab of a problem builds one. Nothing there uploads on its own; a
+package belongs to a version, and the version is published whole.
+
+## What is inside
+
+```
+package.zip
+├── config.yml
+├── tests/
+│   ├── 0a.in    0a.out         group 0: the examples
+│   ├── 1a.in    1a.out
+│   └── 2a.in    2a.out
+├── checker/                     one or the other, never both
+├── interactor/
+└── solutions/                   optional
+```
+
+`config.yml` is YAML, and it is the one file in the product where a comment is
+worth having — a note saying why group 3 has a longer limit survives inside the
+package.
+
+| In `config.yml` | What it says |
+|---|---|
+| `type` | which format this is. A Runner that does not know the version refuses the package rather than guessing |
+| `limits.timeMs` | milliseconds of **processor time** — user plus system, for everything the submission starts. Not how long a participant waits: starting the container is not charged to them, and neither is waiting |
+| `limits.memoryBytes` | **bytes.** The file carries one memory unit and no other; the editor lets you type KiB or MiB and converts |
+| `languages` | which toolchains may be submitted. Empty means the package does not say, which allows everything the Runner can build |
+| `overrideLimits` | per language, keyed by a family (`cpp`, `python`) or one toolchain (`pypy3`). Python is slower; this is where that is said |
+| `groups` | the scoring groups, their points, and optionally their own limits |
+| `checker` | absent means the `.out` files decide. It is handed the answer as the submission writes it, so it must read it once and forwards. With one, the `.out` files need not be there at all |
+| `interactor` | the problem is interactive: the submission is given no input file, and every byte it reads is one the interactor sent in answer to what it wrote. Stands **instead** of a checker, never beside one — attaching either in the Programs card disables the other. With one, **neither** test file is required |
+| `groups[].tests` | how many tests a group has, when you ship no files for them. Only an interactive problem may say it, and at most 26 — elsewhere the files are the count |
+| `modelSolution` | used to calibrate limits, never to judge |
+
+A group's own limits replace the global ones for that group's tests alone;
+absent, they inherit. The editor takes milliseconds or seconds, and bytes, KiB
+or MiB, and converts — nobody types 268435456 to mean 256 MiB.
+
+## Building one
+
+The tab takes loose files and pairs them by name: **`1a.in` goes with `1a.out`.
+The number is the group, the letter the test.** A test can also be typed in by
+hand. Files it does not recognise are listed rather than silently dropped.
+
+The **Groups** table is where the points live, and where a group is marked as
+**examples** — any number of them, group 0 to begin with. Those tests are cut
+into a separate archive and published to participants as `examples.zip`, from
+the same files, so the sample in the statement and the sample in the download
+cannot differ. No group marked as examples means the participant receives none,
+which is a legitimate thing for a problem to want.
+
+**An interactive problem publishes none either way.** There is no input file to
+hand over — the submission is given none — so an archive of expected outputs
+with nothing to answer would be worse than no archive. Show a sample
+conversation in the statement instead.
+
+The archive is assembled in your browser, because its layout is a property of
+the problem type and the Server is not allowed to know one type from another.
+You can download the built package and the samples to inspect them, and you can
+open an existing package to edit it.
+
+The validator refuses to let a broken package be published, and the button says
+so rather than failing after the click.
+
+<Callout type="warn" title="A package cannot be added to a version that exists">
+Change the package and it is published with the **next** version, along with the
+statement and the attachments. That is what makes a pinned version a promise:
+what was judged against it cannot be edited afterwards.
+</Callout>
+
+## Calibrating the limits
+
+If the package carries a model solution, **measure the model solution** runs it
+on a real Runner and reports what it measured, per group. It needs `trial:run`,
+which is deliberately outside the participant template — a trial spends a
+Runner.
+
+A calibration rule turns a measurement into a limit: a multiplier, a constant to
+add, and a value to round up to. The suggestion is taken from the **slowest
+language measured**, because a group's limit has to fit every language the
+activity accepts. Apply one group's suggestion or all of them.
+
+The measurement happens once, on request, and the number is written into the
+package. Judging never runs the model solution: a limit has to be a number every
+submission was held to, not one recomputed per run.
+
+## How a problem gets its tests and limits
+
+Two steps, and reading them the other way round is the mistake that costs a
+round.
+
+1. **The assignment's configuration is merged into the package**, member by
+   member — that is where an activity narrows the languages or moves a limit for
+   its own use. `limits: { timeMs: 500 }` narrows the time and leaves the memory
+   alone; the `groups` array merges by group number, so one group can be changed
+   without restating the rest. Nothing can be *removed* this way, and a member
+   the format has no name for is refused rather than ignored.
+2. **The merged document is then read per test, and the more specific layer
+   wins**: the global `limits`, overridden by `overrideLimits` for the language,
+   overridden by the group's own.
+
+<Callout type="warn" title="Raising the global limit does not lift a group that states its own">
+The steps compose in that order, so an assignment writing `limits.timeMs` moves
+the package's **global** limit — and a group carrying its own still runs under
+that. To give one group more time here, write that group into the assignment's
+`groups`.
+</Callout>
+
+Time and memory are never set on the activity. They only become knowable while a
+solution runs, and they belong to the problem.

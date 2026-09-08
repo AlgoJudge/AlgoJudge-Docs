@@ -1,0 +1,194 @@
+---
+title: Update and rollback
+description: Pull first, close late, and the one thing a rollback cannot undo.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+```bash
+./scripts/update.sh
+./scripts/update.sh --dry-run
+./scripts/update.sh --no-git
+```
+
+## The order is the point
+
+1. **`git pull`** — new Compose files and scripts, never new image versions.
+2. **`docker compose pull`** — the longest step, and **it costs no downtime**.
+3. **Nothing new? Stop.** Nothing is closed.
+4. **Back up.**
+5. **Close, and wait for the drain.**
+6. **`up -d`, wait for healthy.**
+7. Healthy: record the digests. Not healthy: roll back.
+8. **Reopen**, and prune only this project's images.
+
+<Mermaid chart={`
+flowchart TD
+    pull["git pull, then docker compose pull<br/>No downtime: nothing is closed yet"]
+    pull --> changed{"Anything new?"}
+    changed -->|"no"| stop["Stop. Nothing was closed"]
+    changed -->|"yes"| backup["Back up. A failed dump stops the update"]
+    backup --> close["Close, and wait for the drain"]
+    close --> up["up -d, wait 120 s for healthy"]
+    up -->|"healthy"| lock["Record the digests in state/current.lock"]
+    up -->|"not healthy"| roll["Roll back, and write the Server's<br/>last fifty lines to state/failed-update.log"]
+    lock --> open["Reopen, and prune only this project's images"]
+    roll --> shut["Left closed. The log and the pre-update dump are named"]
+`} />
+
+The outage is steps 5 to 7 — measured at about **eighteen seconds** on a small
+installation, most of it the drain.
+
+Step 4 is not optional and the script will not skip it: an update with no backup
+in front of it is not one this script will do. If the pre-update dump fails,
+nothing is updated.
+
+## What "something new" means
+
+Not the tag itself. `SERVER_TAG=0` points at a different image after every
+release, so "is the tag the same" would answer yes for ever. The script asks
+Compose which image it **would** run for each service now, and compares that with
+the image id the container is actually running. Those two differing is exactly
+"something new".
+
+**Asked of Compose rather than of the container**, because the container knows
+only the reference it was created from — so an operator who pins `0.1.0` and
+later writes `0.1.1` would be told nothing had changed, while the image Compose
+had just pulled sat unused.
+
+<Callout type="info" title="The four language images are compared separately">
+`lang-gcc`, `lang-clang`, `lang-python` and `lang-pypy` are not services, so
+`docker compose pull` never fetches them and no service comparison can see them.
+The update pulls all four by name and compares them against what
+`state/current.lock` recorded. A new one counts as "something new", because a
+Runner probes each image once and remembers — it picks a replacement up only when
+its container is recreated.
+</Callout>
+
+## Versions are tags; what is running is a digest
+
+**Tags live in `.env`. Digests live in `state/current.lock`.** The tag says what
+was asked for; the digest says what is running, and is what a rollback restores.
+
+Digests cannot live in the repository. This is a product many organisations
+deploy independently, and none of them can commit to it.
+
+The default `SERVER_TAG=0` is a **moving major** and carries no `v`: a release
+tagged `v0.4.2` publishes the image tags `0.4.2`, `0.4`, `0` and `latest`.
+Staying on `0` takes every later one on the next update.
+
+**Below 1.0 that is more than fixes.** A minor is allowed to change what the one
+before it did, so `0` follows those too. An installation that wants only fixes
+writes `0.1`, and one that wants to decide every version writes `0.1.0`.
+`latest` is not offered — an installation that changed version because somebody
+pulled is not a deployment.
+
+## Rollback
+
+```bash
+./scripts/rollback.sh
+```
+
+Restores exactly the images in `state/current.lock`, whatever the tags point at
+now, through an override written to `state/rollback.compose.yaml`. That includes
+the four language images: they go back as `AJ_Sandbox__Image__*` on each Runner,
+because putting an old Runner back beside today's sandboxes is the one
+combination the Runner is not tested in.
+
+<Callout type="warn" title="Bring the stack up with both files until the cause is fixed">
+The override is not read by a plain `docker compose up`, so a plain `up` puts the
+new images straight back.
+
+```bash
+docker compose -f compose.yaml -f state/rollback.compose.yaml up -d
+```
+</Callout>
+
+There is nothing to roll back to on an installation that has never updated:
+`state/current.lock` is written by a **successful** update.
+
+### A rollback does not undo a migration
+
+If the update moved the schema, `state/last-migration` records it and
+`rollback.sh` refuses to be quiet about it. An older Server against a newer
+schema does not start, and the only way back is restoring the dump taken
+immediately before — **which loses everything written since**. The script names
+that dump.
+
+## Update every host in the same window
+
+**And the language images with the Server.** A Server and a Runner speak a
+protocol that changes between versions, and the tags this stack ships are moving
+majors pulled independently — so nothing stops `update.sh` taking a new Server
+against a Runner image from last month. **A Runner too old for the Server it
+registers against is refused, and a refused registration is not retried**: the
+process exits, `restart: unless-stopped` turns that into a loop, and
+`preflight.sh` cannot see it because nothing is wrong with the configuration.
+The log line is `the Server refused with 403: runner.nonce.unknown`.
+
+This bites hardest on [T2](/en/install/v0.1), where the Runners are on hosts of their
+own. Those hosts have their own `update.sh`, and one that is not updated in step
+goes quiet on its **next restart** rather than immediately — the shape of failure
+nobody notices until a contest.
+
+## The Runner during an update
+
+**On `SIGTERM` a Runner gives its job back.** It stops the evaluation it is
+running, tells the Server the job is free, clears the containers it had started
+and exits. Another Runner can claim that job **that instant** rather than when
+the lease expires ten minutes later, and the delivery is not counted against the
+submission — an operator restarting a fleet does not spend a participant's
+attempts.
+
+**Three times, and then it does.** A give-back is free for the first three, as is
+a delivery nobody was ever heard from about; past that each costs one of the
+five, because beyond that a Runner crash-looping under a supervisor and an
+operator restarting a fleet look alike and only the count separates them.
+
+The work already done on that submission is thrown away and redone by whoever
+takes it next. What changes is that it happens in seconds rather than in ten
+minutes.
+
+`RUNNER_STOP_GRACE` is what those calls need, and `30s` is generous for a handful
+of HTTP requests and a few container removals. **Shortening it below what they
+take turns a stop back into a kill**, and a killed Runner leaves its job to the
+lease. At the Compose default of 300s a `docker compose down` spends five minutes
+in silence instead: measured on this stack, **302 s against 32 s**.
+
+<Callout type="warn" title="Two things decide which timeout a container actually holds">
+**Docker records the timeout when the container is created**, so `down` waits
+the old value until the containers are recreated — the next `up` after a pull,
+or `up --force-recreate`. `docker inspect -f '{{.Config.StopTimeout}}'` says
+which one a container holds.
+
+**And your `.env` decides the value**, not `compose.yaml`'s fallback. Change it
+there.
+</Callout>
+
+A clean drain is still `maintenance.sh on --wait-closed` on the **Server**
+first, which `update.sh` does: it stops new work reaching a Runner at all, which
+is tidier than every Runner handing back what it has just been given.
+
+**The external Runner handles `SIGTERM` too**, and its grace is
+`EXTERNAL_RUNNER_STOP_GRACE` — sixty seconds, twice the sandboxing Runner's,
+because it hands back up to twenty pending submissions at one call each. What it
+loses when it is killed instead is not an evaluation but the list of submissions
+an archive has not answered for, and each of those is sent to that archive again
+when the job is requeued. [Maintenance](/en/install/v0.1/maintenance) has the
+arithmetic.
+
+## If both halves fail
+
+If the new images do not come up healthy within 120 seconds, the script rolls
+back on its own and writes the Server's last fifty log lines to
+`state/failed-update.log`. If the rollback also fails it stops trying: the
+installation is left closed, and the log and the pre-update dump are named.
+That is not something a script should keep attempting.
+
+## The update is not scheduled for you
+
+`cron/algojudge.cron` ships the update entry **commented out**. Uncomment it
+only once you have restored a backup at least once and know it works — an
+automatic update with an untested backup behind it is a nightly opportunity to
+lose an installation.

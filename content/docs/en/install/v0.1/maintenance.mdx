@@ -1,0 +1,154 @@
+---
+title: Maintenance mode
+description: Taking an installation out of service without stopping it, and the way that looks obvious and is wrong.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+```bash
+./scripts/maintenance.sh on "nightly backup" --wait-closed
+./scripts/maintenance.sh status
+./scripts/maintenance.sh off
+```
+
+The script is a wrapper over `aj-admin maintenance`. **The Server owns
+maintenance**, and the whole feature rests on one distinction:
+
+> A submission that could not be evaluated because an operator started a backup
+> was not evaluated. It was not wrong, it did not fail, and nothing about it
+> should be recorded. It goes back on the queue.
+
+## Three levels, one direction
+
+| | Level | What answers | What refuses |
+|---|---|---|---|
+| **0** | `open` | everything | — |
+| **1** | `draining` | `/api/v1/health`; a Runner's lease, progress, report, file read, upload, attach | the participant API, submissions, manager writes, **new claims** |
+| **2** | `closed` | `/api/v1/health` | everything else |
+
+- Turning the switch **on** enters `draining` immediately, **never `closed`
+  directly**. Work in flight is given its chance.
+- The Server reaches `closed` when no evaluation job and no trial is running, or
+  after `Maintenance:ForceAfterSeconds` — 300 by default — whichever comes first.
+- Turning it **off** returns to `open` immediately, from any level.
+
+<Mermaid chart={`
+flowchart LR
+    open(["open"]) -->|"maintenance.sh on"| draining(["draining"])
+    draining -->|"nothing left running"| closed(["closed"])
+    draining -->|"ForceAfterSeconds, 300 by default"| closed
+    draining -->|"maintenance.sh off"| open
+    closed -->|"maintenance.sh off"| open
+`} />
+
+The level is a row in the database, not a flag in memory, so it **survives a
+restart**. An operator who takes the Server down during a window and starts it
+again finds it still in the window, which is the only safe direction for that
+surprise.
+
+<Callout type="warn" title="`closed` is the only level at which the database is safe to touch">
+At `draining` a Runner may still be writing a result. A dump taken then is
+internally consistent and silently loses that result on restore. `--wait-closed`
+is what waits, and `backup.sh --quiesce` uses it.
+</Callout>
+
+**A forced close loses nothing.** The abandoned job keeps its lease, the lease
+expires, and the reaper puts it back on the queue. The cost is one evaluation
+done twice, against the cost of an operator held hostage by one wedged Runner.
+
+**With [an external judge](/en/install/v0.1/external-runner) that sentence needs a
+qualification.** The evaluation done twice is then a submission made twice on
+somebody else's service, under your account there — the archive already received
+the first one, and what is repeated is the sending rather than the judging. That
+Runner holds the set it is waiting on in memory only, so a restart during a
+window loses it.
+
+An external job may legitimately be held for fifteen minutes and
+`Maintenance:ForceAfterSeconds` is 300, so the two do not meet on their own.
+Before a window that will restart that container: raise `ForceAfterSeconds` past
+`AJ_External__PendingTimeoutSeconds`, wait for the queue to be quiet, or accept
+the duplicate.
+
+## `/api/v1/health` is the door that never closes
+
+It answers **200 at every level**, anonymously, carrying the window:
+
+```json
+{ "status": "ok", "maintenance": { "level": "draining", "since": "…", "reason": "nightly backup" } }
+```
+
+The `maintenance` object is **absent while open**, so a reader that has never
+heard of this sees exactly the document it always saw.
+
+Three separate things depend on it staying up, and each on its own would be
+enough:
+
+- the Server container's own health check greps it, so a 503 here would have
+  Docker kill the process you are deliberately keeping alive;
+- `docker compose up --wait` polls it, so a stack could not start into a window;
+- it is what the Client and every Runner poll to learn they may come back.
+
+## Do not put a maintenance page in front of nginx
+
+It is the obvious idea and it breaks three things at once.
+
+- **`/api/v1/health` goes down with everything else**, for the three reasons
+  above.
+- **The Client already has a maintenance page**, in this installation's own
+  branding and language, drawn from the Server's `server.maintenance` refusal. A
+  static page from the proxy replaces it with something worse and hides the
+  reason.
+- **A proxy refusing everything refuses the Runner too**, so nothing in flight
+  can finish and the drain never completes. Every window would then cost an
+  interrupted evaluation, which is the whole thing it exists to avoid.
+
+`nginx/algojudge.conf` says `proxy_intercept_errors off` under the API location
+for this reason, and `scripts/check-repository.py` fails if that changes. The
+one place a static page does help is the SPA route, where **502 and 504 only**
+are intercepted — the case where the Client container is gone and the browser
+would otherwise get nothing at all.
+
+## What a refusal looks like
+
+During a window the Server answers `503` with the code `server.maintenance` and
+a `Retry-After` header. The claim endpoints are the exception: they answer `204`
+instead of refusing, because an empty queue is what every Runner already handles
+correctly — so a Runner that has been taught nothing about maintenance still
+behaves properly at `draining`.
+
+`maintenanceChanged` is broadcast to every connected session in **both**
+directions. A Client told only that the Server was going away would sit on the
+maintenance page until somebody reloaded it.
+
+## The whole of `/admin` is exempt
+
+The gate runs after authorization and leaves the operator's own paths and the
+Runner's reachable at `draining`. Every `/api/v1/admin` path stays open at every
+level: a window nobody can escape and an account nobody can get into are the same
+lockout.
+
+## The Runner during a window
+
+A Runner waits rather than exiting. It abandons a job to its lease rather than
+reporting a failure it did not observe, and it holds a finished result through
+the window instead of throwing it away.
+
+<Callout type="warn" title="Stopping a Runner is not a way of being careful">
+On `SIGTERM` a Runner hands its job straight back to the queue, so nothing waits
+out a lease — but it is still work thrown away and redone. A clean drain is
+`maintenance.sh on --wait-closed` on the **Server** first, which stops new work
+reaching a Runner at all; see [Update and rollback](/en/install/v0.1/update).
+</Callout>
+
+## What this deliberately does not do
+
+- **No scheduling.** There is no "close at 22:00". A window is thrown by a
+  person who is present, because somebody has to be there to notice it went
+  wrong.
+- **No per-activity windows.** Maintenance is a property of the installation. A
+  contest that must not be interrupted is a reason not to throw the switch, not a
+  reason for the switch to be finer.
+- **No read-only mode.** A level that served reads and refused writes would have
+  to be reasoned about endpoint by endpoint, and the first one classified wrongly
+  would be discovered by a participant.

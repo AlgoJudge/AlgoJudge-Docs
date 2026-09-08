@@ -1,0 +1,95 @@
+---
+title: User
+description: An account, what "deleted" means here, and the session rows behind the users screen.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`User` extends ASP.NET Core Identity's `IdentityUser`. Identity supplies the
+credential half — login, address, password hash, lockout — and the product adds
+the rest.
+
+| Field | Meaning |
+|---|---|
+| `FirstName`, `LastName` | optional |
+| `Note` | a sentence about the account, written by staff. Not a tag |
+| `Tags` | free display metadata, never queried. Opaque `jsonb` |
+| `ApprovedAt` | when staff approved the account. **Absent means pending** |
+| `IsTemporary` | a bulk account handed out on a slip of paper |
+| `ExpiresAt` | when it runs out |
+| `BlockedReason` | why the account is blocked |
+| `CreatedAt`, `LastSeenAt` | |
+| `Anonymized` | the account has been deleted, which here means emptied |
+
+## Approval is not confirmation
+
+`ApprovedAt` is deliberately not the same fact as `EmailConfirmed`. Confirming
+an address proves somebody reads that mailbox; approving an account is a
+decision a person made. One state holding both would make an installation that
+confirms no addresses unable to approve anybody.
+
+## Blocked and expired are computed, not stored twice
+
+Blocking **is** `LockoutEnd`, and never a second boolean: two fields answering
+*is this account blocked* is two fields that can disagree, and Identity already
+enforces the first one at sign-in. `BlockedReason` says why; it does not say
+whether.
+
+Expiry is one expression over `ExpiresAt`, never written back as a block.
+Setting a block from the date would put two writers on one field — a manager and
+the clock — and both ways they disagree are silent: unblocking would defeat the
+expiry, and moving the date would leave a stale block behind.
+
+## Deletion is anonymisation
+
+<Callout type="warn" title="A user row is never removed">
+[Submissions](/en/server/v0.1/concepts/submission) and results name a user id and it
+has to stay resolvable, so deletion empties the row in place — immediately, with
+no grace period. `Anonymized` exists so a screen can say "deleted account"
+rather than showing a blank name and leaving a reader to guess.
+</Callout>
+
+An account merge follows the same rule: both accounts keep their rows, and the
+emptied one is anonymised when the undo window closes. `user:merge` is its own
+permission because it hands one person's submissions and points to somebody
+else.
+
+## Passwords
+
+Ordinary participants authenticate through OIDC; see
+[Identity](/en/server/v0.1/identity). The embedded Identity stays permanently for
+**administrator, local and temporary accounts** — a room of bulk logins handed
+out on paper has no mailboxes and no provider. Nothing prevents an installation
+running entirely on local accounts, and that is not the recommendation:
+registering a provider is.
+
+An address is optional on an account, deliberately, and the seeded administrator
+is such an account.
+
+## UserSession
+
+One sign-in, which is neither a person nor a browser tab.
+
+| Field | Meaning |
+|---|---|
+| `StartedAt`, `EndedAt` | `EndedAt` is set on sign-out, so history survives it |
+| `LastRequestAt`, `LastRequestPath` | an API path, not the screen somebody was looking at |
+| `IpAddress` | `inet`, normalised before it is stored |
+| `UserAgent` | |
+| `DeviceId` | the name this browser gives itself, or null |
+| `ExpiresAt` | |
+
+`IpAddress` is `inet` rather than text because the question anybody will ever
+ask of it — *is this inside the examination room's network* — is a containment
+test, and over a string it is a string comparison.
+
+**The number of open WebSockets for a session is counted live** from the
+connection registry and never stored. A count written to a row is a count that
+survives a crash and tells the users screen somebody is present who left hours
+ago.
+
+`DeviceId` is self-declared: it arrives in a header the page writes, so whoever
+is using the browser can read, change or clear it. It is weaker evidence than
+the session cookie, which is `HttpOnly`. It is stored as a `Guid` rather than as
+the text that arrived — client-supplied text stored whole is text that reaches a
+screen unvalidated.

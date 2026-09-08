@@ -1,0 +1,124 @@
+---
+title: Ranking
+description: When there is a board, what it covers, and what a frozen column means.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Whether there is one at all
+
+The **Ranking** entry follows one setting — who may see scores.
+
+| Setting | What you get |
+|---|---|
+| everyone | the whole board, with places |
+| participants only | **your own row, and no place** |
+| managers only | no ranking entry at all |
+
+The middle case is the one worth stating. If you may not see other people's
+scores you still get the screen, showing what you have — but no place, because a
+standing among people whose scores you cannot see is not a standing.
+
+## What the board covers
+
+A picker across the top offers **Combined** plus **every round that has
+started**. A round nobody has opened has no standing, so it is not offered:
+listing it would promise a table that cannot exist yet.
+
+The combined board is where you look for the whole contest, and it carries the
+problems as well as the totals.
+
+## When it may be read
+
+Each round has its own window — an organiser publishes the first round's board
+while the second is still being fought. Outside it the entry stays in the
+navigation and the page says when:
+
+- *The ranking opens on …*
+- *The ranking was available until …*
+- *The ranking is not available.*
+
+A vanished entry would look like a fault; being told the board opens at six is
+being told something.
+
+## Two shapes
+
+Which one you get is the activity's setting, and they are different tables
+rather than different sorts of one table.
+
+### Points
+
+Columns: **Place**, **Contestant**, **Solved**, **Sum**, then a column per round.
+Clicking a round's header expands it into a column per problem; the most recent
+round is expanded when you arrive.
+
+Neither submission time nor execution time is considered.
+
+### ICPC
+
+Columns: **Place**, **Contestant**, **Solved**, **Penalty**, then a column per
+problem.
+
+A solved cell shows the time of the accepted submission as a clock — `1:58`
+rather than `118` minutes — with `+2` beneath it for the rejections that came
+before. An unsolved cell with attempts shows a dash and the count. Penalty is a
+clock too, and past a day it keeps counting hours rather than starting a day
+component, because these numbers are compared against each other.
+
+Penalty is the minute the problem was solved in, plus **twenty minutes for each
+rejection before that**. The minute counted is the one begun: twenty minutes and
+thirty seconds into the round is the twentieth. Nothing after the accepted
+submission counts, so sending one more out of habit costs nothing — and neither
+does a problem you never solved.
+
+<Callout title="A submission the judge did not answer costs nothing">
+A rejection is a **verdict**. Where an evaluation failed or a manager cancelled
+it, nobody ruled on your solution, so no twenty minutes are charged and the cell
+shows a `?` rather than counting against you. A compilation error is a verdict
+like any other and does count.
+</Callout>
+
+**Two contestants level on solves and penalty share a place.** There is no
+further tiebreak: the board will show two firsts and then a third rather than
+choosing between them. The points board shares a place the same way, on an equal
+total.
+
+## A frozen board
+
+<Callout type="warn" title="Frozen means the numbers stopped, not that they are zero">
+While a round is frozen, a blue banner says *Ranking is frozen* and either
+*Results are hidden until …* or *Results are hidden until the organisers unfreeze
+the ranking*. Its columns carry an asterisk, and a cell whose outcome is withheld
+shows `?` rather than a nought.
+</Callout>
+
+That distinction is the whole point: a `?` is *tried, and you may not know yet*,
+which is a different thing from *did not try*. A total that is still moving must
+not read as a settled one.
+
+A freeze is not the only reason for one. Hover a `?` and it says which of three
+it is: *Submitted during the freeze*, *Not judged yet*, or *No verdict was
+returned* — withheld, waiting, and never answered are three different things to
+be told, and only the first has a time when it ends.
+
+## Find me
+
+**Find me** scrolls to your own row and highlights it. It is disabled where you
+have no row on the board being shown.
+
+A board wider than the screen scrolls sideways. The place and the contestant stay
+put while the rest slides under them, so a row never loses its name.
+
+## Groups on the board
+
+A row is a **contestant**: a person competing as themselves, or a group. A
+group's row carries its name and its short description, and — where the activity
+says to print it — who is in it, under the name.
+
+Members never get rows of their own. See
+[Competing in a group](/en/client/v0.1/participant/groups).
+
+## An empty board
+
+*No results yet* is a normal state: an activity that has not started, or one
+where nothing has been solved. It is not an error.

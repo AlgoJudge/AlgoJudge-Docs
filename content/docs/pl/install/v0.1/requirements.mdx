@@ -1,0 +1,345 @@
+---
+title: Czego wymaga host
+description: Docker z Compose v2.15.0, cgroup v2, polecenia coreutils używane przez skrypty i dysk na kopie. Logi stack ogranicza sobie sam.
+source: en/install/v0.1/requirements.mdx
+sourceSha256: 5016691e58d394d1af0c27af4b7cf20c21ff1099b5d69d0180425513aa995ddd
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Docker z Compose v2.15.0 lub nowszym
+
+**Próg 2.15.0 bierze się z `cgroup: host`**, które ustawia usługa Runnera i które
+Compose dostał dopiero w tej wersji. `up -d --wait`, używane przez skrypty
+instalacji i aktualizacji, wymaga 2.1.1.
+
+Cały stos to jeden `compose.yaml` z profilami. Wszystko w tej sekcji to `docker
+compose` — wtyczka, nie starszy skrypt `docker-compose`.
+
+## cgroup v2, obowiązkowo
+
+Runner przy starcie pyta środowisko uruchomieniowe kontenerów o wersję cgroup
+i **odmawia uruchomienia na v1**.
+
+Nie chodzi o szczelność sandboksa: **v1 zamyka kontener zadania całkowicie
+poprawnie** i cały zestaw testów adwersaryjnych na nim przechodzi. Nie potrafi
+natomiast **mierzyć**. `memory.peak` i `cpu.stat` to interfejsy v2, a w v1 nie ma
+odpowiednika, który powiedziałby prawdę o procesie, który już się zakończył.
+Odmowa Runnera brzmi dokładnie tak:
+
+> the limits are enforced on v1, but a time limit is decided on processor time
+> read from cpu.stat, which is a v2 interface — so what cannot be done here is
+> reach a verdict at all
+
+**Ta ostatnia część to cały powód.** Limit czasu jest czasem procesora,
+odczytanym z cgroup, więc Runner, który nie potrafi jej odczytać, nie potrafi
+wydać werdyktu. Odmowa nie dotyczy liczby brakującej obok werdyktu, tylko samego
+werdyktu.
+
+Jest obejście: `AJ_Sandbox__AllowUnmeasured`. Powstało, bo maszyna programisty to
+często Docker Desktop, który wciąż może raportować v1, a inaczej stos
+deweloperski w ogóle by nie wstał. **Sprawia jednak tylko tyle, że proces
+wstaje**: taki Runner zarejestruje się, odpowie na protokół, a potem każde
+przejęte zadanie zakończy awarią infrastruktury. Gdy je ustawisz, Runner przy
+każdym starcie loguje na poziomie `ERROR`:
+
+```
+STARTING BELOW SPECIFICATION — … A time limit is decided on processor time read
+from this host's cgroups, so this Runner registers and answers the protocol and
+then fails every job it claims.
+```
+
+`AJ_Sandbox__AllowCgroupV1` to ten sam przełącznik pod starszą nazwą i nadal
+jest czytany. `preflight.sh` wprost odmawia na hoście z v1 i odmawia przy
+sterowniku cgroup innym niż `cgroupfs` albo `systemd`, zamiast pozwolić stosowi
+wstać wokół Runnera, który nie umie oceniać.
+
+<Callout type="warn" title="Tego obejścia nie da się zgłosić do panelu">
+`MachineDto` to struktura zamknięta i pomija każde pole, którego sama nie
+wymienia, więc Runner działający poniżej specyfikacji wygląda w panelu Zarządzanie
+dokładnie jak każdy inny. Mówi o tym wyłącznie jego własny log. Nie ustawiaj
+tego w instalacji, z której korzysta ktokolwiek poza Tobą.
+</Callout>
+
+### Dowolny sterownik cgroup i zapisywalne drzewo
+
+Nawet na v2 liczby zbiera się okrężnie. Sandbox uruchamiany jest **w cgroup,
+która go przeżyje**, przez `--cgroup-parent`, i to ją odczytujemy, kiedy dziecka
+już nie ma — bo API środowiska uruchomieniowego nie podaje szczytu, a własna
+cgroup kontenera znika w chwili, w której kończy się jego proces.
+
+To, czym jest ta cgroup, zależy od sterownika cgroup w demonie. Runner pyta o
+niego przy starcie i sam wybiera sposób pomiaru; **żaden ze sterowników nie
+wymaga przestawiania demona.**
+
+| | `cgroupfs` | `systemd` |
+|---|---|---|
+| Gdzie jest domyślny | Docker Desktop | praktycznie każdy linuksowy serwer z systemd |
+| Kto tworzy cgroup | Runner | systemd, kiedy poprosi go o to demon |
+| Ile ich jest | jedna na przebieg, potem usuwana | jedna na Runnera, przez cały czas jego działania |
+| Czas procesora przebiegu | odczyt z `cpu.stat` | przyrost `cpu.stat` w czasie przebiegu |
+| Szczyt pamięci **ocenianego** przebiegu | `memory.peak` cgroup mieszczącej samo zgłoszenie, zakładanej wewnątrz kontenera zadania | tak samo — tutaj sterownik o niczym nie decyduje |
+| Szczyt pamięci pozostałych przebiegów | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.12** |
+| Jądro | 5.19 i nowsze | 5.19, żeby oceniać; **6.12** wyłącznie dla szczytu kompilacji, programu weryfikującego i interaktora |
+
+Wpis `native.cgroupdriver` w `/etc/docker/daemon.json` nie jest ani potrzebny,
+ani szkodliwy.
+
+Jednego i drugiego dotyczą natomiast te same trzy warunki, a `AlgoJudge-Ops`
+zapewnia je wszystkie:
+
+```
+-v /sys/fs/cgroup:/sys/fs/cgroup     # z prawem zapisu
+--cgroupns=host                      # w Compose: `cgroup: host`
+--user 0:0                           # katalogi tego drzewa należą do roota
+```
+
+**Potrzebują ich oba i żaden bez nich nie wstanie.** Limit pamięci jest
+egzekwowany na cgroup mieszczącej samo zgłoszenie, a tę zakłada shim **wewnątrz
+kontenera zadania** — drzewo widoczne przez ten montaż musi więc być zapisywalne
+przy każdym z backendów. Runner sprawdza to przy starcie pod jednym i drugim:
+zakłada cgroup, od razu ją usuwa i **odmawia uruchomienia**, jeżeli mu się nie
+uda — zamiast się zarejestrować, odpowiadać na protokół i przewracać się na
+każdym zadaniu, jakie weźmie.
+
+Root brzmi groźniej, niż jest. Runner i tak trzyma gniazdo środowiska
+uruchomieniowego kontenerów, co samo w sobie odpowiada rootowi na hoście, więc
+identyfikator użytkownika w jego kontenerze nigdy nie był granicą. To, co Runner
+*uruchamia*, nic na tym nie zyskuje: kontener zadania nadal działa jako
+`65534:65534`, z odebranymi wszystkimi uprawnieniami (`capabilities`).
+
+**Host z systemd i jądrem starszym niż 6.12 traci mniej, niż to brzmi.** Dotyczy
+to **Ubuntu 24.04**, które ma 6.8; **Debian 13** ma 6.12 i jest w porządku.
+Ani werdykt, ani liczby samego zgłoszenia na tym nie cierpią — szczyt ocenianego
+przebiegu czyta się z cgroup założonej na ten właśnie przebieg, więc świeżej i
+niewymagającej zerowania. Brakuje szczytu tych przebiegów, które nie są niczyim zgłoszeniem:
+kompilacji, programu weryfikującego i interaktora, a tych nie pokazuje żaden
+ekran. Runner mówi o tym na poziomie `ERROR` przy każdym starcie.
+
+## Rdzenie i pamięć
+
+**Runner ocenia jedno zgłoszenie naraz**, a każdy test dostaje `--cpus=1` — tyle
+czasu procesora, ile daje jeden rdzeń, niezależnie od tego, ile wątków uruchomi
+program, bo rozliczenie sumuje całe poddrzewo. Rachunek nie dotyczy więc
+przepustowości: **jeden Runner to jedno równoległe zgłoszenie i praca za jeden
+rdzeń**, a pytanie brzmi tylko, ile rdzeni możesz oddać.
+
+**To przydział, a nie przypięcie.** Na których procesorach zgłoszenie naprawdę
+pobiegnie, decyduje jądro — chyba że sam podzielisz maszynę; patrz niżej.
+
+**Walka o rdzeń kosztuje czas zegarowy, a bezpiecznik stoi właśnie na zegarze.**
+Limit jest czasem procesora, a czas procesora nie zmienia się pod obciążeniem:
+dwa zgłoszenia dzielące rdzeń naliczają swój czas poprawnie, choćby czekały na
+niego długo. Zmienia się wszystko, co mierzy zegar — a przebieg, który spędza
+czas w kolejce po procesor, wygląda z zewnątrz dokładnie jak taki, który
+przestał liczyć. Sandbox zatrzymuje takie przebiegi, żeby program naprawdę
+zawieszony nie trzymał Runnera bez końca — a zagłodzony dochodzi do tego samego
+progu, choć ani razu nie zwolnił. Werdykt brzmi `Time limit exceeded`.
+
+Zmierzone 2026-09-03 na szesnastu procesorach, czyli ośmiu rdzeniach fizycznych,
+z dwunastoma Runnerami bez podziału między nimi: **piętnaście zgłoszeń na sto
+pięćdziesiąt wróciło jako `Time limit exceeded`, mieszcząc się w swoich
+limitach** — w tym rozwiązania, o których wiadomo, że są poprawne.
+
+Górna granica jest więc regułą o poprawności, a nie o przepustowości, i rdzenie
+liczone niżej muszą być rdzeniami, na których nie ma nic innego:
+
+| Rdzenie fizyczne | Runnery |
+|---|---|
+| 4 | 2 |
+| 8 | **4** — tyle uruchamia profil `runner` |
+| 16 | 8 |
+
+Ile ich jest, powie `lscpu`: *Core(s) per socket* razy *Socket(s)*, co **nie**
+jest liczbą procesorów, gdy rdzeń niesie dwa wątki. Żeby uruchomić mniej, usuń
+z `compose.yaml` usługi, których nie chcesz, i zostaw ich `RUNNER_*_CPUSET`
+puste.
+
+| Składnik | Rdzenie | Pamięć | Uwagi |
+|---|---|---|---|
+| Server | 1, wspólny z Postgresem | 512 MiB | zmierzone 228 MiB pod obciążeniem oceniania |
+| Postgres | wspólny z Serverem | 512 MiB | zmierzone 115 MiB; przy dużej instalacji daj więcej |
+| Client | — | 32 MiB | nginx i statyczne pliki |
+| nginx na brzegu | — | 32 MiB | |
+| External Runner | — | 64 MiB | przekazuje do zewnętrznego sędziego i czeka na sieć; nie uruchamia kontenerów |
+| **każdy Runner** | **1** | **0,6 GiB** | własny proces plus jeden kontener sandboksa naraz |
+| demon Dockera i system | 1 | 750 MiB | to nie jest zaokrąglenie: podczas oceniania powstaje kilka kontenerów na sekundę |
+
+Te 0,6 GiB na Runnera to jego proces i największy kontener, jaki utrzyma —
+budowanie, ograniczone do 512 MiB. Utrzymuje jeden naraz, ale budżet musi
+wystarczyć na największy.
+
+### Przykład: cztery Runnery
+
+Jeden Client, jeden Server, cztery Runnery i jeden External Runner:
+
+| | Rdzenie | Pamięć |
+|---|---|---|
+| cztery Runnery | 4 | 2,4 GiB |
+| Server i Postgres | 1 | 1 GiB |
+| Client, brzeg, External Runner | — | 128 MiB |
+| demon i system | 1 | 750 MiB |
+| **razem** | **6** | **~4,3 GiB** |
+
+**Sześć rdzeni i 8 GiB**, a różnica między 4,3 a 8 nie jest zmarnowana — staje
+się pamięcią podręczną plików. Przy zadaniu, którego testy czyta się raz na
+zgłoszenie i znów przy następnym, to jest różnica między pamięcią a odczytem z
+dysku na każdy test.
+
+Dla rozmiaru spoza tabeli: **2 GiB podstawy i 0,6 GiB na Runnera**, plus
+jeden rdzeń na Runnera ponad dwa na całą resztę.
+
+Wdrożenie tożsamości nie należy do tego stosu — to [osobna
+instalacja](/pl/install/v0.1/identity) — ale jeśli postawisz je na tym samym hoście,
+Keycloak albo Authentik potrzebuje **kolejnego rdzenia i około 1 GiB**.
+
+<Callout type="warn" title="Rdzenie fizyczne, nie vCPU">
+Dwa wątki jednego rdzenia fizycznego dzielą jednostki wykonawcze. Pomiar
+pozostaje uczciwy — czas procesora nalicza się każdemu osobno — ale praca
+wykonana w jednej sekundzie procesora maleje, gdy sąsiedni wątek jest zajęty.
+To samo rozwiązanie zmierzy się więc różnie, zależnie od tego, co siedzi obok.
+Dla sędziego to problem z powtarzalnością i dlatego maszyny zawodów zwykle mają
+SMT wyłączone.
+
+Na współdzielonym VPS-ie sąsiada nie widać i nie da się z tym nic zrobić.
+</Callout>
+
+<Callout type="warn" title="Podziel maszynę między Runnery">
+**Runner nigdy nie wybiera procesorów sam** i jest to celowe: kilka Runnerów
+wybierających niezależnie, bez niczego, co by ich uzgadniało, wypada gorzej niż
+zostawienie rozmieszczenia hostowi. Mając całą maszynę, nie przypina niczego i
+decyduje planista — tyle tylko może zrobić na maszynie, której nikt nie
+podzielił.
+
+**Zamknij kontener Runnera w `cpuset`, a przeniesie ten zbiór na każdy
+uruchomiony przez siebie kontener zadania.** Musi: kontener zadania jest
+dzieckiem demona, nie Runnera, więc nie dziedziczy żadnego powinowactwa i bez
+tego rozlałby się po całej maszynie, po cichu znosząc narysowany przez ciebie
+podział.
+
+**Podział, który warto zrobić, to jeden Runner na rdzeń fizyczny, z obydwoma
+jego wątkami.** Dwa wątki jednego rdzenia dzielą pamięci podręczne, więc
+przeniesienie zadania między nimi nic nie kosztuje; dwa *różne* Runnery na
+jednym rdzeniu odbierają sobie jednostki wykonawcze, a program zużywa wtedy
+więcej czasu procesora na tę samą pracę — czyli dostaje zły werdykt, a nie
+wolniejszy. `AlgoJudge-Ops` udostępnia to jako `RUNNER_1_CPUSET` i kolejne, a
+jego `.env.example` pokazuje, jak odczytać pary z maszyny:
+`thread_siblings_list` mówi `0-1` na jednym hoście, a `0,8` na innym — lista
+przepisana z przykładu jest na tym drugim dokładnie odwrotna.
+
+Czego przypięcie nie daje, to czasu. `--cpus=1` obowiązuje na każdym kontenerze
+zadania tak czy inaczej, więc przebieg nie zdobędzie czasu procesora przez
+rozłożenie się na kilka rdzeni. A zbiór węższy niż rdzeń odbiera hostowi jedyną
+dostępną naprawę, bo jądro nie może wtedy przenieść zagłodzonego przebiegu na
+wolny procesor.
+</Callout>
+
+Dysk opisuje sekcja o [kopiach zapasowych](#dysk-na-kopie-najlepiej-nie-ten-od-bazy)
+poniżej. Poza tym Runner trzyma pamięć podręczną paczek ograniczoną do 10 GiB, a
+External Runner do 256 MiB.
+
+## Co wznawia usługi po awarii
+
+Każda usługa ma `restart: unless-stopped`. **Kontener, który zakończy się z
+jakiegokolwiek powodu, zostaje uruchomiony ponownie** — awaria też — i nie
+potrzebujesz do tego własnego nadzorcy: nadzorcą jest demon Dockera.
+
+`unless-stopped`, a nie `always`, i różnica jest wąska: po restarcie hosta
+`always` przywróci nawet kontener, który celowo zatrzymałeś. `unless-stopped`
+uszanuje to zatrzymanie, czego właśnie chce operator wyłączający Runnera na czas
+prac.
+
+<Callout type="warn" title="Demon musi wstać przy starcie systemu, a to już nie nasza część">
+`restart: unless-stopped` obowiązuje tylko wtedy, gdy `dockerd` w ogóle wstanie.
+Pakiety zwykle to załatwiają, ale instalacja, w której demon nie startuje przy
+boocie, po prostu nie wraca i nic nie powie dlaczego:
+
+```bash
+systemctl is-enabled docker
+```
+</Callout>
+
+**Trzech rzeczy nie załatwia**, a każda z nich ma inną odpowiedź:
+
+| | Co się dzieje |
+|---|---|
+| Usługa, która **zawiesza się** zamiast zakończyć | Nic jej nie wznowi: polityka restartu reaguje na zakończenie. *Zadanie* zawieszonego Runnera odzyskuje dzierżawa Servera — wygasa i zadanie wraca do kolejki — ale sam Runner stoi, dopóki ktoś nie zajrzy |
+| Kontener **w pętli restartów** | Wznawia się w nieskończoność, z opóźnieniem rosnącym do minuty. Nic tego nie eskaluje i nic o tym nie powie — a jest to pierwsza rzecz do sprawdzenia, gdy instalacja stoi, a nic nie robi |
+| **Nieudany healthcheck** | Nic. W Compose healthcheck informuje i nie restartuje; restartowanie po nim to zachowanie orkiestratora, nie tego stosu |
+
+Restart nie gubi stanu, bo wolumeny są nazwane. Runner zachowuje klucz tożsamości, więc
+pozostaje zatwierdzony, zamiast zgłosić się jako nowy,
+którego menedżer musi dopuścić od nowa.
+
+## Polecenia, których używają skrypty
+
+`bash` i `openssl` to te dwa, które warto zainstalować świadomie. Reszta jest na
+każdym linuksowym hoście z coreutils: `awk`, `sed`, `stat`, `sha256sum`,
+`mktemp`, `date`, `find`, `du`, `df`, `cut`, `tr`, `grep`, `sort`, `head`,
+`tail`, `wc`.
+
+**`sed -i` i `stat -c` to zapis GNU**, więc host BSD ani macOS nie jest jednym
+z tych hostów. `git`, `flock` i `crontab` są opcjonalne i każde ustępuje
+z komunikatem, zamiast przerywać pracę: bez `git` w manifeście kopii nie ma
+numeru rewizji, bez `flock` dwa skrypty mogą się nałożyć, bez `crontab`
+harmonogram instalujesz sam.
+
+## Dysk na kopie, najlepiej nie ten od bazy
+
+**Umieść katalog kopii zapasowych na innym systemie plików niż wolumen
+PostgreSQL.** Na jednym systemie plików żadne ustawienie rezerwy nie zagwarantuje,
+że kopia nie zagłodzi bazy, którą właśnie kopiuje.
+
+`preflight.sh` zapisze za Ciebie `BACKUP_MAX_TOTAL_GB`, jeśli jest puste — 25%
+systemu plików, na którym leżą kopie, i nigdy więcej niż 50% — żeby katalogu
+kopii przed zapełnieniem dysku nie chroniła sama polityka ilościowa, która
+zużycia dysku wcale nie ogranicza.
+
+## Logi kontenerów, które stack ogranicza sam
+
+<Callout title="Przed instalacją nie musisz nic robić">
+Stack ustawia sterownik logów każdej usłudze, którą uruchamia — dockerowy
+`local`, o rozmiarze z `LOG_MAX_SIZE` i `LOG_MAX_FILES` w Twoim `.env` — więc nie
+zależy od tego, jak masz ustawionego demona.
+</Callout>
+
+Sam Docker domyślnie pisze do pliku JSON bez żadnego limitu i kiedyś to właśnie
+tak taki host najczęściej zapełniał sobie dysk. Ograniczenie po stronie demona
+nadal warto ustawić — ze względu na **wszystko inne, co działa na tej maszynie** —
+ale nie jest to już pierwszy krok. W `/etc/docker/daemon.json`:
+
+```json
+{ "log-driver": "json-file", "log-opts": { "max-size": "50m", "max-file": "5" } }
+```
+
+Potem zrestartuj demona.
+
+**Jedna rzecz do wiedzenia, jeśli zbierasz logi gdzieś dalej.** `docker logs` i
+`docker compose logs` czytają `local` dokładnie tak samo jak `json-file`, więc
+wszystkie polecenia z tych stron działają bez zmian. Ale plik na dysku ma
+zwarty format binarny — więc **kolektor, który zbiera pliki `*-json.log` wprost z
+systemu plików hosta, nic tu nie znajdzie**. Jeśli takiego używasz, zmień
+`logging.driver` w `compose.yaml` z powrotem na `json-file`; opcje rozmiaru
+znaczą pod obydwoma to samo.
+
+`gc.sh` rotuje własne logi skryptów w `/var/log/algojudge/` i nie dotyka logów
+kontenerów — te należą do demona i ogranicza je blok w `compose.yaml`.
+
+## Grupa, do której należy gniazdo Dockera
+
+Na hoście z Runnerem `DOCKER_GID` powinien być grupą, która jest właścicielem
+`/var/run/docker.sock`, choć nic od tego nie zależy: usługa Runnera działa jako
+root, żeby móc mierzyć, a root otwiera gniazdo niezależnie od tego, do jakich
+grup należy. Ustaw ją mimo to poprawnie — będzie potrzebna, gdyby usługa
+działała bez uprawnień roota.
+
+```bash
+getent group docker | cut -d: -f3
+```
+
+Na Docker Desktop gniazdo należy do `root:root`, więc jest to `0`.
+`preflight.sh` odczytuje prawdziwy numer — pytając kontener, bo na Docker Desktop
+i pod WSL gniazdo widziane przez tę powłokę nie jest tym, które obsługuje demon —
+i ostrzega, jeśli Twój się nie zgadza. W instalacji, w której ktoś zmienił
+`compose.yaml` z powrotem na Runnera bez roota, zła wartość daje `Permission
+denied (os error 13)` z głębi klienta HTTP, nie nazywając ani gniazda, ani grupy.

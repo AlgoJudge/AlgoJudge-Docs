@@ -1,0 +1,89 @@
+---
+title: The model at a glance
+description: The eleven concepts the Server stores, how they hang together, and the five things a reader gets wrong without being told.
+---
+
+import { Mermaid } from "@/components/mermaid";
+
+Every concept below is defined from the model class that stores it, in
+`AlgoJudge.Server/Database/Models/`. Where a page states a rule as an invariant,
+the code enforces it.
+
+## The concepts
+
+| Concept | One line |
+|---|---|
+| [Activity](/en/server/v0.1/concepts/activity) | a contest or a course: the outermost container, and the unit of enrolment |
+| [Series](/en/server/v0.1/concepts/series) | a group of problems inside an activity — a round, a week, a class |
+| [Problem](/en/server/v0.1/concepts/problem) | a library entry, with append-only content versions |
+| [Assignment](/en/server/v0.1/concepts/assignment) | `SeriesProblem`: one problem attached to one series, with its own configuration |
+| [Submission](/en/server/v0.1/concepts/submission) | what a participant sent. It carries no verdict |
+| [Evaluation](/en/server/v0.1/concepts/evaluation) | `EvaluationJob`, one attempt; `Result`, the outcome of one completed attempt |
+| [Group](/en/server/v0.1/concepts/group) | `ActivityGroup`: several people competing as one |
+| [Grant](/en/server/v0.1/concepts/grant) | what a user may do within a scope — and, in an activity, the membership |
+| [User](/en/server/v0.1/concepts/user) | an account, and the sessions it holds |
+| [Runner](/en/server/v0.1/concepts/runner) | a registered evaluation worker |
+| [File](/en/server/v0.1/concepts/file) | stored bytes, and the references that say what they are for |
+
+## How they hang together
+
+<Mermaid chart={`
+flowchart LR
+    activity["Activity"] --> series["Series"]
+    activity --> group["ActivityGroup"]
+    activity --> grant["Grant"]
+    grant --> user["User"]
+    series --> sp["SeriesProblem<br/>the assignment"]
+    sp --> submission["Submission"]
+    sp --> problem["Problem"]
+    problem --> version["ProblemVersion"]
+    submission --> job["EvaluationJob<br/>one attempt"]
+    job --> result["Result"]
+    version -.->|"what this attempt was judged against"| job
+`} />
+
+Read the chain from the right: a `Result` belongs to one `EvaluationJob`, which
+is one attempt at one `Submission`, which was sent against a `SeriesProblem` —
+an **assignment**, not a bare problem — in a `Series` of an `Activity`. Beside
+the series hang the activity's `ActivityGroup` rows and its `Grant` rows, which
+are its membership; the assignment points at a `Problem`, and the version of
+that problem's content an attempt was judged against is pinned onto the job and
+copied onto the result.
+
+## Five things that are easy to get wrong
+
+**A `Submission` does not carry a verdict.** There is no verdict column, no
+state column and no score on it. Each attempt at evaluating it is an
+`EvaluationJob`; the whole attempt history is retained, and a rejudge **adds**
+one rather than replacing anything.
+
+**`EvaluationJob` is the job record and `Result` is not.** The claim, the lease,
+the Runner, the delivery count and the failure reason live on the job. `Result`
+is the outcome of one completed job, one-to-one, and holds four values the
+Server reads — score, maximum, verdict, and the Runner build. The per-test rows
+and the compiler log are **attachments**, not columns.
+
+**A `Submission` belongs to a `SeriesProblem`, not to a `Problem`.** The
+languages and limits it was judged under are properties of the assignment, so
+the assignment is what it points at. The same library problem may be assigned
+twice in one activity with different settings.
+
+**`Problem.Type` and `ProblemVersion.Version` are two different axes.**
+`Problem.Type` versions the *kind* of problem and its renderer and handler
+contract — `standard-io@1`. `ProblemVersion.Version` versions this problem's
+*content* — its statement, its tests, its package.
+
+**A grant is not an access control list.** An ACL hangs off a resource and lists
+who may touch that one thing. A grant hangs off a **user** and says what they
+may do within a scope. In an activity, the grant *is* the membership — there is
+no second table that could disagree about who is taking part.
+
+## Two more, while they are cheap
+
+**Group membership lives on the grant, not on the group.** `Grant.GroupId` is
+nullable, and because the schema already holds one grant per user per activity,
+that column *is* the rule "at most one group".
+
+**The Server stores file references only.** There is no statement entity and no
+statement column: `content.md` is a well-known `FileReference.Name` that the
+Client understands. The Server never reads it.

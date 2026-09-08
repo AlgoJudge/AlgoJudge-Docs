@@ -1,0 +1,161 @@
+---
+title: Instancja
+description: Jak nazywa się instalacja, jaki nosi znak, jakie publikuje dokumenty i w jakich kolorach.
+source: en/client/v0.1/manager/instance.mdx
+sourceSha256: 4cc8799c45d2ad6ad0f22370b05296f16474f8cc34a105a0482345ba5d319632
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Obszar **Instancja** to to, co ta instalacja mówi o sobie. Otwiera go jedno
+uprawnienie, `instance:update`, nadawane w zakresie całej instalacji i celowo
+nieobecne w dostarczanym szablonie `manager`: prowadzenie aktywności to co innego
+niż prowadzenie instalacji, w której ta aktywność działa.
+
+Cztery zakładki.
+
+## Ustawienia
+
+| Ustawienie | Co robi |
+|---|---|
+| Nazwa | pokazywana obok znaku produktu i w tytule okna. Pusta pokazuje samo AlgoJudge |
+| Przyjmuj rejestracje lokalne | domyślnie wyłączone: konta zakłada organizator albo przychodzą przez SSO |
+| Wymagaj adresu e-mail | czy konto musi mieć adres |
+| Wymagaj potwierdzonego adresu do logowania | |
+| Pokazuj znak w aplikacji | |
+| Otwórz stronę główną wprowadzeniem do AlgoJudge | domyślnie włączone. Pokazywane osobie niezalogowanej, nad twoją stroną powitalną |
+| Pokazuj formularz hasła na ekranie logowania | |
+| Przekieruj ekran logowania prosto do dostawcy | domyślnie „Brak”. Przeglądarka idzie do dostawcy i wraca zalogowana |
+| Przekieruj ekran rejestracji prosto do dostawcy | domyślnie „Brak”, dla instalacji, w której konta pochodzą z katalogu |
+| Pozwól usuwać własne konto | domyślnie włączone |
+| Zezwól na ocenianie przez usługi, których ta instalacja nie prowadzi | domyślnie wyłączone |
+
+<Callout type="warn" title="Ukryty formularz hasła to nie zamknięte drzwi">
+Ukrywa formularz i nic poza tym. Endpoint hasła działa dalej, administratorzy i
+konta tymczasowe nadal go potrzebują, a `?admin=true` przywraca im formularz.
+</Callout>
+
+Dwa z tych ustawień są decyzjami, a nie preferencjami, i ekran mówi to wprost.
+**Pozwolenie na usunięcie własnego konta** jest najpierw prawem z zakresu ochrony
+danych, a dopiero potem funkcją; jeśli je zamykasz, zrób to świadomie.
+**Ocenianie przez usługi, których ta instalacja nie prowadzi**, oznacza, że
+czyjeś zgłoszenie jedzie do strony trzeciej. Dopóki jest wyłączone, żadne takie
+zadanie nie jest wydawane, a praca czeka w kolejce — włączysz je później i nic
+nie stracisz. To właśnie włączenie musi uwzględnić polityka prywatności. Dokąd te
+usługi mogą sięgać, opisują [Zasoby
+zewnętrzne](/pl/client/v0.1/manager/external-content).
+
+### Wprowadzenie na stronie głównej
+
+Czym jest oprogramowanie — nad tym, czym jest instalacja. Otwiera stronę główną
+osobie niezalogowanej, a twoja własna strona powitalna rysuje się zaraz pod
+spodem. Wyłącz je, a zostanie sam dokument.
+
+**Podróżuje przełącznik, nie treść.** Nagłówek, zdanie, dwa odnośniki i rysunek
+należą do Clienta i tłumaczą się razem z resztą jego interfejsu; ta instalacja
+przechowuje ustawienie i ani jednego słowa. Uczelnia, która chce powiedzieć coś
+innego, mówi to w swojej stronie powitalnej, a nie przez edycję tego — i dlatego
+wprowadzenie jest domyślnie włączone: instalacja, która nie opublikowała strony
+powitalnej, witałaby odwiedzającego pustą stroną.
+
+### Wskazanie dostawcy ekranom logowania i rejestracji
+
+Dwie listy, każda z pozycją *Brak* i każdym logowaniem zewnętrznym, które ta
+instalacja obecnie przyjmuje. Wybierz jedno, a ten ekran przestaje się rysować:
+przeglądarka idzie do dostawcy i wraca zalogowana. Tego chce instalacja, w której
+wszystkie konta pochodzą z jednego katalogu — bo inaczej ekran logowania jest
+stroną z jednym przyciskiem.
+
+To dwa ustawienia, a nie jedno, bo odpowiedzi bywają różne. Uczelnia może brać
+z katalogu każde logowanie i nadal prowadzić własne rejestracje albo przyjmować
+kilka dróg wejścia i tylko nowe osoby odsyłać do katalogu.
+
+<Callout type="warn" title="Przekierowanie to nie zamek i nie może stać się ślepą uliczką">
+`?admin=true` nadal prowadzi do formularza lokalnego. Instalacja, która
+przekierowuje, wciąż ma administratorów, konta lokalne i konta tymczasowe na
+zawody.
+
+**Odmówione logowanie nadal ląduje na ekranie wraz z powodem odmowy**, zamiast
+wracać do dostawcy, który przed chwilą odmówił — a to byłaby przeglądarka
+odbijająca się między dwiema witrynami, bez niczego do przeczytania.
+
+**Wyłączenie dostawcy gasi przekierowanie w tej samej minucie**, a ustawienie
+pamięta slug, więc ponowne włączenie tego dostawcy je przywraca.
+</Callout>
+
+**Na ekranie rejestracji `?admin=true` nie otwiera rejestracji.** Gasi tylko
+przekierowanie; zobaczysz wtedy to, co mówi *Przyjmuj rejestracje lokalne*, czyli
+na takiej instalacji odmowę.
+
+Pod ustawieniami są **klucze dostępu**: nazwane sekrety, które ta instalacja
+przechowuje dla usług, z którymi rozmawia. Są **tylko do zapisu**. Nic na tej
+stronie nie odczyta klucza z powrotem, więc ekran mówi tylko, które są ustawione
+i kiedy, i proponuje podmianę; zapisz pustą wartość, a klucz zniknie.
+
+## Znak
+
+Własne logo instalacji, a dla instytucji, której znak słowny różni się między
+językami — po jednym na język. Język bez własnego znaku używa domyślnego;
+instalacja bez żadnego pokazuje zastępczy znak dostarczany z oprogramowaniem,
+który wygląda na zastępczy.
+
+## Wygląd
+
+Zamknięty zestaw kolorów i krój pisma — nie dowolny CSS. Tylko zamknięty zestaw
+da się utrzymać czytelnym na wszystkich ekranach i tylko taki da się walidować.
+
+Piętnaście kluczy koloru, każdy podawany dla **obu** schematów, jasnego i
+ciemnego, w trzech grupach:
+
+- **Marka** — kolor główny, uzupełniający, akcent i linki. Po jednym heksie; z
+  niego wylicza się dziesięć odcieni, których potrzebuje ekran, więc jedna
+  wartość sięga bladego panelu, kreski i ciemnego tekstu na nim. `link` jest
+  osobnym kluczem, bo w systemie identyfikacji wizualnej link ma zwykle inny
+  odcień, a nie jaśniejszy kolor marki.
+- **Powierzchnie i tekst** — tło strony, panele i karty, tekst, tekst
+  drugorzędny, obramowania.
+- **Powłoka** — nawigacja i pasek nad stroną dla niezalogowanych. Stany
+  najechania i wyciszenia wyliczają się z nich.
+
+<Callout type="warn" title="Puste pole to wartość domyślna — czyścisz je, żeby cofnąć zmianę">
+Nic tutaj nie ma wartości, dopóki ktoś jej nie wpisze. Nietkniętego pola ekran w
+ogóle nie wysyła i rysuje to, co dostarcza AlgoJudge — nigdy czerń i nigdy
+pustkę.
+</Callout>
+
+Rozmiary, odstępy, zaokrąglenia i **kolory statusów** należą do produktu i ich
+nie zmienisz. Zielona *zła odpowiedź* jest defektem, a nie preferencją, i żadna
+walidacja by tego nie złapała, bo każdy heks jest formalnie poprawny.
+
+**Krój** to `fontFamily` i `fontFamilyHeadings`, takie same w obu schematach.
+Rodzina jest albo jedną z czterech nazw rodzajowych — `system-ui`,
+`sans-serif`, `serif`, `monospace` — albo taką, dla której ta instalacja
+przechowuje plik. Cokolwiek innego rozwinęłoby się do tego, co akurat ma maszyna
+czytelnika, a to nie jest motyw.
+
+Pliki kroju wgrywasz jako **WOFF2**, a serwuje je ta instalacja; nic nie jest
+pobierane z cudzego serwera. Wgrywasz i deklarujesz w dwóch krokach, bo to dwa
+fakty: plik jest przechowany, a motyw mówi, czym rysować. Grubość i odmiana są
+odczytywane z nazwy pliku tam, gdzie ta je podaje — `example-700-italic.woff2`.
+
+Zapis tworzy **plik motywu** i publikuje go. To ten sam dokument, który operator
+może napisać ręcznie i położyć w katalogu
+prekonfiguracji — dlatego zakładka oferuje **wczytaj plik motywu**, **pobierz
+go** i **wycofaj motyw**. Obowiązuje jeden motyw i ten jeden pobierzesz.
+
+## Dokumenty
+
+Sześć dokumentów publikowanych przez instalację, każdy w tylu językach, ile
+napiszesz: strona powitalna, strona główna po zalogowaniu, regulamin, polityka
+prywatności, informacja o ciasteczkach i deklaracja dostępności.
+
+Dokument istnieje wtedy i tylko wtedy, gdy jest opublikowany — nie ma osobnej
+flagi. Każdy rodzaj ma historię, a język bez własnego tekstu wraca do
+domyślnego. Jedyny załącznik, na który taki dokument może wskazać, to własny znak
+instalacji, pod ustaloną nazwą.
+
+## Czym zajmuje się administrator
+
+Wszystko powyżej konfiguruje się z wnętrza aplikacji. Postawienie instalacji,
+kopie zapasowe, aktualizacja i prekonfiguracja czegokolwiek z tego, zanim ktoś
+kliknie na ekranie, to [Instalacja i utrzymanie](/pl/install).

@@ -1,0 +1,26 @@
+{
+  "title": "Install and operate",
+  "description": "Standing up an installation, keeping it running, and getting it back.",
+  "root": true,
+  "pages": [
+    "index",
+    "requirements",
+    "first-install",
+    "preconfiguration",
+    "identity",
+    "lti",
+    "moodle",
+    "storage",
+    "maintenance",
+    "backup",
+    "restore",
+    "update",
+    "schedule",
+    "reverse-proxy",
+    "external-runner",
+    "configuration",
+    "troubleshooting",
+    "external:[AlgoJudge-Ops](https://github.com/AlgoJudge/AlgoJudge-Ops)",
+    "external:[Licence](https://github.com/AlgoJudge/AlgoJudge-Ops/blob/main/LICENSE)"
+  ]
+}

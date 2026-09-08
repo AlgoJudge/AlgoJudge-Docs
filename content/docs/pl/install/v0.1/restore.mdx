@@ -1,0 +1,101 @@
+---
+title: Odtwarzanie
+description: Jak wgrać zrzut z powrotem, co sprawdzamy, zanim cokolwiek ruszymy, i po co się to ćwiczy.
+source: en/install/v0.1/restore.mdx
+sourceSha256: 626020dbd6184705a6a062a18257cef001f9e4a5850a09461355601a5064e9ab
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+```bash
+./scripts/restore.sh backups/algojudge-20260830-040000.dump
+```
+
+Skrypt zamyka instalację, zatrzymuje Server i Client, odtwarza, sprawdza, czy
+cokolwiek faktycznie dotarło, uruchamia je z powrotem, czeka, aż będą zdrowe,
+i otwiera instalację.
+
+<Callout type="warn" title="To niszczy bieżącą bazę">
+`pg_restore --clean --if-exists` usuwa każdy obiekt zawarty w zrzucie, zanim go
+odtworzy. To, co jest teraz w instalacji, znika. Skrypt najpierw pyta — wpisujesz
+słowo `restore` — chyba że podasz `--yes`.
+</Callout>
+
+## Co czyta, zanim cokolwiek zrobi
+
+Plik `.meta` leżący obok zrzutu:
+
+- **sumę kontrolną.** Zrzut, który się z nią nie zgadza, ktoś od czasu zrobienia
+  zmienił albo plik się uszkodził — i odtwarzanie odmawia.
+- **czy zrzut obejmował pliki.** Zrzut z `coverage=INCOMPLETE` odtwarza się do
+  instalacji, której wiersze wskazują na bajty, których nie ma; odtwórz magazyn
+  plików z tego samego okna.
+- **jaki schemat zawiera.**
+
+Bez pliku `.meta` obok nie da się sprawdzić niczego — ani sumy kontrolnej, ani
+schematu, ani zakresu — i skrypt to mówi. Jeśli mimo to ruszysz dalej, jest to
+Twoja decyzja.
+
+## Schemat to krok, który potrafi ugryźć
+
+Starszy zrzut pod nowszym Serverem **nie jest błędem**. Przy
+`MIGRATE_ON_START=true` Server przy najbliższym starcie doprowadza odtworzony
+schemat do przodu, czego zwykle chce ten, kto odtwarza kopię sprzed tygodnia.
+
+**Działa to w jedną stronę**, a dowiadujesz się o tym przed, nie po. Jeśli
+zamierzałeś wrócić także do starszego Servera, ustaw najpierw `SERVER_TAG` na
+jego wersję.
+
+## Dlaczego Server i Client są zatrzymywane, a nie drenowane
+
+Nic nie powinno trzymać połączenia do bazy, której tabele są właśnie usuwane.
+PostgreSQL zostaje na chodzie, bo to do niego odtwarzamy.
+
+**Żaden z Runnerów nie jest zatrzymywany**, i to celowo: nie trzymają niczego,
+czego odtwarzanie dotyka, a zatrzymanie tego oceniającego porzuciłoby to, co
+właśnie liczy. Obu po prostu nie udaje się odnowić dzierżaw, kiedy Server jest
+wyłączony, więc oddają swoje zlecenia, a Server wstawia je z powrotem do
+kolejki — odtwarzanie trwające kilka minut nic nie kosztuje. Długie kosztuje
+zewnętrznego Runnera listę tego, na co archiwum jeszcze nie odpowiedziało: każde
+takie zgłoszenie zostaje wysłane drugi raz, co opisuje
+[Zewnętrzny sędzia](/pl/install/v0.1/external-runner).
+
+## Nie zgłosi sukcesu po odtwarzaniu, które nic nie zrobiło
+
+Kontrole są dwie, a działa ta druga.
+
+Skrypt liczy potem tabele i kończy się porażką, jeśli jest ich mniej niż dwie.
+To wyłapuje pustą bazę, ale **nie wyłapie** odtwarzania, które nic nie
+zrobiło: Server zakłada cały schemat przy pierwszym starcie, więc wszystkie
+tabele są na miejscu, zanim odtwarzanie się zacznie.
+
+Dlatego przed odtwarzaniem zapisywana jest **tożsamość** każdej tabeli, a po nim
+porównywana. `--clean --if-exists` usuwa każdą relację i zakłada ją na nowo, więc
+każda odtworzona tabela dostaje nową tożsamość, a po odtwarzaniu, które nic nie
+zrobiło, stare zostają dokładnie tam, gdzie były. Z zewnątrz to jedyna widoczna
+różnica.
+
+Ta druga kontrola istnieje z powodu prawdziwej awarii, znalezionej przy pisaniu
+tego repozytorium: wywołanie Compose zawiodło, jego jednolinijkowy błąd został
+zaraportowany jako ostrzeżenie `pg_restore`, a odtwarzanie **nie zrobiło
+zupełnie nic**, podczas gdy każda kontrola po nim przechodziła na danych,
+których nikt nawet nie tknął.
+
+W `state/restore.log` leży to, co powiedział `pg_restore`. Część jest rutynowa —
+rozszerzenie, którego rola nie może usunąć, komentarz do obiektu, którego ta
+rola nie jest właścicielem — i uruchomienie nie zatrzymuje się na pierwszym, bo baza odtworzona
+w połowie jest wyraźnie gorsza niż kompletna z ostrzeżeniami. Jedna z tych linii
+mówiąca `relation does not exist` o tabeli, na której Ci zależy, rutynowa nie
+jest.
+
+## Przećwicz to
+
+**Kopia bez przetestowanego odtworzenia jest hipotezą.** Uczciwa próba wygląda
+tak, na zapasowym hoście: sklonuj repozytorium, skopiuj `.env` i jeden zrzut,
+`docker compose up -d --wait`, `./scripts/restore.sh`, a potem zaloguj się
+i zobacz coś, co rozpoznajesz.
+
+<Callout type="warn" title="Prawdziwy test to ten, który wyłapał odtwarzanie, które nic nie zrobiło">
+**Najpierw coś zmień**, potem odtwórz, potem sprawdź, że zmiana zniknęła.
+Odtwarzanie, które nic nie zrobiło, przechodzi każdą inną kontrolę, jaka istnieje.
+</Callout>

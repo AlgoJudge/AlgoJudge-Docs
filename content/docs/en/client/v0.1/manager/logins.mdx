@@ -1,0 +1,196 @@
+---
+title: External logins and LTI platforms
+description: Who this installation trusts to vouch for people, and what a token from them is worth.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Two areas, one permission — `provider:manage` — because registering an LTI
+platform writes a provider row: it is the same decision about who this
+installation trusts to vouch for people.
+
+It is the most dangerous key in the panel after `system:administrator`, and it is
+not in the shipped `manager` template.
+
+## External logins
+
+Which identity providers this installation accepts, and what a token from one is
+worth here.
+
+### Registering one
+
+| Field | |
+|---|---|
+| Name | what the sign-in button says |
+| Slug | appears in the sign-in address. Changing it breaks the redirect URI |
+| Issuer | discovery finds the endpoints and the keys from here. HTTPS, except on loopback |
+| Client id, client secret | the secret is stored and **never read back** |
+| Claim path | dotted names, `groups` or `realm_access.roles` |
+| Where people manage their details | an account owned by a provider cannot be edited here, so the screen sends them there |
+| Where people delete their account at the provider | offered beside the button that removes the account here. Left empty, no link is shown |
+
+The screen prints the **redirect URI to register at the provider**, with a copy
+button. What it prints is the path; the provider wants it behind this
+installation's own address. Getting it wrong fails at the end of somebody's
+first sign-in, with an error message from the provider rather than from here.
+
+An empty secret box is not a loss. It means *leave the stored one alone*, and the
+description says which of the two states you are in.
+
+**A registered provider is a way in, and the screens draw it.** *Create account*
+appears wherever there is one — this installation accepts local sign-ups, or its
+registration screen points at a provider — so an installation that takes no
+sign-ups of its own still offers the way it does have. Either screen can also be
+sent straight to a provider instead of drawing itself. Both are settings of the
+installation rather than of the provider: [The
+instance](/en/client/v0.1/manager/instance).
+
+### The mapping
+
+A mapping rule is a **value at the claim path** and the **permission template**
+it grants. That is the whole language: a dotted path and a value, never an
+expression — an expression in provider configuration is code executed against the
+contents of a token.
+
+**When nothing matches** is your choice between refusing the sign-in and granting
+a default set. It applies both to a first sign-in and to somebody who has left
+the group.
+
+<Callout type="warn" title="Two rules are enforced and cannot be turned off">
+`system:administrator` can never be granted by a claim, and nobody may map onto a
+permission they do not themselves hold. The Server checks the first of the two
+both ways round — writing the rule first and adding the key to the template
+afterwards is refused as well, and a token carrying it is stripped at sign-in
+regardless. The second is checked as the rule is written.
+</Callout>
+
+A mapped grant is **rewritten at every sign-in**, which cuts both ways: editing
+the template reaches those people the next time they sign in, and editing their
+grant by hand does not reach them at all. The Grants list marks such a row with
+the provider it came from and refuses to edit it. See [Permissions and
+grants](/en/client/v0.1/manager/permissions).
+
+### The account-removal queue
+
+Beside the providers is the queue of accounts asked to go — most of them over a
+provider's back channel, which is why it lives with the provider that opened it.
+
+- **Waiting** is inside its twenty-four hours and can be stopped.
+- **Holds system permissions** is the one somebody has to read: the link was
+  removed and the account was **not** emptied. A webhook that could silence an
+  administrator is an attack vector, not a feature.
+
+A provider only reports removals if you enable that channel and set its
+back-channel secret.
+
+## LTI platforms
+
+Course platforms that may open activities for their students. AlgoJudge
+implements LTI 1.3; it is **not certified by 1EdTech**, and the screen says so.
+
+**No platform registers itself into service.** It is entered here by hand, or it
+registers itself against an expectation somebody here created — and either way
+it arrives with launches switched off and no authority over identity. Those two
+are not settings a platform may confer on itself.
+
+| | |
+|---|---|
+| Issuer, client id, deployment id | **cannot be changed afterwards**: every launch and every identity link hangs off them |
+| Key set, access token and authorization URLs | the platform's |
+| Accept launches | the reversible switch. Removing a platform is refused while any course still has an activity from it |
+
+**There is no secret anywhere in this**, and its absence is not a gap: LTI
+authenticates a tool by a signature, and the tool's private key never leaves the
+Server. **What to type into it** prints the four addresses to paste into the
+platform's external-tool configuration, plus the custom parameters without which
+a launch cannot tell who arrived.
+
+<Callout type="warn" title="Identity authority is the dangerous switch">
+With *this platform may say who somebody is* on, a launch connects itself to the
+AlgoJudge account whose username the platform sends — so a compromised Moodle
+becomes a way into those accounts. It is off unless somebody turns it on. Leave
+it off unless the same people administer both.
+
+It is narrowed by an identity provider's slug: accounts that did not come through
+that provider — local ones, and administrators — cannot be claimed.
+</Callout>
+
+### Expected registrations
+
+A platform can register itself if somebody here is expecting it. Create an
+expectation with a note saying what it is, hand the address to whoever
+administers the platform, and it is good **once, for half an hour**. It can be
+called off before it is used.
+
+### Course placements
+
+Where courses reach the activities of this installation. One activity may be
+placed in more than one course: the first course's launches work at once, and
+**from the second on a launch waits until somebody accepts the sharing** —
+accepting means the activity feeds both gradebooks. A placement cannot be
+withdrawn from here: scores already sent stay where they were sent, so it is
+removed in the course instead.
+
+For a course that should not share, **give this course its own copy** makes one
+the same way [copying an activity](/en/client/v0.1/manager/copying) does.
+
+**Who is in the course** reads the platform's roster on request — nothing here
+refreshes on its own — and shows how many of them have an account here.
+Matching is by the username the platform sends; **an address is never used for
+it**, and a platform that sends no usernames matches nobody. Putting them into
+the activity marks each one provisional until they open it themselves.
+
+### Choosing from inside the course
+
+A platform may also let somebody pick the activity from its own side, while
+adding the tool to a course. What they get is a list of the activities **they may
+manage** — the same permission that governs everything else about an activity, so
+the picker cannot offer what its user could not open here.
+
+The platform decides whether one may be chosen or several, and the list follows
+it: picking a second where the platform asked for one is refused rather than
+quietly dropping the rest.
+
+What is handed back is one link per activity, carrying the custom parameters a
+launch needs. **Nothing about grades is sent with it** — the gradebook column is
+created the first time a score is posted, not when the link is made.
+
+### What reaches the gradebook
+
+Scores travel back on their own, about once a minute, and the rule is one
+sentence:
+
+**A score reaches the gradebook exactly when the submitting participant may see
+it.**
+
+So a *managers only* activity sends nothing at all, and a frozen ranking defers
+everything until it is revealed. **The teacher does not see it either during a
+freeze**, and that is the cost rather than an oversight: a gradebook has no way to
+show a score to one reader and withhold it from another, so during a freeze
+AlgoJudge is the source of truth and the course is deliberately behind it.
+
+Three more things decide what lands:
+
+- **The best attempt is the best fraction, not the best raw score** — 1 out of 1
+  beats 70 out of 100.
+- **An excluded submission is not counted**, and somebody whose only counted
+  submission is excluded is carried back at **zero** rather than left out. A row
+  nobody computes is a row nobody corrects.
+- **A group's score reaches every member** who is linked to an account here.
+
+Where an assignment sets no maximum, the column is a percentage.
+
+**Nothing is ever withdrawn.** Scores already sent stay sent — switching a
+platform off stops new ones and retracts nothing — and a grade that fails to post
+is retried with a widening gap before it is given up on.
+
+## Where the administrator's half is
+
+The identity provider itself is not part of this stack. It runs beside it, at its
+own hostname. Choosing one and wiring it up is [Identity](/en/install/identity),
+and the platform's half is [Connecting a course platform](/en/install/lti) — or,
+for a Moodle, [Installing the tool in Moodle](/en/install/moodle) screen by
+screen.
+
+What a teacher does once that is done is
+[Placing an activity in a Moodle course](/en/client/v0.1/manager/moodle-activity).

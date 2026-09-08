@@ -1,0 +1,109 @@
+---
+title: Runnery
+description: Zatwierdzenie, połączenie i tagi decydujące, która maszyna dostaje którą pracę.
+source: en/client/v0.1/manager/runners.mdx
+sourceSha256: 073a95de3230abc222aabf6f5d481facf8e95f7bc9a0701f36b91189ea67c7ed
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Runner to maszyna oceniająca zgłoszenia. Rejestruje się sam w Serverze,
+przedstawiając własny klucz, i **nie ocenia niczego, dopóki nie zostanie
+zatwierdzony**.
+
+## Zatwierdzenie i połączenie to dwa różne fakty
+
+Lista pokazuje je osobno, a zwinięcie ich w jeden „status” ukryłoby oba:
+
+- **zatwierdzony, ale offline** to awaria;
+- **połączony, ale niezatwierdzony** nie ocenia niczego.
+
+Runner jest w jednym z trzech stanów: czeka na zatwierdzenie, zatwierdzony albo
+odwołany. **Zatwierdź** wpuszcza go do pracy, **Odbierz** unieważnia klucz — wtedy
+Runner musi zarejestrować się od nowa. Odwołanego można zapomnieć całkiem.
+
+## Co pokazuje ekran i kto to powiedział
+
+Wszystko poza tagami jest **własnym raportem Runnera**: produkt i wersja, typy
+zadań, które przyjmuje, adres, odcisk i klucz publiczny, maszyna, liczba
+wykonanych zadań i kiedy był ostatnio widziany. Ekran wyświetla raport i nigdy nie
+uzupełnia w nim luk — Runner, który nigdy się nie połączył, nie ma maszyny, i
+uczciwiej jest tak właśnie napisać.
+
+Odcisk odczytujesz na głos przy zatwierdzaniu; samym kluczem diagnozuje się
+niezgodność.
+
+Pliki tekstowe, które Runner o sobie wgrywa, pojawiają się jako zakładki obok
+**Ogólne** i są pobierane dopiero po otwarciu.
+
+## Tagi i co naprawdę robią
+
+<Callout type="warn" title="Runner dostaje pracę, gdy obie listy tagów mają co najmniej jeden wspólny">
+Nie *wszystkie* — **którykolwiek**. Gdy dodasz tag do aktywności, **poszerzasz**
+zbiór Runnerów, które mogą wziąć jej pracę.
+</Callout>
+
+Pusta lista, po każdej ze stron, jest czytana jako `default`. Na tej jednej
+regule opiera się cała wyłączność:
+
+| Tagi Runnera | Tagi pracy | |
+|---|---|---|
+| `lab-a` | `lab-a` | oceniane |
+| `lab-a, gpu` | `lab-a` | oceniane |
+| `gpu` | `lab-a, gpu` | oceniane — jeden wspólny tag wystarczy |
+| `lab-a` | puste | **nie** oceniane |
+| puste | `lab-a` | **nie** oceniane |
+| puste | puste | oceniane — zachowanie sprzed całej tej mechaniki |
+
+Czwarty wiersz przeczytaj dwa razy. **Otagowanie Runnera wyjmuje go z puli
+ogólnej równie pewnie, jak wstawia do zarezerwowanej.** Tak ma być: skoro
+rezerwujesz maszyny w pracowni, muszą stać się niedostępne dla wszystkiego innego
+— inaczej zarezerwowane maszyny nadal wciągałaby ogólna kolejka, i to w
+najgorszym momencie.
+
+`default` to zwykły tekst, który każdy może wpisać, i znaczy dokładnie to samo,
+co puste pole. Dzięki temu wyciągniesz jedną rundę z kursu przypiętego do
+pracowni, a maszyna może służyć naraz puli ogólnej *i* zarezerwowanej.
+
+Tagi są przycinane, sprowadzane do małych liter i odduplikowane. Bez małych liter
+`Lab-A` na maszynie i `lab-a` w aktywności byłyby dwiema pulami, które czyta się
+jak jedną, a objawiłoby się to kolejką, która nigdy się nie opróżnia, i żaden
+ekran nie powiedziałby dlaczego.
+
+### Skąd biorą się tagi zadania
+
+Z **serii**, jeśli ustawia własne, a w przeciwnym razie z **aktywności**. Na
+serii przełącznik *oceniana przez własne Runnery* jest tym, co odróżnia
+dziedziczenie od nadpisania, bo puste nadpisanie i odziedziczona lista wyglądałyby
+identycznie. Runda, która chce ogólnych maszyn, gdy jej kurs jest przypięty,
+wpisuje `default`.
+
+Tag zwykle należy do rundy, a nie do kursu: jeśli przypniesz cały kurs, do
+pracowni pojadą także jego prace domowe.
+
+Oba ekrany liczą to za ciebie — *Pasujące Runnery: N* — a przy zerze formularz
+aktywności mówi to wprost: *żaden zatwierdzony Runner nie ma tych tagów*. Żaden
+z nich nie odmawia zapisu, bo tagi wpisuje się często, zanim maszyny zostaną
+zatwierdzone — ale zero zostawione tak, jak jest, znaczy, że zgłoszenia są
+przyjmowane, kolejkowane i nigdy nieoceniane.
+
+### Czyj jest tag
+
+Runner może zaproponować swoje pule we własnej konfiguracji, a Server bierze to
+przy **pierwszej** rejestracji i nigdy później. Od tej chwili właścicielem tagów
+jest ten ekran — i dlatego restart nie zmienia tego, jaką pracę maszyna dostaje.
+
+## Dwa filtry, których nie ustawiasz
+
+Obok tagów zadanie trafia do Runnera tylko wtedy, gdy ten przyjmuje jego **typ
+zadania** i gdy obie strony zgadzają się co do tego, czy praca jest oceniana
+**zewnętrznie**. Jedno i drugie bierze się z rejestracji Runnera i opisuje, co
+maszyna *umie*, a nie decyzję, którą ktoś podejmuje we wtorek.
+
+## Uprawnienia
+
+Ten obszar otwiera `runner:read`, zatwierdzasz z `runner:approve`, odwołujesz z
+`runner:revoke`, a tagi zmieniasz z `runner:update`. Żadnego z nich nie ma w
+dostarczanym szablonie `manager` — dotyczą całej instalacji, tak jak same
+maszyny. Instalacja i uruchomienie Runnera to [Instalacja i
+utrzymanie](/pl/install).

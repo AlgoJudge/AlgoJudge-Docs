@@ -1,0 +1,121 @@
+---
+title: Reporting
+description: Answering with a result, the failure that must never be scored, and why resending is safe.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## The call
+
+```http
+POST /api/v1/runner/jobs/{jobId}/report
+```
+
+```json
+{
+  "leaseToken": "…",
+  "score": 100, "maxScore": 100, "verdict": "Accepted",
+  "runnerVersion": "1.0.0",
+  "extra": { "cycles": 1200 },
+  "props": { "type": "standard-io@1", "toolchain": "g++ 14.2.0" },
+  "infrastructureFailure": false
+}
+```
+
+Answers `{ resultId, state, duplicate }`. **`resultId` is absent** where nothing
+was stored, which is an infrastructure failure the Server is going to have judged
+again — see below; `state` says `queued` there.
+
+`score` and `maxScore` are the **Runner's own scale**, before any rescaling the
+assignment applies.
+
+## `verdict` is an opaque string
+
+The Server stores it and never branches on it. That is what lets a problem type
+introduce a verdict without a Server release, and it means an implementation is
+free to name outcomes in its own vocabulary — provided it does so consistently,
+because screens, filters and rankings key on the string.
+
+## The failure that is not a verdict
+
+<Callout type="warn" title="infrastructureFailure must never be scored as a wrong answer">
+A package whose checksum did not match. A sandbox that would not start. A
+submission whose language never arrived. In every one of those the submission was
+**not judged**, and recording it as a zero would be a lie about the solution.
+
+Send `infrastructureFailure: true` with a `failureReason`, and **send no score at
+all** — not zero. A zero on a board reads as a wrong answer about a program that
+was never run.
+</Callout>
+
+**And it is not final.** The job returns to the queue and the delivery count
+carries it, exactly as a lease that expired does; at the cap it becomes `failed`
+with the last reason given.
+
+A Runner cannot tell a package that is broken from a download that tore, or a
+host that is broken from a second that was — so the first failure is a reason to
+try again rather than a verdict on the submission. Another Runner, or the same
+one a moment later, may well judge it.
+
+**No result is stored until the cap**, which is why `resultId` is absent on that
+answer. A stored result is what makes a repeat report answer `duplicate`, and one
+kept from a failed attempt would hand the next Runner's honest work back to it as
+a duplicate of the failure.
+
+A Runner that reports a failure and then resends after the job has been requeued
+is refused with `runner.lease.stale` rather than answered with a duplicate. It
+means what it says: somebody else has this now.
+
+## Reporting is idempotent, for the Runner that reported
+
+Enforced by a filtered unique index on the job rather than by a check the code
+could forget — one result row per job, whoever asks twice.
+
+**The repeat is answered only to the Runner whose result it is.** It is checked
+before the lease on purpose, so that a Runner resending after its lease expired
+is still told what it computed — but never before the owner. A Runner asking
+about a job it never held is refused like any other caller presenting a lease it
+does not have, and is told nothing about that job.
+
+A repeat answers **the same result with `duplicate: true`**. It does not create a
+second one, and it is not an error — it is the whole point.
+
+Two things follow for an implementation:
+
+- **A Runner that reported and then lost the connection may safely resend.**
+  Throwing a computed answer away means the same work is done twice and the
+  participant waits out a lease for a verdict that already existed.
+- **Retrying is bounded by the lease, not by a small number of attempts.** Once
+  the lease is gone the token is gone, and a report against it is refused —
+  correctly, because whoever holds the job now is the one whose answer counts.
+
+## Two opaque documents, and the difference is the audience
+
+Both are an object or absent — **never `{}`** — and the Server reads inside
+neither.
+
+| | Where it travels | Bound |
+|---|---|---|
+| `extra` | the results feed, once per submission per contestant | **2 kB** |
+| `props` | with one result, to one reader, under the activity's own attachment rules | **256 kB** |
+
+**Nothing private may go in `extra`**, because it rides a feed many people read.
+`props` is for what a problem type wants shown beside one participant's own
+result.
+
+`extra` is **refused rather than truncated** when it is over the bound. An
+implementation that packs a per-test table into it will find its reports rejected
+— that table is [an attachment](/en/protocol/v0.1/files), for a reason worth reading.
+
+## Order of operations
+
+**Upload, attach, then report** — reporting ends the job, and an attachment needs
+it `Running`. [Files](/en/protocol/v0.1/files) has the rule, what it costs to get
+wrong, and the inline path that sidesteps it.
+
+## What to do when the Server is away mid-report
+
+Two cases, and they are opposite: an answer **already computed** is held and
+resent until the lease runs out, and a job that **could not be finished** because
+the Server stopped answering is not reported on at all.
+[Availability](/en/protocol/v0.1/availability) has both, with the reasoning for each.

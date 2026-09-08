@@ -1,0 +1,203 @@
+---
+title: Configuration
+description: Every setting the Server reads, what it defaults to, and the six that stop it from starting when they are missing or wrong.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The Server is configured by `appsettings.json`, by user secrets, and by
+environment variables — later ones override earlier ones. A deployment uses the
+environment.
+
+**Every setting has two spellings.** The configuration key is `Section:Key`; the
+environment variable is the same thing with an `AJ_` prefix and `__` between the
+sections, because the Server registers its environment provider with that prefix.
+So `Admin:Token` is `AJ_Admin__Token`, and `Storage:Stores:objects:Kind` is
+`AJ_Storage__Stores__objects__Kind`.
+
+<Callout type="warn" title="`AJ_ADMIN_TOKEN` is not one of them">
+It looks like a Server variable and is not. The Server reads `Admin:Token` and
+nothing else. `AJ_ADMIN_TOKEN` is a **Compose** variable, substituted into
+`AJ_Admin__Token` by [AlgoJudge-Ops](https://github.com/AlgoJudge/AlgoJudge-Ops)
+and by the development stack, which is why every page under
+[Install and operate](/en/install) uses the short name.
+
+An installation configured by hand, without those Compose files, sets
+`AJ_Admin__Token`.
+</Callout>
+
+## The database
+
+| Key | Environment | Default |
+|---|---|---|
+| `ConnectionStrings:DbConnectionString` | `AJ_ConnectionStrings__DbConnectionString` | a local `algojudge` database |
+| `Database:MigrateOnStart` | `AJ_Database__MigrateOnStart` | `false` |
+
+**`Database:MigrateOnStart` is off here and on in Ops.** Outside Development the
+Server refuses to start while a migration is pending unless it is set — applying
+a schema change to a production database stays a decision somebody makes. Ops
+ships `MIGRATE_ON_START=true` because it takes a backup first, in that order. See
+[Updating](/en/install/update).
+
+Both contexts read it: the Server and the LTI module keep separate migration
+histories in one database, so a value that reached only one of them still refuses
+the start.
+
+**The switch exists because nothing else shipped can apply a migration.**
+`aj-admin` has no migrate command and the image carries no SDK, and the
+alternative needs a workstation with the source — which a self-hosted stack does
+not have. Without the switch, a fresh installation would have its migration
+pending and never start.
+
+**It takes a PostgreSQL advisory lock while it works**, and that is not
+decoration. Several instances against one database is a supported arrangement and
+they start together after an update; EF Core has no migration lock of its own, so
+without this one of them dies on a duplicate history row.
+
+## Where the files go
+
+| Key | Environment | Default |
+|---|---|---|
+| `Storage:Stores:<id>:Kind` | `AJ_Storage__Stores__<id>__Kind` | **required** — `postgres`, `filesystem` or `s3` |
+| `Storage:Stores:<id>:Path` | `…__Path` | required for `filesystem` |
+| `Storage:Stores:<id>:Endpoint` | `…__Endpoint` | required for `s3` |
+| `Storage:Stores:<id>:Bucket` | `…__Bucket` | required for `s3` |
+| `Storage:Stores:<id>:AccessKey`, `…:SecretKey` | `…__AccessKey`, `…__SecretKey` | required for `s3` |
+| `Storage:Stores:<id>:Region` | `…__Region` | `us-east-1` |
+| `Storage:Stores:<id>:CreateBucket` | `…__CreateBucket` | `false` |
+| `Storage:Stores:<id>:TimeoutSeconds` | `…__TimeoutSeconds` | `600` |
+| `Storage:Stores:<id>:MaxErrorRetry` | `…__MaxErrorRetry` | `2` |
+| `Storage:Default` | `AJ_Storage__Default` | `objects` |
+| `Storage:SpoolPath` | `AJ_Storage__SpoolPath` | a directory under the system temporary directory |
+| `Storage:Migration:StartHourUtc` | `AJ_Storage__Migration__StartHourUtc` | `2` |
+| `Storage:Migration:BudgetMinutes` | `…__BudgetMinutes` | `30` |
+| `Storage:Migration:GraceMinutes` | `…__GraceMinutes` | `60` |
+
+`<id>` is a name a deployment chooses. Several stores may be configured at once,
+including several of one kind, and **a stored file remembers which one holds it
+for ever** — so a store id may never be reused for a different location.
+
+`Storage:SpoolPath` is where the `postgres` and `s3` stores rest an upload while
+its length becomes known. In a container the default is inside the image's own
+layer; point it at a volume if packages are large.
+
+## The operator surface
+
+| Key | Environment | Default |
+|---|---|---|
+| `Admin:Token` | `AJ_Admin__Token` | **empty — `/admin/**` is closed** |
+
+The token is checked on top of the loopback requirement, in the
+`X-AlgoJudge-Admin-Token` header. An empty or whitespace value closes the whole
+group, **including the endpoint that sets the administrator's password**. See
+[The admin surface](/en/server/v0.1/api).
+
+## What the cookie is encrypted with
+
+| Key | Environment | Default |
+|---|---|---|
+| `DataProtection:Kind` | `AJ_DataProtection__Kind` | `database` |
+| `DataProtection:Certificates:<n>:Path` | `AJ_DataProtection__Certificates__0__Path` | none |
+| `DataProtection:Certificates:<n>:Password` | `…__Password` | empty |
+
+`ephemeral` is refused outside Development, and an unrecognised value is refused
+everywhere. The certificate list **rotates by prepending**: the first entry
+encrypts, every entry decrypts, and dropping an old one makes existing keys
+unreadable. [Backup](/en/install/backup) says what this means for a database
+dump.
+
+## Whose word to take for an address
+
+| Key | Environment | Default |
+|---|---|---|
+| `Forwarded:KnownProxies` | `AJ_Forwarded__KnownProxies` | **none — one of these two is required** |
+| `Forwarded:KnownNetworks` | `AJ_Forwarded__KnownNetworks` | **none** |
+
+Addresses go in the first, networks in the second, and the Server will not read
+one as the other. A network with bits below its prefix is refused by name,
+because `10.0.0.5/24` reads two ways and this list decides whose word is taken
+for every visitor's address. The literal `none` is a complete answer for a Server
+reached directly.
+
+Both accept a comma-separated list.
+
+## Addresses this Server advertises
+
+| Key | Environment | Default |
+|---|---|---|
+| `App:BaseUrl` | `AJ_App__BaseUrl` | empty — a relative path is used |
+| `PublicApiUrl` | `AJ_PublicApiUrl` | derived from the request |
+| `Cors:AllowedOrigins` | `AJ_Cors__AllowedOrigins__0`, `__1`, … | `https://localhost:5173`, from the shipped `appsettings.json`. With no origins at all, no CORS policy is added |
+
+`App:BaseUrl` is where the Client is served from; it ends a federated sign-in and
+an LTI launch by sending the browser back. `PublicApiUrl` is the address given to
+LTI platforms. Leave both unset where the Client and the Server share an origin.
+
+Where they do not, the two origins must still be the **same site** — one
+registrable domain and one scheme — because the session cookie is `SameSite=Lax`
+and a browser will not keep it across sites. An allowlist entry does not change
+that: CORS decides whether a call may **read** an answer, `SameSite` decides
+whether the cookie is sent at all. [What two origins
+require](/en/install/reverse-proxy#two-different-origins) has the measurement.
+
+<Callout type="warn" title="`Cors:AllowedOrigins` is a list, and a comma-separated one binds nothing">
+It is bound as an array, so it needs indexed variables —
+`AJ_Cors__AllowedOrigins__0=https://algojudge.example`. Writing
+`AJ_Cors__AllowedOrigins=a,b` binds **zero** origins, silently, and every
+cross-origin call then fails in the browser rather than in a log.
+
+`Forwarded:KnownProxies` and `Forwarded:KnownNetworks` directly above *do* accept
+commas. Two adjacent settings, two different rules.
+</Callout>
+
+## The rest
+
+| Key | Environment | Default |
+|---|---|---|
+| `Limits:MaxRequestBytes` | `AJ_Limits__MaxRequestBytes` | `134217728` (128 MiB) |
+| `Preconfiguration:Path` | `AJ_Preconfiguration__Path` | unset — the feature is off and its endpoints say so |
+| `Events:SendTimeoutSeconds` | `AJ_Events__SendTimeoutSeconds` | `5` |
+| `Maintenance:ForceAfterSeconds` | `AJ_Maintenance__ForceAfterSeconds` | `300` |
+| `Files:CollectAtHourUtc` | `AJ_Files__CollectAtHourUtc` | `6` |
+| `Retention:SessionOriginDays` | `AJ_Retention__SessionOriginDays` | `30` |
+| `Retention:SubmissionOriginDays` | `AJ_Retention__SubmissionOriginDays` | `365` |
+| `Problems:ReservedSlugPrefixes` | `AJ_Problems__ReservedSlugPrefixes__0`, … | none |
+| `UvaExplorer:Origin` | `AJ_UvaExplorer__Origin` | the hosted problem picker |
+| `AllowedHosts` | `AJ_AllowedHosts` | `*` |
+
+`ASPNETCORE_ENVIRONMENT` carries no `AJ_` prefix — it is the framework's, and it
+is what decides whether the demo world is seeded, whether Swagger is mapped, and
+whether two of the refusals below apply at all.
+
+## Seven ways the Server refuses to start
+
+Each is deliberate, and each replaces a failure that would otherwise arrive much
+later and look like something else.
+
+1. **No storage is configured.** Where a product puts its files is not something
+   to inherit from a default nobody read.
+2. **`Storage:Default` names a store that is not configured.** Uploads would
+   otherwise fail one at a time.
+3. **Neither `Forwarded:KnownProxies` nor `Forwarded:KnownNetworks` is set.**
+   Trusting every sender of `X-Forwarded-For` lets a visitor state their own
+   address; trusting only loopback quietly records the proxy. There is no
+   defensible default, so there is none.
+4. **`DataProtection:Kind` is `ephemeral` outside Development.** Every restart
+   would sign everybody out, and a second instance could not read the first's
+   cookie.
+5. **`DataProtection:Certificates` is configured while the kind is
+   `ephemeral`.** Nothing is stored for a certificate to encrypt. One of the two
+   was meant, and guessing which would leave an installation believing its keys
+   are protected while nothing is being kept at all.
+6. **`DataProtection:Kind` is a value this Server does not know.** Including
+   `redis`, which is refused **by name**: it would be a second stateful service
+   to back up and restore, and this product does not ask an installation for
+   one.
+7. **A migration is pending outside Development.** The only one an operator can
+   wave through, and `Database:MigrateOnStart` is how.
+
+A named `DataProtection:Certificates` entry this Server cannot use — no `Path`,
+a file that is not there, one it cannot open, one carrying no private key — is
+refused at startup as well. A key ring that cannot be read is an installation
+nobody can sign in to, and it should say so while somebody is still watching the
+deployment rather than at the first sign-in.

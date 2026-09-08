@@ -1,0 +1,47 @@
+---
+title: ActivityGroup
+description: Several people competing as one — and why its membership is stored somewhere else.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An `ActivityGroup` is several people competing as one.
+
+A group belongs to **one** [activity](/en/server/v0.1/concepts/activity) and is what
+competes inside it: it submits, it spends the submission allowance, it holds a
+row in the ranking, and its grade goes to every member. Somebody in a group does
+not appear in the ranking themselves — the group does, and that is the whole
+point of the entity.
+
+| Field | Meaning |
+|---|---|
+| `ActivityId` | the activity it competes in |
+| `Name` | what the ranking calls it |
+| `Description` | a short line beside the name — a class, a school, a year |
+| `IsSystem` | kept out of results and out of the ranking |
+| `Members` | the grants pointing at it |
+
+<Callout type="warn" title="Membership is on the grant, not here">
+A [grant](/en/server/v0.1/concepts/grant) is a person's assignment to an activity,
+and the schema already holds one grant per user per activity — so a nullable
+`GroupId` there *is* the rule "at most one group", with no constraint of its own
+to write or to forget.
+</Callout>
+
+**A group of one is legitimate.** It is how a manager gives one person a name
+and a description in the ranking, and nothing treats it as a special case.
+
+`IsSystem` is the same rule `Grant.IsSystem` applies to a person, one level up:
+a jury member in the ranking beside the students is a bug, and so is a test
+group. **It still submits and still spends its allowance** — what it does not do
+is appear, which is what makes it useful for checking an activity from the
+inside while it runs.
+
+`ShowGroupMembers` on the activity decides whether a group's ranking row also
+names who is in it. Off by default. On, the roster is printed under the group's
+name **in the group's own row**, never as rows of its own: a second row per
+member would score the same points twice in one table.
+
+A [submission](/en/server/v0.1/concepts/submission) stamps its group at the moment it
+is made and keeps it. Moving somebody to another group changes what happens
+next, and nothing that already happened.

@@ -1,0 +1,17 @@
+{
+  "title": "Runner",
+  "description": "The machines that evaluate submissions, and how to run one.",
+  "root": true,
+  "pages": [
+    "index",
+    "configuration",
+    "routing",
+    "isolation",
+    "languages",
+    "policy",
+    "problem-types",
+    "external",
+    "external:[AlgoJudge-Runner](https://github.com/AlgoJudge/AlgoJudge-Runner)",
+    "external:[Licence](https://github.com/AlgoJudge/AlgoJudge-Runner/blob/main/LICENSE)"
+  ]
+}

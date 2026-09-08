@@ -1,0 +1,108 @@
+---
+title: Zadania
+description: Lista, Twój stan na każdym zadaniu, treść i to, dlaczego przycisk wysyłki bywa wyszarzony.
+source: en/client/v0.1/participant/problems.mdx
+sourceSha256: c375ffa07886bdad47cfe4c9a4cd29ef8dc08f307cdc008e68c59b3b2bcc4dbd
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**Zadania** w nawigacji pokazują wszystko, co jest w aktywności, z podziałem na
+serie. Każdy wiersz to `[slug] Nazwa`, plakietka stanu i przycisk **Wyślij
+zgłoszenie**.
+
+Slug to krótka etykieta — `A`, `P1`, `plecak` — i to ona pojawia się w adresie.
+Jest unikalna w całej aktywności, nie tylko w obrębie swojej rundy.
+
+## Twój stan na zadaniu
+
+Plakietka po prawej stronie wiersza dotyczy tylko Ciebie, a nie wszystkich.
+Składa się z maksymalnie trzech elementów:
+
+| Element | Znaczenie |
+|---|---|
+| `12 / 100` | Twoje **najlepsze liczące się punkty** wobec maksimum |
+| `Próby: 3` | ile zgłoszeń wysłałeś |
+| sama plakietka | *Rozwiązane*, *Częściowo*, *Próbowane* albo *Nierozpoczęte* |
+
+Najlepszy wynik to ten, który liczy się według zasad aktywności, więc
+[wykluczone zgłoszenie](/pl/client/v0.1/participant/results) się do niego nie liczy.
+Jeżeli startujesz w grupie, obie liczby należą do grupy.
+
+Ta sama plakietka jest na górze treści zadania, bo to przy treści się siedzi,
+czekając na werdykt — i tam też się zmienia, gdy werdykt przyjdzie.
+
+## Dlaczego przycisk wysyłki jest wyszarzony
+
+<Callout type="warn" title="Przycisk zablokowany, a nie usunięty">
+Przycisk zostaje tam, gdzie zawsze był, i zamiast zniknąć, mówi, że jest
+zamknięty. Jest zablokowany zawsze wtedy, gdy runda z tym zadaniem nic nie
+przyjmuje: **zakończyła się**, prowadzący ją **wstrzymał** albo jeszcze się nie
+zaczęła.
+</Callout>
+
+Na ekranie z treścią zadania plakietka mówi, o który z dwóch przypadków chodzi —
+*Seria jest wstrzymana* na pomarańczowo, *Seria się zakończyła* na szaro — więc
+powód czytasz tam, gdzie patrzysz na przycisk.
+
+Sam formularz wysyłki powtarza to jednym zdaniem, zanim cokolwiek napiszesz.
+Pełną tabelę masz w [Rundy, tygodnie i zajęcia](/pl/client/v0.1/participant/series).
+
+## Treść zadania
+
+Kiedy otworzysz zadanie, zobaczysz tytuł w postaci `[slug] Nazwa`, plakietkę
+stanu oraz to, co przypisanie mówi o limitach i o Twoich pozostałych
+zgłoszeniach.
+
+### Więcej niż jeden język
+
+Jeżeli autor napisał tłumaczenia, nad treścią pojawia się przełącznik: **Treść
+domyślna** i po jednej pozycji na język. Zmienia samą treść, a nie interfejs —
+nie ma nic dziwnego w tym, że ktoś chce przeczytać angielską treść w polskim
+interfejsie.
+
+Dostajesz treść w języku swojego interfejsu, jeżeli autor ją napisał, a w
+przeciwnym razie tę napisaną jako pierwsza. Brak tłumaczenia nigdy nie jest
+błędem — dostajesz to, co jest.
+
+Treści są zwykle w Markdownie. Zadanie zaimportowane z archiwum może mieć zamiast
+tego PDF — otwiera się wtedy w podglądzie na stronie, a nie jako odnośnik do
+pobrania.
+
+### Limity
+
+Dwie plakietki obok tytułu — czas i pamięć — to wartości samego przypisania,
+zanim cokolwiek je zawęzi.
+
+Pod treścią może być karta **Limity**, a w niej **dwie tabele**. Są dwie, a nie
+jedna, i to celowo:
+
+- **Per grupa testowa** — to samo dla każdego języka.
+- **Per język** — to samo dla każdej grupy.
+
+Wartość nigdy nie stoi na obu osiach naraz, a własne limity grupy wygrywają z
+nadpisaniem językowym, zamiast się z nim składać. Wiersze, do których nadpisanie
+językowe nie sięga, są oznaczone gwiazdką. Jedna tabela musiałaby wymyślić
+komórkę w miejscu, gdzie osie się przecinają.
+
+**Brak czegokolwiek oznacza, że przypisanie niczego nie nadpisało** — a nie „brak
+limitu”. Własne liczby paczki nie są publikowane uczestnikom, więc ekran woli nic
+nie mówić, niż zgadywać.
+
+### Załączniki
+
+Karta **Załączniki** wypisuje każdy plik przeznaczony dla Ciebie, wraz z
+rozmiarem w kB. Nie ma w niej plików samej treści zadania; jest wszystko inne, co
+dołączył autor.
+
+Jeżeli zadanie ma testy przykładowe, wiersz pod treścią mówi, że są też dostępne
+jako osobne pliki.
+
+### Pozostało zgłoszeń
+
+Tam, gdzie aktywność ustawia limit, plakietka **Pozostało zgłoszeń** mówi, ile
+ich jeszcze masz. Przy trzech albo mniej formularz wysyłki podnosi to do
+ostrzeżenia.
+Brak plakietki oznacza brak limitu.
+
+W grupie limit należy do grupy — zużywa go każdy, kto wyśle.

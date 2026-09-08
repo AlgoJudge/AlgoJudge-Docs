@@ -1,0 +1,166 @@
+---
+title: EvaluationJob and Result
+description: One attempt at evaluating a submission, the lease that makes it recoverable, and the four values a completed attempt reports.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+Two rows, and the split is the part most often misread.
+
+- **`EvaluationJob` is the job record**: the claim, the lease, the Runner, the
+  delivery count, the failure reason.
+- **`Result` is not.** It is the outcome of one *completed* job, one-to-one, and
+  holds four values the Server reads.
+
+## EvaluationJob
+
+One attempt at evaluating a [submission](/en/server/v0.1/concepts/submission). A
+[Runner](/en/server/v0.1/concepts/runner) claims a queued job atomically —
+`SELECT ... FOR UPDATE SKIP LOCKED` — and holds it under a lease.
+
+| Field | Meaning |
+|---|---|
+| `SubmissionId` | what is being evaluated |
+| `Attempt` | increments from 1 within its submission. A rejudge adds an attempt |
+| `ProblemVersionId` | the content version being evaluated. The source of truth, copied onto `Result` |
+| `RunnerId` | null until a Runner claims the job |
+| `State` | `Queued`, `Running`, `Completed`, `Failed`, `Cancelled`, `Superseded` |
+| `LeaseToken` | handed to the Runner on claim and required back when it reports |
+| `LeaseSeconds` | how long the lease was, as granted at claim |
+| `LeaseExpiresAt` | when the lease runs out. Moved by every renewal, which is why `LeaseSeconds` is kept beside it |
+| `Deliveries` | how many times this job has been handed out |
+| `AcknowledgedAt` | when a Runner was first heard from about this claim, and null while nobody has been |
+| `Refunds` | how many deliveries were given back because nobody was ever heard from about them |
+| `Releases` | how many times a Runner handed this job back because it was stopping, and was given the delivery back for it |
+| `FailureReason` | why it failed, when it failed for a reason that is not a verdict |
+| `RowVersion` | optimistic concurrency for everything that is not the claim |
+| `Files` | what the Runner attached for **this attempt** |
+
+### The permitted transitions
+
+A job leaves `Queued` by being claimed, by being cancelled, or by a rejudge
+superseding it. From `Running`, a verdict makes it `Completed` and a manager
+makes it `Cancelled`; everything else puts it **back in `Queued`** — an expired
+lease, a Runner handing it back because it is stopping, a revoked Runner key, or
+an infrastructure failure that is going to be tried again. `Failed` is where an
+infrastructure failure lands once the delivery cap is reached. A finished
+attempt never leaves its state: cancelling one is refused with
+`attempt.finished`.
+
+<Mermaid chart={`
+flowchart LR
+    queued["Queued"] -->|"a Runner claims it"| running["Running"]
+    running -->|"a verdict"| completed(["Completed"])
+    running -->|"an infrastructure failure,<br/>at the delivery cap"| failed(["Failed"])
+    running -->|"the lease expired, the Runner handed it back,<br/>its key was revoked, or it will be tried again"| queued
+    queued -->|"a rejudge overtakes it"| superseded(["Superseded"])
+    queued -->|"a manager cancels"| cancelled(["Cancelled"])
+    running -->|"a manager cancels"| cancelled
+`} />
+
+**A rejudge is a new job, and it also ends a queued sibling.** `Superseded` is
+the only terminal state never reached from `Running`, and no Runner ever meets
+one: leaving `Queued` is exactly what takes the row out of the claim's reach, so
+a superseded attempt is one nobody was holding. An attempt a Runner *is* holding
+is left alone — it finishes, keeps its result and its attachments, and the new
+attempt waits behind it on the claim's fourth filter. Cancelling it instead
+would throw away work already done, and on a forwarding Runner a submission
+already spent at somebody else's service.
+
+### The lease is a correctness mechanism
+
+A Runner is stateless apart from a package cache, so a Runner that dies mid-job
+resumes nothing. Recovery is the Server reclaiming the job once
+`LeaseExpiresAt` passes — which makes the lease a correctness mechanism rather
+than a safety net: **it has to outlast the slowest real evaluation.**
+
+`LeaseToken` is what makes result submission idempotent. A Runner may safely
+resend, and a Runner whose lease has already been reclaimed is rejected instead
+of overwriting a newer attempt.
+
+`LeaseSeconds` is kept because `LeaseExpiresAt` cannot be read backwards: every
+renewal moves it, so the duration the Runner was granted is gone after the first
+one. Without it a renewal that names no duration — and a progress call, which
+never names one — would have nothing to renew *by*, and would fall back to this
+Server's default instead of the lease this job was actually granted.
+
+`Deliveries` is incremented on every claim, including the ones that followed a
+lease expiry. A job that keeps being reclaimed is a job that keeps killing
+Runners; past the configured cap it goes to `Failed` with a reason rather than
+back into the queue.
+
+**A delivery nobody was ever heard from about is given back.** The claim is
+committed before the answer to it is written — `Running`, a lease token, one of
+five attempts spent — so an answer lost in between leaves a job the Runner
+cannot release, never having learned the token. `AcknowledgedAt` is what tells
+that apart from a Runner that took the job and died judging it: it is written on
+the first lease-bearing call and cleared on every re-claim, and the reaper
+refunds only the claims where it is still null. Three of those are free, for the
+same reason three releases are — a row that throws after every commit would
+otherwise be refunded for ever and never reach the cap.
+
+<Callout type="warn" title="An infrastructure failure is not a wrong answer">
+A package whose checksum does not match lands in `FailureReason` and the job
+goes to `Failed`. It must never be scored as a verdict.
+</Callout>
+
+## Result
+
+The outcome of one completed job — and only that. It is not the job record: the
+claim, the lease and the Runner live on the job, and the Runner is reached
+*through* the job rather than copied here.
+
+| Field | Meaning |
+|---|---|
+| `EvaluationJobId` | the completed attempt |
+| `ProblemVersionId` | copied from the job, on purpose |
+| `Score`, `MaxScore` | the Runner's own scale, before any rescaling by the assignment's `MaxPoints` |
+| `Verdict` | short outcome label produced by the Runner, e.g. `Accepted` |
+| `Extra` | whatever the problem type wants a **board** to have |
+| `Props` | what the problem type wants **this participant** shown beside their own result |
+| `RunnerVersion` | which Runner build produced this, for reproducing a disputed result |
+
+`ProblemVersionId` is duplicated deliberately, unlike the Runner: what a result
+was judged against has to stay pinned to it, and the job is not where somebody
+looks a year later.
+
+`Verdict` is an opaque string. The Server matches it exactly where a filter asks
+for it and never parses it, so a problem type may invent a verdict without a
+Server release.
+
+`Score` and `MaxScore` are kept so the Server can order and paginate without
+parsing anything; their meaning is the problem type's business.
+
+### `Extra` and `Props` differ by audience, not by content
+
+`Extra` is **public by construction**: everyone who may see the board is sent
+it, so nothing goes in it that is not meant to be seen. It rides in a list,
+multiplied by every submission of every contestant, which is why its ceiling is
+2 kB — and over it is refused rather than truncated.
+
+`Props` travels with one submission to one reader, under the activity's own
+attachment rules.
+
+Null means none in both; never `{}`.
+
+<Callout type="warn" title="Per-test rows and the compiler log are attachments, not columns">
+Four columns are everything the Server reads of a result. The per-test document
+and the log are `FileReference` rows under the **attempt**, named `details` and
+`log`.
+
+A per-test table would be a hundred and twenty bytes a row, times two thousand
+tests, times every attempt. A database column is the wrong place for it.
+</Callout>
+
+## Trials are not evaluations
+
+A `Trial` is a package somebody asked to have run, attached to no problem. It
+produces timings rather than a verdict, belongs to nobody's standing, counts
+against no ceiling and appears on no board — and it is **its own table** for
+that reason. Carried on `EvaluationJob` with its links left empty, every query
+over submissions, results, rankings and attempt counts would have had to
+remember to exclude it, and forgetting one would not break: it would quietly
+show somebody's private trial as a result.
+
+The package does not survive a trial. Who may ask is `trial:run`.

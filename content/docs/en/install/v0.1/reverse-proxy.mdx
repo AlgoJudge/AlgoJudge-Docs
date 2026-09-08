@@ -1,0 +1,237 @@
+---
+title: Your own reverse proxy
+description: The five rules for putting an installation behind a proxy you already run.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`COMPOSE_PROFILES=app,data`. The bundled nginx is not started; the Server and
+the Client are published on `127.0.0.1:8080` and `127.0.0.1:8082`, and you point
+your own proxy at them.
+
+## The five rules
+
+### 1. One origin, `/api/v1/` to the Server and everything else to the Client
+
+Keeping them on one origin is what makes `API_BASE_URL=/` work, and then there
+is **no CORS to get wrong**. The Client appends `/api/v1` itself — the path is
+fixed on every installation — so that variable names an origin and never a path.
+
+**It is fixed because getting it wrong is quiet.** Where one domain serves both,
+the API cannot live at the root, because the root is the application; and a
+prefix that is only sometimes present is one every deployment has to get right on
+its own. Get it wrong and the Client asks the right host for the wrong path, and
+your reverse proxy answers with the application's own `index.html` instead of an
+error. A value written in either of the older shapes — ending in `/v1` or
+`/api/v1` — is normalised rather than refused.
+
+The event socket is `/api/v1/ws`, under the same prefix, so it needs no rule of
+its own beyond the upgrade headers and a read timeout longer than a quiet
+socket.
+
+### 2. Do not route `/api/v1/admin`
+
+<Callout type="warn" title="`/api/v1/admin` must never be proxied">
+It answers only on the Server's **own loopback interface**. A request through a
+proxy arrives inside that container as the bridge gateway, so it would get a 404
+one hop later anyway.
+
+Refuse it at the edge regardless. A refusal that costs no upstream connection is
+better than one that does, and somebody reading your configuration should be able
+to see that the operator's surface is deliberately not proxied rather than wonder
+whether it was forgotten. The bundled nginx returns 404 for the path for exactly
+these two reasons.
+</Callout>
+
+The way in is `docker compose exec -T server aj-admin …`, and that is the whole
+of the supported way in. The published `127.0.0.1:8080` is not a back door: a
+connection to the host's own loopback also arrives as the bridge gateway.
+
+### 3. Do not turn a 502, 503 or 504 from the Server into your own page
+
+The Client reads those. A maintenance window **is** the Server answering `503`
+with a `server.maintenance` body and a `Retry-After`, and the Client turns
+exactly that into its own maintenance page, in this installation's branding and
+language, and polls `/api/v1/health` to learn it may come back.
+
+Intercepting it replaces that with something worse, hides the reason, and — if
+your rule is broad enough to catch the Runner too — defeats the drain, so a
+backup would start while a Runner was still writing a result. In nginx terms:
+`proxy_intercept_errors off` on the API route.
+
+The one case a static page helps is the **application** route, and only for 502
+and 504: the Client container is gone, so the browser gets a connection error and
+has no application to show a message with. Never 503 there — that is the Server
+speaking through the API route.
+
+### 4. Set `TRUSTED_PROXY_NETWORKS` to your proxy's network
+
+The Server refuses to start until it has been told whose word to take for a
+visitor's address. Trusting every sender of `X-Forwarded-For` lets a visitor
+state their own address; trusting only loopback records the proxy instead of the
+person.
+
+The default names the Compose network the bundled nginx sits on. **Behind your
+own proxy, that default is wrong** — put your proxy's network there. Reached
+with no proxy at all, `none` is a complete answer.
+
+Write a **network** address, not a host one: `172.28.0.5/24` is refused at
+startup, by name, with the address it should have been. .NET normalises a CIDR
+with host bits set without a word, which would turn "one machine" into "a whole
+laboratory".
+
+### 5. Send `X-Forwarded-Proto`
+
+Without it the Server sees `http`, and its HTTPS redirect answers a redirect to
+itself. That is an infinite loop, and it looks like the application never
+loading.
+
+## What else to carry
+
+The bundled nginx sends `Host`, `X-Real-IP`, `X-Forwarded-For`,
+`X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port`, sets
+`client_max_body_size` to 128 MB to match the Server's own request ceiling, and
+turns proxy buffering off in both directions — the Client streams nothing, and
+the Server's downloads are already streamed and would be pointlessly spooled to
+disk first.
+
+**Turning buffering off does not turn off the header buffer**, and that is the
+one worth knowing before it happens. Response headers always have to fit in
+`proxy_buffer_size`, 4 kB by default, and when they do not nginx answers **502**
+and logs `upstream sent too big header`. Nothing reaches the browser, so it
+reads as an upstream that fell over rather than as a proxy that refused.
+
+The response that gets close is the one that ends a federated sign-in: it
+deletes `.AspNetCore.Correlation.*` and `.AspNetCore.OpenIdConnect.Nonce.*`
+while setting `.AspNetCore.Identity.Application`, which is itself split into
+`C1`, `C2` once the claims make it long enough. An identity product behind the
+same proxy is worse — measured 2026-09-01, a Keycloak authorization response
+carrying `AUTH_SESSION_ID`, `KC_AUTH_SESSION_HASH` and `KC_RESTART`, the last a
+JWT, did not fit in 4 kB and every sign-in ended 502. The bundled nginx sets
+these; yours has to as well.
+
+```nginx
+proxy_buffer_size       16k;
+proxy_buffers         4 16k;
+proxy_busy_buffers_size 16k;
+```
+
+It sends `Strict-Transport-Security`, `X-Content-Type-Options`,
+`Referrer-Policy`, `X-Frame-Options: SAMEORIGIN` and `Permissions-Policy`, each
+with `always` so the header is not omitted on error responses — which are
+exactly the ones an attacker can provoke most readily.
+
+`X-Frame-Options` is `SAMEORIGIN` rather than `DENY` on purpose — but **it does
+not cover the LTI case it was chosen for.** `SAMEORIGIN` permits framing only
+from the **same** origin. An LTI
+launch is framed by the LMS, so a Moodle at `moodle.example.edu` framing this
+installation at `algojudge.example.edu` is refused exactly as `DENY` would refuse
+it. Measured in a browser rather than deduced from the specification.
+
+It is right for the arrangement it does cover — an LMS and this installation on
+one origin, routed by path — and it is left alone because loosening the frame
+policy of every installation by default is not a decision the stack makes for
+you. **If your LMS is on a different name, replace the header**, because
+`X-Frame-Options` cannot name a foreign origin and
+[`Content-Security-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors)
+can:
+
+```nginx
+# instead of the X-Frame-Options line
+add_header Content-Security-Policy "frame-ancestors https://moodle.example.edu" always;
+```
+
+naming every platform allowed to frame you, and dropping `X-Frame-Options` so the
+two cannot disagree. There is no other `Content-Security-Policy` here — see below
+— so this header is the whole of the frame policy you get by default.
+
+<Callout type="warn" title="There is no Content-Security-Policy, and that is a decision">
+The Client image writes its runtime configuration into `index.html` as an inline
+script at container start — that is what makes one image serve any installation
+— and a policy strict enough to be worth having would need a nonce on it.
+Nothing in the Client emits one, so a CSP would either break the application or
+be `unsafe-inline`, which is a header that says nothing. Closing it belongs in
+the Client.
+</Callout>
+
+## Two different origins
+
+Serving the Client and the Server on different origins works. Then
+`API_BASE_URL` is the Server's public address, `APP_BASE_URL` is where a browser
+reaches the Client, and the Client's origin goes in the Server's
+`AJ_Cors__AllowedOrigins`.
+
+<Callout type="warn" title="They must be the same site: one registrable domain, one scheme">
+`https://algojudge.example` beside `https://api.algojudge.example` is **one
+site** — different origins, same registrable domain — and everything works.
+`https://algojudge.example` beside `https://algojudge-api.other` is **two**, and
+then nobody can sign in.
+</Callout>
+
+The session cookie is `SameSite=Lax`. A browser will not keep such a cookie when
+the answer that sets it comes from another site, so the sign-in fails in the way
+that is hardest to diagnose: `POST /identity/login` answers **200** and sends a
+`Set-Cookie`, the browser stores **nothing**, the next request is **401**, and
+the application sits on the login screen with no error anywhere.
+
+A `Domain` on the cookie does not rescue it. `Domain` decides which hosts a
+cookie is sent to, and a server may only widen one to its own parent domain —
+`api.algojudge.example` cannot set a cookie for `algojudge-api.other`. It is also
+unnecessary on one site: measured on two hostnames of one domain, the figures in
+a problem statement drew from the API's origin with the cookie host-only, and
+widening it only sent the session to the Client's host on every asset request.
+
+What survives any arrangement is the part that needs no session at all: the
+instance logo, a branded typeface and the documents an operator publishes are
+public files, and they load from anywhere.
+
+### The API's address must not send `X-Frame-Options`
+
+This is the part of two origins that has nothing to do with sessions, and it is
+easy to walk into from the section above about which headers to carry: the
+bundled `security-headers.conf` sends `X-Frame-Options: SAMEORIGIN`, and putting
+those same headers in front of the **API** breaks problem statements in PDF.
+
+The Client draws one with `<object data="…/api/v1/files/…">`. An `<object>` is an
+embedding, exactly as an `<iframe>` is, and `X-Frame-Options` covers both — so on
+two origins the API is a foreign origin and `SAMEORIGIN` refuses it.
+
+<Callout type="warn" title="The refusal is silent">
+`X-Frame-Options` writes **nothing** to the console when it blocks an `<object>`;
+the `Content-Security-Policy` form does. What a person sees is the `<object>`'s
+fallback — an empty box with a *download* link — and a console with nothing in
+it, which looks exactly like a problem published without a statement. Measured
+2026-09-08 in Chromium against the same document under four header values.
+</Callout>
+
+Either send **no** frame policy on the API's address, or send `frame-ancestors`
+naming the Client's origin **and every LMS platform** — an LTI launch puts both
+in the ancestor chain. Sending nothing is defensible here: embedding the API
+gains an attacker nothing, because the session cookie is `SameSite=Lax` and an
+embedder from anywhere else is answered `401`.
+
+### Setting the allowlist
+
+This stack does not set `AJ_Cors__AllowedOrigins`, for the reason it does not set
+`AJ_PublicApiUrl`: an empty list entry is not the same as no list. Write an
+overlay.
+
+```yaml
+# state/origins.compose.yaml
+services:
+  server:
+    environment:
+      AJ_Cors__AllowedOrigins__0: https://algojudge.example
+```
+
+One index per origin — `AJ_Cors__AllowedOrigins=a,b` binds **zero**, silently.
+An `<img>` needs no CORS at all, so a figure can draw while every API call is
+being refused; the symptom of a missing origin is the offline screen, not a
+missing picture.
+
+## Certificates
+
+Nothing in the stack issues one, and with your own proxy in front the bundled
+nginx is not running at all — TLS is yours. If you use the bundled edge instead,
+`/.well-known/acme-challenge/` is served on both ports so an HTTP-01 challenge
+is never redirected away.

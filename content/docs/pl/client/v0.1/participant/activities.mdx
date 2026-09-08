@@ -1,0 +1,143 @@
+---
+title: Aktywności
+description: Czym jest aktywność, jak znaleźć swoją i jak się do niej dostać.
+source: en/client/v0.1/participant/activities.mdx
+sourceSha256: 97ca07df8b9416616eee829361145da823bc2dc750b7826ac0558c21be53157c
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**Aktywność** to jedne zawody albo jedne zajęcia. Zawiera serie, zadania, Twoje
+zgłoszenia, ranking i pytania. Wszystko, co robisz jako uczestnik, dzieje się
+wewnątrz jednej z nich.
+
+## Jak znaleźć swoją
+
+**Aktywności** w nawigacji pokazują listę, po pięć na stronę. Nie są to wyłącznie
+aktywności, do których już dołączyłeś. Na liście są:
+
+- aktywności, w których jesteś zapisany,
+- aktywności, do których dostałeś zaproszenie — plakietka *Zaproszenie*,
+- publiczne aktywności, do których możesz się zapisać — plakietka *Otwarte
+  zapisy*.
+
+Aktywności, której nie możesz widzieć, w ogóle nie ma na liście. To decyzja
+Servera, a nie filtr, który dałoby się wyłączyć.
+
+### Filtry
+
+Dwa rzędy filtrów, w każdym możesz zaznaczyć kilka:
+
+- **Stan** — *Trwające*, *Nadchodzące*, *Zakończone*. Zakończone są przygaszone;
+  pozostałe zachowują pełny kolor.
+- **Typ** — *Zawody* albo *Zajęcia*. Zawody mają ikonę pucharu, zajęcia ikonę
+  szkoły, a typ, którego ta wersja nie zna, znak zapytania.
+
+Po zmianie filtra wracasz na pierwszą stronę.
+
+### Co pokazuje kafelek
+
+Ikonę, nazwę i **slug** — krótki alias widoczny w adresie, na przykład
+`AMMPZ-2019`. Luźne wiersze tekstu obok (*Prowadzący: …* i cokolwiek innego) to
+dane opisowe, które wpisał organizator.
+
+Kiedy klikniesz kafelek, otworzy się własna strona aktywności — jeżeli
+organizator napisał stronę dla uczestników. Jeżeli nie napisał, trafiasz od razu
+na listę zadań. Pusta strona nie jest przystankiem i adres też nim nie jest:
+wpisany wprost prowadzi prosto do zadań.
+
+Osoba, która **nie** jest zapisana, dostaje to, co organizator napisał dla osób z
+zewnątrz, oraz formularz zapisu.
+
+### Kłódka na kafelku
+
+<Callout type="warn" title="Zablokowane przez rundę">
+Kafelek z plakietką *Zablokowane przez …* nie otwiera się, a wpisanie adresu
+też nic nie da. Trwa runda, która ma wyższą rangę niż reszta — w tej aktywności
+albo w całej instalacji — i wszystko o niższej randze jest w tym czasie poza
+zasięgiem. Plakietka nazywa rundę, która to zrobiła.
+</Callout>
+
+Nic nie przepada. Sama strona aktywności nadal się otwiera i pod nagłówkiem
+**Ta aktywność jest zablokowana** podaje powód oraz zdanie: *Zadania, zgłoszenia,
+pytania i ranking wrócą, gdy się zakończy.*
+
+## Jak się dostać do środka
+
+Trzy drogi. Która z nich obowiązuje, ustawia organizator.
+
+| Ustawienie | Co oferuje strona aktywności |
+|---|---|
+| **zamknięte** | Nic. Pisze: *Na tę aktywność zapisuje organizator.* |
+| **hasło** | Pole **Hasło zapisu** i przycisk **Zapisz się**. |
+| **otwarte** | Przycisk **Zapisz się**, bez hasła. |
+
+Jeżeli aktywność publikuje regulamin, formularz ma też wymagane pole
+**Znam regulamin i akceptuję go**. Kiedy klikniesz ten tekst, regulamin otworzy
+się **nad formularzem**, więc nie stracisz tego, co już wpisałeś.
+
+### Link od prowadzącego
+
+Link zapisu wygląda tak: `https://host/activities/AMMPZ-2019#haslo`. To, co jest
+po `#`, to hasło zapisu. Strona bierze je, wypełnia pole i usuwa je z paska
+adresu. Fragment nigdy nie jest wysyłany na serwer, więc hasło nie trafia po
+drodze do żadnego logu.
+
+Link wymaga zalogowania. Jeżeli nie masz sesji, najpierw trafiasz na logowanie, a
+potem wracasz tutaj — razem z fragmentem, czyli z tą częścią, o którą chodziło.
+
+## Co dostajesz po zapisaniu
+
+Nawigacja wypełnia się wpisami samej aktywności. Każdy z nich ma swój warunek:
+
+| Wpis | Widoczny, gdy |
+|---|---|
+| **Strona aktywności** | jesteś zapisany, a organizator napisał stronę dla uczestników |
+| **Zadania** | jesteś zapisany |
+| **Wyślij zgłoszenie** | jesteś zapisany |
+| **Moje zgłoszenia** | jesteś zapisany |
+| **Ranking** | jesteś zapisany, a wyniki nie są zastrzeżone dla prowadzących |
+| **Pytania i ogłoszenia** | jesteś zapisany, a organizator włączył moduł |
+| **Regulamin** | organizator opublikował regulamin — zapisany czy nie |
+
+Osoba, która nie jest zapisana, dostaje nazwę aktywności i regulamin, i nic
+więcej. Nie ma po co pokazywać wysyłki komuś, kto nie jest w aktywności: te
+ekrany i tak odmówią.
+
+### Zegar w nagłówku
+
+Plakietka odlicza do **końca rundy, która trwa teraz** — nie do końca
+aktywności, bo w zawodach z trzema rundami nikt nie pracuje pod ten termin.
+
+Pojawia się dopiero po starcie rundy. Gdy runda jest wstrzymana, plakietka pisze
+**Wstrzymana** zamiast odliczać: zegar tykający przez przerwę jest gorszy od
+zegara, który staje.
+
+### Panel w rogu
+
+Prawy dolny róg, zwinięty po wejściu: Twoje ostatnie zgłoszenia w tej
+aktywności, od najnowszego, z godziną, `[slug]` i nazwą zadania, punktami i
+stanem. Sam się aktualizuje w miarę, jak przychodzą werdykty, więc możesz
+patrzeć, jak zgłoszenie się kończy, nie odchodząc od czytanej treści.
+
+Przycisk **Wyślij** w panelu otwiera formularz wysyłki w oknie dialogowym — na
+tym zadaniu, które masz właśnie otwarte, jeżeli masz otwarte jakieś. Ten sam
+przycisk jest powodem, dla którego panel widzisz tylko wtedy, gdy jesteś
+**zapisany**: wysyła, a Server nie przyjmie zgłoszenia od osoby spoza
+aktywności.
+
+**Na telefonie panelu nie ma.** Na ekranie o szerokości 768 pikseli albo
+mniejszej w ogóle się nie pokazuje: ma 460 pikseli szerokości i jest przypięty
+do rogu, więc zająłby niemal całą szerokość i przykryłby to, co strona sama w
+tym rogu umieściła — łącznie z przyciskiem **Wyślij** w samym formularzu. Nic
+przez to nie tracisz: listę masz pod **Moje zgłoszenia** w nawigacji, a
+formularz pod sąsiednim wpisem **Wyślij zgłoszenie**.
+
+Rozwinięty czy zwinięty — panel pamięta to na czas sesji.
+
+## Start w grupie
+
+Jeżeli prowadzący przypisał Cię do grupy, strona aktywności pokazuje panel
+**Startujesz w grupie** z nazwą grupy, jej opisem i składem. To grupa jest
+uczestnikiem: wysyła, zużywa limit i zajmuje wiersz w rankingu. Zobacz
+[Start w grupie](/pl/client/v0.1/participant/groups).

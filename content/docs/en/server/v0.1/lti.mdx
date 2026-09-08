@@ -1,0 +1,242 @@
+---
+title: LTI
+description: How a course platform reaches this Server — the platform record, the four endpoints that cannot ask for a session, and the one place an address a stranger supplies is opened.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+AlgoJudge implements **LTI 1.3** as a tool: a course platform opens an activity
+for its students, and grades travel back. Moodle is the platform it is verified
+against.
+
+<Callout type="warn" title="Not certified by 1EdTech">
+The specification is implemented; the certification is not held. The manager's
+screen says so too, and nothing here should be read as a conformance claim.
+</Callout>
+
+**The whole of it is one module**, and it is meant to stay removable: two lines
+outside `Lti/` register it, and a test fails the build if any file elsewhere so
+much as mentions LTI. Nothing in the core knows this exists.
+
+## The addresses
+
+Every route below sits under `/api/v1`, so `/lti/login` is really
+`https://your.server/api/v1/lti/login`.
+
+**Four of them answer without a session, and each has to.**
+
+| | |
+|---|---|
+| `GET`/`POST` `/lti/login` | The platform starts the sign-in. Both verbs, because Moodle uses `POST` |
+| `POST` `/lti/launch` | The launch itself |
+| `GET` `/lti/jwks.json` | The tool's public keys, so a platform can check our signatures |
+| `GET` `/lti/register` | The platform's half of an expected registration |
+
+Requiring a session on any of them would mean requiring somebody to have already
+signed in to the thing they are being launched into.
+
+**They also never answer `problem+json`.** A launch that fails is a **redirect
+carrying a code**, and a registration that fails is an **HTML page** — because
+both are read by a person inside a frame on somebody else's site, and there is
+nobody there to read a JSON error document.
+
+Everything else — platforms, placements, invitations, keys, deep-link responses —
+is an ordinary authorised API. `provider:manage` gates the platform, invitation
+and key endpoints; the roster and grades are scoped to the activity instead, by
+`result:read:all`, `activity:enroll` and `activity:update`.
+
+## What a launch does
+
+The platform sends the browser to `/lti/login` with `iss`, `client_id` and
+`lti_deployment_id`; the Server matches a platform on that triple, writes a
+launch state row and sends the browser on to the platform's own login address.
+The platform authenticates the person and posts `state` and an `id_token` to
+`/lti/launch`. The Server consumes the state row, fetches the platform's key set
+and checks the signature, issuer, audience, lifetime and nonce, resolves the
+placement, and only then asks who arrived. The browser ends up at the activity,
+at a conflict to report, at an offer to sign in through SSO, or at
+`/lti/failed?reason=…`.
+
+<Mermaid chart={`
+sequenceDiagram
+    participant B as Browser
+    participant P as Platform
+    participant S as Server
+    B->>S: GET or POST /lti/login (iss, client_id, deployment id)
+    S->>S: match the platform on the triple, write a launch state row
+    S-->>B: redirect to the platform's login address
+    B->>P: the authorization request
+    P-->>B: authenticate, then post back
+    B->>S: POST /lti/launch (state, id_token)
+    S->>S: consume the launch state row, by deleting it
+    S->>P: fetch the key set
+    P-->>S: the platform's public keys
+    S->>S: signature, issuer, audience, lifetime, nonce
+    S->>S: resolve the placement, then resolve who arrived
+    S-->>B: the activity, a conflict, an offer to sign in, or /lti/failed
+`} />
+
+The placement is resolved **before** anybody is signed in: signing somebody in
+and then telling them the tool is misconfigured is the worse order.
+
+## The platform record
+
+Eleven fields, and **three of them can never be changed**: the issuer, the client
+id and the deployment id. Every launch and every identity link hangs off that
+triple, so an attempt to move one is refused with `lti.platform.immutable`.
+
+The four addresses — issuer, key set, token and login — must each be an
+absolute `https` URL, or `http` on loopback so a development stack can be
+registered. Anything else is refused by name.
+
+Registering a platform writes **two** rows: the platform, and an identity
+provider paired with it. That provider is created **disabled**, and its being
+disabled is the guard rather than a default — a disabled provider is never given
+a sign-in scheme or a callback address, so **nobody signs in through a platform**.
+It holds an empty secret rather than a random one, so *has a secret* answers
+*no*, which is true.
+
+Deleting a platform is refused while any course still has an activity from it,
+and the refusal names the count.
+
+<Callout type="warn" title="`isIdentityAuthority` is the dangerous field">
+With it on, a launch attaches itself to the account whose username the platform
+sends — so whoever controls that platform can reach those accounts. It is off
+unless somebody turns it on, and it is inert without a namespace: the namespace
+is an identity provider's slug, and an account that did not come through that
+provider cannot be claimed. Local accounts and administrators are therefore out
+of reach.
+</Callout>
+
+## What the Server hands back
+
+`GET /lti/platforms/{id}/registration` answers the four addresses to paste into
+the platform's external-tool configuration, plus the custom parameters without
+which a launch cannot tell who arrived:
+
+```
+username=$User.username
+context_history=$Context.id.history
+```
+
+A fifth is added per placement and is not in that list — `activity=<slug>` — which
+is what tells a launch which activity it is opening.
+
+Those addresses are built from **`PublicApiUrl`**, falling back to the address of
+the request. Dynamic registration is the one caller that will not accept the
+fallback: if the result is not an absolute URL it refuses with
+`lti.registration.publicApiUrl`, because it is about to hand that address to
+somebody else's server.
+
+## Expected registrations
+
+A platform may register itself, but only if somebody here is expecting it.
+
+An invitation is a random code with a **thirty-minute life**, **single use**, and
+revocable before it is spent. Revoking sets the expiry; **the row stays**, so the
+history of who invited whom does not disappear.
+
+**What arrives is switched off.** A dynamically registered platform is written
+with `Enabled = false`, no identity authority and no namespace — the two decisions
+that matter are left to a person on the platforms screen, with the consequences
+in front of them.
+
+**A refusal does not spend the invitation.** The claim and the two outbound calls
+are one transaction. Separately, a platform that answered badly would burn a
+single-use code and leave the administrator to ask for another.
+
+## Keys
+
+The tool signs two things: the deep-link response it hands back to the platform,
+and the assertion it uses to get an access token for grades and rosters. A
+platform checks both against `/lti/jwks.json`.
+
+RSA-2048 and RS256. That is **this project's choice, not the specification's** —
+the security framework makes RS256 a default at `SHOULD` strength and mandates no
+key size at all. It is the right choice because of the platform: Moodle
+advertises exactly `RS256`, in every supported version.
+
+**Rotation is two deliberate acts and there is no schedule.**
+
+1. `rotate` mints a new key and retires every key that was signing — and leaves
+   the retired ones **published**, so signatures already in flight still verify.
+2. `withdraw` removes one retired key and deletes its private half. Refused for
+   the key that is currently signing: rotate first.
+
+Automating either would put the failure in somebody else's installation at a
+moment nobody chose.
+
+A key is generated on the first read of the key set, so a platform that fetches
+it before anything has been signed finds a key rather than an empty document it
+would then cache.
+
+## The one address a stranger chooses
+
+Every outbound call in this module goes somewhere an administrator wrote
+down — except one. During an expected registration the platform tells us where
+its own configuration lives, and we fetch it.
+
+That single HTTP client is guarded, and the guard is worth stating because it is
+unusual:
+
+- **`https` only.** Not `http`, and **not even on loopback** — unlike the fields
+  an administrator types, where loopback is exempted so a development stack works.
+- **No credentials in the address.** `https://moodle.example@evil.example/` is
+  refused rather than parsed, because everything before the `@` is credentials
+  and the host is what follows it.
+- **Redirects are refused, not followed.** A redirect can change the scheme, and
+  the `https` rule cannot ride along.
+- **The address is checked at the moment of connecting**, not when the name is
+  read, so a name that resolves differently a minute later cannot slip between
+  the two.
+- **Connections are never reused**, because a pooled connection is one whose
+  address was checked for somebody else's request.
+
+**Private networks are allowed on purpose.** A university runs its Moodle and its
+AlgoJudge on one private network, so refusing `10.0.0.0/8` would refuse the
+ordinary deployment while protecting nothing. What stays refused is loopback,
+link-local — **where every major cloud answers instance credentials** — carrier-grade
+NAT, multicast, and the documentation and benchmarking ranges.
+
+The same check is applied **twice**: to the configuration address, and again to
+the registration address read out of whatever that first fetch returned. Whoever
+answered the first request chooses where a bearer token is posted.
+
+A refusal reads *"This Server will not open a connection to …"*, as a page.
+
+## What it deliberately does not do
+
+- **It never writes into a course.** The roster is read-only, permanently.
+- **A launch creates grants and never revokes one.** Somebody who leaves a course
+  keeps what they were given; withdrawing it is a person's decision.
+- **It never revokes or clears a grade** at the platform.
+- **Nobody signs in through a platform**, per the disabled provider row above.
+- **The private key is never exposed**, and no shape in the API has a field for
+  one.
+- **`target_link_uri` is captured and not validated.**
+- **Account creation from a launch is off**, and today it can only be changed in
+  the database — there is no endpoint and no screen for it.
+
+## When a launch is refused
+
+Nine codes, each arriving as `/lti/failed?reason=…` and each rendered by the
+Client as a sentence rather than a code. They are worth knowing because they are
+what an operator reads in a log.
+
+| Code | |
+|---|---|
+| `unknownPlatform` | no registration matched, or several did and the launch did not say which |
+| `platformDisabled` | registered and switched off |
+| `badState` | the launch did not follow an initiation this Server issued — also what a replay looks like |
+| `badToken` | the signature, issuer, audience, lifetime or nonce did not check out |
+| `unsupportedMessage` | not a resource-link or deep-linking request, or not LTI 1.3 |
+| `platformUnreachable` | the platform's key set could not be fetched |
+| `noActivity` | the placement carries no `activity=<slug>`, or names one that does not exist |
+| `notPublished` | the activity is not published, and the launch is not somebody who runs the course |
+| `sharingNotAcknowledged` | the activity is placed in more than one course and nobody has accepted that |
+
+**The state of a launch is a row, not a cookie**, and deliberately: Moodle
+implements none of LTI Platform Storage in any supported version. It is consumed
+by a delete, so a replayed launch and an expired one are one answer — a flag
+would let two requests both read *unused* and both proceed.

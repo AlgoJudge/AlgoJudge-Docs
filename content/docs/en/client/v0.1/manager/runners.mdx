@@ -1,0 +1,108 @@
+---
+title: Runners
+description: Approval, connection, and the tags that decide which machine gets which work.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A Runner is a machine that evaluates submissions. It registers itself with the
+Server, presenting a key of its own, and **evaluates nothing until it is
+approved**.
+
+## Approval and connection are two different facts
+
+The list shows them separately, and collapsing them into one "status" would hide
+both:
+
+- **approved but offline** is an outage;
+- **connected but not approved** evaluates nothing.
+
+A Runner is in one of three states — waiting for approval, approved, or revoked.
+**Approve** admits it. **Revoke** withdraws the key; the Runner must register
+again. A revoked one can be forgotten entirely.
+
+## What the screen shows, and who said it
+
+Everything except the tags is the Runner's **own report**: its product and
+version, the problem types it accepts, its address, its key fingerprint and
+public key, its machine, its completed jobs and when it was last seen. The screen
+displays the report and never fills a gap in it — a Runner that has never
+connected has no machine, and saying so is the honest answer.
+
+The fingerprint is for reading aloud when approving; the key itself is what a
+mismatch is diagnosed with.
+
+Whatever text files a Runner uploads about itself appear as tabs beside
+**General**, fetched when you open one.
+
+## Tags, and what they actually do
+
+<Callout type="warn" title="A Runner is given work when the two tag lists share at least one tag">
+Not *all* — **any**. Adding a tag to an activity **widens** the set of Runners
+that may take its work.
+</Callout>
+
+An empty list, on either side, is read as `default`. That single rule is the
+whole of the exclusivity:
+
+| Runner's tags | The work's tags | |
+|---|---|---|
+| `lab-a` | `lab-a` | judged |
+| `lab-a, gpu` | `lab-a` | judged |
+| `gpu` | `lab-a, gpu` | judged — one shared tag is enough |
+| `lab-a` | empty | **not** judged |
+| empty | `lab-a` | **not** judged |
+| empty | empty | judged — the behaviour before any of this existed |
+
+Read the fourth row twice. **Tagging a Runner takes it out of the general pool as
+surely as it puts it into a reserved one.** That is deliberate: reserving the
+machines in a laboratory has to make them unavailable to everything else, or the
+reserved machines would still be pulled into the general queue at the worst
+moment.
+
+`default` is ordinary text anybody may type, and typing it means exactly what
+leaving the field empty means. That is what lets one round be pulled back out of
+a course otherwise pinned to a laboratory, and what lets a machine serve the
+general pool *and* a reserved one at once.
+
+Tags are trimmed, lowercased and de-duplicated. Without the lowercasing, `Lab-A`
+on a machine and `lab-a` on an activity would be two pools reading as one, and
+the failure would be a queue that never drains with nothing on any screen to say
+why.
+
+### Where a job's tags come from
+
+The **series** if it sets its own, the **activity** otherwise. On the series, the
+switch *judged by its own Runners* is what makes the difference between
+inheriting and overriding, because an empty override and an inherited list would
+otherwise look identical. A round that wants the general machines while its
+course is pinned writes `default`.
+
+The tag usually belongs on the round rather than the course: pinning a whole
+course sends its homework to the laboratory too.
+
+Both screens count for you — *Runners reached: N*, and at zero the activity's
+own form says it in words instead: *no approved Runner carries any of these
+tags*. Neither refuses the save, because the tags are often typed before the
+machines are approved — but a zero left standing means submissions accepted,
+queued, and never judged.
+
+### Who owns a tag
+
+A Runner may suggest its pools in its own configuration, and the Server takes
+that at its **first** registration and never again. From then on this screen owns
+them — which is why a restart cannot change what work a machine is given.
+
+## Two filters you do not set
+
+Beside the tags, a job is offered to a Runner only if it accepts that **problem
+type**, and only if the two agree on whether the work is judged **externally**.
+Both come from the Runner's registration, and both describe what a machine is
+able to do rather than a decision somebody takes on a Tuesday.
+
+## The permissions
+
+Seeing this area is `runner:read`; approving is `runner:approve`, revoking is
+`runner:revoke`, and retagging is `runner:update`. None of them is in the shipped
+`manager` template — they are installation-wide, like the machines. Installing
+and running a Runner at all is [Install and operate](/en/install).

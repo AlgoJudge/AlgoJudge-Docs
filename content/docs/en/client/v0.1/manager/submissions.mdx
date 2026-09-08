@@ -1,0 +1,126 @@
+---
+title: Submissions
+description: Finding one, seeing where it came from, judging it again, and ruling it out.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The **Submissions** area lists every submission in the installation, across
+activities.
+
+## Finding one
+
+Filter by activity, then by series inside it, by state, or by a search on the
+user or the problem. **The filters are in the address**, so *look at this
+participant's attempts on B* is a link you can paste into a message.
+
+The list shows the state, the verdict, the score, the number of attempts, and a
+badge on anything that is **not counted**.
+
+## What one submission holds
+
+Opening it gives you the source, read-only, with its checksum; every **attempt**
+it has had, with the Runner that ran each one; and, per attempt, the result drawn
+by the same renderer the participant gets, plus the evaluation log.
+
+A manager sees every attachment an attempt produced, whatever the activity's
+visibility table says. That table decides what reaches a **participant**; the log
+was kept for whoever runs the activity.
+
+### Where it came from
+
+Three facts, when the Server still has them:
+
+| | |
+|---|---|
+| address | the address the submission arrived from |
+| browser | the browser said it was this one |
+| session | the browser session it was sent in |
+
+Each is absent on its own terms — the address and the browser once the retention
+window has passed, the session on the very first request a brand-new browser
+makes.
+
+<Callout type="warn" title="The browser is a hint, not proof">
+A page writes it, so it is forgeable, and a room of machines imaged from one disk
+reports one value for all of them. What it answers is *the same browser, two
+accounts* — nothing stronger.
+</Callout>
+
+## Rejudging
+
+**Rejudge** queues another evaluation. With a series filter set, the list also
+offers a rejudge of the whole series and tells you how many were queued.
+
+A **rejudge adds an attempt; it never rewrites the one that was shown.** The
+earlier attempt keeps its result and its log, and both stay on the screen. An
+unfinished attempt can be cancelled; a finished one cannot.
+
+What happens to the earlier attempt depends on how far it had got:
+
+- **It had not been picked up yet.** It is marked `superseded` and leaves the
+  queue with the rejudge. Without that, one submission had two attempts waiting
+  and two Runners took them — the same source judged twice, and where the Runner
+  forwards, the same solution sent twice to somebody else's service. A
+  superseded attempt is over and cannot be cancelled.
+- **A Runner is judging it.** It is left alone and finishes normally, keeping
+  its result and its attachments; the new attempt waits behind it and starts the
+  moment it reports. Cancelling an evaluation in flight would throw away work
+  already done, and on a forwarding Runner a submission already spent.
+- **It had finished.** Nothing changes. That is the ordinary case, and the
+  sentence above is about it.
+
+Rejudging is `submission:rejudge`; cancelling is `submission:cancel`. Both are in
+the shipped `manager` template.
+
+## Ruling a submission out of the standings
+
+**Do not count** is a judge's ruling: a solution sent from outside the
+examination room, an attempt that turned out to be somebody else's, a run against
+a package that was wrong.
+
+It asks for a **reason**, because the reason is the point — a judge reading this
+row in a month needs to know why.
+
+<Callout type="warn" title="The reason is not private to staff">
+It is seen by managers, and it is also part of the participant's own data export.
+Write it as something they may read.
+</Callout>
+
+What the ruling does, and does not do:
+
+| Keeps | Loses |
+|---|---|
+| its verdict | its place in the ranking |
+| its place in the list, and its attempts | the participant's best score |
+| **the allowance it spent** | the grade sent to an LMS |
+
+**An exclusion is not a refund.** The submission stays counted against the
+submission limit. A manager who means to give an attempt back raises the limit,
+visibly and as a separate act — refunding here would be a second way to move a
+ceiling, and one nobody can see.
+
+**Count it again** lifts the ruling and clears the reason with it: a sentence
+explaining a state that no longer holds is worse than none.
+
+The permission is `submission:exclude`. It is in the shipped `manager` template
+and separate from `submission:rejudge` on purpose — rejudging asks the Runner to
+look again, excluding decides an outcome by hand, and an installation that wants
+to hand out one without the other can.
+
+### What the participant sees
+
+Their submission is still there, with its verdict and its attempts, and it is
+**marked** — without the marker their screen and the ranking would describe one
+submission differently, with no way to find out why. The reason is not on their
+screen, but it is in their own data export.
+
+What changes is every place a standing is computed: their best score and status
+on the problem page and in the round list, and the board. A board somebody
+already has open is told to refetch rather than sent a correction, because a
+merge cannot remove a row.
+
+The grade sent to a course platform is corrected one sweep later rather than on
+the click. A contestant who stops earning is carried back in at **zero**: leaving
+them out of the computation would leave the platform holding the old mark for
+ever.

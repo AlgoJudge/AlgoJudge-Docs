@@ -1,0 +1,107 @@
+---
+title: File and FileReference
+description: Immutable bytes with a checksum, and the references that say what they are for and who may read them.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Two rows again, and the split earns its keep: `File` is bytes, `FileReference`
+is what those bytes are **for**.
+
+The same bytes may be referenced twice — carrying a figure forward into a new
+[problem version](/en/server/v0.1/concepts/problem) is a second reference, not a
+second upload. A scope column on the file would force a copy just to change who
+may read it.
+
+## File
+
+| Field | Meaning |
+|---|---|
+| `Name` | the name as uploaded, e.g. `main.cpp`. For a person to read |
+| `MimeType` | |
+| `SizeBytes` | counted by the Server as it stored them |
+| `Sha256` | lowercase hexadecimal SHA-256 of the stored bytes |
+| `StorageId` | which configured store holds these bytes |
+| `UploadedByUserId` | |
+| `UploadedByRunnerId` | set instead when a Runner uploaded it, which carries a token rather than a session. At most one of the two |
+
+**Bytes are immutable.** There is no replace: a corrected file is a new upload
+with a new id. That is what lets a pinned problem version mean something, and
+what licenses a permanent cache header.
+
+`SizeBytes` is never asked of the backend at read time and never taken from a
+caller: it is what makes a `Range` request answerable without a round trip, so
+it has to be the number this Server itself saw.
+
+`StorageId` names a **store, not a kind of backend**. A deployment may run
+several of the same kind — two buckets, two volumes — and the day one is
+retired, *which files are still in there* has to be a question the database can
+answer. A column saying `s3` could not.
+
+A file that no reference points at is readable by its uploader alone, which is
+what makes the two-step publish safe: between the upload and the version being
+published, the bytes exist and nobody else can see them. An unreferenced file is
+collected after twenty-four hours.
+
+### `sha256`
+
+<Callout type="warn" title="The field is `sha256`, never `hash`">
+The Client computes it, the Server **recomputes** it and refuses a mismatch with
+`422 checksum_mismatch`, and a Runner verifies it before evaluating.
+
+Since the bytes left the database it is not only a check but a coordinate: the
+store derives the path from it, so a row whose checksum was edited would point
+at nothing.
+</Callout>
+
+A checksum that arrives with the bytes is a claim, not evidence. What the
+recomputation buys is a truncated upload rejected as corrupt rather than judged
+as a wrong answer.
+
+## FileReference
+
+| Field | Meaning |
+|---|---|
+| `FileId` | the bytes |
+| `OwnerKind` | what this reference hangs off |
+| `Scope` | `Participant`, `Manager` or `Runner` — who may read the file through this reference |
+| `Name` | the name **within the owner** — `content.md`, `source`, `log`, `details`, `package.zip` |
+| `Language` | BCP-47 subtag, where an owner keeps one document per language |
+| `ValidFrom`, `SupersededAt` | revisions of an instance or activity document |
+
+`Scope` is the most security-relevant column in the schema — manager scope is
+where model solutions live — and it is checked when access is granted, never
+applied as a filter some later endpoint forgets. `GET /files/{id}` is allowed
+when **at least one reference to it is readable by the caller**.
+
+The word means different audiences for different owners. Under a submission,
+`Participant` means **its author**: the word that publishes a statement to a
+whole activity publishes a compiler log to exactly one reader.
+
+`Name` is what an activity's attachment rules key on, never the uploaded file
+name.
+
+### Owner kinds
+
+`ProblemVersion`, `ActivityDocument`, `InstanceDocument`, `InstanceLogo`,
+`Runner`, `Submission`, `Attempt`, `InstanceTheme`, `InstanceFont`.
+
+Exactly one owner column is set, and a check constraint holds it to agreeing
+with `OwnerKind`. The discriminator sits **beside** typed foreign keys rather
+than instead of them: a bare `(kind, id)` pair cannot be a foreign key, and this
+is the one table where a dangling row means handing somebody a model solution.
+The cost is stated plainly — a new owner kind is a migration, not a new enum
+value.
+
+### Well-known names
+
+| Name | Owner | What it is |
+|---|---|---|
+| `content.md` | problem version | the statement. **The Server has no statement concept** — this is a name the Client understands |
+| `source` | submission | what was sent |
+| `log` | attempt | what one run said |
+| `details` | attempt | the per-test document |
+
+A superseded document reference is marked, never deleted: deleting it would
+leave the file it names with no reference at all, and an unreferenced file goes
+in twenty-four hours.

@@ -1,0 +1,263 @@
+---
+title: Backup
+description: What the dump covers, what it carries, and the two bounds that keep a backup directory from becoming the outage.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+```bash
+./scripts/backup.sh                 # what cron runs
+./scripts/backup.sh --quiesce       # with the installation closed
+```
+
+**`pg_dump` does not need the Server stopped.** It produces a transactionally
+consistent dump from a running database, so the nightly run costs no outage and
+`--quiesce` is off by default. Use it before a migration or a restore rehearsal,
+where "no evaluation in flight" is worth an outage.
+
+Every run dumps to a `.partial`, verifies it, renames it, writes a `.meta`
+beside it, rotates, and reports any overdue hold.
+
+## Read this on the day you set backups up
+
+<Callout type="warn" title="A dump of the database is enough to mint a session cookie for any account">
+The keys that encrypt every session cookie live in the installation's own
+database. A dump therefore carries the accounts **and** the means to sign in as
+any of them.
+
+Nothing was weakened. Keys that survive a restart are the point: without them
+every restart signed everybody out, and a second instance could not read a cookie
+the first had minted. But **an installation that hands its backups to a third
+party, or keeps them where the database is not, is making a different decision
+than it was.**
+</Callout>
+
+A dump also carries every password hash, every uploaded file, and — if you have
+registered one — a usable client secret for each identity provider. Handle it as
+you would handle the database itself.
+
+**The script writes dumps `0600` and their directories `0700`**, so a dump is
+readable by the account that took it and by root, and by nobody else on that
+host. That is the file mode only: what happens to a copy once it leaves the host
+is the decision above.
+
+If one leaks, the sessions minted under those keys are the urgent part:
+
+```bash
+docker compose exec -T server aj-admin keyring revoke --yes
+```
+
+That signs everybody out, everywhere, and is the point of it. A key that has
+been revoked cannot mint a cookie this Server will accept. With several
+instances it takes effect where it was run at once, and elsewhere when their key
+ring next refreshes.
+
+### The certificate is the mitigation, and here is what it does not do
+
+The key ring can encrypt itself with a certificate you supply
+(`DataProtection:Certificates:0:Path` and `:Password`). Without one the keys are
+stored as plain XML. That is accepted and documented rather than hidden: whoever
+can read that table can also write a row into the users table, so the certificate
+buys less than it looks. It is there for an installation whose database is
+somebody else's to hold.
+
+Two things about it contradict what a reader would expect.
+
+- **Turning it on later is neither disruptive nor effective.** Adding the
+  setting to an installation that already holds a key leaves sessions working and
+  leaves that key **plaintext**. Data Protection encrypts a key when it *writes*
+  one, and it writes one only near the current key's expiry — **ninety days
+  out**.
+- **Having an encrypted key today therefore means emptying `DataProtectionKeys`
+  and restarting, which signs everybody out once**, because the key their cookie
+  was minted under is gone. `aj-admin keyring rotate` writes a new key now
+  without signing anybody out, but the old plaintext key stays readable — which
+  is exactly what makes rotating non-disruptive, and exactly why a backup taken
+  afterwards still carries something that can mint a cookie.
+
+<Callout type="warn" title="The absence of the warning proves nothing">
+*"No XML encryptor configured. Key \{id\} may be persisted to storage in
+unencrypted form."* is logged when a key is **created**. An installation running
+on a key made months ago logs nothing at all, so a clean log says nothing about
+whether the keys are encrypted.
+
+Ask the tool instead:
+
+```bash
+docker compose exec -T server aj-admin keyring status
+```
+
+It reports which arrangement is in force, every key with its dates, whether each
+is stored encrypted or plain, and **whether this Server can still read it** —
+which is also the only check that catches a certificate that was dropped instead
+of kept. Reading a key's descriptor is what decrypts it, so a key encrypted with
+a certificate nobody supplies any more fails exactly there. Without asking, the
+only symptom is everybody being signed out, after the fact.
+</Callout>
+
+`AlgoJudge-Ops` names no key-ring setting in its `.env.example`, so an
+installation that wants the certificate configures it on the Server service
+itself — the two settings are on [Server configuration](/en/server/configuration).
+What it wants is a PKCS#12 file carrying its private key:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+    -keyout keyring.key -out keyring.crt -subj "/CN=algojudge-key-ring"
+
+openssl pkcs12 -export -inkey keyring.key -in keyring.crt \
+    -out keyring.pfx -passout pass:the-password-you-will-configure
+```
+
+Mount it read-only and point the setting at it. A certificate that is missing,
+unreadable, or carries **no private key** stops the Server at startup rather than
+at the first sign-in — the last of those would otherwise encrypt a ring it could
+never read back.
+
+**Rotating means prepending and keeping the old one.** The first certificate
+listed encrypts new keys; every one listed can still decrypt old ones. Dropping
+the old certificate makes the keys written under it unreadable, which looks
+exactly like having no key ring at all — and `keyring status` is what tells you
+apart, because it reports whether this Server can still read each key.
+
+So `keyring rotate` is what to run **after** putting a certificate in place on
+an installation that already had keys — the section above says why the setting
+alone changes nothing for ninety days.
+
+## What the dump does and does not cover
+
+**With `STORAGE_KIND=postgres` — the default — the dump is the whole of the
+installation's state.** That is why it is the default: one thing to back up.
+
+With `filesystem` or `s3` it is not. `backup.sh` warns on every run and records
+`coverage=INCOMPLETE` in the `.meta` beside the dump, rather than producing
+something that restores to an installation whose rows point at bytes that are not
+there — which presents as a 503 on every download, with nothing naming the cause.
+
+Back the store up in the same window, or move the files into the database:
+
+```bash
+docker compose exec -T server aj-admin storage status
+docker compose exec -T server aj-admin storage migrate
+```
+
+`storage migrate` moves what is already stored; changing the default store only
+decides where the next upload goes. It waits for its window and for the
+evaluation queue to empty, so nothing moves under a running contest. Take a
+backup first. [Where the files go](/en/install/v0.1/storage) is the whole of it.
+
+## Verified before it is named
+
+Two checks, because the cheap one does not prove what it looks like it proves.
+
+- **`pg_restore --list`** runs on every dump. A custom-format archive keeps its
+  table of contents at the front, so this succeeds on a file truncated half way
+  through the data — it reads the header and stops. It is still worth running: it
+  catches an empty file, a write that failed on the first block, and anything that
+  is not a PostgreSQL archive at all.
+- **`BACKUP_VERIFY_FULL=true`** reads every block back. That costs a full
+  decompression pass on every backup. Worth having while the database still fits
+  in a coffee break; not worth blocking a nightly run on once it does not.
+
+A dump that fails either check is **deleted** rather than kept as a backup that
+is not one.
+
+## Retention: two bounds, and neither alone is enough
+
+The count policy answers *how far back can I go*; the size budget answers *how
+much disk will this cost*. A backup directory that fills the disk stops
+PostgreSQL writing, which turns a safety mechanism into the outage it was meant
+to prevent.
+
+| Bound | Set by | |
+|---|---|---|
+| Count | `BACKUP_PRESET` | how far back the history reaches |
+| Size | `BACKUP_MAX_TOTAL_GB` | how much disk it may cost |
+| Floor | `BACKUP_MIN_KEEP` | never dropped, whatever the size says |
+
+The presets are `minimal` (3/2/0, about two weeks), `standard` (7/4/2, about two
+months) and `extended` (14/8/3, about four months).
+
+**One dump is taken per run.** `daily`, `weekly` and `monthly` are not three
+kinds of dump on three schedules — they are three **survival rules** applied to
+the one series of files that exists, and a file no rule claims is deleted.
+
+| Rule | Keeps |
+|---|---|
+| `BACKUP_KEEP_DAILY` | the newest dump of each of the last N **days on which a dump exists** |
+| `BACKUP_KEEP_WEEKLY` | the newest of each of the last N ISO weeks |
+| `BACKUP_KEEP_MONTHLY` | the newest of each of the last N months |
+
+They are a **union of sets, not a sum of counts**. One file can satisfy all three
+and is then stored once. Measured on a 60-day fixture, `standard` settles at
+**eleven** files, not the thirteen a naive sum suggests — today's dump is
+simultaneously the newest daily, the newest of its week and the newest of its
+month. The exact number moves with where today falls in the week.
+
+**"Days on which a dump exists", not "the last N calendar days."** A host
+switched off for a fortnight would, under the calendar reading, come back with no
+daily history at all. Under this one it comes back holding its seven most recent
+dumps, merely spread over a longer span.
+
+**Rotation order** is the count policy first, then — while the directory still
+exceeds the size budget — drop the oldest remaining, but **never below the
+floor**. If even the floor will not fit, the run says so and keeps what it has.
+
+<Callout type="warn" title="If there is no room for the new dump, the run fails and makes none">
+Deleting a known good backup in order to attempt a new one is the single worst
+thing a backup script can do, so it does not. `BACKUP_FREE_SPACE_RESERVE_GB`
+is the margin it insists on leaving.
+</Callout>
+
+## Deep history is a named hold, not deep rotation
+
+```bash
+./scripts/backup.sh --keep end-of-semester --until 2027-03-01
+```
+
+Writes into `backups/keep/`, which **rotation never touches**. For the end of a
+contest, the end of a term, and the moment before a large migration.
+
+**`--until` is mandatory and it is a review date, not a deletion date.** Nothing
+in `keep/` is ever removed automatically — deleting a copy somebody deliberately
+preserved is not a decision a cron job may take. What happens instead is that
+**every overdue hold is reported on every run**, so each deep copy stays a
+conscious, renewed decision. That is what stops named holds quietly
+reintroducing the deep history the size bound removed: a rotation reaching two
+months means nothing if an unreviewed hold from three years ago sits beside it.
+
+It is also why the monthly count is two rather than six. A rotated monthly dump
+does not record *why* it exists, so months later nobody can judge whether it may
+go; a labelled hold with a review date answers both questions by itself.
+
+`keep/` counts towards the size budget and is warned about past half of it,
+precisely because nothing deletes it for you.
+
+## Contests
+
+One dump a day means a failure during a round costs the whole round. Run
+`backup.sh` **before a round opens and after the results are frozen**, and
+shorten the interval for the duration of a long contest. A dump taken while a
+round is open is safe: `pg_dump` does not block.
+
+## Erasure, and how long somebody stays in the backups
+
+**Deleting an account is anonymization, and backups are not re-anonymized.** A
+dump taken before it still carries the person's name and address, so restoring it
+returns somebody who exercised erasure in the meantime. Identity is not confined
+to the user row either: it also sits in source comments, question bodies and
+filenames, all of which a dump preserves untouched.
+
+**Backups are not edited to remove a person.** Excising rows destroys the
+property that makes a dump a backup — that it restores to a consistent state —
+and leaves nobody able to say whether it still works. What is done instead:
+
+1. **The window is short.** `standard` reaches about two months.
+2. **Named holds carry a review date**, so the ceiling is not silently lifted by
+   an archive nobody revisits.
+3. **The privacy policy says so**: that backups exist, that they are restored
+   only whole and only after a failure, and that data leaves them by the copy
+   expiring rather than by surgery on it.
+
+Point 3 is not something a script can do for you. The privacy policy is your
+installation's own document and you are its data controller. Keep
+`BACKUP_PRESET` no longer than the retention window that policy states.

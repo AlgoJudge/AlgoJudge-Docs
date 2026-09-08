@@ -1,0 +1,167 @@
+---
+title: What a Runner is
+description: The machine that evaluates submissions, how it joins an installation, and why it needs no inbound port.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A Runner is a machine that evaluates submissions. It takes a job, runs and marks
+it in isolation, and reports the result. It is the only part of AlgoJudge that
+executes code somebody else wrote.
+
+An installation may have any number of Runners, on any number of hosts, and they
+need not be the same implementation. The Server depends on none of them in
+particular.
+
+## It opens every connection itself
+
+The Server never calls a Runner. Every request travels outwards: registration,
+the handshake, asking for work, renewing a lease, uploading a log, reporting a
+result, giving a job back.
+
+Two consequences worth having early:
+
+- **A Runner needs no inbound port and no address of its own.** It works from
+  behind a domestic router, from a laboratory behind NAT, from a laptop.
+- **A Runner is not something an installation can reach out to.** Nothing can be
+  pushed to it, and there is no way to ask it a question. What the manager panel
+  shows about a Runner is what that Runner last reported.
+
+## Joining an installation
+
+A Runner holds an **Ed25519 key pair it generates once**, on first start, at
+`AJ_Runner__KeyPath` — `/var/lib/algojudge-runner/identity.key` by default. The
+Server knows the machine by the fingerprint of that key.
+
+The sequence is always the same:
+
+| | |
+|---|---|
+| 1 | The Runner generates a key if it has none, and registers. |
+| 2 | The registration is stored as `pendingApproval`. |
+| 3 | **An administrator approves it** in the manager panel. |
+| 4 | The Runner signs a challenge, receives a token, and starts asking for work. |
+
+**Step 3 has no timeout, and waiting for it is not a fault.** A Runner that has
+registered and not yet been approved logs *"this Runner has not been approved
+yet"* and keeps asking, on the same backed-off, jittered interval it uses for an
+empty queue. It does not exit. A process that gave up because nobody had got to
+the panel yet would need something else watching it.
+
+Point a Runner at a Server that is not up yet and the same thing happens: it
+waits. A Compose stack brings both up at once, and the one that wins the race
+must not exit before the other has finished migrating.
+
+### Restarting is registering again
+
+A Runner registers on every start. That is how a restart is reported, and how
+the name, version, problem types and machine facts in the panel are refreshed.
+It does not produce a second Runner and does not need a second approval — the
+key is the identity.
+
+**One field is not refreshed: the tags.** See [Tags and
+routing](/en/runner/v0.1/routing).
+
+<Callout type="warn" title="The key is immutable — there is no rotation">
+A Runner's key is generated once and cannot be changed in place. Revocation is
+permanent: a revoked key is refused at registration and never comes back.
+
+A leaked key is therefore handled by revoking it and letting the Runner return
+as a **new identity** — a new key file, a new registration, and a new approval.
+The same is true of a lost key file: losing it costs a re-registration and an
+administrator's attention, which is why it belongs on a volume.
+</Callout>
+
+## There is no WebSocket for a Runner
+
+The Client has a socket. A Runner does not, by decision rather than by omission.
+
+A Runner **polls** for work, and by default asks the Server to **hold the
+request open** rather than answer an empty queue at once — so a submission is
+taken as it arrives rather than at the next ask. When that wait runs out the
+answer is `204 No Content` and the Runner asks again immediately. It sleeps only
+after a failure, or after an answer that came back unheld: between
+`AJ_Poll__MinSeconds` and `AJ_Poll__MaxSeconds`, backed off and jittered so a
+room of machines started together does not ask in one burst.
+
+**An empty queue is the ordinary state of a Runner, not an error.** A `204` in a
+log means the Server had nothing to give, and nothing more. Polling was chosen
+because it survives a dropped connection with no reconnection logic and cannot
+deliver a job twice; a socket would only change *when* a Runner learns there is
+work, never *how* it takes it.
+
+An empty queue is also the answer while the Server is [draining for
+maintenance](/en/protocol/availability), and the answer when the queue holds work
+this Runner is not eligible for. **A Runner cannot tell those cases apart**, and
+that is the single most common reason for a queue that looks stuck — see [Tags
+and routing](/en/runner/v0.1/routing) and [Forwarding to an external
+judge](/en/runner/v0.1/external).
+
+## Stopping one
+
+**A Runner told to stop gives its job back before it goes.** On `SIGTERM` — what
+`docker stop`, `docker compose down` and `systemctl stop` all send — it stops
+the evaluation it is running, tells the Server the job is free, clears the
+containers it had started, and exits.
+
+The job is claimable by another Runner **that instant**, and the delivery is not
+counted against the submission: an operator restarting a fleet is not spending a
+participant's attempts. Without that the job waits out its lease, which is ten
+minutes by default, while every idle Runner in the installation waits with it.
+
+**The word reaches every wait, not only an evaluation.** A Runner sitting out a
+maintenance window, carrying a result the Server has not taken yet, or waiting
+for somebody to press approve exits on `SIGTERM` like any other — none of those
+waits outlasts the grace a container runtime allows, which matters because a
+kill is not a slower release but none. And a job the Server hands over at the
+very instant of a stop is settled and released rather than dropped with the
+Server already committed to it.
+
+**The work already done on that submission is lost and redone** by whoever
+claims it next. There is no way around that — the evaluation lives in containers
+on the host being stopped — so the cost of restarting a fleet mid-contest is
+measured in the submissions that were in flight, not in the queue behind them.
+
+**Give it time to say all that.** The calls take seconds, but a grace period
+shorter than they need turns a stop back into a kill, and a killed Runner leaves
+its job to the lease. `AlgoJudge-Ops` ships `stop_grace_period: 30s` for this.
+
+**The External Runner does the same, for every job at once.** It holds a pool
+rather than one job, so a stop hands back up to twenty of them — and what it
+cannot take back is the submission already sitting on somebody else's service.
+[Forwarding to an external judge](/en/runner/v0.1/external) has that in full.
+
+A Runner stopped a fourth time while holding the same job stops being free: a
+Runner crash-looping under a supervisor gives a job back exactly as an operator's
+restart does, and the Server cannot tell them apart except by how often it
+happens. Past three the job spends a delivery like any other, and the delivery
+cap ends it.
+
+## What a Runner needs from the host it runs on
+
+Summarised here, stated in full in [Isolation and the
+host](/en/runner/v0.1/isolation):
+
+- a container runtime whose socket the Runner can reach — job containers are
+  **siblings** of the Runner, never nested inside it;
+- **cgroup v2**, checked at start, with either cgroup driver;
+- the host's cgroup tree, and **root** in its own container, to measure from it;
+- `linux/amd64`;
+- the four language images, without which it judges nothing;
+- outbound access to the Server, and nothing else.
+
+## The rest of this section
+
+| | |
+|---|---|
+| [Configuration](/en/runner/v0.1/configuration) | every `AJ_` variable, with its default |
+| [Tags and routing](/en/runner/v0.1/routing) | which Runner is given which work |
+| [Isolation and the host](/en/runner/v0.1/isolation) | what contains a submission, and what the host must provide |
+| [Languages](/en/runner/v0.1/languages) | the toolchains that ship, and how they are named |
+| [The policy profile](/en/runner/v0.1/policy) | what a Runner refuses to compile, and why |
+| [Problem types](/en/runner/v0.1/problem-types) | what this Runner evaluates |
+| [Forwarding to an external judge](/en/runner/v0.1/external) | the Runner that judges nothing |
+
+Somebody writing a Runner of their own wants [Protocol](/en/protocol) instead:
+this section describes the implementation that ships, that one describes the
+contract any implementation must meet.

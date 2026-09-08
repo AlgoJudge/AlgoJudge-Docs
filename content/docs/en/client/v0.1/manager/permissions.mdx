@@ -1,0 +1,182 @@
+---
+title: Permissions and grants
+description: How rights are written, how they resolve, and the three rules that make the model safe.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+import { Mermaid } from "@/components/mermaid";
+
+## The form
+
+A permission is a string:
+
+```
+resource:operation[:qualifier]
+```
+
+`submission:read:all`, `activity:enroll`, `problem:read:own`. The qualifier is
+part of the operation rather than a separate ownership test — *own* and *all* are
+two different permissions, not one permission evaluated against a predicate.
+
+A **grant** holds a set of them and is scoped to exactly one of two things:
+
+- the **whole installation**, where it applies in every activity;
+- **one activity**, where it also *is* the membership. See
+  [Enrolment](/en/client/v0.1/manager/enrolment).
+
+The same string means the same thing at either scope. What changes is how far it
+reaches.
+
+## How they resolve
+
+In this order:
+
+1. **An activity grant carrying the override flag is the whole answer inside its
+   activity.** Nothing else applies there — not even `system:administrator`.
+2. Otherwise `system:administrator`, held in any system contribution, bypasses
+   every permission check.
+3. Otherwise the effective set is the **union**: every system contribution, plus
+   the activity grant when one activity is being asked about.
+
+<Mermaid chart={`
+flowchart TD
+    q(["May this person do X?"])
+    q --> scope{"Is the question<br/>about one activity?"}
+    scope -->|no| adm
+    scope -->|yes| ovr{"Does their grant there<br/>carry the override flag?"}
+    ovr -->|yes| whole["That grant is the whole answer.<br/>Nothing else applies there, not even system:administrator"]
+    ovr -->|no| adm{"Does any system contribution<br/>carry system:administrator?"}
+    adm -->|yes| bypass["Allowed: it bypasses every permission check.<br/>Membership is not a permission, so submitting<br/>still needs a grant in the activity"]
+    adm -->|no| union["The union of every system contribution,<br/>plus the activity grant when one activity is in question"]
+`} />
+
+**Rule 2 bypasses permissions, and membership is not one.** Submitting needs an
+active grant in the activity itself, so an administrator who holds only a system
+grant is refused there like anybody else — and an activity grant is what being
+enrolled means.
+
+<Callout type="warn" title="There is no subtraction anywhere in the model">
+System scope is a union of contributions and is purely additive. An activity
+grant either overrides it wholesale or adds to it. There is no way to write *a
+manager, minus this one thing* as a subtraction — the way to say it is a smaller
+set, or the override.
+</Callout>
+
+### System scope is several rows
+
+At system scope a person holds one contribution per source: **one assigned by
+hand, plus one per linked identity provider**. The list marks a managed
+contribution with the provider it came from.
+
+A managed contribution is **rewritten from that provider's mapping at every
+sign-in and cannot be edited by hand**. An edit would last until that person next
+signed in, and a change that silently reverts is worse than a refusal. Change the
+provider's mapping instead — see [External logins](/en/client/v0.1/manager/logins).
+
+### The override flag
+
+On an activity grant, *this grant is the whole answer inside the activity*. It is
+how "a manager everywhere, except in this contest, where I compete" is said.
+
+Two things about it are worth knowing before you set one:
+
+- **Setting it on somebody who holds system permissions demotes them there.** The
+  dialog warns you at the moment of the act, because the first sign of it
+  otherwise is a manager who has quietly lost a screen.
+- **It can strand its holder.** Inside that activity they are whatever the grant
+  says — typically a participant, holding no `grant:update` — so clearing it
+  needs another manager of that activity, or an administrator.
+
+An administrator's rights still cannot be trimmed from below: only an
+administrator may have set the flag on an administrator's grant.
+
+## Three rules the Server enforces, and you cannot turn off
+
+**Nobody may grant a permission they do not themselves hold.** Without it the
+model is decorative — anybody who could edit a grant could write
+`system:administrator` into it. The editor offers only what you hold, and the
+Server refuses the rest whatever the screen did.
+
+Inside an activity, "what you hold" means **what you hold in that activity**,
+which is not the same set as your rights across the installation.
+
+**`system:administrator` is unreachable through a claim mapping.** A mapping
+decides what an external directory's group is worth here, and a directory must
+never be able to mint an administrator. Both halves are guarded: a mapping rule
+cannot point at a template that carries it, and a template that is already mapped
+cannot have it added.
+
+The same rule applies to mapping as to granting: nobody may map onto a permission
+they do not themselves hold.
+
+**The installation cannot be left without an administrator.** Revoking the only
+active system grant that carries `system:administrator`, rewriting it so it no
+longer carries the key, and putting that row back to *invited* are one act in
+three spellings, and the Server refuses all three. Grant the key to somebody
+else first; the moment a second active system grant carries it, the first is an
+ordinary row again.
+
+## Templates
+
+A template is a named set of permissions. **It fills a new grant in and is then
+forgotten** — the grant holds a copy, and the template's name is kept beside it
+only as a label saying where the set started.
+
+<Callout type="warn" title="Editing a template reaches nobody who already used it">
+This is the reasonable but wrong assumption, and the screen says so at the top.
+If you need to change what a hundred people hold, you change their grants, not
+the template they came from.
+</Callout>
+
+The **Permission templates** area lists them, and marks the ones that ship as
+built-in; those cannot be deleted, because removing one would leave a fresh
+installation nothing to grant from.
+
+### The three that ship
+
+**`participant`** — seven permissions, and this is exactly what an ordinary
+participant holds:
+
+```
+activity:read
+submission:read:own
+submission:create
+result:read:own
+question:read:own
+question:create
+ranking:read
+```
+
+**`manager`** — everything a participant has, plus what is needed to run an
+activity: updating and archiving it, enrolling people, the problem library
+(`read:own`, `create`, `update`, `share`, `archive`, `attach`), everybody's
+submissions and their source, rejudging, cancelling and excluding, everybody's
+results and logs, every question with answering and publishing, announcements,
+reading and lifting a ranking freeze, temporary accounts, and reading and
+updating grants.
+
+Deliberately **not** in it: `activity:create`, `activity:delete`,
+`problem:read:all`, `problem:delete`, `problem:import:external`, `user:*` beyond
+temporary accounts, `template:*`, `runner:*`, `instance:update`,
+`provider:manage` and `trial:run`. A manager runs an activity; they do not run
+the installation.
+
+**`admin`** — one entry, `system:administrator`. One, because it bypasses the
+rest: an administrator with a list of individual permissions is an administrator
+who can be quietly trimmed, and that is the surprise the model is built to
+avoid.
+
+## Where grants are edited
+
+Two screens, one table behind them.
+
+- The **Grants** area lists every grant in the installation, filterable by scope
+  and by activity, and is where a system-scope grant is made.
+- An activity's **Participants** tab is the same rows filtered to that activity,
+  and is where enrolment happens.
+
+A grant is also what decides whether somebody is **staff**: the Server computes
+that on every write from the permissions in the set — anything beyond the
+participant seven, `trial:run` excepted — and staff are absent from the
+participant count and from the ranking.

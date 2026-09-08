@@ -1,0 +1,126 @@
+---
+title: Zgłoszenia
+description: Jak je znaleźć, skąd przyszły, jak ocenić ponownie i jak wyłączyć z rankingu.
+source: en/client/v0.1/manager/submissions.mdx
+sourceSha256: 20d5ad4ef4001fc80bd81450d054f839eb3bd5171f9611799d84930c869fb29f
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Obszar **Zgłoszenia** wypisuje wszystkie zgłoszenia w instalacji, ze wszystkich
+aktywności.
+
+## Szukanie
+
+Filtruj po aktywności, potem po serii wewnątrz niej, po stanie albo szukając po
+użytkowniku lub zadaniu. **Filtry są w adresie**, więc *spójrz na próby tego
+uczestnika w zadaniu B* jest linkiem, który wkleisz w wiadomość.
+
+Lista pokazuje stan, werdykt, punkty, liczbę prób oraz plakietkę przy wszystkim,
+co jest **nieliczone**.
+
+## Co zawiera jedno zgłoszenie
+
+Otwórz zgłoszenie, a zobaczysz kod źródłowy — tylko do odczytu, z sumą kontrolną
+— każdą **próbę**, jaką miało, wraz z Runnerem, który ją wykonał, a przy każdej
+próbie wynik narysowany tym samym komponentem co u uczestnika oraz log oceny.
+
+Prowadzący widzi każdy załącznik, jaki wytworzyła próba, cokolwiek mówi tabela
+widoczności w aktywności. Tamta tabela decyduje o tym, co dociera do
+**uczestnika**; log zachowano dla tego, kto prowadzi aktywność.
+
+### Skąd przyszło
+
+Trzy fakty, o ile Server jeszcze je ma:
+
+| | |
+|---|---|
+| adres | adres, z którego przyszło zgłoszenie |
+| przeglądarka | przeglądarka podała się za tę |
+| sesja | sesja przeglądarki, w której je wysłano |
+
+Każdy z nich znika na własnych warunkach — adres i przeglądarka po upływie okna
+retencji, sesja przy pierwszym żądaniu zupełnie nowej przeglądarki.
+
+<Callout type="warn" title="Przeglądarka jest wskazówką, a nie dowodem">
+Wpisuje ją strona, więc da się ją podmienić, a sala maszyn zrobionych z jednego
+obrazu dysku raportuje jedną wartość dla wszystkich. Odpowiada na pytanie *ta
+sama przeglądarka, dwa konta* — i na nic mocniejszego.
+</Callout>
+
+## Ponowna ocena
+
+**Oceń ponownie** kolejkuje kolejną ocenę. Przy ustawionym filtrze serii lista
+oferuje też ponowną ocenę całej serii i mówi, ile zgłoszeń zakolejkowano.
+
+**Ponowna ocena dokłada próbę; nigdy nie nadpisuje tej, którą już pokazano.**
+Wcześniejsza próba zachowuje swój wynik i log, i obie zostają na ekranie.
+Niezakończoną próbę możesz anulować; zakończonej nie.
+
+To, co dzieje się z wcześniejszą próbą, zależy od tego, jak daleko zaszła:
+
+- **Nikt jej jeszcze nie podjął.** Zostaje oznaczona jako `superseded` i razem z
+  ponowną oceną znika z kolejki. Bez tego jedno zgłoszenie miało dwie czekające
+  próby i brały je dwa Runnery — ten sam kod oceniony dwa razy, a przy Runnerze
+  przekazującym to samo rozwiązanie wysłane dwukrotnie do cudzego serwisu.
+  Zastąpiona próba jest zakończona i nie da się jej anulować.
+- **Runner właśnie ją ocenia.** Zostaje nietknięta i kończy się normalnie,
+  zachowując wynik i załączniki; nowa próba czeka za nią i rusza w chwili, gdy
+  tamta zgłosi rezultat. Przerwanie trwającej oceny wyrzuciłoby już wykonaną
+  pracę, a przy Runnerze przekazującym — zgłoszenie już zużyte u sędziego.
+- **Zdążyła się zakończyć.** Nic się nie zmienia. To zwykły przypadek i to o nim
+  mówi zdanie powyżej.
+
+Ponowna ocena to `submission:rejudge`, anulowanie to `submission:cancel`. Oba są
+w dostarczanym szablonie `manager`.
+
+## Wyłączenie zgłoszenia z klasyfikacji
+
+**Nie licz** jest orzeczeniem sędziego: rozwiązanie wysłane spoza sali, próba,
+która okazała się cudza, przebieg względem paczki, która była zła.
+
+Prosi o **powód**, bo o powód tu chodzi — sędzia czytający ten wiersz za miesiąc
+musi wiedzieć, dlaczego.
+
+<Callout type="warn" title="Powód czytają nie tylko prowadzący">
+Widzą go prowadzący, ale trafia też do eksportu danych samego uczestnika. Pisz
+go tak, żeby ta osoba mogła go przeczytać.
+</Callout>
+
+Co orzeczenie robi, a czego nie:
+
+| Zachowuje | Traci |
+|---|---|
+| swój werdykt | miejsce w rankingu |
+| miejsce na liście i swoje próby | najlepszy wynik uczestnika |
+| **pulę, którą wydało** | ocenę wysyłaną do LMS |
+
+**Wyłączenie nie zwraca próby.** Zgłoszenie nadal liczy się do limitu zgłoszeń.
+Jeśli chcesz oddać próbę, podnieś limit — widocznie i osobną czynnością. Zwrot w
+tym miejscu byłby drugim sposobem ruszania sufitu, i to takim, którego nikt nie
+widzi.
+
+**Licz ponownie** cofa orzeczenie i kasuje razem z nim powód: zdanie tłumaczące
+stan, który już nie obowiązuje, jest gorsze niż jego brak.
+
+Uprawnienie to `submission:exclude`. Jest w dostarczanym szablonie `manager` i
+celowo osobne od `submission:rejudge` — ponowna ocena prosi Runnera, żeby
+spojrzał jeszcze raz, wyłączenie rozstrzyga wynik ręcznie, a instalacja, która
+chce wydać jedno bez drugiego, może to zrobić.
+
+### Co widzi uczestnik
+
+Jego zgłoszenie nadal tam jest, z werdyktem i próbami, i jest **oznaczone** — bez
+tego oznaczenia jego ekran i ranking opisywałyby jedno zgłoszenie różnie i nie
+sposób byłoby dociec, dlaczego. Powodu nie ma na jego ekranie, ale jest w
+eksporcie jego własnych danych.
+
+Zmienia się każde miejsce, w którym liczy się klasyfikacja: najlepszy wynik i
+status na stronie zadania oraz na liście rundy, i tablica. Tablica, którą ktoś ma
+już otwartą, dostaje polecenie pobrania danych na nowo, a nie poprawkę, bo
+scalanie nie potrafi usunąć wiersza.
+
+Ocenę wysyłaną do platformy kursowej poprawia dopiero następny przebieg
+synchronizacji, a nie samo kliknięcie. Zawodnik, który przestaje zdobywać punkty,
+wraca do obliczenia z **zerem**: gdyby go pominąć, platforma trzymałaby starą
+ocenę na zawsze.
