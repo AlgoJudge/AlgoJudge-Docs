@@ -1,13 +1,17 @@
 ---
 title: Czego wymaga host
-description: Docker z Compose v2, cgroup v2, pięć narzędzi powłoki i dysk na kopie. Logi stack ogranicza sobie sam.
+description: Docker z Compose v2.15.0, cgroup v2, polecenia coreutils używane przez skrypty i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: 38e680b9c67e8084773b1c168afea3bdbcfc6b075b8f5f0bc63bd6cca651a3b2
+sourceSha256: ed127818ee944260db01b70043a4b6107be5ec99d834338b9408864aff47b856
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-## Docker z Compose v2 lub nowszym
+## Docker z Compose v2.15.0 lub nowszym
+
+**Próg 2.15.0 bierze się z `cgroup: host`**, które ustawia usługa Runnera i które
+Compose dostał dopiero w tej wersji. `up -d --wait`, używane przez skrypty
+instalacji i aktualizacji, wymaga 2.1.1.
 
 Cały stos to jeden `compose.yaml` z profilami. Wszystko w tej sekcji to `docker
 compose` — wtyczka, nie starszy skrypt `docker-compose`.
@@ -258,10 +262,18 @@ Restart nie gubi stanu, bo wolumeny są nazwane. Runner zachowuje klucz tożsamo
 pozostaje zatwierdzony, zamiast zgłosić się jako nowy,
 którego menedżer musi dopuścić od nowa.
 
-## Pięć narzędzi powłoki
+## Polecenia, których używają skrypty
 
-`bash`, `openssl`, `find`, `du`, `df`. Skrypty w `AlgoJudge-Ops` nie używają
-niczego więcej. Dołóż `crontab`, jeśli chcesz, żeby zainstalowały harmonogram.
+`bash` i `openssl` to te dwa, które warto zainstalować świadomie. Reszta jest na
+każdym linuksowym hoście z coreutils: `awk`, `sed`, `stat`, `sha256sum`,
+`mktemp`, `date`, `find`, `du`, `df`, `cut`, `tr`, `grep`, `sort`, `head`,
+`tail`, `wc`.
+
+**`sed -i` i `stat -c` to zapis GNU**, więc host BSD ani macOS nie jest jednym
+z tych hostów. `git`, `flock` i `crontab` są opcjonalne i każde ustępuje
+z komunikatem, zamiast przerywać pracę: bez `git` w manifeście kopii nie ma
+numeru rewizji, bez `flock` dwa skrypty mogą się nałożyć, bez `crontab`
+harmonogram instalujesz sam.
 
 ## Dysk na kopie, najlepiej nie ten od bazy
 

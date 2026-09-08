@@ -1,14 +1,18 @@
 ---
 title: What the host needs
-description: Docker with Compose v2, cgroup v2, five shell tools, and disk for backups. The stack bounds its own logs.
+description: Docker with Compose v2.15.0, cgroup v2, the coreutils the scripts use, and disk for backups. The stack bounds its own logs.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-## Docker with Compose v2 or later
+## Docker with Compose v2.15.0 or later
 
 The stack is one `compose.yaml` with profiles. Everything in this section is
 `docker compose`, the plugin, not the older `docker-compose` script.
+
+**2.15.0 is the floor because of `cgroup: host`**, which the Runner service sets
+and which Compose first shipped in that version. `up -d --wait`, used by the
+install and update scripts, needs 2.1.1.
 
 ## cgroup v2, and it is not optional
 
@@ -248,10 +252,17 @@ State survives a restart because the volumes are named. A Runner keeps its
 identity key across one, so it stays approved rather than arriving as a new
 Runner a manager has to admit again.
 
-## Five shell tools
+## The commands the scripts use
 
-`bash`, `openssl`, `find`, `du`, `df`. The scripts in `AlgoJudge-Ops` use
-nothing else. Add `crontab` if you want the schedule installed for you.
+`bash` and `openssl` are the two worth installing deliberately. The rest are on
+any Linux host that has coreutils: `awk`, `sed`, `stat`, `sha256sum`, `mktemp`,
+`date`, `find`, `du`, `df`, `cut`, `tr`, `grep`, `sort`, `head`, `tail`, `wc`.
+
+**`sed -i` and `stat -c` are the GNU spellings**, so a BSD or macOS host is not
+one of these hosts. `git`, `flock` and `crontab` are optional and each degrades
+with a message rather than failing: no `git` means no revision in a backup's
+manifest, no `flock` means two scripts can overlap, no `crontab` means the
+schedule is yours to install.
 
 ## Disk for backups, ideally not the database's
 
