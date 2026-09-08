@@ -1,0 +1,134 @@
+---
+title: Umieszczanie aktywności w kursie Moodle
+description: Co robi prowadzący w kursie, jak wygląda start od środka i gdzie w panelu ląduje przypięcie.
+source: en/client/manager/moodle-activity.mdx
+sourceSha256: 5f651ac1071093b1177f9521230e9c402e91a15f30ce1c33c3e0ed9e2a7d59cf
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Kiedy administrator podłączy już Moodle — patrz
+[Instalacja narzędzia w Moodle](/pl/install/moodle) — prowadzący wstawia
+AlgoJudge do kursu jako aktywność **External tool**. Uczestnicy otwierają ją
+z kursu i nigdy nie wpisują adresu AlgoJudge.
+
+**Przeszliśmy tę drogę 2026-09-08** na Moodle **5.2.2** i **5.3dev**. Tam, gdzie wersje się
+różnią, mówią o tym zakładki. **Interfejs na zrzutach jest angielski**, więc
+nazwy pól podajemy tak, jak widać je na ekranie.
+
+## Zanim zaczniesz
+
+**Narzędzie musi być widoczne dla kursów.** To jedno ustawienie po stronie
+administratora, a bez niego nic z poniższych rzeczy nie jest nigdzie oferowane.
+Jeśli AlgoJudge nie pojawia się w kursie, to jest pierwsza rzecz do sprawdzenia —
+[Instalacja narzędzia w Moodle](/pl/install/moodle), w części *Udostępnij narzędzie kursom*.
+
+**Miej slug aktywności, którą umieszczasz.** To ten z adresu aktywności w
+AlgoJudge, i to jego wskaże kurs.
+
+## 1. Dodaj aktywność do kursu
+
+<Tabs items={["Moodle 5.2", "Moodle 5.3"]}>
+<Tab value="Moodle 5.2">
+
+Włącz **Edit mode**, naciśnij **+** w sekcji, w której ma stanąć, i wybierz
+**AlgoJudge** z listy aktywności. Nadaj jej nazwę — uczestnicy widzą tę nazwę w
+kursie, więc nazwij ją tym, co otwiera, a nie nazwą narzędzia.
+
+</Tab>
+<Tab value="Moodle 5.3">
+
+5.3 żąda najpierw jednego: **definicji narzędzia w kursie**. Dodanie aktywności
+bez niej jest odrzucane wprost — *„The manual creation of tools without a course
+tool definition is no longer supported."*
+
+Otwórz w kursie **More → LTI External tools**.
+
+![Ekran LTI External tools w kursie](/screenshots/moodle/moodle53-course-tools.png)
+
+Naciśnij **Add tool**, nazwij je, a kurs ma własne narzędzie, z którego buduje
+aktywności.
+
+![Dodane narzędzie kursu](/screenshots/moodle/moodle53-course-tool-added.png)
+
+Potem włącz **Edit mode** i dodaj aktywność z **+** w sekcji — 5.3 podpisuje ten
+przycisk **Add content**.
+
+<Callout type="warn" title="Wklejenie tu adresu startu tworzy narzędzie LTI 1.0">
+Formularz **Add tool** przyjmuje adres narzędzia, a sam adres nie daje mu żadnego
+sposobu, by dowiedzieć się o rejestracji LTI 1.3, którą zrobił administrator.
+Zmierzone: narzędzie kursu utworzone tą drogą zapisuje się jako **LTI 1.0**,
+a takiego startu AlgoJudge nie obsługuje — `mdl_lti_types` pokazuje `ltiversion = LTI-1p0` obok
+`1.3.0` narzędzia witryny.
+
+Wybieraj narzędzie zarejestrowane przez administratora, zamiast opisywać nowe
+adresem.
+</Callout>
+
+</Tab>
+</Tabs>
+
+Aktywność stoi potem w kursie jak każda inna.
+
+![Kurs z aktywnością AlgoJudge](/screenshots/moodle/moodle52-course-with-activity.png)
+
+## 2. Wskaż, którą aktywność otwiera
+
+Start musi nazwać aktywność AlgoJudge, której dotyczy. To jeden **parametr
+niestandardowy** aktywności w Moodle:
+
+```
+activity=ads-2026
+```
+
+Bez niego start przychodzi bez celu, a osoba, która go otworzyła, dowiaduje się
+o tym wprost, zamiast trafić gdziekolwiek. Dwa pozostałe parametry — `username` i
+`context_history` — należą do narzędzia jako całości i administrator ustawia je
+raz; są wymienione w
+[Instalacji narzędzia w Moodle](/pl/install/moodle), w części *Druga droga*.
+
+## 3. Jak wygląda start
+
+Otwarcie aktywności nie wyprowadza nikogo ze strony kursu: AlgoJudge rysuje się w
+ramce, którą daje mu Moodle.
+
+![Pierwszy start, wewnątrz strony kursu](/screenshots/moodle/launched-in-the-course.png)
+
+**Pierwszy start prosi o jedno zalogowanie**, bo instalacja nie pozwala platformie
+orzekać, kto jest kim. Jednorazowe zalogowanie łączy oba konta, a potem aktywność
+otwiera się od razu. Logowanie otwiera się w nowej karcie celowo — logowanie
+wewnątrz cudzej ramki bywa blokowane przez przeglądarki, a ten układ działa we
+wszystkich.
+
+<Callout type="info" title="Da się to uczynić bezszwowym, i jest to decyzja administratora">
+Jeśli instalacja ufa platformie w kwestii tożsamości, o logowanie nikt nie
+poprosi. Wymaga to dostawcy tożsamości, którego konta platforma może przejmować,
+i oddaje tej platformie realną władzę nad tymi kontami —
+[Instalacja narzędzia w Moodle](/pl/install/moodle), w części *Przyjmowanie startów*.
+</Callout>
+
+## 4. Przypięcie w panelu
+
+Każdy kurs, który otworzył tutejszą aktywność, pojawia się w **Course placements**
+na ekranie **LTI platforms**.
+
+![Przypięcia kursów po pierwszym starcie](/screenshots/moodle/course-placements.png)
+
+Wiersz mówi, który to kurs, przez którą platformę, do której aktywności sięga i
+jak jest dzielony. **Jedna aktywność może być przypięta w więcej niż jednym
+kursie** — potok wykładowy i grupa laboratoryjna, dwa wydziały dzielące zawody —
+a każde przypięcie jest osobnym wierszem.
+
+*Who is in the course* to lista uczestników, którą raportuje platforma. To ona
+sprawia, że aktywność może otworzyć każdy z kursu, bez ręcznego zapisywania
+kogokolwiek w AlgoJudge; [Zapisy](/pl/client/manager/enrolment) opisują, co to
+znaczy obok pozostałych dróg wejścia.
+
+## Dalej
+
+- [Instalacja narzędzia w Moodle](/pl/install/moodle) — połowa administratora,
+  wraz ze wszystkim, co musi być prawdą, zanim cokolwiek z tego zadziała.
+- [Logowania zewnętrzne i platformy LTI](/pl/client/manager/logins) — ten sam
+  ekran, opisany jako ekran.
+- [Aktywności](/pl/client/manager/activities) — to, co umieszczasz.

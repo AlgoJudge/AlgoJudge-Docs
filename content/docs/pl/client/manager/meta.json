@@ -15,6 +15,7 @@
     "runners",
     "instance",
     "logins",
+    "moodle-activity",
     "external-content"
   ]
 }

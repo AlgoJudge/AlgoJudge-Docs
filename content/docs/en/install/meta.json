@@ -9,6 +9,7 @@
     "preconfiguration",
     "identity",
     "lti",
+    "moodle",
     "storage",
     "maintenance",
     "backup",
