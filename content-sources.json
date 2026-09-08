@@ -4,9 +4,8 @@
     "so that a page can say which version of the Server it describes.",
     "",
     "The accepted decision of 2026-08-09 says the REST reference is generated from",
-    "an openapi.json 'pinned to a release tag'. No repository carries a v* tag yet,",
-    "so the pin is a commit today and becomes a tag when there is one. `ref` is what",
-    "changes; nothing else about the build does.",
+    "an openapi.json 'pinned to a release tag'. Since 2026-09-08 there is one, so",
+    "this is a tag. `ref` is what changes; nothing else about the build does.",
     "",
     "`sha256` is checked after the download. A pinned ref that quietly served",
     "different bytes would be the one failure this arrangement exists to prevent."
@@ -14,9 +13,9 @@
   "openapi": {
     "repository": "AlgoJudge/AlgoJudge-Server",
     "path": "openapi.json",
-    "ref": "e01247c1e98bbaf726b90ae894f10059f02e9e97",
-    "refKind": "commit",
-    "refDate": "2026-09-04",
-    "sha256": "f7ffacac940dec3c3aec04516609e64972a317dfb219bf33b60d5f3d489612b1"
+    "ref": "v0.1.0",
+    "refKind": "tag",
+    "refDate": "2026-09-07",
+    "sha256": "79f61ee5fd5590785a43495fc48bbf48bfeb8d1cacd5453022c45290547111cd"
   }
 }
