@@ -169,21 +169,40 @@ The other three:
    refused by name, before anything leaves this installation.
 3. **Tags**, exactly as for any Runner, and read once at the first registration.
 
-## The external Runner restarts every few seconds
+## A Runner restarts every few seconds
 
-The account at the judging system is empty or wrong. It refuses while reading its
-configuration — before the identity key, before registration — and
-`restart: unless-stopped` turns that into a loop.
+`restart: unless-stopped` turns any refusal at startup into a loop, and
+`preflight.sh` cannot see most of these because nothing is wrong with the
+configuration. Read the log:
 
 ```bash
 docker compose logs external-runner | tail -20
+docker compose logs runner-1 | tail -5
 ```
 
-The refusal names the setting. `preflight.sh` refuses ahead of it when the
-profile is on, so a stack brought up through the scripts never gets this far.
+**The account at the judging system is empty or wrong.** The external Runner
+refuses while reading its configuration — before the identity key, before
+registration — and names the setting. `preflight.sh` refuses ahead of it when the
+profile is on, so a stack brought up through the scripts never gets this far. A
+leading or trailing space in the password is **not** the cause: it is passed
+through exactly as written, deliberately, because trimming one broke a sign-in
+once.
 
-**A leading or trailing space in the password is not the cause.** It is passed
-through exactly as written, deliberately: trimming one broke a sign-in once.
+**`the Server refused with 403: runner.nonce.unknown`** is a different fault with
+the same symptom, and it applies to both Runners: **this image is older than the
+Server it is registering against.** It appears only from the second start
+onwards, because the identity volume is what makes the Server recognise the key,
+and a refused registration is not one a Runner retries. Pull both images from the
+same release rather than letting the moving tags drift — [Update and
+rollback](/en/install/update) says why they have to move together.
+
+**A named poll or lease setting** is the third: a Runner checks its intervals
+against one another before it does anything. None of these can be reached with
+the values this stack ships; they are what a `.env` of your own can produce.
+`AJ_Poll__WaitSeconds` above 300 is refused because 300 is the Server's own
+ceiling, and a Runner tells a held claim from an immediate answer by how long it
+took — so it would read every held claim as an empty one. To poll less often, the
+setting is `AJ_Poll__MaxSeconds`.
 
 ## The archive says the account does not exist
 
@@ -239,25 +258,32 @@ docker compose logs runner | head -40
 | a cgroup driver it knows neither of | `docker info --format '{{.CgroupDriver}}'` must print `cgroupfs` or `systemd`. Anything else means cgroups are off |
 | it cannot read the hierarchy | `compose.yaml` has been edited: the `/sys/fs/cgroup` mount, `cgroup: host`, or `user: "0:0"` on the runner service is missing |
 
-**Both cgroup drivers work, and neither needs the daemon reconfigured.** Until
-2026-09-03 the Runner required `cgroupfs`, and `systemd` is the default almost
-everywhere, so an installation of that vintage may still carry a
-`native.cgroupdriver` line in `/etc/docker/daemon.json`. It does no harm.
+**Both cgroup drivers work, and neither needs the daemon reconfigured.** A
+`native.cgroupdriver` line in `/etc/docker/daemon.json` does no harm and buys
+nothing.
 
 ## The verdicts are right but no memory is reported
 
 Only on a host using the **`systemd`** cgroup driver, and the Runner says so at
-`ERROR` on every start. One slice serves every run there, so a per-run peak is
-taken by resetting `memory.peak` — a kernel interface that arrived in **Linux
-6.8**. A time limit is processor time, so every verdict stands.
+`ERROR` on every start. One slice serves every run there, so a peak is taken by
+resetting `memory.peak` — a kernel interface that arrived in **Linux 6.12**,
+which excludes Ubuntu 24.04 and includes Debian 13. A time limit is processor
+time, so every verdict stands, and a judged submission's own peak is unaffected:
+that one is read from a cgroup made fresh for the run. What is missing is the
+peak of the runs that are nobody's submission — a build, a checker, an
+interactor.
 
 ```bash
 uname -r
 ```
 
 On an older kernel, either accept it or give the daemon the `cgroupfs` driver,
-where the peak comes from a fresh cgroup per run and needs nothing past Linux
-5.19.
+where every peak comes from a fresh cgroup and needs nothing past Linux 5.19:
+
+```json
+// /etc/docker/daemon.json
+{ "exec-opts": ["native.cgroupdriver=cgroupfs"] }
+```
 
 ## nginx will not start
 
@@ -333,6 +359,8 @@ Compose invocation failed, its one-line error was reported as a `pg_restore`
 warning, and the restore **did nothing at all** while every check afterwards
 passed on data that had never been touched at all.
 
-`restore.sh` now counts the tables afterwards and refuses to report success on an
-empty database. But the real test is the one that caught it: **change something
-first**, then restore, then check the change is gone.
+`restore.sh` takes the identity of every table before and compares it after:
+`--clean --if-exists` gives every restored table a new one, and a restore that
+did nothing leaves the old ones where they were. But the real test is the one
+that caught it: **change something first**, then restore, then check the change
+is gone.

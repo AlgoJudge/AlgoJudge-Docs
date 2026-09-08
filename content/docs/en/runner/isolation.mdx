@@ -5,6 +5,8 @@ description: What contains a submission, what the arrangement deliberately does 
 
 import { Callout } from "fumadocs-ui/components/callout";
 
+import { Mermaid } from "@/components/mermaid";
+
 Every submission is untrusted and assumed hostile: attempts to read system files
 and secrets, write outside the working directory, spawn processes, fork-bomb,
 exhaust memory or CPU, produce unbounded output, reach the network, survive past
@@ -70,10 +72,12 @@ waiting on a disk is not runnable, so it raises no processor pressure to be
 seen. The window is what covers that case.
 
 The two seconds in the ceiling are what a container may honestly add to the
-reading, which is the cgroup's and so carries the container's own start. Added
-rather than multiplied: a container costs what it costs whatever limit the
-problem set, and doubling the participant's limit instead was most generous
-exactly where that overhead matters least.
+reading, which is the cgroup's and so carries the container's own start — three
+times the worst gap ever measured between the two instruments, the same
+population [the floor below](#two-instruments-and-only-one-of-them-is-trusted)
+is drawn from. Added rather than multiplied: a container costs what it costs
+whatever limit the problem set, and doubling the participant's limit instead was
+most generous exactly where that overhead matters least.
 
 The cap is five times what the run was entitled to spend — a problem allowed
 more processor time has earned more wall clock, one allowed less has not — and
@@ -156,8 +160,10 @@ processor time, and the obvious place to read that is the cgroup the container
 ran under. The obvious place is wrong on its own: a container that has run
 nothing of ours has already spent processor time getting there -- namespaces,
 mounts, an init process. Measured 2026-09-03 across all four language images on
-a Docker Desktop host, 40 runs: median 50 ms, worst 66 idle and 74 under load, and it barely
-moves with load because it is setup work rather than contention.
+a Docker Desktop host, 40 runs: median 50 ms, worst 66 idle and 74 under load.
+It is setup work rather than contention, so the median hardly moves with load —
+but the tail does, and the floor below is set against that rather than against
+these numbers.
 
 Against a limit of 100 ms that is half the budget, spent before the participant's
 first instruction.
@@ -181,13 +187,21 @@ cgroup reading -- taken by the Runner on the host, where nothing inside can reac
 it -- is kept as **trusted and coarse**:
 
 ```
-time = max( the shim's report,  the cgroup total − 120 ms )
+time = max( the shim's report,  the cgroup total − 1 s )
 ```
 
 An honest run is corrected exactly: the floor sits below its real cost, so the
 shim's figure wins. A forged report cannot take the reported time below the
-cgroup total less that constant, which is 120 ms -- above the worst floor ever
-measured, and the most a blanket subtraction would have given away anyway.
+cgroup total less that constant.
+
+**One second, and every tighter value was measured to fail honest runs.** Across
+7077 runs under load on 2026-09-04 the gap between the two instruments — a
+container's own cost, on top of the program — ran to a median of 77 ms and a
+maximum of 619 ms. An allowance of 120 ms would therefore charge 5% of honest
+runs for work they had not done, by up to half a second, and fail six correct
+submissions in a hundred and fifty. A second stands above the measured maximum
+with room for a slower host, and still catches the forgery worth attempting: a
+program spending **seconds** past a limit of a few hundred milliseconds.
 
 Three things stand between a submission and a forged report, and each holds when
 the one before it does not:
@@ -223,6 +237,21 @@ reads `/` in a private cgroup namespace and the shim would have nothing to look
 for. So a judged container is given the host's cgroup namespace. That grants no
 write it did not have: the only cgroup file it can reach is root's, and the
 submission is `nobody` by the time it runs.
+
+<Mermaid chart={`
+flowchart TD
+    socket["The container runtime's socket:<br/>the Runner holds it, and nothing the Runner starts does"]
+    subgraph outlives["A cgroup of the Runner's own, on the host, outliving the container:<br/>where a run's processor time is read and a kill is counted"]
+        subgraph container["The judged container — a sibling of the Runner, not a child.<br/>No network, no capabilities, read-only root"]
+            shim["The shim: PID 1, root for a few dozen lines,<br/>and it moves itself out of the limit's way first"]
+            subgraph own["The submission's own cgroup, made by the shim, inside"]
+                prog["The submission, as 65534.<br/>memory.max is the problem's limit, and its peak<br/>is the figure shown beside the verdict"]
+            end
+        end
+    end
+    socket -.->|"every container is started through it"| container
+    shim -->|"fork, move the child in, then exec"| prog
+`} />
 
 Three things follow that a problem author will notice:
 
@@ -429,6 +458,5 @@ hosts is chosen.
 ## The policy dictionary is not part of this
 
 [The policy profile](/en/runner/policy) refuses to compile certain source. It is
-a **policy** control, every rule in it is expected to be bypassable, and a
-submission that gets past it is still contained by everything above. A document
-suggesting otherwise would be teaching a false sense of safety.
+a **policy** control — every rule in it is expected to be bypassable — and what
+contains a submission that gets past it is everything above.

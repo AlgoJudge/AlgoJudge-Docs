@@ -2,7 +2,7 @@
 title: Kopiowanie i import
 description: Kopia jest kształtem, a nie historią - wewnątrz instalacji i między dwiema.
 source: en/client/manager/copying.mdx
-sourceSha256: 29036d167cde2a036015ef3f8c7e02f947c8c01eb9852d98027479eb6ca2ca33
+sourceSha256: bbf1d095b005ed708ebf75f6325060936261b565d66e652612c9c89c53088150
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -99,18 +99,20 @@ zapisane, z tego samego powodu, dla którego pyta kopia: import, który po cichu
 zachowałby terminy z zeszłego semestru, jest awarią, której ta funkcja ma
 zapobiegać.
 
-Czytnik odmawia archiwum, które nie jest paczką wymiany, manifestu, którego nie
-umie sparsować, formatu, którego nie zna, manifestu wymieniającego plik, którego
-w archiwum nie ma, oraz pliku, którego bajty nie zgadzają się z sumą kontrolną.
-To ostatnie nie jest nadmiarowe: przekręcony bajt w zapisanym wpisie rozpakowuje
-się czysto i bez słowa, a łapie to właśnie suma kontrolna — zanim cokolwiek
-zostanie wysłane.
+Czytnik odmawia plikowi, który nie jest zipem, archiwum bez żadnego z dwóch
+opisów, manifestowi, którego nie umie sparsować, formatowi, którego nie zna, i
+manifestowi wymieniającemu plik, którego w archiwum nie ma.
+
+**Każdy plik jest sprawdzany z własną sumą kontrolną**, w drugim kroku, zanim
+jego bajty gdziekolwiek pojadą. Sam zip tego nie załatwia: przekręcony bajt w
+zapisanym wpisie rozpakowuje się czysto i bez słowa, a łapie to wyłącznie suma
+kontrolna.
 
 Czytnik przyjmuje też eksport z **ZawodyWeb**. Najpierw konwertuje go na paczkę
 wymiany, więc dalej wszystko idzie tą samą ścieżką, a to, czego konwersja nie
 umiała przenieść, zobaczysz, zanim zatwierdzisz.
 
-### Sufit rozmiaru
+### Ograniczenie rozmiaru
 
 Wszystko przechodzi przez pamięć przeglądarki. Przy paczce powyżej **64 MB**
 dostajesz ostrzeżenie; powyżej **256 MB** zostaje ona odrzucona, a ekran wymienia

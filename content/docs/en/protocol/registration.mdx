@@ -147,9 +147,9 @@ POST /api/v1/runner/auth/token          { "fingerprint": "…", "nonce": "…", 
 
 The signature is **Ed25519 over the UTF-8 bytes of the nonce**, base64.
 
-The nonce is **single-use and short-lived**, and both properties matter: without
-single use, a captured exchange is replayable for ever; without expiry, one
-captured today is usable next year.
+The nonce is **single-use and short-lived** — two minutes in this Server — and
+both properties matter: without single use, a captured exchange is replayable for
+ever; without expiry, one captured today is usable next year.
 
 | Refusal | Code |
 |---|---|
@@ -166,10 +166,10 @@ makes revoking a Runner stop the one that is already working.
 
 ### Losing a token is ordinary
 
-Tokens live in the Server's memory. An ordinary Server restart therefore answers
-`401` to a Runner that was working perfectly, and the correct response is to
-forget the token and shake hands again — not to exit, and not to re-register as
-something new.
+Tokens live in the Server's memory and last twelve hours. So a `401` reaches a
+Runner that was working perfectly two ways — an ordinary Server restart, and
+simply running for a day — and the correct response to both is to forget the
+token and shake hands again, not to exit and not to re-register as something new.
 
 An implementation that treats a `401` as fatal will restart itself every time the
 Server is updated.

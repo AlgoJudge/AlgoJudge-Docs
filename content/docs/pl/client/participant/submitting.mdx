@@ -2,7 +2,7 @@
 title: Wysyłanie rozwiązania
 description: Trzy typy zadań, trzy formularze — i co jest sprawdzane, zanim cokolwiek opuści przeglądarkę.
 source: en/client/participant/submitting.mdx
-sourceSha256: c40b002776a67ffd68f9340a9b273ea2ca9ee360a619ccb3ab36939e0af7106f
+sourceSha256: 882e721a3ead58b0eb0dd91556d1577b7456c0e442bdc6cf38120afef064db6e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -10,7 +10,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 Formularz jest pod **Wyślij zgłoszenie** w nawigacji, na przycisku przy każdym
 zadaniu na liście, na przycisku u góry treści zadania oraz pod **Wyślij** w
 panelu zgłoszeń w rogu. **Tej ostatniej drogi nie ma na telefonie**: na ekranie
-węższym niż 768 pikseli panel w rogu w ogóle się nie pokazuje, bo zasłaniałby
+węższym niż 768 pikseli panel w rogu w ogóle się nie pokazuje, bo zasłoniłby
 przycisk **Wyślij** w samym formularzu. Nic przez to nie tracisz — w nawigacji
 są i **Wyślij zgłoszenie**, i **Moje zgłoszenia**.
 
@@ -30,7 +30,9 @@ formularz bez edytora albo bez pola języka nie jest zepsuty.
 - **Trzeba wybrać język.** Lista pochodzi z przypisania; jeżeli nie wymienia
   żadnego, formularz proponuje wszystkie języki, które zna ta wersja.
 - **Edytor albo plik**, nie oba naraz. Pole **Plik z rozwiązaniem** przyjmuje
-  `.cpp`, `.cc`, `.py` i `.txt`.
+  `.c`, `.cpp`, `.cc`, `.cxx`, `.c++` i `.py` — więcej, niż bierze którykolwiek
+  pojedynczy kompilator, bo filtr w przeglądarce jest udogodnieniem, a bramką
+  jest Runner.
 
 ### `uva@1` — oceniane w UVa Online Judge
 
@@ -56,9 +58,9 @@ formularz bez edytora albo bez pola języka nie jest zepsuty.
 
 - **Nie ma edytora w ogóle.** Wysyłasz odpowiedzi, które wyliczyłeś, obojętnie
   czym je wyliczyłeś.
-- **Plik** — pole **Answer file** (plik z odpowiedziami) przyjmuje `.zip`, `.out`
-  i `.txt`: jedno archiwum z odpowiedzią na test albo pojedynczy plik dla zadania
-  z jednym testem.
+- **Plik** — pole **Answer file** (aplikacja nie tłumaczy tej nazwy) przyjmuje
+  `.zip`, `.out` i `.txt`: jedno archiwum z odpowiedzią na każdy test albo
+  pojedynczy plik dla zadania z jednym testem.
 - **Nie ma języka**, bo nic nie jest kompilowane i nic nie jest uruchamiane.
   Pytanie o język byłoby pytaniem o program, którego nie ma.
 
@@ -90,9 +92,9 @@ Formularz odmawia — komunikatem na czerwono nad przyciskiem — gdy:
 
 W tym momencie nic jeszcze nie opuściło Twojej przeglądarki.
 
-Kiedy formularz to przepuści, tu, w przeglądarce, liczona jest **suma SHA-256
-dokładnie tego, co wysyłasz**, i jedzie razem ze zgłoszeniem. Server przelicza ją
-i odrzuca niezgodność, więc ucięta wysyłka kończy się błędem, a nie oceną.
+Kiedy formularz to przepuści, przeglądarka liczy **sumę SHA-256 dokładnie tego,
+co wysyłasz**, i posyła ją razem ze zgłoszeniem. Server przelicza ją i odrzuca
+niezgodność, więc ucięta wysyłka kończy się błędem, a nie oceną.
 
 ## Runda, która nic nie przyjmuje
 
@@ -118,8 +120,8 @@ limitu. W grupie limit należy do grupy.
 
 ## Co potem
 
-Po wysłaniu trafiasz prosto na ekran zgłoszenia, więc stan *W kolejce* od razu
-widzisz, zamiast go szukać. Zobacz
+Po wysłaniu trafiasz prosto na ekran zgłoszenia, więc stan **W kolejce** widzisz
+od razu, zamiast go szukać. Zobacz
 [Co się stało z moim zgłoszeniem](/pl/client/participant/results).
 
 Jeżeli panel w rogu jest widoczny i wyślesz z niego, zostajesz tam, gdzie byłeś,

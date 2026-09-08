@@ -4,9 +4,9 @@ description: Where each part of AlgoJudge is developed, and what you may do with
 ---
 
 import { Card, Cards } from "fumadocs-ui/components/card";
-import { AppWindow, Boxes, Cpu, Server } from "lucide-react";
+import { AppWindow, Boxes, Cpu, Forward, Server } from "lucide-react";
 
-AlgoJudge is open source. The three programs this documentation describes are
+AlgoJudge is open source. Every program this documentation describes is
 developed in the open, one repository each.
 
 <Cards>
@@ -29,16 +29,22 @@ developed in the open, one repository each.
     description="The machines that evaluate submissions, and the language images they evaluate them in."
   />
   <Card
+    icon={<Forward />}
+    href="https://github.com/AlgoJudge/AlgoJudge-External-Runner"
+    title="AlgoJudge-External-Runner"
+    description="The second Runner, which judges nothing and forwards to an outside archive instead."
+  />
+  <Card
     icon={<Boxes />}
     href="https://github.com/AlgoJudge"
     title="The AlgoJudge organisation"
-    description="These three, and everything else the project builds."
+    description="These four, and everything else the project builds."
   />
 </Cards>
 
 Each section of this site also links its own repository at the foot of its
-sidebar. The installation stack has a repository of its own, linked from
-[Install and operate](/en/install), which is the section that documents it.
+sidebar. The installation stack is one of them, `AlgoJudge-Ops`, linked from
+[Install and operate](/en/install) — the section that documents it.
 
 ## What you may do with this
 

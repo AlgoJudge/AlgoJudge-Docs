@@ -2,7 +2,7 @@
 title: Zapisy
 description: Nadanie w aktywności jest członkostwem. Obok niego nie ma żadnej listy.
 source: en/client/manager/enrolment.mdx
-sourceSha256: 1303d8c566b48f04f443ea379fa79dc67d91abfaba9f07cbb0e851dbc7401ba3
+sourceSha256: cc8f1add189b4cb50bab9436370572b0c3f496c451550d052b56500d89f5648c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -26,7 +26,8 @@ i dlatego te same wiersze zobaczysz w
 **Zapisz osobę** pyta o:
 
 1. **użytkownika** — konto, które już istnieje i nie jest jeszcze zapisane;
-2. **szablon**, od którego zacząć: wypełnia zestaw i zostaje zapomniany;
+2. **szablon**, od którego zacząć: wypełnia zestaw, a zostaje po nim tylko
+   nazwa — etykieta mówiąca, skąd ten zestaw się wziął;
 3. sam **zestaw uprawnień**, który możesz dowolnie edytować.
 
 Edytor oferuje to, co **ty** masz w tej aktywności, a nie to, co masz w całej
@@ -39,7 +40,8 @@ Jeden przełącznik w tym samym oknie: *wysyła zgłoszenia jak każdy, a liczy 
 jak nikt* — nie ma go ani w liczbie uczestników, ani w rankingu.
 
 Włącza się **sam** przy nadaniu, które daje cokolwiek ponad zestaw zwykłego
-uczestnika. Członek jury w rankingu obok studentów to błąd, a nie preferencja,
+uczestnika — z wyjątkiem `trial:run`, które można mieć, nie przestając być
+zawodnikiem. Członek jury w rankingu obok studentów to błąd, a nie preferencja,
 więc Server wylicza to przy każdym zapisie i nigdy nie przyjmuje z ekranu. Przy
 zwykłym członkostwie decydujesz sam: konto testowe albo to, na którym puszczasz
 rozwiązanie wzorcowe, jest dokładnie tym, do czego ten przełącznik służy.
@@ -60,7 +62,7 @@ dotyczy.
 
 ## Nadanie zaproponowane, ale nieprzyjęte
 
-Nadanie jest *aktywne* albo *zaproszony*. Nadanie w stanie zaproszenia nie daje
+Nadanie jest *aktywne* albo *zaproszone*. Nadanie w stanie zaproszenia nie daje
 niczego — to dopiero oferta, a osoba nie jest w aktywności, dopóki jej nie
 przyjmie.
 

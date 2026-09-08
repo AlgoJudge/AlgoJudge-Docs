@@ -82,7 +82,7 @@ Two things are carried differently rather than dropped:
 bundle and the import does not ask about it: the activity is created the way any
 new one is, which means published. The list gives it a state read off its dates
 rather than *being prepared*, and its rounds open on the dates the import worked
-out from the start you named. **Unpublish** it if you meant to read it through
+out from the start you named. **Withdraw** it if you meant to read it through
 first.
 
 ### Importing is two steps, and the first writes nothing
@@ -97,11 +97,14 @@ An activity bundle asks for a slug and a start date before anything is written,
 for the same reason a copy does: an import that quietly kept last term's
 deadlines is the failure the feature exists to prevent.
 
-The reader refuses an archive that is not a bundle, a manifest it cannot parse, a
-format it does not know, a manifest naming a file the archive lacks, and a file
-whose bytes do not match its checksum. The last one is not redundant: a flipped
-byte in a stored entry unzips cleanly and silently, and the checksum is what
-catches it — before anything is uploaded.
+The reader refuses an archive that is not a zip, one holding no descriptor of
+either kind, a manifest it cannot parse, a format it does not know, and a
+manifest naming a file the archive lacks.
+
+**Every file is checked against its own checksum**, in the second step, before
+its bytes are sent anywhere. That is not redundant with the zip: a flipped byte
+in a stored entry unzips cleanly and silently, and the checksum is the only
+thing that catches it.
 
 A **ZawodyWeb** export is read too. It is converted into a bundle first, so
 everything after that point is the same code path, and whatever the conversion

@@ -37,7 +37,7 @@ add_header Content-Security-Policy "frame-ancestors 'self' https://moodle.exampl
 ```
 
 The reasoning, and what it costs elsewhere, is in
-[Somebody else's reverse proxy](/en/install/reverse-proxy).
+[Your own reverse proxy](/en/install/reverse-proxy).
 </Callout>
 
 **The platform has to be HTTPS, not only the tool.** The Server fetches the
@@ -46,12 +46,19 @@ an address that is not `https`. A Moodle on plain HTTP is turned away with *"The
 platform gave no usable configuration address"* — before anything is dialled, so
 there is nothing in the platform's log either.
 
-**The Server has to know its public address.** Every address it hands to a
-platform is built from it, and an installation reached on a non-default port
-loses that port without it:
+**The Server has to know its public address.** A registration the platform starts
+refuses to issue an invitation unless `AJ_PublicApiUrl` resolves to an absolute
+address, and an installation reached on a non-default port loses that port
+without it. This stack leaves it unset, so it goes in an overlay named by
+`COMPOSE_FILE` in your `.env` — [Connecting a course
+platform](/en/install/lti) has the reason that matters:
 
-```bash
-AJ_PublicApiUrl=https://algojudge.example.edu/api/v1
+```yaml
+# state/lti.compose.yaml
+services:
+  server:
+    environment:
+      AJ_PublicApiUrl: https://algojudge.example.edu/api/v1
 ```
 
 ## 1. Expect a registration
@@ -178,5 +185,5 @@ development stack rather than of the product.
   what a teacher does with what you have just connected.
 - [Connecting a course platform](/en/install/lti) — the mechanism, and what has
   and has not been verified.
-- [Somebody else's reverse proxy](/en/install/reverse-proxy) — the frame policy
+- [Your own reverse proxy](/en/install/reverse-proxy) — the frame policy
   and the two-origin arrangement in full.

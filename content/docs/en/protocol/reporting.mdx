@@ -22,8 +22,7 @@ POST /api/v1/runner/jobs/{jobId}/report
   "runnerVersion": "1.0.0",
   "extra": { "cycles": 1200 },
   "props": { "type": "standard-io@1", "toolchain": "g++ 14.2.0" },
-  "infrastructureFailure": false,
-  "failureReason": null
+  "infrastructureFailure": false
 }
 ```
 
@@ -118,7 +117,9 @@ implementation that packs a per-test table into it will find its reports rejecte
 accept an attachment, and reporting ends that.
 
 Get the order wrong and the log explaining a failure is the thing that goes
-missing — which is the one attachment anybody wanted.
+missing — which is the one attachment anybody wanted. A report may instead name
+already-uploaded files inline and sidestep the order altogether, at the cost of
+the silence [Files](/en/protocol/files) describes.
 
 ## What to do when the Server is away mid-report
 

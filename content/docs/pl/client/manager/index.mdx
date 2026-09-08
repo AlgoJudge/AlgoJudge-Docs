@@ -9,9 +9,9 @@ Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
 otworzyć, i nic poza tym: *wszystko, czym możesz tu zarządzać — czego nie
 możesz, tego nie ma na liście*.
 
-Nie jest to ozdoba: nawigacja, ekran startowy i strażnik każdej trasy czytają
-jedną tabelę, więc kafelek nie zaproponuje ci ekranu, który potem odpowie 403, a
-ekran, do którego masz dostęp, nie zniknie z menu.
+Nie jest to ozdoba: nawigacja, ekran startowy i kontrola dostępu przy każdym
+adresie czytają tę samą tabelę, więc kafelek nie zaproponuje ci ekranu, który
+potem odpowie 403, a ekran, do którego masz dostęp, nie zniknie z menu.
 
 ## Dwanaście obszarów
 
@@ -19,7 +19,7 @@ Obszar otworzy ci **którekolwiek jedno** z uprawnień w ostatniej kolumnie.
 
 | Obszar | Do czego służy | Wpuszcza którekolwiek z nich |
 |---|---|---|
-| [Użytkownicy](/pl/client/manager/enrolment) | Konta, tymczasowe loginy zakładane hurtem, blokowanie i notatki. | `user:read:all` |
+| [Użytkownicy](/pl/client/manager/enrolment) | Konta, hurtowe tworzenie loginów tymczasowych, blokowanie i notatki. | `user:read:all` |
 | [Nadania](/pl/client/manager/permissions) | Kto co może — w systemie i w każdej aktywności. | `grant:read:all` |
 | [Szablony uprawnień](/pl/client/manager/permissions) | Zestawy, od których zaczyna się nadanie, w tym te dostarczone z produktem. | `template:read` |
 | [Zadania](/pl/client/manager/problems) | Biblioteka: treści, załączniki, paczki i wersje. | `problem:read:own`, `problem:read:all` |

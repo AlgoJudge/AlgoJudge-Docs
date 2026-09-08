@@ -2,7 +2,7 @@
 title: Logowania zewnętrzne i platformy LTI
 description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
-sourceSha256: 5b9a7c78f419fbc1fe7b2c70522efee36e0c693c47ccf9ffb31ad40c9be4955c
+sourceSha256: 96ac974f4f1ee8373159209e499302ef2665a40e50e60a4dc3d967bc59e0ec70
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -31,8 +31,9 @@ każdego z nich.
 | Gdzie ludzie zarządzają swoimi danymi | konta należącego do dostawcy nie da się edytować tutaj, więc ekran odsyła ich tam |
 | Gdzie ludzie usuwają konto u dostawcy | oferowane obok przycisku usuwającego konto tutaj. Puste — link nie jest pokazywany |
 
-Ekran wypisuje **adres powrotny do wpisania u dostawcy**, z przyciskiem
-kopiowania. Pomyłka wyjdzie dopiero na końcu czyjegoś pierwszego logowania, i to
+Ekran wypisuje **adres przekierowania do wpisania u dostawcy**, z przyciskiem
+kopiowania. Wypisuje samą ścieżkę — dostawca chce jej za adresem tej
+instalacji. Pomyłka wyjdzie dopiero na końcu czyjegoś pierwszego logowania, i to
 komunikatem od dostawcy, a nie stąd.
 
 Puste pole sekretu niczego nie kasuje. Znaczy *zostaw przechowany bez zmian*, a
@@ -58,9 +59,10 @@ grupy.
 
 <Callout type="warn" title="Dwie reguły są egzekwowane i nie da się ich wyłączyć">
 `system:administrator` nigdy nie może zostać nadany przez claim, a nikt nie
-zmapuje uprawnienia, którego sam nie ma. Obu pilnuje Server w każdej
-konfiguracji — łącznie z drogą na odwrót, gdzie regułę pisze się najpierw, a
-uprawnienie dopisuje do szablonu potem.
+zmapuje uprawnienia, którego sam nie ma. Pierwszej Server pilnuje w obie strony
+— droga na odwrót, gdzie regułę pisze się najpierw, a uprawnienie dopisuje do
+szablonu potem, też jest odrzucana, a token, który je niesie, i tak zostaje z
+niego obrany przy logowaniu. Drugiej pilnuje w chwili zapisu reguły.
 </Callout>
 
 Nadanie z mapowania jest **przepisywane przy każdym logowaniu**, co tnie w obie
@@ -88,20 +90,22 @@ sekret.
 Platformy kursowe, które mogą otwierać aktywności swoim studentom. AlgoJudge
 implementuje LTI 1.3; **nie jest certyfikowany przez 1EdTech**, i ekran to mówi.
 
-Platformę rejestrujesz **ręcznie, świadomą decyzją** — jedynego ustawienia, które
-naprawdę się liczy, platforma nie może nadać sobie sama.
+**Żadna platforma nie wpuszcza się tu sama do pracy.** Albo wpisujesz ją
+ręcznie, albo rejestruje się na zapowiedź, którą ktoś tutaj utworzył — i tak czy
+inaczej trafia tu z wyłączonymi uruchomieniami i bez prawa orzekania o
+tożsamości. Tych dwóch rzeczy platforma nie nadaje sobie sama.
 
 | | |
 |---|---|
-| Issuer, client id, deployment id | **nie da się ich potem zmienić**: wisi na nich każde uruchomienie i każde powiązanie tożsamości |
-| Adresy zestawu kluczy, tokenu i autoryzacji | należą do platformy |
+| Issuer, client id, identyfikator wdrożenia | **nie da się ich potem zmienić**: wisi na nich każde uruchomienie i każde powiązanie tożsamości |
+| Adresy zestawu kluczy publicznych, tokenu dostępowego i autoryzacji | należą do platformy |
 | Przyjmuj uruchomienia | odwracalny przełącznik. Platformy nie usuniesz, dopóki jakikolwiek kurs ma z niej aktywność |
 
 **Nie ma tu żadnego sekretu**, a jego brak nie jest luką: LTI uwierzytelnia
-narzędzie podpisem, a klucz prywatny narzędzia nigdy nie opuszcza Servera. **Co
-wpisać w platformie** wypisuje cztery adresy do wklejenia w konfigurację
-narzędzia zewnętrznego oraz parametry własne, bez których uruchomienie nie potrafi
-stwierdzić, kto przyszedł.
+narzędzie podpisem, a klucz prywatny narzędzia nigdy nie opuszcza Servera.
+**Co w niej wpisać** wypisuje cztery adresy do wklejenia w konfigurację
+narzędzia zewnętrznego oraz parametry własne, bez których uruchomienie nie
+potrafi stwierdzić, kto przyszedł.
 
 <Callout type="warn" title="Orzekanie o tożsamości to ten niebezpieczny przełącznik">
 Gdy włączysz *ta platforma może orzekać, kim ktoś jest*, uruchomienie łączy się z
@@ -123,13 +127,13 @@ użyje.
 ### Podpięcia w kursach
 
 Stąd kursy sięgają po aktywności tej instalacji. Jedna aktywność może być
-podpięta w więcej niż jednym kursie, a uruchomienie **czeka, aż ktoś się na to
-zgodzi** — zgoda oznacza, że aktywność zasila oba dzienniki ocen. Nie cofniesz
-tego stąd: wysłane już oceny zostają tam, gdzie je wysłano, więc podpięcie
-usuwasz w kursie.
+podpięta w więcej niż jednym kursie: uruchomienia z pierwszego kursu działają od
+razu, a **od drugiego uruchomienie czeka, aż ktoś zgodzi się na współdzielenie**
+— zgoda oznacza, że aktywność zasila oba dzienniki ocen. Podpięcia nie cofniesz
+stąd: wysłane już oceny zostają tam, gdzie je wysłano, więc usuwasz je w kursie.
 
-Kursowi, który nie powinien niczego współdzielić, **daj mu własną kopię** —
-powstaje ona tak samo jak przy [kopiowaniu
+Kursowi, który nie powinien niczego współdzielić, **daj temu kursowi własną
+kopię** — powstaje ona tak samo jak przy [kopiowaniu
 aktywności](/pl/client/manager/copying).
 
 **Kto jest w kursie** czyta listę uczestników platformy na żądanie — nic tutaj
@@ -150,8 +154,8 @@ To platforma decyduje, czy wolno wybrać jedną, czy kilka, a lista się do tego
 stosuje: jeśli platforma prosiła o jedną, wybranie drugiej zostanie odrzucone,
 zamiast po cichu pominąć resztę.
 
-Wraca jeden odnośnik na aktywność, z parametrami własnymi potrzebnymi
-startowi. **Nic o ocenach nie jest przy tym wysyłane** — kolumna w dzienniku
+Wraca jeden odnośnik na aktywność, z parametrami własnymi, których potrzebuje
+uruchomienie. **Nic o ocenach nie jest przy tym wysyłane** — kolumna w dzienniku
 powstaje przy pierwszym wysłanym wyniku, a nie przy tworzeniu odnośnika.
 
 ### Co trafia do dziennika ocen

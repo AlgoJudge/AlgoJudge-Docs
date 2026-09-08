@@ -3,6 +3,8 @@ title: Rounds, weeks and classes
 description: What a series is called, what its four states show, and which of them accept a submission.
 ---
 
+import { Mermaid } from "@/components/mermaid";
+
 A **series** is a group of problems inside an activity. A contest calls one a
 **round**; a course calls one a **week** or a **class**.
 
@@ -33,6 +35,20 @@ the Client performed alone would not be a refusal at all.
 | **open** | shown | yes |
 | **paused** | shown, unless the manager took them away as they paused | no |
 | **ended** | shown, for ever | no |
+
+<Mermaid chart={`
+flowchart LR
+    upcoming["Upcoming<br/>nothing about it is disclosed"]
+    open["Open<br/>readable, and accepting"]
+    paused["Paused<br/>readable unless the manager hid it"]
+    ended["Ended<br/>readable for ever"]
+    upcoming -->|"its start passes"| open
+    open -->|"a manager pauses it"| paused
+    paused -->|"a manager resumes it"| open
+    open -->|"its end passes"| ended
+`} />
+
+A pause is the only one of the four you come back from.
 
 Two consequences worth stating:
 

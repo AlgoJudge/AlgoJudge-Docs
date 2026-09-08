@@ -2,7 +2,7 @@
 title: Paczki
 description: Co dostaje Runner i skąd zadanie bierze swoje testy i limity.
 source: en/client/manager/packages.mdx
-sourceSha256: bf2997067258774201b9daeace82122ffbd70828e9a47545e1ccce2dda26e249
+sourceSha256: 7eacc5353f5410d2ef30b09e936033b1e09ac14736910ee0059dc46f7243fdb9
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -28,7 +28,8 @@ package.zip
 │   ├── 0a.in    0a.out         grupa 0: przykłady
 │   ├── 1a.in    1a.out
 │   └── 2a.in    2a.out
-├── checker/                     opcjonalnie
+├── checker/                     jedno albo drugie, nigdy oba
+├── interactor/
 └── solutions/                   opcjonalnie
 ```
 
@@ -39,12 +40,12 @@ package.zip
 |---|---|
 | `type` | jaki to format. Runner, który nie zna wersji, odmawia paczki, zamiast zgadywać |
 | `limits.timeMs` | milisekundy **czasu procesora** — użytkownika plus systemowego, dla wszystkiego, co uruchomi zgłoszenie. Nie jest to czas oczekiwania uczestnika: uruchomienie kontenera go nie obciąża, tak samo jak czekanie |
-| `limits.memoryBytes` | **bajty, wszędzie.** W całym produkcie nie ma drugiej jednostki pamięci |
+| `limits.memoryBytes` | **bajty.** W pliku jest jedna jednostka pamięci i żadnej innej; w edytorze wpiszesz KiB albo MiB, a on przeliczy |
 | `languages` | w czym wolno zgłaszać. Puste znaczy, że paczka nic nie narzuca, a wtedy wolno wszystko, co Runner umie zbudować |
 | `overrideLimits` | limity na język, kluczem jest rodzina (`cpp`, `python`) albo jeden toolchain (`pypy3`). Tutaj zapisujesz, że Python jest wolniejszy |
 | `groups` | grupy punktowe, ich punkty i opcjonalnie własne limity |
 | `checker` | brak oznacza, że decydują pliki `.out`. Dostaje odpowiedź uczestnika strumieniowo, w trakcie jej powstawania, więc musi ją czytać sekwencyjnie i tylko raz — nie da się w niej cofnąć. Kiedy jest, plików `.out` w ogóle nie musi być |
-| `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interaktor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok — załączenie jednego z nich w karcie „Programy" blokuje drugi. Kiedy jest, **żaden** z plików testu nie jest wymagany |
+| `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interaktor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok — załączenie jednego z nich w karcie „Programy” blokuje drugi. Kiedy jest, **żaden** z plików testu nie jest wymagany |
 | `groups[].tests` | ile testów ma grupa, gdy nie wysyłasz dla nich plików. Może to podać tylko zadanie interaktywne i najwyżej 26 — gdzie indziej testy liczą się z plików |
 | `modelSolution` | służy do kalibracji limitów, nigdy do oceniania |
 
@@ -59,11 +60,12 @@ Zakładka bierze luźne pliki i paruje je po nazwie: **`1a.in` idzie z `1a.out`.
 Liczba to grupa, litera to test.** Test możesz też wpisać ręcznie. Pliki, których
 zakładka nie rozpoznaje, wypisuje, zamiast po cichu je pomijać.
 
-W tabeli **Grupy** wpisujesz punkty i tam oznaczasz jedną grupę jako
-**przykłady**. Te testy są wycinane do osobnego archiwum i publikowane
-uczestnikom jako `examples.zip` — z tych samych plików, więc przykład w treści i
-przykład do pobrania nie mogą się różnić. Jeśli nie oznaczysz żadnej grupy jako
-przykłady, uczestnik nie dostanie żadnych.
+W tabeli **Grupy** wpisujesz punkty i tam oznaczasz grupę jako **przykłady** —
+dowolnie wiele grup, na początek grupę 0. Te testy są wycinane do osobnego
+archiwum i publikowane uczestnikom jako `examples.zip`, z tych samych plików,
+więc przykład w treści i przykład do pobrania nie mogą się różnić. Jeśli nie
+oznaczysz żadnej grupy, uczestnik nie dostanie żadnych przykładów — i bywają
+zadania, które właśnie tego chcą.
 
 **Zadanie interaktywne nie publikuje ich tak czy inaczej.** Nie ma pliku z
 wejściem, który można by przekazać — zgłoszenie też go nie dostaje — więc
@@ -101,10 +103,24 @@ każde zgłoszenie, a nie liczoną od nowa przy każdym uruchomieniu.
 
 ## Skąd zadanie bierze testy i limity
 
-1. Paczka zawiera testy i limity domyślne.
-2. Grupa wewnątrz niej może podać własne.
-3. Dokument **Konfiguracja** z podpięcia jest nakładany na ustawienia paczki — to
-   tam aktywność zawęża języki albo podnosi limit na własny użytek.
+Kroki są dwa, a przeczytanie ich w odwrotnej kolejności kosztuje całą rundę.
+
+1. **Dokument Konfiguracja z podpięcia scala się z paczką**, pole po polu — to
+   tam aktywność zawęża języki albo zmienia limit na własny użytek.
+   `limits: { timeMs: 500 }` zawęża czas i zostawia pamięć w spokoju, a tablica
+   `groups` łączy się po numerze grupy, więc jedną grupę zmienisz bez
+   przepisywania pozostałych. Niczego nie da się w ten sposób **usunąć**, a pole,
+   którego format nie zna, jest odrzucane, a nie pomijane.
+2. **Dopiero tak scalony dokument czyta się osobno dla każdego testu, a wygrywa
+   warstwa bardziej szczegółowa**: globalne `limits`, nadpisane przez
+   `overrideLimits` dla języka, a te przez własne limity grupy.
+
+<Callout type="warn" title="Podniesienie limitu globalnego nie ruszy grupy, która ma własny">
+Kroki składają się w tej kolejności, więc `limits.timeMs` wpisane w podpięciu
+zmienia **globalny** limit paczki — a grupa, która ma własny, nadal jest
+oceniana według swojego. Żeby dołożyć czasu jednej grupie, wpisz tę grupę w
+`groups` podpięcia.
+</Callout>
 
 Czasu i pamięci nigdy nie ustawia się na aktywności. Poznasz je dopiero wtedy,
 gdy rozwiązanie się wykona, i należą do zadania.

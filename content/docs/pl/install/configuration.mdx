@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i trzy klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: f3512c79315b3030a79cc05b0034ed1569fc0371de11497e7dcdf9b5c6bd8e4a
+sourceSha256: ce3ef8b6ed53a09e1822f0aa077511dbe62defc84ba98e665ba83bec69cd412e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -33,7 +33,9 @@ administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/a
 | `RUNNER_TAG` | `0` | Runner **oraz** jego cztery obrazy `lang-*` |
 | `EXTERNAL_RUNNER_TAG` | `0` | własna wersja i własne repozytorium, więc własny tag |
 | `POSTGRES_TAG` | `18` | major przypięty celowo — 18 przeniósł katalog danych |
-| `NGINX_TAG` | `1.30-alpine` | stabilna linia nginksa: parzysty numer pomocniczy oznacza linię stabilną, nieparzysty — mainline |
+| `NGINX_TAG` | `1.30-alpine` | stabilna linia nginksa: parzysty numer pomocniczy oznacza linię stabilną, nieparzysty — mainline. **O tagu obrazu bazowego świadczy data ostatniego zbudowania, a nie to, że się pobiera** |
+| `LOG_MAX_SIZE` | `20m` | log każdego kontenera, ograniczany przez sam stos, a nie przez Twojego demona |
+| `LOG_MAX_FILES` | `5` | dockerowy sterownik `local`, który kompresuje to, co zrotuje |
 
 ## Baza danych
 
@@ -52,10 +54,12 @@ administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/a
 | `HTTPS_PORT` | `443` | |
 | `SERVER_PORT` | `8080` | publikowany wyłącznie na pętli zwrotnej |
 | `CLIENT_PORT` | `8082` | publikowany wyłącznie na pętli zwrotnej |
-| `API_BASE_URL` | `/` | adres Servera tak, jak sięga do niego **przeglądarka**. `/`, gdy jedno origin obsługuje obie połowy. Dwa origins muszą być **tą samą witryną** — jedna domena rejestrowalna, jeden schemat — inaczej nikt się nie zaloguje. Zobacz [Za własnym proxy](/pl/install/reverse-proxy) |
-| `APP_BASE_URL` | puste | jego odbicie lustrzane: adres **aplikacji** tak, jak sięga do niej przeglądarka. Puste jest właściwe przy jednym origin. Przy dwóch pozostawienie go pustym kończy logowanie federacyjne na gołym `/activities`, rozwiniętym względem origin API |
+| `API_BASE_URL` | `/` | adres Servera tak, jak sięga do niego **przeglądarka**. `/`, gdy jeden origin obsługuje obie połowy. Dwa originy muszą być **tą samą witryną** — jedna domena rejestrowalna, jeden schemat — inaczej nikt się nie zaloguje. Zobacz [Własne reverse proxy](/pl/install/reverse-proxy) |
+| `APP_BASE_URL` | puste | jego odbicie lustrzane: adres **aplikacji** tak, jak sięga do niej przeglądarka. Puste jest właściwe przy jednym originie. Przy dwóch pozostawienie go pustym kończy logowanie federacyjne na gołym `/activities`, rozwiniętym względem originu API |
 | `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | czyjemu słowu wierzyć w sprawie adresu odwiedzającego. **Sieć**, nie adres; `none`, gdy Server stoi bez proxy |
 | `EDGE_SUBNET` | `172.28.0.0/24` | sieć Compose, w której stoi dołączony nginx |
+| `SERVER_STOP_GRACE` | `40s` | tyle, żeby Server zdążył odpowiedzieć na trzymane pobrania pracy. Podnieś razem z `AJ_Poll__WaitSeconds`, jeśli je podnosisz |
+| `SERVER_LOG` | `Warning` | **nie `Information`**: na tym poziomie Server loguje każde wykonane zapytanie SQL, zmierzone na 91–98% wszystkiego, co zapisuje stos oceniający — ponad gigabajt przy zawodach z trzema tysiącami zgłoszeń, na dysku samej bazy |
 
 **`EDGE_SUBNET` i `TRUSTED_PROXY_NETWORKS` muszą się zgadzać.** Domyślna para
 się zgadza. Zmiana jednego bez drugiego oznacza, że Server przestaje wierzyć
@@ -78,14 +82,15 @@ z tego proxy.
 
 | Klucz | Domyślnie | |
 |---|---|---|
-| `RUNNER_WORK_DIR` | **wymagane** | **bezwzględna ścieżka na hoście**, i to **należąca do uid 65532**: brakującą Compose tworzy jako root, a wtedy każde zlecenie zawodzi z `Permission denied (os error 13)`. Ścieżka, której demon nie potrafi otworzyć, staje się pustym katalogiem, a nie błędem |
-| `RUNNER_NAME` | `runner-1` | to, co pokazuje panel Zarządzanie |
-| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | co ten Runner oferuje do oceny |
+| `RUNNER_WORK_DIR` | **wymagane** | **bezwzględna ścieżka na hoście**. Niech utworzy ją Compose — zakłada ją jako root, z prawami 0755, a tego właśnie trzeba: Runner zapisuje tam jako root, a każdy kontener zadania czyta ją jako uid 65534. Katalog ręcznie zamknięty przed innymi nie przechodzi drugiej połowy i wtedy każde zlecenie zgłasza `Permission denied (os error 13)`. Ścieżka, której demon nie potrafi otworzyć, staje się pustym katalogiem, a nie błędem |
+| `RUNNER_NAME_PREFIX` | `runner` | pod tym rejestruje się cała czwórka: to plus `-1` do `-4`. **Drugi host z własnymi Runnerami potrzebuje innego przedrostka**, inaczej panel pokaże dwa wiersze o tej samej nazwie |
+| `RUNNER_1_CPUSET` … `RUNNER_4_CPUSET` | puste | z których procesorów może korzystać każdy Runner. Puste zostawia rozmieszczenie planiście hosta. Podział, który warto zrobić, to jeden Runner na rdzeń fizyczny, z obydwoma jego wątkami — patrz [Czego wymaga host](/pl/install/requirements) |
+| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | co ten Runner oferuje do oceny. Wartość, która nie nazywa niczego — zabłąkany przecinek — jest odrzucana przy starcie |
 | `RUNNER_TAGS` | puste | pule. **Czytane wyłącznie przy pierwszej rejestracji**; nazwanie puli zabiera Runnera z kolejki ogólnej |
-| `RUNNER_STOP_GRACE` | `30s` | ile Docker czeka, zanim zabije Runnera. **Nic nie daje**: Runner ignoruje `SIGTERM`, więc w tym czasie niczego nie kończy — każdą z tych sekund odczekują `down`, `stop` i `update.sh`. Czyste zatrzymanie zaczyna się od drenowania. Patrz [Aktualizacja i wycofanie](/pl/install/update) |
+| `RUNNER_STOP_GRACE` | `30s` | ile Docker czeka, zanim zabije Runnera. Po `SIGTERM` Runner oddaje swoje zlecenie, żeby inny wziął je od razu; **skrócenie tego poniżej czasu, jakiego potrzebują te wywołania, zamienia zatrzymanie w zabicie**, a zabity Runner zostawia zlecenie dzierżawie. Patrz [Aktualizacja i wycofanie](/pl/install/update) |
 | `RUNNER_LOG` | `info` | staje się `RUST_LOG` |
-| `DOCKER_GID` | `999` | grupa właściciela gniazda demona. `0` na Docker Desktop |
-| `SERVER_URL` | `http://server:8080` | tylko dla Runnera na własnej maszynie; `/api/v1` jest dopisywane |
+| `DOCKER_GID` | `999` | grupa właściciela gniazda demona. `0` na Docker Desktop. Nic od niej nie zależy — usługa działa jako root — ale `preflight.sh` ostrzega, gdy jest zła |
+| `SERVER_URL` | `http://server:8080` | tylko dla hosta bez kontenera `server`; `/api/v1` jest dopisywane |
 
 ## Runner zewnętrzny
 
@@ -97,15 +102,17 @@ Czytaj tylko wtedy, gdy `external-runner` jest w `COMPOSE_PROFILES`. Zobacz
 | `EXTERNAL_JUDGE_USERNAME` | **wymagane z profilem** | konto w archiwum. Każde przekazane zgłoszenie idzie z niego i na nim zostaje |
 | `EXTERNAL_JUDGE_PASSWORD` | **wymagane z profilem** | odmawia tego `preflight.sh`, a nie `compose.yaml`: Compose interpoluje cały plik, zanim zastosuje profile, więc oznaczenie tego klucza jako wymaganego zepsułoby każdy układ, który tej usługi nie uruchamia |
 | `EXTERNAL_JUDGE` | `uva` | które archiwum. Jeden proces obsługuje jednego sędziego; drugi to druga usługa |
-| `EXTERNAL_RUNNER_NAME` | `external-runner-1` | **nie** `RUNNER_NAME`. To drugi Runner, z własną tożsamością i własnym zatwierdzeniem |
+| `EXTERNAL_RUNNER_NAME` | `external-runner-1` | cała nazwa, nie przedrostek: to jeden Runner, z własną tożsamością i własnym zatwierdzeniem |
 | `EXTERNAL_PROBLEM_TYPES` | puste | puste deklaruje własny typ archiwum. Literówka daje tu ciszę, a nie błąd |
 | `EXTERNAL_RUNNER_TAGS` | puste | pule, czytane wyłącznie przy pierwszej rejestracji |
 | `EXTERNAL_RUNNER_LOG` | `info` | staje się `RUST_LOG` |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | dwa razy tyle co u Runnera oceniającego, bo oddaje do dwudziestu zgłoszeń w toku, po jednym wywołaniu na każde |
 
-Pięciu jego ustawień czasowych celowo nie udostępniamy: sprawdzają się nawzajem
-przy starcie, domyślne wartości obrazu spełniają wszystkie te warunki, a zmiana
-w dobrej wierze — łagodniejsze odpytywanie cudzego archiwum — jest właśnie tą,
-która to psuje.
+Jego dzierżawy ani odstępów odpytywania celowo nie udostępniamy: sprawdzają się
+nawzajem przy starcie, domyślne wartości obrazu spełniają wszystkie te warunki,
+a zmiana w dobrej wierze — łagodniejsze odpytywanie cudzego archiwum — jest
+właśnie tą, która to psuje. Dzierżawa, która mogłaby wygasnąć między dwoma
+odnowieniami, to zgłoszenie, które archiwum dostanie dwa razy.
 
 ## Kopie zapasowe
 

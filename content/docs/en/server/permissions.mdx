@@ -4,6 +4,7 @@ description: The string form, the two scopes, the resolution rules, the three sh
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 The Server is what enforces authorisation, so the whole vocabulary lives in one
 place: `AlgoJudge.Server/Authorization/Permissions.cs`. The Client fetches it
@@ -53,10 +54,25 @@ In this order. The order is the decision.
 5. **Nobody may grant, or map onto, a permission they do not themselves hold.**
    Enforced where a grant is written, not where it is read.
 
-<Callout type="warn" title="Rule 4 has a history worth knowing">
-The rule once read "minus the union of their denies". The denies were removed
-and the subtraction clause outlived them until the override replaced it. A
-document describing a deny list predates the model.
+<Mermaid chart={`
+flowchart TD
+    q(["May this person do this, here?"])
+    q --> ov{"An activity grant here<br/>carrying OverrideSystem?"}
+    ov -->|yes| only["That grant alone decides.<br/>Not even system:administrator reaches in"]
+    ov -->|no| adm{"system:administrator in any<br/>system contribution?"}
+    adm -->|yes| bypass["Every permission check passes.<br/>Membership is asked separately"]
+    adm -->|no| union["The union: every system contribution, plus<br/>the activity grant when one activity is asked about"]
+    union --> held{"Is the key in that set?"}
+    held -->|yes| allowed["Allowed"]
+    held -->|no| refused["Refused. Nothing subtracts,<br/>and there is nothing else to consult"]
+`} />
+
+<Callout type="warn" title="There is no deny list to reach for">
+"A manager everywhere, except in this contest where I compete" is
+`OverrideSystem` — an activity grant that replaces the system contributions
+wholesale — and never a permission taken away. A model with denies has to say
+which of two contributions wins where they disagree, and every answer to that is
+somebody's surprise.
 </Callout>
 
 An `Invited` grant confers nothing. A grant whose `Permissions` column does not
@@ -120,11 +136,12 @@ user:create:temporary
 grant:read:all             grant:update
 ```
 
-Deliberately **not** included: `activity:create`, `activity:delete`,
-`problem:read:all`, `problem:delete`, every `user:` key beyond temporary
-accounts, `template:read`, `template:manage`, the four `runner:` keys,
-`instance:update`, `provider:manage`, `trial:run`. A manager runs an activity;
-they do not run the installation it lives in.
+The other twenty are deliberately **not** included: `activity:create`,
+`activity:delete`, `trial:run`, `problem:read:all`, `problem:delete`,
+`problem:import:external`, every `user:` key beyond temporary accounts,
+`template:read`, `template:manage`, the four `runner:` keys, `instance:update`,
+`provider:manage` and `system:administrator`. A manager runs an activity; they
+do not run the installation it lives in.
 
 ### `admin` — 1 key
 
@@ -160,9 +177,6 @@ more likely to be a new one somebody has been given than an ordinary
 participant's, and guessing the other way would quietly put them in the ranking.
 
 ## The catalogue — 52 keys
-
-There are **52 permissions**. The shipped manager template holds **32** of
-them.
 
 ### Activity
 

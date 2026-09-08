@@ -1,11 +1,12 @@
 ---
 title: Czym jest instalacja
-description: Pięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
+description: Dziewięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
 source: en/install/index.mdx
-sourceSha256: c7e12e7bc650a6125e061f99ecb6677fd064ef3fa42551d8456c774d9430fcf5
+sourceSha256: fc2d847ad2c24e65629b47831fe10e0b5ae69982897692583fb5bb7524e8cade
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 Instalacja AlgoJudge to stos Docker Compose. Dostarczamy go jako osobne
 repozytorium, `AlgoJudge-Ops`: klonujesz je, konfigurujesz przez plik `.env`
@@ -35,20 +36,51 @@ można podnieść jedną połowę bez drugiej.
 | `postgres` | `data` | PostgreSQL 18. **Bez portu na hoście, w żadnym układzie** |
 | `server` | `app`, `server` | API pod `/api/v1`, publikowane na `127.0.0.1:8080` |
 | `client` | `app`, `client` | aplikacja w przeglądarce, publikowana na `127.0.0.1:8082` |
-| `nginx` | `edge` | TLS, jedno origin dla obu połówek, porty 80 i 443 |
-| `runner` | `runner` | ocenia zgłoszenia w kontenerach siostrzanych |
+| `nginx` | `edge` | TLS, jeden origin dla obu połówek, porty 80 i 443 |
+| `runner-1` … `runner-4` | `runner` | jeden obraz, cztery tożsamości. Każdy ocenia jedno zgłoszenie naraz, w kontenerach siostrzanych |
 | `external-runner` | `external-runner` | zamiast oceniać, przekazuje je do zewnętrznego archiwum. **Nie ma go w domyślnym zestawie** — patrz [Zewnętrzny sędzia](/pl/install/external-runner) |
 
-Sieci Compose są trzy — `edge`, `backend` i `runner` — żeby baza nie była
-osiągalna z krawędzi, a ruch oceniania dał się oddzielić od HTTP. PostgreSQL
-jest wyłącznie w sieci `backend`. **Port do sieci publikuje tylko nginx**; dwie
-publikacje na pętli zwrotnej wymienione wyżej są po to, żeby dało się użyć
-`curl` i podstawić własne proxy.
+**Cztery to punkt odniesienia, a nie minimum.** Tyle pasuje do ośmiu rdzeni
+fizycznych i zostawia cztery na całą resztę; na mniejszej maszynie uruchom mniej,
+bo więcej Runnerów niż rdzeni fizycznych nie przyspiesza oceniania, a psuje jego
+rzetelność. Tabelę znajdziesz w [Czego wymaga host](/pl/install/requirements).
 
-Sieć `edge` ma jawnie zapisaną podsieć, domyślnie `172.28.0.0/24`. Nie chodzi
-o porządek: Server odmawia startu, dopóki nie wskażesz mu, czyim informacjom
+Niosą je trzy sieci Compose, żeby baza nie była osiągalna z krawędzi, a ruch
+oceniania dał się oddzielić od HTTP:
+
+<Mermaid chart={`
+flowchart LR
+    subgraph edge["edge — jedyna sieć z portem publikowanym na zewnątrz"]
+        nginx["nginx"]
+        client["client"]
+    end
+    subgraph backend["backend"]
+        postgres["postgres"]
+    end
+    subgraph runnernet["runner"]
+        r["runner-1 … runner-4"]
+        ext["external-runner"]
+    end
+    server["server"]
+    nginx --> server
+    nginx --> client
+    server --> postgres
+    r --> server
+    ext --> server
+    style edge fill:none
+    style backend fill:none
+    style runnernet fill:none
+`} />
+
+Server jako jedyny stoi we wszystkich trzech. PostgreSQL siedzi wyłącznie
+w `backend` i w żadnym układzie nie ma portu na hoście. **Port do sieci publikuje
+tylko nginx**; dwie publikacje na pętli zwrotnej wymienione wyżej są po to, żeby
+dało się użyć `curl` i podstawić własne proxy.
+
+Sieć `edge` ma jawnie zapisaną podsieć, domyślnie `172.28.0.0/24`. To nie
+kwestia porządku: Server odmawia startu, dopóki nie wskażesz mu, czyim słowom
 o adresie odwiedzającego ma wierzyć, a podsieci wylosowanej przez Dockera nie
-dałoby się w ten sposób nazwać.
+dałoby się nazwać.
 
 ## Cztery układy
 
@@ -75,16 +107,21 @@ Każdy host z Runnerem klonuje to samo repozytorium i uruchamia
 
 ```ini
 SERVER_URL=https://twoja.domena
-RUNNER_NAME=runner-lab-a       # inna na każdym hoście
+RUNNER_NAME_PREFIX=lab-a       # inny na każdym hoście
 RUNNER_WORK_DIR=/srv/algojudge/runner-work
 ```
+
+Przedrostek nazywa wszystkie cztery — `lab-a-1` do `lab-a-4` — i **musi się
+różnić między hostami**, inaczej Runnery z dwóch maszyn pojawią się w panelu pod
+tymi samymi nazwami.
 
 **Każde połączenie nawiązuje sam Runner.** Nie potrzebuje portu przychodzącego
 i pracuje zza domowego routera, bez własnego adresu. W `compose.yaml` celowo nie
 ma `depends_on` na Server: na hoście z samym Runnerem nie ma usługi Server, na
 której można by polegać — Runner sam ponawia próby połączenia.
 
-Każdy Runner rejestruje się osobno i każdy wymaga osobnego zatwierdzenia.
+Każdy Runner rejestruje się osobno i każdy wymaga osobnego zatwierdzenia, więc
+host z czterema Runnerami to cztery zatwierdzenia.
 
 <Callout type="warn" title="Dla instalacji publicznej zalecany jest układ T2">
 Dostęp do gniazda Dockera daje na hoście uprawnienia roota, a Runner potrzebuje
@@ -109,11 +146,14 @@ i rejestracji dostawcy.
 | [Pierwsza instalacja](/pl/install/first-install) | od pustego katalogu do werdyktu |
 | [Prekonfiguracja](/pl/install/preconfiguration) | jak postawić instalację bez klikania w panelu |
 | [Tożsamość](/pl/install/identity) | Keycloak albo Authentik i jak zarejestrować dostawcę |
+| [Podłączenie platformy kursowej](/pl/install/lti) | LTI 1.3 i ustawienie przeglądarki, od którego wszystko zależy |
+| [Gdzie trafiają pliki](/pl/install/storage) | trzy magazyny i przenoszenie plików między nimi |
 | [Przerwa techniczna](/pl/install/maintenance) | jak wyłączyć instalację z ruchu, nie zatrzymując jej |
-| [Kopie zapasowe](/pl/install/backup) | co obejmuje zrzut i co doszło do niego teraz |
+| [Kopie zapasowe](/pl/install/backup) | co obejmuje zrzut i co ze sobą niesie |
 | [Odtwarzanie](/pl/install/restore) | jak wgrać kopię z powrotem |
 | [Aktualizacja i wycofanie](/pl/install/update) | i czego wycofanie nie cofa |
 | [Praca rutynowa i harmonogram](/pl/install/schedule) | sprzątanie, cron i to, czego nikt nie mówi |
 | [Własne reverse proxy](/pl/install/reverse-proxy) | pięć reguł |
+| [Zewnętrzny sędzia](/pl/install/external-runner) | przekazywanie zadań do zewnętrznego archiwum |
 | [Wszystkie ustawienia w `.env`](/pl/install/configuration) | całość w jednej tabeli |
 | [Kiedy coś nie działa](/pl/install/troubleshooting) | awarie, które wyglądają na inne problemy |

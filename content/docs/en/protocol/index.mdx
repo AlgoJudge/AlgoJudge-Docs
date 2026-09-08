@@ -5,6 +5,8 @@ description: What a Runner is on the wire, where the authority for this section 
 
 import { Callout } from "fumadocs-ui/components/callout";
 
+import { Mermaid } from "@/components/mermaid";
+
 This section is for somebody implementing a **Runner of their own**: a program
 that registers with an AlgoJudge Server, is approved, claims work, and reports
 results. It is not a description of the Runner that ships — that is
@@ -50,6 +52,37 @@ first and signs the nonce; the challenge endpoint does not itself require
 approval, so a Runner still waiting to be approved can restart like any other. **Revocation is permanent**: there is no rotation, so a leaked key means a
 new configuration, a new key and a new registration.
 
+The whole conversation runs in one order, and two parts of it are requirements
+rather than habits: the lease is renewed on a **timer** while work is in
+progress, and anything the evaluation produced is uploaded and attached
+**before** the report, which ends the job.
+
+<Mermaid chart={`
+sequenceDiagram
+    autonumber
+    participant R as A Runner
+    participant S as The Server
+    participant M as A manager
+    R->>S: register — the public key, and what it evaluates
+    S-->>R: pendingApproval
+    loop until somebody reaches the panel
+        R->>S: auth/challenge, then auth/token
+        S-->>R: runner.notApproved — waiting is not a fault
+    end
+    M->>S: approve, on the manager's own surface
+    R->>S: auth/challenge, then auth/token — the nonce, signed with the key
+    S-->>R: a bearer token
+    loop for as long as it runs
+        R->>S: jobs/claim, which the Server may hold open
+        S-->>R: a job and a lease token — or 204, the ordinary answer
+        R->>S: files/{id} — the package, checked against packageSha256
+        R->>S: jobs/{id}/lease — on a timer, at a quarter of the lease
+        R->>S: files, then jobs/{id}/files — the log, before the report
+        R->>S: jobs/{id}/report — the verdict, and the lease token
+        S-->>R: the result, and the same one again on a resend
+    end
+`} />
+
 ## Every call
 
 Everything is JSON over HTTP, under `/api/v1`.
@@ -64,6 +97,7 @@ Everything is JSON over HTTP, under `/api/v1`.
 | Renew a lease | `POST /api/v1/runner/jobs/{jobId}/lease` | bearer |
 | Report progress | `POST /api/v1/runner/jobs/{jobId}/progress` | bearer |
 | Report a result | `POST /api/v1/runner/jobs/{jobId}/report` | bearer |
+| Give a job back | `POST /api/v1/runner/jobs/{jobId}/release` | bearer |
 | Read a file | `GET /api/v1/runner/files/{id}` | bearer |
 | Upload a file | `POST /api/v1/runner/files` | bearer |
 | Attach to an attempt | `POST /api/v1/runner/jobs/{jobId}/files` | bearer |
@@ -112,3 +146,11 @@ sequence: register, be refused a token before approval, be approved,
 authenticate, be refused a replayed nonce, claim, read only its own package,
 report, resend the report and receive the same result, and lose a job to lease
 expiry.
+
+Four cases are worth writing even though nothing obliges an implementation to
+pass them, because each is a way of being wrong that looks like working: a
+released job is queued again **at once** with its delivery count where it was; a
+Runner waiting on an empty queue is handed a submission made afterwards in a
+fraction of that wait, rather than when it runs out; a `204` arrives **at** the
+deadline and not before; and a job reported as an infrastructure failure is
+queued again rather than failed, until the deliveries run out.

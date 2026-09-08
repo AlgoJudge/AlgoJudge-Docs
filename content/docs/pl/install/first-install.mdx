@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 823ca0ea832d2339c7f38b8cf49b023f12421218553d19f54e4f7ba56d4faa5a
+sourceSha256: faca8ec5498f7a4a0df41904ede2b3ed13a9025d1b81db2b48200ec67fa51d7a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -77,7 +77,8 @@ próby zadania, i wtedy każde zgłoszenie kończy się komunikatem `Permission 
 jako 65534 — i mówi, która zawiodła.
 
 *`chown 65532:65532` też zadziała i nie jest potrzebny — usługa Runnera działa
-jako root, żeby móc mierzyć.*
+jako root, żeby móc mierzyć. Psuje to dopiero katalog ręcznie zamknięty przed
+innymi.*
 
 Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
 
@@ -124,9 +125,15 @@ docker compose up -d --wait
 
 `preflight.sh` odmawia od razu i jednym zdaniem, zamiast w połowie podnoszenia
 stosu: puste hasło, brakujący lub zbyt krótki token, CIDR z bitami hosta,
-względny katalog pracy, `DOCKER_GID` niezgodny z gniazdem, `.env` śledzony przez
-Git albo bez trybu 600. `make up` uruchamia go najpierw, więc zwykłą drogę
-sprawdzamy niezależnie od tego, czy ktoś pamięta, że ten skrypt istnieje.
+względny katalog pracy, katalog pracy, którego kontener zadania nie przeczyta,
+cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git. `make up`
+uruchamia go najpierw, więc zwykłą drogę sprawdzamy niezależnie od tego, czy
+ktoś pamięta, że ten skrypt istnieje.
+
+**Profil `runner` uruchamia cztery Runnery**, od `runner-1` do `runner-4`.
+Cztery pasują do ośmiu rdzeni fizycznych; na mniejszej maszynie uruchom mniej,
+bo więcej Runnerów niż rdzeni fizycznych nie przyspiesza oceniania, a psuje jego
+rzetelność — tabelę ma [Czego wymaga host](/pl/install/requirements).
 
 ## 4. Administrator
 
@@ -157,18 +164,20 @@ własnym interfejsie pętli zwrotnej Servera, a żądanie przez nginx — **albo
 opublikowane `127.0.0.1:8080`** — dociera jako brama mostka i dostaje 404. To
 zachowanie zmierzone, nie domysł.
 
-## 5. Zatwierdź Runnera
+## 5. Zatwierdź Runnery
 
 **Nowy Runner rejestruje się i czeka.** To nie jest usterka i nie ma limitu
 czasu. Nic nie zostanie ocenione, dopóki administrator go nie zatwierdzi — i to
 właśnie powstrzymuje kogoś przed podpięciem własnej maszyny do Twojej
 instalacji.
 
-W panelu: **Runnery**, i zatwierdź ten, który się pojawił. Dopóki tego nie
-zrobisz, jego log powtarza `waiting: this Runner has not been approved yet`, za
-każdym razem z dłuższą przerwą — bo cała pracownia Runnerów zarejestrowanych
-naraz zasypywałaby inaczej Server jedną falą pytań przez cały czas, którego ktoś
-potrzebuje, żeby dojść do panelu.
+W panelu: **Runnery**, i zatwierdź każdy z czterech, które się pojawiły. Dopóki
+tego nie zrobisz, ich logi powtarzają `waiting: this Runner has not been approved
+yet`, za każdym razem z dłuższą przerwą — bo cała pracownia Runnerów
+zarejestrowanych naraz zasypywałaby inaczej Server jedną falą pytań przez cały
+czas, którego ktoś potrzebuje, żeby dojść do panelu. Niezatwierdzony Runner po
+prostu stoi bezczynnie, a kolejkę niosą pozostałe, więc zapomniane zatwierdzenie
+wygląda na wolną instalację, a nie na błąd.
 
 Potem wyślij coś i zobacz, jak dostaje werdykt. **Dopóki to się raz nie
 wydarzy, nie wiadomo, czy instalacja działa.**

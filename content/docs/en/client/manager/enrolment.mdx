@@ -23,7 +23,8 @@ checkbox, and why the same rows appear under
 **Enrol someone** asks for:
 
 1. the **user** — an account that already exists, and one not already enrolled;
-2. a **template** to start from, which fills the set in and is then forgotten;
+2. a **template** to start from: it fills the set in, and only its name is kept
+   afterwards, as a label saying where the set came from;
 3. the **permission set** itself, which you may edit freely.
 
 What the editor offers is what **you** hold in this activity, not what you hold
@@ -37,7 +38,8 @@ One switch on the same dialog: *submits like anybody, counts as nobody* — abse
 from the participant count and from the ranking.
 
 It is **forced on** for a grant carrying anything beyond an ordinary
-participant's set. A jury member in the ranking beside the students is a bug,
+participant's set — `trial:run` excepted, which is a key a competitor may hold
+without ceasing to be one. A jury member in the ranking beside the students is a bug,
 not a preference, so the Server computes this on every write and never accepts
 it from the screen. For an ordinary membership it is yours to choose: a test
 account, or the one running the reference solution, is exactly what it is for.

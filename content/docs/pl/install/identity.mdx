@@ -31,7 +31,7 @@ drugie.** Zanim zdecydujesz, przeczytaj dwie kolejne sekcje; jeśli żadna nie
 mówi nic o Twojej sytuacji, uruchom Keycloaka.
 
 Sam `auth.algojudge.app` działa na wdrożeniu Keycloak. Rozstrzyga to wybór
-jednej instalacji i niczego nie odsyła do archiwum.
+jednej instalacji i niczego nie wycofuje.
 
 ## Porównanie
 
@@ -88,12 +88,12 @@ linii, to usunięcie nie zostaje zgłoszone.
 
 **Nie potrafi serwować LDAP.** Keycloak korzysta z katalogu; sam go nie
 udostępnia. Ma to znaczenie dla instalacji, której LMS uwierzytelnia się
-względem katalogu — referencyjny stos Moodle zależy od tego widoku i dlatego
+w katalogu — referencyjny stos Moodle zależy od tego widoku i dlatego
 wdrożenie Authentik nie zostało wycofane.
 
 <Callout type="warn" title="Jeśli cokolwiek w Twojej instalacji czyta LDAP, to przesądza sprawę">
 Jeśli LMS, logowanie do maszyn w pracowni albo system pocztowy uwierzytelniają
-się względem katalogu udostępnianego przez Twoje wdrożenie tożsamości, nie
+się w katalogu udostępnianym przez Twoje wdrożenie tożsamości, nie
 skierujesz ich na Keycloaka. Authentik serwuje LDAP przez outpost; Keycloak nie
 ma na to sposobu.
 </Callout>
@@ -224,7 +224,7 @@ konto temu, kto ten adres po nim przejmie.
 Dwie konsekwencje zaskakują ludzi i obie są celowe:
 
 - **Dostawca nigdy nie przejmuje istniejącego konta po nazwie ani po adresie.**
-  Kolidująca nazwa użytkownika dostaje krótki skrót subjectu, a kolidujący adres
+  Kolidująca nazwa użytkownika dostaje krótki skrót wartości `sub`, a kolidujący adres
   pomijamy i konto powstaje bez niego.
 - **Dwóch dostawców ręczących za jedną osobę to dziś dwa konta.** Jedna osoba,
   jedno konto, którymi drzwiami by nie weszła, to wymaganie, które produkt
@@ -234,7 +234,7 @@ Kolejność przy każdym logowaniu jest taka: zwaliduj, rozwiąż mapowanie, zas
 zmianę uprawnień, dopiero potem zdecyduj o wpuszczeniu. Najbardziej widać to
 w jednym przypadku: **znany subject, który przy `deny` nie mapuje się na nic, ma
 swój wkład odebrany i dopiero potem dostaje odmowę.** Odmowa, która zostawiałaby
-wczorajszy wkład, trzymałaby kogoś w kadrze na zawsze — wystarczyłoby, żeby
+wczorajszy wkład, trzymałaby kogoś wśród prowadzących na zawsze — wystarczyłoby, żeby
 nigdy więcej się nie zalogował.
 
 Dostawca **wyłączony** to przypadek odwrotny i też celowy: nic nie jest
@@ -273,7 +273,7 @@ Tam, gdzie nie kontrolujesz dostawcy, zostaw jego kanał wyłączony.
 
 | | |
 |---|---|
-| **Keycloak 26.7.0** | przebieg przeciwko działającemu Serverowi z dwóch pustych baz: założenie konta, mapowanie, wkład nadpisany przy kolejnym logowaniu, kanał usunięcia wraz z kaskadą i rejestracja od początku do końca |
+| **Keycloak 26.7.0** | przebieg na działającym Serverze, z dwóch pustych baz: założenie konta, mapowanie, wkład nadpisany przy kolejnym logowaniu, kanał usunięcia wraz z kaskadą i rejestracja od początku do końca |
 | **Authentik 2026.5.6** | to samo przejechane ręcznie w przeglądarce, a ekrany logowania sprawdzone w Chromium, Firefoksie i WebKicie |
 | Dowolny inny dostawca | **niesprawdzone** |
 

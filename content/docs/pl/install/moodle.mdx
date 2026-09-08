@@ -1,8 +1,8 @@
 ---
 title: Instalacja narzędzia w Moodle
-description: Cała ścieżka, przejść i uwieczniona na zrzutach w Moodle 5.2 i 5.3 — zaproszenie, rejestracja i trzy ustawienia, bez których nic się nie dzieje.
+description: Cała ścieżka, przebyta i uwieczniona na zrzutach w Moodle 5.2 i 5.3 — zaproszenie, rejestracja i trzy ustawienia, bez których nic się nie dzieje.
 source: en/install/moodle.mdx
-sourceSha256: de4eb61c8137cac70317e213bc0f8ea019b3cd28027903b6e7a3f6ad62f993c1
+sourceSha256: cf95bcbe6e1f6fba95479a5959ace0a1cb27de206684d37ff07feb2a9fd551fa
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -40,7 +40,7 @@ add_header Content-Security-Policy "frame-ancestors 'self' https://moodle.exampl
 ```
 
 Uzasadnienie i to, co ta zmiana kosztuje gdzie indziej, opisuje
-[Cudze odwrotne proxy](/pl/install/reverse-proxy).
+[Własne reverse proxy](/pl/install/reverse-proxy).
 </Callout>
 
 **HTTPS musi mieć platforma, nie tylko narzędzie.** Server pobiera dokument
@@ -49,12 +49,20 @@ nie jest `https`. Moodle na czystym HTTP dostaje odprawę *„The platform gave 
 usable configuration address"* — zanim cokolwiek zostanie wybrane, więc w logu
 platformy też nic nie ma.
 
-**Server musi znać swój publiczny adres.** Każdy adres, który przekazuje
-platformie, powstaje z tego jednego. Instalacja stojąca pod nietypowym portem bez
-tego ustawienia gubi port w adresach, które rozdaje:
+**Server musi znać swój publiczny adres.** Rejestracja rozpoczęta przez platformę
+odmawia wydania zaproszenia, dopóki `AJ_PublicApiUrl` nie rozwija się
+w bezwzględny adres, a instalacja stojąca pod nietypowym portem bez tego
+ustawienia gubi port w adresach, które rozdaje. Ten stos zostawia je
+nieustawione, więc trafia do nakładki wymienionej w `.env` pod `COMPOSE_FILE` —
+powód, który się liczy, opisuje [Podłączenie platformy
+kursowej](/pl/install/lti):
 
-```bash
-AJ_PublicApiUrl=https://algojudge.example.edu/api/v1
+```yaml
+# state/lti.compose.yaml
+services:
+  server:
+    environment:
+      AJ_PublicApiUrl: https://algojudge.example.edu/api/v1
 ```
 
 ## 1. Zapowiedz rejestrację
@@ -183,5 +191,5 @@ deweloperskiego, a nie produktu.
   co prowadzący zrobi z tym, co właśnie podłączyłeś.
 - [Podłączanie platformy kursowej](/pl/install/lti) — mechanizm oraz to, co
   zostało i co nie zostało sprawdzone.
-- [Cudze odwrotne proxy](/pl/install/reverse-proxy) — polityka ramek i układ z
+- [Własne reverse proxy](/pl/install/reverse-proxy) — polityka ramek i układ z
   dwoma adresami w całości.

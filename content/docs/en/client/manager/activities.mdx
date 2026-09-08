@@ -5,9 +5,27 @@ description: A contest, a course or a practice set, and the four tabs it is buil
 
 import { Callout } from "fumadocs-ui/components/callout";
 
+import { Mermaid } from "@/components/mermaid";
+
 An activity is one place where problems are given to people: a contest, a
 course, a practice set. Everything else on this panel either feeds one or reads
 one.
+
+It holds its problems in **series** — rounds — and a series holds
+**assignments** rather than problems. An assignment is the row attaching makes,
+and everything about *how this problem is used here* lives on it; the problem
+itself stays in the library, where several activities can point at it at once.
+
+<Mermaid chart={`
+flowchart TD
+    act["Activity: a contest, a course, a practice set"]
+    act --> ser["Series: a round, a week, a class.<br/>When it opens, when it closes, which Runners judge it"]
+    ser --> asg["Assignment: the row made by attaching.<br/>The letter, the pinned version, what it is worth,<br/>the limits and languages laid over the package"]
+    asg --> prob["Problem, in the library.<br/>No activity owns it"]
+    prob --> ver["Version: statement, attachments, package.<br/>Published whole, never edited afterwards"]
+    other["An assignment in another round,<br/>or another course"] --> prob
+    style other stroke-dasharray:4
+`} />
 
 ## Creating one
 
@@ -43,7 +61,7 @@ That is not the same as being open to the world. A new activity is created
 nobody browsing finds it; both switches are under *Visibility and enrolment* on
 the settings tab.
 
-**Unpublish** takes all of that back: no round of it opens, the address answers
+**Withdraw** takes all of that back: no round of it opens, the address answers
 anybody who cannot edit it as though the activity were not there, and the list
 shows *Being prepared* in place of a state until you **Publish** it again. The
 one activity that does arrive unpublished is a
@@ -82,12 +100,13 @@ Everything the activity is configured with:
 | Modules | questions and announcements. A disabled module leaves the participant's sidebar entirely |
 | | whether the problems of a finished series stay readable — off, a finished round is over rather than secret |
 | Visibility and enrolment | who sees scores and the ranking, who may join, whether it is hidden from the list, whether a group's ranking row names its members, the join password and the link to hand out |
-| Runners | the tags that decide which machines judge it — see [Runners](/en/client/manager/runners) |
-| Limits | maximum upload, files per submission, submissions per problem |
+| Which Runners judge this activity | the tags that decide which machines take its work — see [Runners](/en/client/manager/runners) |
+| Limits the Server enforces | maximum upload, files per submission, submissions per problem |
 
-The three limits at the bottom are the ones the **Server** enforces. Time and
-memory belong to the problem: they only become knowable while a solution runs,
-and they are set in its [package](/en/client/manager/packages).
+That last card is named after what it does: the three are columns on the
+activity, checked on every upload. **Time and memory are not among them.** They
+only become knowable while a solution runs, so they belong to the problem and
+are set in its [package](/en/client/manager/packages).
 
 ### Documents
 

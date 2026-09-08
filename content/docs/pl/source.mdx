@@ -2,14 +2,14 @@
 title: Kod źródłowy
 description: Gdzie powstaje każda część AlgoJudge i co wolno zrobić z tymi stronami.
 source: en/source.mdx
-sourceSha256: e38d5b0f58878f48ba2b0187f022aa210df5e2be40a769852b0aea971cb54102
+sourceSha256: 9823fa30e9af2ca8841839be687fe5a6ee5d7e4a11aca38591824fa4a5561322
 ---
 
 import { Card, Cards } from "fumadocs-ui/components/card";
-import { AppWindow, Boxes, Cpu, Server } from "lucide-react";
+import { AppWindow, Boxes, Cpu, Forward, Server } from "lucide-react";
 
-AlgoJudge jest otwartoźródłowe. Trzy programy opisane w tej dokumentacji
-powstają jawnie, każdy w osobnym repozytorium.
+AlgoJudge jest otwartoźródłowe. Każdy program opisany w tej dokumentacji
+powstaje otwarcie, w osobnym repozytorium.
 
 <Cards>
   <Card
@@ -22,7 +22,7 @@ powstają jawnie, każdy w osobnym repozytorium.
     icon={<Server />}
     href="https://github.com/AlgoJudge/AlgoJudge-Server"
     title="AlgoJudge-Server"
-    description="REST API i wszystko, co ma przetrwać. ASP.NET Core i PostgreSQL. Nigdy nie uruchamia nadesłanego rozwiązania."
+    description="REST API i wszystko, co trwałe. ASP.NET Core i PostgreSQL. Nigdy nie uruchamia nadesłanego rozwiązania."
   />
   <Card
     icon={<Cpu />}
@@ -31,16 +31,23 @@ powstają jawnie, każdy w osobnym repozytorium.
     description="Maszyny oceniające zgłoszenia i obrazy językowe, w których je oceniają."
   />
   <Card
+    icon={<Forward />}
+    href="https://github.com/AlgoJudge/AlgoJudge-External-Runner"
+    title="AlgoJudge-External-Runner"
+    description="Drugi Runner: sam nic nie ocenia, tylko przekazuje zgłoszenia do zewnętrznego archiwum."
+  />
+  <Card
     icon={<Boxes />}
     href="https://github.com/AlgoJudge"
     title="Organizacja AlgoJudge"
-    description="Te trzy i wszystko inne, co powstaje w projekcie."
+    description="Te cztery i wszystko inne, co powstaje w projekcie."
   />
 </Cards>
 
 Każda sekcja tej witryny ma też odnośnik do własnego repozytorium na końcu
-paska bocznego. Stos instalacyjny ma osobne repozytorium, podlinkowane
-z [Instalacji i utrzymania](/pl/install) — czyli z sekcji, która go opisuje.
+paska bocznego. Jednym z nich jest stos instalacyjny, `AlgoJudge-Ops`, do
+którego odsyła [Instalacja i utrzymanie](/pl/install) — sekcja, która go
+opisuje.
 
 ## Co wolno z tym zrobić
 

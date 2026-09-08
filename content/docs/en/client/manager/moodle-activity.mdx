@@ -6,6 +6,8 @@ description: What a teacher does in the course, what a launch looks like from th
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
+import { Mermaid } from "@/components/mermaid";
+
 Once an administrator has connected the Moodle — see
 [Installing the tool in Moodle](/en/install/moodle) — a teacher puts AlgoJudge
 into a course as an **External tool** activity. Students then open it from the
@@ -88,6 +90,20 @@ administrator sets them once; they are listed under
 
 Opening the activity keeps the person inside the course page: AlgoJudge renders
 in the frame Moodle gives it.
+
+<Mermaid chart={`
+flowchart TD
+    opened(["Somebody opens the activity in the course"])
+    opened --> post["Moodle signs a launch and posts it to AlgoJudge"]
+    post --> known{"Platform registered here,<br/>with launches accepted?"}
+    known -->|no| refused["Refused, with the reason on the screen"]
+    known -->|yes| dest{"Does the launch carry<br/>the activity custom parameter?"}
+    dest -->|no| nowhere["Told there is no destination,<br/>rather than dropped somewhere arbitrary"]
+    dest -->|yes| linked{"Is this course account linked<br/>to an AlgoJudge account?"}
+    linked -->|no| signin["Sign in once, in a new tab.<br/>The two accounts are connected and this step<br/>does not come back"]
+    linked -->|yes| open
+    signin --> open["The activity, inside the frame Moodle gave it"]
+`} />
 
 ![The first launch, inside the Moodle course page](/screenshots/moodle/launched-in-the-course.png)
 

@@ -2,7 +2,7 @@
 title: Podłączenie platformy kursowej
 description: Podpięcie Moodle do instalacji, ustawienie przeglądarki, które decyduje o tym, czy to w ogóle zadziała, oraz co zostało sprawdzone, a co nie.
 source: en/install/lti.mdx
-sourceSha256: b14c1a5ba9e0a150f5978e5d973971c09ac618df8abb0340d49f22f17872ac03
+sourceSha256: 5c561377a1729e6a14e210c83ed7fb4b546b0035fc9220e4db85ce1aadff4631
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -35,17 +35,28 @@ rozwiązać. Tutaj nie jest to opcjonalne — powód jest w sekcji *W przegląda
 poniżej.
 
 **Server zna swój publiczny adres.** Każdy adres podawany platformie jest z niego
-budowany. Ustaw `PublicApiUrl` — razem z `/api/v1` — kiedy Server stoi za
-czymkolwiek, co przepisuje żądanie:
+budowany. Stos celowo zostawia `AJ_PublicApiUrl` nieustawione i bez tego działa
+zarówno start, jak i platforma wypisana ręcznie — biorą adres z żądania.
+**Wyjątkiem jest oczekiwana rejestracja**: odmawia wydania zaproszenia, dopóki
+wartość nie rozwija się w bezwzględny adres `http(s)`, bo właśnie ma go podać
+cudzemu serwerowi.
 
-```bash
-AJ_PublicApiUrl=https://twoja.domena/api/v1
+Ustaw ją w nakładce, a nie edytując `compose.yaml`:
+
+```yaml
+# state/lti.compose.yaml
+services:
+  server:
+    environment:
+      AJ_PublicApiUrl: https://twoja.domena/api/v1
 ```
 
-Pozostawienie tego pustym działa przy zwykłym reverse proxy, bo Server cofa się
-do adresu żądania. **Wyjątkiem są oczekiwane rejestracje**: odmawiają wydania
-zaproszenia, dopóki wynik nie jest adresem bezwzględnym, bo właśnie mają go podać
-cudzemu serwerowi.
+**Nakładkę wymień w `.env`**, jako `COMPOSE_FILE=compose.yaml:state/lti.compose.yaml`,
+a nie w jednym wywołaniu w wierszu poleceń. Tylko stamtąd dowiadują się o niej
+`update.sh`, `rollback.sh` i `preflight.sh`: składają stos, nie wymieniając
+plików, więc nakładka podana raz przez `-f` jest dla każdego z nich niewidzialna
+— a najbliższa aktualizacja złoży stos bez niej i zabierze jej usługi przez
+`--remove-orphans`.
 
 **Ktoś ma uprawnienie `provider:manage`.** Zarejestrowanie platformy to decyzja
 tej samej klasy co zarejestrowanie dostawcy tożsamości i stoi za tym samym
@@ -68,8 +79,8 @@ Zaproszenie jest ważne **raz, przez trzydzieści minut**. Można je odwołać, 
 zostanie użyte, a platforma, która odpowie źle, **go nie zużywa** — nie musisz
 wydawać drugiego dlatego, że pierwsza próba się nie udała.
 
-<Callout type="warn" title="To, co przyjeżdża, jest wyłączone">
-Platforma, która zarejestruje się sama, przyjeżdża **wyłączona** i bez prawa
+<Callout type="warn" title="To, co przychodzi, jest wyłączone">
+Platforma, która zarejestruje się sama, trafia do Ciebie **wyłączona** i bez prawa
 mówienia, kim ktokolwiek jest. To jest zamierzone: ktoś udowodnił, że ma żywe
 zaproszenie, a nie że prowadzi uczelniany Moodle. Włączenie jej i osobne
 zdecydowanie, czy może potwierdzać tożsamości, to dwie osobne decyzje, które
@@ -117,7 +128,7 @@ strona mówi, że przeglądarka blokuje logowanie dla tej ramki, proponuje **Otw
 w nowej karcie** i podaje zdanie do przekazania osobie administrującej kursem. Naprawa po stronie platformy polega na ustawieniu narzędzia tak, by
 otwierało się w nowym oknie zamiast w ramce.
 
-[Za własnym reverse proxy](/pl/install/reverse-proxy) opisuje drugą połowę tego —
+[Własne reverse proxy](/pl/install/reverse-proxy) opisuje drugą połowę tego —
 dlaczego `X-Frame-Options` to `SAMEORIGIN`, a nie `DENY`, i co to znaczy, jeśli
 ustawiasz własne nagłówki przed instalacją.
 
@@ -170,9 +181,9 @@ rozjechane o więcej niż dwie minuty.
 przeglądarki, ale ramka pozostaje pusta, a w konsoli przeglądarki pojawia się
 odmowa wyświetlenia strony — odrzuca ją polityka ramek, nie Server. Dołączony
 nginx wysyła `X-Frame-Options: SAMEORIGIN`, który pozwala osadzić stronę
-wyłącznie wtedy, gdy osadza ją **to samo** origin, więc LMS pod inną nazwą
+wyłącznie wtedy, gdy osadza ją **ten sam** origin, więc LMS pod inną nazwą
 zostaje odrzucony dokładnie tak, jak odrzuciłby go `DENY`. Czym to zastąpić, mówi
-[Za własnym proxy](/pl/install/reverse-proxy); tutaj ten nagłówek leży w
+[Własne reverse proxy](/pl/install/reverse-proxy); tutaj ten nagłówek leży w
 `nginx/snippets/security-headers.conf`.
 
 Model, który za tym wszystkim stoi — endpointy, klucze i to, do czego Server

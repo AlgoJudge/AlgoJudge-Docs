@@ -2,10 +2,11 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: e91c8fdd55729d48cbb61e205978483a3ab61afc82edcb8d7428d729e1f1ddf8
+sourceSha256: bfb51ff4752bf1b21367e989aadf031dd27ba45393bc89e3f99a3215657df24f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 ```bash
 ./scripts/update.sh
@@ -23,6 +24,20 @@ import { Callout } from "fumadocs-ui/components/callout";
 6. **`up -d`, poczekaj, aż stos będzie zdrowy.**
 7. Zdrowy: zapisz digesty. Niezdrowy: wycofaj.
 8. **Otwórz z powrotem** i usuń tylko te obrazy, które należą do tego projektu.
+
+<Mermaid chart={`
+flowchart TD
+    pull["git pull, potem docker compose pull<br/>Bez przerwy: nic jeszcze nie jest zamknięte"]
+    pull --> changed{"Jest coś nowego?"}
+    changed -->|"nie"| stop["Koniec. Nic nie zostało zamknięte"]
+    changed -->|"tak"| backup["Kopia zapasowa. Nieudany zrzut zatrzymuje aktualizację"]
+    backup --> close["Zamknij i poczekaj na drenowanie"]
+    close --> up["up -d, czekaj 120 s na zdrowy stos"]
+    up -->|"zdrowy"| lock["Zapisz digesty w state/current.lock"]
+    up -->|"niezdrowy"| roll["Wycofaj i zapisz ostatnie pięćdziesiąt<br/>linii logu Servera do state/failed-update.log"]
+    lock --> open["Otwórz z powrotem i usuń obrazy tylko tego projektu"]
+    roll --> shut["Zostaje zamknięta. Log i zrzut sprzed aktualizacji są nazwane"]
+`} />
 
 Przerwa to kroki od 5 do 7 — zmierzone na około **osiemnaście sekund** na małej
 instalacji, w większości drenowanie.
@@ -81,7 +96,7 @@ Przywraca dokładnie te obrazy, które są w `state/current.lock`, niezależnie 
 tego, na co wskazują dziś tagi, przez nakładkę zapisaną do
 `state/rollback.compose.yaml`. Dotyczy to także czterech obrazów językowych:
 wracają jako `AJ_Sandbox__Image__*` przy każdym Runnerze, bo stary Runner obok
-dzisiejszych piaskownic to jedyne zestawienie, w którym Runnera się nie testuje.
+dzisiejszych sandboksów to jedyne zestawienie, w którym Runnera się nie testuje.
 
 <Callout type="warn" title="Do czasu usunięcia przyczyny podnoś stos z obu plików">
 Zwykłe `docker compose up` nie czyta nakładki, więc wstawia nowe obrazy
@@ -103,36 +118,71 @@ wystartuje, a jedyna droga powrotu to odtworzyć zrzut zrobiony bezpośrednio
 przed — **a to gubi wszystko, co zapisano od tamtej pory**. Skrypt nazywa ten
 zrzut.
 
+## Aktualizuj wszystkie hosty w tym samym oknie
+
+**A obrazy językowe razem z Serverem.** Server i Runner rozmawiają protokołem,
+który zmienia się między wersjami, a tagi, które dostarcza ten stos, to ruchome
+wersje główne pobierane niezależnie — nic więc nie powstrzyma `update.sh` przed
+postawieniem nowego Servera obok obrazu Runnera sprzed miesiąca. **Runner zbyt
+stary wobec Servera, u którego się rejestruje, dostaje odmowę, a odmowy
+rejestracji się nie ponawia**: proces kończy pracę, `restart: unless-stopped`
+zamienia to w pętlę, a `preflight.sh` tego nie zobaczy, bo z konfiguracją
+wszystko jest w porządku. W logu stoi `the Server refused with 403:
+runner.nonce.unknown`.
+
+Najdotkliwiej dotyczy to układu [T2](/pl/install), gdzie Runnery stoją na
+własnych hostach. Te hosty mają własny `update.sh`, a ten, którego nie
+zaktualizowano razem z resztą, cichnie dopiero **przy kolejnym restarcie** — czyli
+w sposób, którego nikt nie zauważy aż do zawodów.
+
 ## Runner w trakcie aktualizacji
 
-Runner nie obsługuje `SIGTERM` — ignoruje go i zostaje zabity. Jego zlecenie
-wraca do kolejki, gdy wygaśnie dzierżawa, obojętnie w której sekundzie zginął.
+**Po `SIGTERM` Runner oddaje swoje zlecenie.** Zatrzymuje ocenianie, mówi
+Serverowi, że zlecenie jest wolne, sprząta uruchomione przez siebie kontenery
+i kończy pracę. Inny Runner może wziąć to zlecenie **w tej samej chwili**, a nie
+dopiero po dziesięciu minutach, gdy wygaśnie dzierżawa — i doręczenie nie liczy
+się zgłoszeniu do puli prób, więc operator restartujący flotę nie zużywa prób
+uczestnika.
 
-Dlatego `stop_grace_period` **tylko kosztuje**, a niczego nie ratuje, i płaci się
-go przy każdym `down`, każdym `stop` i każdej aktualizacji. Wynosi `30s`; przy
-domyślnych dla Compose 300s `docker compose down` trwa **302 sekundy** zamiast
-32, a to czekanie niczego nie ratuje.
+**Trzy razy, a potem już się liczy.** Trzy pierwsze oddania są darmowe, tak samo
+jak doręczenie, o którym nikt się nigdy nie odezwał; każde następne zabiera jedną
+z pięciu prób, bo dalej Runner w pętli restartów pod nadzorcą i operator
+restartujący flotę wyglądają tak samo i rozróżnia je tylko licznik.
 
-<Callout type="warn" title="Dwie rzeczy sprawiają, że krótszy czas nie dociera do istniejącej instalacji">
+Praca już wykonana na tym zgłoszeniu idzie do kosza i robi ją od nowa ten, kto
+weźmie zlecenie następny. Zmienia się tylko to, że dzieje się to w sekundach,
+a nie w dziesięć minut.
+
+`RUNNER_STOP_GRACE` jest właśnie na te wywołania i `30s` to z zapasem
+wystarczająco na kilka żądań HTTP i usunięcie paru kontenerów. **Skrócenie go
+poniżej tego, ile one trwają, zamienia zatrzymanie z powrotem w zabicie**,
+a zabity Runner zostawia swoje zlecenie dzierżawie. Przy domyślnych dla Compose
+300s `docker compose down` spędza za to pięć minut w ciszy: zmierzone na tym
+stosie, **302 s wobec 32 s**.
+
+<Callout type="warn" title="O tym, jaki limit naprawdę trzyma kontener, decydują dwie rzeczy">
 **Docker zapisuje ten limit na kontenerze w chwili jego utworzenia**, więc `down`
 odczekuje starą wartość, dopóki kontenery nie zostaną utworzone na nowo —
 przy pierwszym `up` po pobraniu obrazów albo przez `up --force-recreate`.
 `docker inspect -f '{{.Config.StopTimeout}}'` mówi, którą wartość trzyma dany
 kontener.
 
-**Poza tym wygrywa Twój własny `.env`.** Instalacja postawiona wcześniej ma
-w nim `RUNNER_STOP_GRACE=300s` i to nadal dostaje. Zmień to tam.
+**O samej wartości decyduje Twój `.env`**, a nie wartość zapasowa
+z `compose.yaml`. Zmieniaj ją tam.
 </Callout>
 
-Czyste drenowanie to `maintenance.sh on --wait-closed` najpierw na **Serverze**
-— i tak właśnie robi `update.sh`. Nigdy `docker stop` na Runnerze jako sposób
-bycia ostrożnym.
+Czyste drenowanie to nadal `maintenance.sh on --wait-closed` najpierw na
+**Serverze** — i tak właśnie robi `update.sh`: wtedy do Runnera w ogóle nie
+trafia nowa praca, co jest schludniejsze niż każdy Runner oddający to, co przed
+chwilą dostał.
 
-**Zewnętrzny Runner dochodzi do tego samego inną drogą.** On też nie obsługuje
-`SIGTERM` i nie ma żadnego marginesu na zamknięcie, bo nic by na nim nie zyskał. Gdy ginie,
-traci nie ocenianie w toku, tylko listę tego, na co archiwum jeszcze nie
-odpowiedziało — a każde takie zgłoszenie zostaje wysłane drugi raz, kiedy
-zlecenie wróci do kolejki. Rachunek jest w [Przerwie technicznej](/pl/install/maintenance).
+**Zewnętrzny Runner też obsługuje `SIGTERM`**, a jego margines to
+`EXTERNAL_RUNNER_STOP_GRACE` — sześćdziesiąt sekund, dwa razy tyle co u Runnera
+oceniającego, bo oddaje do dwudziestu zgłoszeń w toku, po jednym wywołaniu na
+każde. Kiedy zamiast tego zostaje zabity, traci nie ocenianie w toku, tylko listę
+tego, na co archiwum jeszcze nie odpowiedziało — a każde takie zgłoszenie zostaje
+wysłane drugi raz, kiedy zlecenie wróci do kolejki. Rachunek jest w [Przerwie
+technicznej](/pl/install/maintenance).
 
 ## Gdy zawiodą obie połowy
 

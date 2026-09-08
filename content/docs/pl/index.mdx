@@ -2,7 +2,7 @@
 title: Dokumentacja AlgoJudge
 description: Otwartoźródłowe oprogramowanie self-hosted do organizacji zawodów i kursów programistycznych z automatycznym ocenianiem przesłanych rozwiązań.
 source: en/index.mdx
-sourceSha256: 1d7d8ff866e0dc811a376b0a3dda382ed38b8778d0d6514fbb32f18c519aed67
+sourceSha256: 324f091b5378a731c880f8a22c6ca7ee8f201918f9bd3915387d2e6a8f10e9c1
 ---
 
 import { Card, Cards } from "fumadocs-ui/components/card";
@@ -27,7 +27,7 @@ ani wyników.
     icon={<BookOpen />}
     href="/pl/client/manager"
     title="Dla prowadzącego"
-    description="Buduj aktywności i serie, prowadź bibliotekę zadań, odpowiadaj na pytania, decyduj kto co może."
+    description="Buduj aktywności i serie, prowadź bibliotekę zadań, odpowiadaj na pytania, decyduj, kto co może."
   />
   <Card
     icon={<Settings />}
@@ -57,11 +57,11 @@ ani wyników.
 
 ## Z czego się składa
 
-Trzy programy, a każdy z nich odmawia robienia tego, co należy do pozostałych:
+Trzy programy, a żaden nie robi tego, co należy do pozostałych:
 
 - **Client** to część, którą widzą ludzie. Rysuje aktywności, zadania, formularze
   i wyniki.
-- **Server** przechowuje wszystko, co ma przetrwać — konta, zadania, zgłoszenia,
+- **Server** przechowuje wszystko, co trwałe — konta, zadania, zgłoszenia,
   wyniki — i decyduje, kto co może zrobić. **Nigdy nie kompiluje ani nie
   uruchamia nadesłanego rozwiązania** i nie rozumie, co znaczy konkretny rodzaj
   zadania.
@@ -75,11 +75,11 @@ a Runner — oceniać rozwiązania.
 
 ## Której wersji dotyczy
 
-**AlgoJudge 0.1.0 jest wydany, a jego obrazy są opublikowane.** Ta witryna nie ma
-jeszcze katalogu z tą wersją, więc jej strony opisują stan gałęzi `main` —
-dlatego przy nazwie u góry stoi *przed 0.1*, a nie numer. Pierwsza migawka
-utworzy `v0.1` i od tej pory numer będzie w adresie:
-`/pl/install/v0.1/backup`.
+**AlgoJudge 0.1.0 jest wydany i to jego opisują te strony**: pięć repozytoriów ma
+ten tag, a osiem obrazów jest publicznych. Sama witryna nie założyła jeszcze
+katalogu z wersją, więc w jej adresach nie ma numeru, a pod nazwą u góry widnieje
+*przed 0.1*. Pierwsza migawka utworzy `v0.1` i od tej pory numer będzie
+w adresie: `/pl/install/v0.1/backup`.
 
 **Każda sekcja ma własne wersjonowanie.** `/install/` zmienia się przy wydaniu
 `AlgoJudge-Ops`, `/server/` przy wydaniu Servera, `/protocol/` przy zmianie

@@ -2,10 +2,12 @@
 title: Uprawnienia i nadania
 description: Jak zapisuje się prawa, jak się rozstrzygają i trzy reguły, które czynią model bezpiecznym.
 source: en/client/manager/permissions.mdx
-sourceSha256: 70a980f3084a2a2cb1b82fe10f5949732c14a99caf2fe0db83d43f0321c49c94
+sourceSha256: 02859f004b146fab0f2dae843587b6abb862089dc2597e78c8fa51475ca70dd6
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+
+import { Mermaid } from "@/components/mermaid";
 
 ## Postać
 
@@ -37,6 +39,18 @@ W tej kolejności:
    systemowym, omija każde sprawdzenie uprawnień.
 3. W przeciwnym razie zestaw efektywny jest **sumą**: wszystkich wkładów
    systemowych plus nadania w aktywności, gdy pytanie dotyczy jednej aktywności.
+
+<Mermaid chart={`
+flowchart TD
+    q(["Czy ta osoba może zrobić X?"])
+    q --> scope{"Czy pytanie dotyczy<br/>jednej aktywności?"}
+    scope -->|nie| adm
+    scope -->|tak| ovr{"Czy jej tamtejsze nadanie<br/>ma flagę nadpisania?"}
+    ovr -->|tak| whole["To nadanie jest całą odpowiedzią.<br/>Nic innego tam nie obowiązuje, nawet system:administrator"]
+    ovr -->|nie| adm{"Czy któryś wkład systemowy<br/>ma system:administrator?"}
+    adm -->|tak| bypass["Wolno: to omija każde sprawdzenie uprawnień.<br/>Członkostwo uprawnieniem nie jest, więc wysłanie<br/>rozwiązania nadal wymaga nadania w aktywności"]
+    adm -->|nie| union["Suma wszystkich wkładów systemowych<br/>plus nadanie w aktywności, gdy pytanie dotyczy jednej"]
+`} />
 
 **Reguła 2 omija uprawnienia, a członkostwo uprawnieniem nie jest.** Wysłanie
 rozwiązania wymaga aktywnego nadania w samej aktywności, więc administrator,
@@ -145,9 +159,10 @@ publikowaniem, ogłoszenia, czytanie i zdejmowanie zamrożenia rankingu, konta
 tymczasowe oraz czytanie i zmienianie nadań.
 
 Celowo **nie ma w nim**: `activity:create`, `activity:delete`,
-`problem:read:all`, `problem:delete`, `user:*` poza kontami tymczasowymi,
-`template:*`, `runner:*`, `instance:update`, `provider:manage` i `trial:run`.
-Menedżer prowadzi aktywność; nie prowadzi instalacji.
+`problem:read:all`, `problem:delete`, `problem:import:external`, `user:*` poza
+kontami tymczasowymi, `template:*`, `runner:*`, `instance:update`,
+`provider:manage` i `trial:run`. Prowadzący odpowiada za aktywność, a nie za
+instalację, w której ona działa.
 
 **`admin`** — jeden wpis, `system:administrator`. Jeden, bo omija resztę:
 administrator z listą pojedynczych uprawnień to administrator, którego da się po

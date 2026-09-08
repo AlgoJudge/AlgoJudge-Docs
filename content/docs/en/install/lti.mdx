@@ -31,17 +31,27 @@ Three things have to be true.
 resolve. Not optional here, for the reason under *In the browser* below.
 
 **The Server knows its own public address.** Every address handed to a platform
-is built from it. Set `PublicApiUrl` — including the `/api/v1` — when the Server
-sits behind anything that rewrites the request:
+is built from it. The stack leaves `AJ_PublicApiUrl` unset deliberately, and a
+launch or a platform written out by hand works without it, from the address of
+the request. **An expected registration is the exception**: it refuses to issue
+an invitation unless the value resolves to an absolute `http(s)` address, because
+it is about to hand that address to somebody else's server.
 
-```bash
-AJ_PublicApiUrl=https://your.domain/api/v1
+Set it in an overlay rather than by editing `compose.yaml`:
+
+```yaml
+# state/lti.compose.yaml
+services:
+  server:
+    environment:
+      AJ_PublicApiUrl: https://your.domain/api/v1
 ```
 
-Leaving it unset works for an ordinary reverse proxy, because the Server falls
-back to the address of the request. **Expected registrations are the exception**:
-they refuse to issue an invitation unless the result is an absolute address,
-because they are about to hand it to somebody else's server.
+**Name that overlay in `.env`**, as `COMPOSE_FILE=compose.yaml:state/lti.compose.yaml`,
+and not on one command line. It is how `update.sh`, `rollback.sh` and
+`preflight.sh` learn about it at all: they compose without naming files, so an
+overlay given once with `-f` is invisible to every one of them — and the next
+update composes without it and takes its services away with `--remove-orphans`.
 
 **Somebody holds `provider:manage`.** Registering a platform is the same class of
 decision as registering an identity provider, and it is behind the same
@@ -111,7 +121,7 @@ tab**, and tells them what to say to whoever administers the course. The fix on
 the platform's side is to set the tool to open in a new window instead of
 embedding it.
 
-[Behind your own reverse proxy](/en/install/reverse-proxy) explains the other
+[Your own reverse proxy](/en/install/reverse-proxy) explains the other
 half of this — why `X-Frame-Options` is `SAMEORIGIN` rather than `DENY`, and what
 that means if you put your own headers in front.
 
@@ -165,7 +175,7 @@ reaches the browser and the iframe stays blank, with the browser's console
 refusing to display the page, the frame policy is refusing it rather than the
 Server. The bundled edge sends `X-Frame-Options: SAMEORIGIN`, which permits
 framing only from the **same** origin — so an LMS on a different name is refused
-exactly as `DENY` would refuse it. [Behind your own
+exactly as `DENY` would refuse it. [Your own reverse
 proxy](/en/install/reverse-proxy) has what to replace it with; the same applies to
 the bundled nginx, whose header lives in `nginx/snippets/security-headers.conf`.
 

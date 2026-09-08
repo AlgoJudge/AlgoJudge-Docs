@@ -5,6 +5,8 @@ description: How rights are written, how they resolve, and the three rules that 
 
 import { Callout } from "fumadocs-ui/components/callout";
 
+import { Mermaid } from "@/components/mermaid";
+
 ## The form
 
 A permission is a string:
@@ -36,6 +38,18 @@ In this order:
    every permission check.
 3. Otherwise the effective set is the **union**: every system contribution, plus
    the activity grant when one activity is being asked about.
+
+<Mermaid chart={`
+flowchart TD
+    q(["May this person do X?"])
+    q --> scope{"Is the question<br/>about one activity?"}
+    scope -->|no| adm
+    scope -->|yes| ovr{"Does their grant there<br/>carry the override flag?"}
+    ovr -->|yes| whole["That grant is the whole answer.<br/>Nothing else applies there, not even system:administrator"]
+    ovr -->|no| adm{"Does any system contribution<br/>carry system:administrator?"}
+    adm -->|yes| bypass["Allowed: it bypasses every permission check.<br/>Membership is not a permission, so submitting<br/>still needs a grant in the activity"]
+    adm -->|no| union["The union of every system contribution,<br/>plus the activity grant when one activity is in question"]
+`} />
 
 **Rule 2 bypasses permissions, and membership is not one.** Submitting needs an
 active grant in the activity itself, so an administrator who holds only a system
@@ -143,9 +157,10 @@ reading and lifting a ranking freeze, temporary accounts, and reading and
 updating grants.
 
 Deliberately **not** in it: `activity:create`, `activity:delete`,
-`problem:read:all`, `problem:delete`, `user:*` beyond temporary accounts,
-`template:*`, `runner:*`, `instance:update`, `provider:manage` and `trial:run`. A
-manager runs an activity; they do not run the installation.
+`problem:read:all`, `problem:delete`, `problem:import:external`, `user:*` beyond
+temporary accounts, `template:*`, `runner:*`, `instance:update`,
+`provider:manage` and `trial:run`. A manager runs an activity; they do not run
+the installation.
 
 **`admin`** — one entry, `system:administrator`. One, because it bypasses the
 rest: an administrator with a list of individual permissions is an administrator

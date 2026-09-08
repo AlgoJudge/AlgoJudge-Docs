@@ -1,6 +1,6 @@
 ---
 title: What is not specified
-description: The four things the contract deliberately leaves out, one thing the implementation has that the contract does not, and two documents that are history.
+description: The four things the contract deliberately leaves out, what the implementation has beyond it, and two documents that are history rather than standards.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -22,6 +22,15 @@ connection with no reconnection logic, and **cannot deliver a job twice**.
 
 Reintroducing a socket would be an optimisation of *when* a Runner learns there
 is work, never of *how* it takes it. The Client has a socket; a Runner does not.
+
+**And that optimisation is already taken.** A `claim` the Server
+[holds open](/en/protocol/claiming) tells a Runner about work the instant it
+exists, with every reason above intact: one claim, one job, no second delivery,
+and no reconnection logic — a dropped long poll is a request to make again
+rather than a connection to restore. What a socket was measured to be worth
+before that existed is **0.44%** of the time jobs spend waiting, because 93 in
+every 100 wait for a Runner to be free rather than to be told. The gain is on a
+quiet installation, where it is the whole of the delay.
 
 ## Key rotation
 
@@ -48,7 +57,7 @@ Server does not know what a package contains, so a new problem type needs no
 Server release. A Runner implementing a type of its own defines the format that
 type reads.
 
-## One thing the implementation has that the contract does not
+## What the implementation has and the contract does not
 
 **Trials.** A trial is a package to time — *run this package's own model
 solutions and say what they cost* — on its own table and its own claim path,
@@ -74,3 +83,20 @@ that never calls those paths simply never measures a package.
 Because they are outside v1.1, treat their shapes as the implementation's rather
 than as a standard: they may move in a way the specified surface may not.
 </Callout>
+
+A smaller one, on the same terms: a **report may name its attachments inline**
+rather than through the attach call, which [Files](/en/protocol/files) describes.
+The contract specifies the attach call.
+
+## Two documents that are history, not standards
+
+The contract was written down from a Server that already ran. Two earlier
+documents — a 2025-03-27 proposal and a copy of it kept as a record — describe a
+surface **no Server ever served**: `/runner/auth/init`, `/files/create`,
+`/runner/submission`, `/runner/result`. They also left twenty-one questions
+open, among them atomic reservation, leasing, idempotency, approval, replay
+protection and cancellation; every one of those is answered by the pages in this
+section, and by code that runs.
+
+If you are handed either, the giveaway is a path from that list. Nothing here
+serves one.

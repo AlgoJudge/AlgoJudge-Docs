@@ -4,6 +4,7 @@ description: How a course platform reaches this Server — the platform record, 
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 AlgoJudge implements **LTI 1.3** as a tool: a course platform opens an activity
 for its students, and grades travel back. Moodle is the platform it is verified
@@ -44,6 +45,40 @@ Everything else — platforms, placements, invitations, keys, deep-link response
 is an ordinary authorised API. `provider:manage` gates the platform, invitation
 and key endpoints; the roster and grades are scoped to the activity instead, by
 `result:read:all`, `activity:enroll` and `activity:update`.
+
+## What a launch does
+
+The platform sends the browser to `/lti/login` with `iss`, `client_id` and
+`lti_deployment_id`; the Server matches a platform on that triple, writes a
+launch state row and sends the browser on to the platform's own login address.
+The platform authenticates the person and posts `state` and an `id_token` to
+`/lti/launch`. The Server consumes the state row, fetches the platform's key set
+and checks the signature, issuer, audience, lifetime and nonce, resolves the
+placement, and only then asks who arrived. The browser ends up at the activity,
+at a conflict to report, at an offer to sign in through SSO, or at
+`/lti/failed?reason=…`.
+
+<Mermaid chart={`
+sequenceDiagram
+    participant B as Browser
+    participant P as Platform
+    participant S as Server
+    B->>S: GET or POST /lti/login (iss, client_id, deployment id)
+    S->>S: match the platform on the triple, write a launch state row
+    S-->>B: redirect to the platform's login address
+    B->>P: the authorization request
+    P-->>B: authenticate, then post back
+    B->>S: POST /lti/launch (state, id_token)
+    S->>S: consume the launch state row, by deleting it
+    S->>P: fetch the key set
+    P-->>S: the platform's public keys
+    S->>S: signature, issuer, audience, lifetime, nonce
+    S->>S: resolve the placement, then resolve who arrived
+    S-->>B: the activity, a conflict, an offer to sign in, or /lti/failed
+`} />
+
+The placement is resolved **before** anybody is signed in: signing somebody in
+and then telling them the tool is misconfigured is the worse order.
 
 ## The platform record
 
