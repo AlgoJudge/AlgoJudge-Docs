@@ -109,6 +109,30 @@ chooses on purpose, and one `null` already expresses properly. `null` means
 There is no second switch beside `ScoreVisibility`: a board turned on where
 nobody may see a score shows nothing, and the two settings would disagree.
 
+## Modules
+
+Two parts of the product are optional per activity, and each is one boolean.
+
+| Field | Default | What it turns on |
+|---|---|---|
+| `HasQuestions` | **on** | questions and announcements |
+| `HasPrintouts` | **off** | asking for source to be printed |
+
+Off, a module is not an empty screen: the participant's navigation loses the
+entry entirely. A course that never answers questions should look like a course
+with no questions in it, not like one whose organisers are ignoring them.
+
+The switch governs what may be **added**. Asking is refused with 403 and the
+code `questions.disabled` or `printouts.disabled`; what was already asked stays
+readable to the person who asked and to the managers, because turning a module
+off is not a way of destroying what it collected.
+
+**The two defaults differ on purpose.** Questions cost nobody anything to leave
+on. Printing assumes a person standing at a printer, and an activity where
+nobody is would offer a button leading to a queue no one works.
+
+Turning it back on returns the participant to exactly what they had.
+
 ## Attachment rules
 
 `AttachmentRule` is a table, one row per attachment name, keyed on the name

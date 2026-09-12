@@ -1,0 +1,110 @@
+---
+title: Printouts
+description: The queue of source somebody asked to have on paper, and what confirming a print destroys.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+At an on-site contest a participant sometimes needs their code **on paper** — to
+read it away from the screen, to debug it with a pen, to hand it to a judge.
+**Printouts** is the queue somebody standing at a printer works from.
+
+The area is offered to anybody holding `printout:manage` anywhere. It is
+**switched on per activity**, and off by default: an activity with nobody at a
+printer would otherwise offer participants a button leading to a queue no one
+works. The switch is **Printouts** in the Modules card of the activity's
+settings.
+
+## The one job you can hand out on its own
+
+A grant carrying `printout:manage` and **nothing else** opens this area and
+refuses every other one. That is the point of the permission: the person at the
+printer needs to read what other people wrote, and needs nothing else in the
+panel — not the submissions list, not the users, not the activity's settings.
+
+<Callout type="warn" title="It takes the holder out of the ranking">
+`printout:manage` is staff-conferring, because reading source other people wrote
+is what staff means. Held in an activity, it makes that grant systemic, and a
+systemic grant is out of the participant count and out of the board.
+
+A volunteer who is also competing has to be given the key in an activity they
+are not competing in — or accept that they leave that ranking.
+</Callout>
+
+## Working the queue
+
+The list is **oldest first, and not configurable**. A queue is worked from the
+front; whoever has waited longest is the one to serve.
+
+Each row carries who asked and the group they compete as, the activity by name
+and slug, the file name and the optional title, when it was asked for, and the
+state. Two filters — activity and state — sit above it, and both are in the
+address, so the list you are working from is a link.
+
+**The activity filter is built from the printing key**, not from the panel's
+activity list. Somebody who holds `printout:manage` in two rooms and nothing
+else sees exactly those two.
+
+| State | What it means |
+|---|---|
+| **Waiting** | asked for, nobody has opened it |
+| **At a printer** | somebody has opened the sheet and has not said what happened |
+| **Printed** | confirmed, and the source is gone |
+| **Discarded** | resolved without printing, and the source is gone |
+
+## Print, then say what happened
+
+**Print** opens the sheet in a new tab and marks the row as yours in the same
+act. The tab lays the page out, opens the print dialog itself, and closes again
+when the dialog does — so printing is one click, not three.
+
+Back in the first tab, a dialog asks **Did it print?** — *Printed*, *Discard*,
+or dismiss it. Dismissing is safe: the row stays yours, **Print** opens the sheet
+again, and nothing is destroyed until you answer. A jammed printer costs a second
+click on the same row.
+
+<Callout type="warn" title="Confirming cannot be undone">
+Whichever of the two you choose, the Server stops serving the source and removes
+it from the store. The record of the request stays — who asked, when, for what,
+who resolved it, and the SHA-256 of what was printed — and the sheet, reopened
+afterwards, says the source has been disposed of.
+
+The checksum in the sheet's footer is why it is there: a page found on a desk
+can still be matched to a row in the queue after the text is gone.
+</Callout>
+
+## Two people, one printer
+
+A row taken by somebody else reads **With ⟨name⟩**, and its button says **Take
+over** rather than **Print**. Taking over is allowed rather than refused: the
+two of you are in the same room and can see each other, and a row locked behind
+whoever walked away is a page nobody prints.
+
+**Hand back** releases a row you took without resolving it. The queue also
+refreshes itself as other people work it, so a list left open does not go stale.
+
+## The sheet
+
+One A4 page, outside the application's shell entirely — no navigation, no
+sidebar, nothing that would print down the side.
+
+At the top: who asked and the group they compete as; the date and time in **the
+activity's own time zone**, so the paper reads as the room did rather than as
+your laptop does; the activity; the file name, the problem where the request
+came from a submission, and the title where there is one. Then the listing,
+wrapped rather than cut, with a line-number gutter that is not selected when you
+copy from it. At the foot, the SHA-256.
+
+There is no syntax highlighting. Colour on a monochrome laser is grey mush.
+
+## What a printout is not
+
+Every printout is a **paste** — the text as it stood when somebody asked, stored
+as one file of its own. A request made from a submission's source view carries
+the submission's id as provenance, and the page names the problem because of it,
+but it prints the tab that was open rather than "the submission": a submission
+may carry an archive, and a source view has tabs.
+
+So there is no printing of a whole submission, and nothing here reaches the
+files a submission already has. It also means the disposal above is complete:
+the bytes that go are bytes that existed for this printout and nothing else.

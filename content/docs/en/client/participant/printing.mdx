@@ -1,0 +1,75 @@
+---
+title: Printing your code
+description: Asking for a page of source on paper, from the printouts screen or from a submission you have open.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+At an on-site contest, **Printouts** in the activity's sidebar asks somebody at a
+printer for a page of your source. They print it and bring you the paper.
+
+The entry is only there where the organiser switched the module on, and it is
+**off unless they did** — an activity with nobody standing at a printer has no
+use for it. A course legitimately has none.
+
+## Asking
+
+The form is the submit form's shape, because it is the same act: **a file or the
+editor**, one locking the other.
+
+- **Choose a file** and its own name is the one printed.
+- Or **type into the editor**. Then the **Programming language** decides two
+  things: the highlighting while you type, and the name the page is printed
+  under — `main.cpp`, `main.py`, and `main.txt` where you name no language.
+
+There is no note field and no file-name field. A picked file has a name already,
+and a fragment you typed gets one from the language.
+
+**Any text goes**, not only something you have submitted. Somebody debugging on
+paper wants the part they are stuck on, not the last thing they sent.
+
+**Send to print** asks you to confirm first, showing the name the page will
+carry. Paper is somebody else's time and a printer somebody else's queue, so a
+mis-click costs more than a keystroke.
+
+A page may be up to **64 KiB** — a listing, not an archive — and you may have
+**three requests waiting at once**. Send a fourth and the answer says so; it
+frees up as the ones ahead of it are printed.
+
+## From a submission you have open
+
+**Source code** on a submission's screen carries a **Print** button, where the
+activity has the module on.
+
+It sends **the tab you are looking at, as it stands** — including edits you have
+started and not sent. It is a copy taken at that moment, not a link to the
+submission: what you get on paper is what was on screen when you clicked.
+
+The submission is recorded alongside the request, so the sheet the printer
+operator holds names the problem it came from.
+
+## What you see afterwards
+
+**What you have asked for** lists your own requests, newest first, with the file
+name, when you asked, and the state:
+
+| State | What it means |
+|---|---|
+| **Waiting** | in the queue |
+| **At a printer** | somebody has it open |
+| **Printed** | it has been printed — the paper is on its way |
+| **Discarded** | resolved without printing |
+
+The list is yours alone. Nobody else's requests appear in it, and yours do not
+appear in anybody else's.
+
+<Callout title="What happens to the copy">
+The organiser confirms what happened, and at that moment the Server stops
+serving your source and removes it from its store. What stays is the record of
+the request — that you asked, when, for what file, and a checksum of it.
+</Callout>
+
+## What it is not
+
+It is not a submission. Printing spends no submission allowance, appears in no
+ranking, and is judged by nobody. It is a piece of paper.

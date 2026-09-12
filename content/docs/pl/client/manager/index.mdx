@@ -1,8 +1,8 @@
 ---
 title: Zarządzanie
-description: Dwanaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
+description: Trzynaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
 source: en/client/manager/index.mdx
-sourceSha256: 22c14d6ff145156d0bc17a83beb8a3b524d88456daf6bc13511bd224ae3fd13d
+sourceSha256: 4951a5b01d84bae76932944014c0597044c4a0163431ec96f072a230664cfa64
 ---
 
 Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
@@ -13,7 +13,7 @@ Nie jest to ozdoba: nawigacja, ekran startowy i kontrola dostępu przy każdym
 adresie czytają tę samą tabelę, więc kafelek nie zaproponuje ci ekranu, który
 potem odpowie 403, a ekran, do którego masz dostęp, nie zniknie z menu.
 
-## Dwanaście obszarów
+## Trzynaście obszarów
 
 Obszar otworzy ci **którekolwiek jedno** z uprawnień w ostatniej kolumnie.
 
@@ -26,6 +26,7 @@ Obszar otworzy ci **którekolwiek jedno** z uprawnień w ostatniej kolumnie.
 | [Aktywności](/pl/client/manager/activities) | Zawody i kursy: serie, podpięcia zadań, terminy i zapisy. | `activity:create`, `activity:update`, `activity:archive` |
 | [Zgłoszenia](/pl/client/manager/submissions) | Wszystkie zgłoszenia, ich kod, próby oceny i ponowna ocena. | `submission:read:all` |
 | [Pytania i ogłoszenia](/pl/client/manager/questions) | Odpowiadanie, publikowanie odpowiedzi dla wszystkich, ogłoszenia. | `question:read:all`, `question:answer` |
+| [Wydruki](/pl/client/manager/printouts) | Kolejka kodu, który ktoś poprosił wydrukować. | `printout:manage` |
 | [Runnery](/pl/client/manager/runners) | Maszyny, które oceniają: zatwierdzanie, tagi i ich raporty. | `runner:read` |
 | [Instancja](/pl/client/manager/instance) | Jak nazywa się ta instalacja, jaki znak pokazuje i jakie dokumenty publikuje. | `instance:update` |
 | [Logowania zewnętrzne](/pl/client/manager/logins) | Dostawcy tożsamości, uprawnienia nadawane przez ich claimy i konta zgłoszone do usunięcia. | `provider:manage` |
@@ -47,13 +48,19 @@ Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
 
 ## Gdzie kończy się rola prowadzącego
 
-Siedem z dwunastu obszarów dotyczy instalacji, a nie pojedynczej aktywności:
+Siedem z trzynastu obszarów dotyczy instalacji, a nie pojedynczej aktywności:
 Użytkownicy, Szablony uprawnień, Runnery, Instancja, Logowania zewnętrzne,
 Platformy LTI i Zasoby zewnętrzne. Razem potrzebują pięciu uprawnień —
 `user:read:all`, `template:read`, `runner:read`, `instance:update` i
 `provider:manage` — i **żadnego z tych pięciu nie ma w dostarczanym szablonie
 `manager`**. Prowadzenie aktywności to co innego niż prowadzenie instalacji, w
 której ta aktywność działa.
+
+**Wydruki to obszar pomyślany tak, by dawać go osobno.** Nadanie, które niesie
+tylko `printout:manage`, otwiera właśnie jego i zamyka wszystkie pozostałe — tak
+powierza się to jedno zadanie komuś, kto stoi przy drukarce. Cenę opisuje strona
+tego obszaru: klucz czyni z tej osoby prowadzącego w danej aktywności, a
+prowadzący nie wchodzą do jej rankingu.
 
 A jest jeszcze trzeci czytelnik. Instalacji AlgoJudge, kopii zapasowych,
 aktualizacji i odzyskiwania po awarii nie robi się z tego panelu w ogóle — to

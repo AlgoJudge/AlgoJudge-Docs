@@ -1,0 +1,80 @@
+---
+title: Drukowanie kodu
+description: Jak poprosić o wydruk kodu — z ekranu wydruków albo z otwartego zgłoszenia.
+source: en/client/participant/printing.mdx
+sourceSha256: e858706e0fee702b653365f879ec7ccddfd3dde61135d1d256044a5ba747e366
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Na zawodach na miejscu **Wydruki** w menu aktywności to miejsce, z którego
+prosisz osobę stojącą przy drukarce o kartkę z Twoim kodem. Ta osoba drukuje go
+i przynosi Ci papier.
+
+Pozycja pojawia się tylko tam, gdzie organizator włączył moduł, a **domyślnie
+jest on wyłączony** — aktywność, w której nikt nie stoi przy drukarce, nie ma z
+niego pożytku. Kurs najczęściej go nie ma i nic w tym dziwnego.
+
+## Prośba o wydruk
+
+Formularz wygląda jak formularz zgłoszenia, bo to ta sama czynność: **plik albo
+edytor**, jedno blokuje drugie.
+
+- **Wybierz plik** — wydrukuje się pod własną nazwą.
+- Albo **napisz w edytorze**. Wtedy **Język programowania** rozstrzyga dwie
+  sprawy: kolorowanie składni podczas pisania i nazwę, pod jaką strona zostanie
+  wydrukowana — `main.cpp`, `main.py`, a `main.txt`, gdy języka nie wybierzesz.
+
+Nie ma pola na notatkę ani na nazwę pliku. Wybrany plik ma już nazwę, a fragment
+napisany w edytorze bierze ją z języka.
+
+**Wysłać można dowolny tekst**, nie tylko coś, co zostało wcześniej wysłane do
+oceny. Kto szuka błędu na papierze, chce tego fragmentu, na którym utknął, a nie
+ostatniego zgłoszenia.
+
+**Wyślij do druku** najpierw prosi o potwierdzenie i pokazuje nazwę, pod jaką
+kartka pójdzie na drukarkę. Papier to czyjś czas, a drukarka czyjaś kolejka, więc
+pomyłka kosztuje więcej niż jedno naciśnięcie klawisza.
+
+Strona może mieć najwyżej **64 KiB** — to listing, nie archiwum — a w kolejce
+możesz mieć naraz **trzy prośby**. Czwarta zostanie odrzucona z wyjaśnieniem;
+miejsce zwalnia się w miarę drukowania wcześniejszych.
+
+## Z otwartego zgłoszenia
+
+**Kod źródłowy** na ekranie zgłoszenia ma przycisk **Drukuj** wszędzie tam, gdzie
+aktywność ma włączony moduł.
+
+Wysyła **otwartą zakładkę w takiej postaci, w jakiej ją widzisz** — razem ze
+zmianami, które zacząłeś wpisywać i których jeszcze nie wysłałeś. To kopia z tej
+jednej chwili, a nie odnośnik do zgłoszenia: na papierze wyjdzie to, co miałeś
+przed oczami.
+
+Przy prośbie zapisuje się, z którego zgłoszenia przyszła, dzięki czemu na
+kartce, którą trzyma obsługa, widnieje nazwa zadania.
+
+## Co widzisz potem
+
+**Twoje prośby o wydruk** to lista tego, o co poprosiłeś — od najnowszej, z
+nazwą pliku, godziną i stanem:
+
+| Stan | Co znaczy |
+|---|---|
+| **Oczekuje** | prośba czeka w kolejce |
+| **Przy drukarce** | ktoś ma ją otwartą |
+| **Wydrukowany** | wydrukowano — papier jest w drodze |
+| **Odrzucony** | zamknięto bez drukowania |
+
+Lista jest wyłącznie Twoja. Nie ma na niej cudzych próśb, a Twoje nie trafiają na
+niczyją inną.
+
+<Callout title="Co dzieje się z kopią">
+Organizator potwierdza, co się stało, i w tej samej chwili serwer przestaje
+udostępniać Twój kod i usuwa go ze swojego magazynu. Zostaje zapis samej prośby —
+że poprosiłeś, kiedy, o jaki plik i jaka była jego suma kontrolna.
+</Callout>
+
+## Czym to nie jest
+
+To nie jest zgłoszenie. Wydruk nie zużywa limitu zgłoszeń, nie pojawia się w
+żadnym rankingu i nikt go nie ocenia. To kartka papieru.

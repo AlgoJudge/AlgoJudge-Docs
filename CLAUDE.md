@@ -26,14 +26,17 @@ will meet.
 
 Two known traps:
 
-- `/manager/workstations` and `/manager/printers` appear in
-  `AlgoJudge-Client/src/pages/manager/managerAreas.ts` with `soon: true` and have
-  **no route**. They are not features.
+- `/manager/workstations` appears in
+  `AlgoJudge-Client/src/pages/manager/managerAreas.ts` with `soon: true` and has
+  **no route**. It is not a feature. **`/manager/printers` was the other one
+  until 2026-09-13**, when the slot became `/manager/printouts` — a real screen
+  with a real permission, documented at `client/manager/printouts.mdx`. Anything
+  written before that day listing it as inert is out of date.
 - **0.1.0 is released and the eight images are public**, so every `docker pull`
-  instruction in `/install/` is followable from a clean clone. What has *not*
-  been cut is this site's own version directory: `documented.released` in
-  `lib/site.ts` is still `null`, the header says *unreleased*, and
-  `docs/RELEASE.md` says when that changes.
+  instruction in `/install/` is followable from a clean clone, and
+  `documented.released` in `lib/site.ts` is `"0.1"`. **This said it was still
+  `null` and that the header reads *unreleased*; both stopped being true on
+  2026-09-08.** `docs/RELEASE.md` is what says when a version directory is cut.
 
 ## Language
 

@@ -1,6 +1,6 @@
 ---
 title: The manager panel
-description: Twelve areas, and why you see only some of them.
+description: Thirteen areas, and why you see only some of them.
 ---
 
 The panel lives at `/manager`. Its landing screen lists what you may open and
@@ -11,7 +11,7 @@ That is not decoration. The sidebar, the landing screen and the guard on every
 route all read one table, so a card cannot offer you a screen that then answers
 403, and a screen you can reach cannot be missing from the menu.
 
-## The twelve areas
+## The thirteen areas
 
 Holding **any one** of the permissions in the last column opens the area.
 
@@ -24,6 +24,7 @@ Holding **any one** of the permissions in the last column opens the area.
 | [Activities](/en/client/manager/activities) | Contests and courses: series, assignments, times and enrolment. | `activity:create`, `activity:update`, `activity:archive` |
 | [Submissions](/en/client/manager/submissions) | Every submission, its source, its attempts and a rejudge. | `submission:read:all` |
 | [Questions and announcements](/en/client/manager/questions) | Answering, publishing an answer to everyone, announcing. | `question:read:all`, `question:answer` |
+| [Printouts](/en/client/manager/printouts) | The queue of source somebody asked to have on paper. | `printout:manage` |
 | [Runners](/en/client/manager/runners) | The machines that evaluate: approval, tags and their reports. | `runner:read` |
 | [Instance](/en/client/manager/instance) | What this installation is called, the mark it shows, and the documents it publishes. | `instance:update` |
 | [External logins](/en/client/manager/logins) | Identity providers, what a claim from one grants, and the accounts asked to go. | `provider:manage` |
@@ -46,12 +47,18 @@ grants](/en/client/manager/permissions).
 
 ## Where the manager's job stops
 
-Seven of the twelve areas are about the installation rather than about any one
+Seven of the thirteen areas are about the installation rather than about any one
 activity: Users, Permission templates, Runners, Instance, External logins, LTI
 platforms and External content. Between them they need five permissions —
 `user:read:all`, `template:read`, `runner:read`, `instance:update` and
 `provider:manage` — and **none of the five is in the shipped `manager`
 template**. Running an activity is not running the installation it lives in.
+
+**Printouts is the one written to be handed out on its own.** A grant carrying
+`printout:manage` and nothing else opens that area and refuses every other one,
+which is how somebody standing at a printer is given that job and no other. The
+cost is stated on its page: the key makes them staff in that activity, and staff
+are not in its ranking.
 
 Beyond even those is a third reader. Installing AlgoJudge, backing it up,
 updating it and getting it back after a failure is not done from this panel at
