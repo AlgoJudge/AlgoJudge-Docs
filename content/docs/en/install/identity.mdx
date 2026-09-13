@@ -157,7 +157,7 @@ screens are [External logins](/en/client/manager/logins).
    into the provider's own allowlist. AlgoJudge computes and returns that path;
    you do not invent it.
 2. **Write the mapping** — which of the directory's groups become which
-   permission template. Start with `deny`, which admits nobody the mapping does
+   role. Start with `deny`, which admits nobody the mapping does
    not name.
 3. **If the provider can report deletions**, set a back-channel secret and turn
    the channel on.
@@ -188,7 +188,7 @@ Two claim shapes are read, so an installation does not have to know which it
 has: several claims of the same name, and one claim holding a JSON array or
 object.
 
-A mapping rule is a claim **value** and a permission template **name**, matched
+A mapping rule is a claim **value** and a role **name**, matched
 by exact string equality. There are no patterns, because a wildcard in an
 allowlist is how an allowlist stops being one. Two guards are enforced and
 cannot be turned off: **`system:administrator` is unreachable through a

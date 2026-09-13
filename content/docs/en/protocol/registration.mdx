@@ -114,7 +114,7 @@ POST /api/v1/runners/{id}/approve
 ```
 
 It is an **administrator's** act. `runner:approve` is one of four global
-`runner:*` permissions and none of them is in the shipped `manager` template, so
+`runner:*` permissions and none of them is in the shipped `manager` role, so
 running an activity does not admit a machine to the installation.
 
 That is not a Runner call and needs no place in a Runner implementation. What a

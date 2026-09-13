@@ -10,7 +10,7 @@ platform writes a provider row: it is the same decision about who this
 installation trusts to vouch for people.
 
 It is the most dangerous key in the panel after `system:administrator`, and it is
-not in the shipped `manager` template.
+not in the shipped `manager` role.
 
 ## External logins
 
@@ -47,8 +47,8 @@ instance](/en/client/manager/instance).
 
 ### The mapping
 
-A mapping rule is a **value at the claim path** and the **permission template**
-it grants. That is the whole language: a dotted path and a value, never an
+A mapping rule is a **value at the claim path** and the **role** it grants — one
+of the installation's, since a mapping is the installation's. That is the whole language: a dotted path and a value, never an
 expression — an expression in provider configuration is code executed against the
 contents of a token.
 
@@ -59,14 +59,16 @@ the group.
 <Callout type="warn" title="Two rules are enforced and cannot be turned off">
 `system:administrator` can never be granted by a claim, and nobody may map onto a
 permission they do not themselves hold. The Server checks the first of the two
-both ways round — writing the rule first and adding the key to the template
+both ways round — writing the rule first and adding the key to the role
 afterwards is refused as well, and a token carrying it is stripped at sign-in
 regardless. The second is checked as the rule is written.
 </Callout>
 
-A mapped grant is **rewritten at every sign-in**, which cuts both ways: editing
-the template reaches those people the next time they sign in, and editing their
-grant by hand does not reach them at all. The Grants list marks such a row with
+A mapped grant is **rewritten at every sign-in**, and it is the one grant that
+still holds a copy rather than pointing at a role: a claim may match several
+rules, and the contribution is the union of every role they name. That cuts both
+ways — editing a role reaches those people at their *next sign-in* rather than
+at once, and editing their grant by hand does not reach them at all. The Grants list marks such a row with
 the provider it came from and refuses to edit it. See [Permissions and
 grants](/en/client/manager/permissions).
 

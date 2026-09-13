@@ -2,7 +2,7 @@
 title: Logowania zewnętrzne i platformy LTI
 description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
-sourceSha256: 96ac974f4f1ee8373159209e499302ef2665a40e50e60a4dc3d967bc59e0ec70
+sourceSha256: c8950c033b601e69300fd8a4be91312d5e8dd84f2626a334daba9704682adfb4
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -12,7 +12,7 @@ platformę LTI, powstaje wiersz dostawcy: to ta sama decyzja o tym, komu ta
 instalacja ufa, że poświadczy, kim ktoś jest.
 
 Po `system:administrator` jest to najniebezpieczniejszy klucz w panelu i nie ma
-go w dostarczanym szablonie `manager`.
+go w dostarczanej roli `manager`.
 
 ## Logowania zewnętrzne
 
@@ -49,8 +49,8 @@ Jedno i drugie jest ustawieniem instalacji, a nie dostawcy:
 
 ### Mapowanie
 
-Reguła mapowania to **wartość ze ścieżki claimu** i **szablon uprawnień**, który
-ona nadaje. To cały język: ścieżka po kropkach i wartość, nigdy wyrażenie —
+Reguła mapowania to **wartość ze ścieżki claimu** i **rola**, którą ona nadaje —
+jedna z ról instalacji, bo mapowanie należy do instalacji. To cały język: ścieżka po kropkach i wartość, nigdy wyrażenie —
 wyrażenie w konfiguracji dostawcy jest kodem wykonywanym na zawartości tokenu.
 
 **Gdy nic nie pasuje** — wybierasz między odmową logowania a nadaniem zestawu
@@ -61,13 +61,15 @@ grupy.
 `system:administrator` nigdy nie może zostać nadany przez claim, a nikt nie
 zmapuje uprawnienia, którego sam nie ma. Pierwszej Server pilnuje w obie strony
 — droga na odwrót, gdzie regułę pisze się najpierw, a uprawnienie dopisuje do
-szablonu potem, też jest odrzucana, a token, który je niesie, i tak zostaje z
+roli potem, też jest odrzucana, a token, który je niesie, i tak zostaje z
 niego obrany przy logowaniu. Drugiej pilnuje w chwili zapisu reguły.
 </Callout>
 
-Nadanie z mapowania jest **przepisywane przy każdym logowaniu**, co tnie w obie
-strony: gdy zmienisz szablon, dosięgniesz tych osób przy ich następnym logowaniu,
-a gdy poprawisz ich nadanie ręcznie, nie dosięgniesz ich wcale. Lista Nadań
+Nadanie z mapowania jest **przepisywane przy każdym logowaniu** i jako jedyne
+nadal trzyma kopię, zamiast wskazywać na rolę: claim może pasować do kilku reguł,
+a wkład jest sumą wszystkich ról, które one nazywają. To tnie w obie strony — gdy
+zmienisz rolę, dosięgniesz tych osób przy ich *następnym logowaniu*, a nie od
+razu, a gdy poprawisz ich nadanie ręcznie, nie dosięgniesz ich wcale. Lista Nadań
 oznacza taki wiersz dostawcą, od którego przyszedł, i nie pozwala go edytować.
 Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
 
