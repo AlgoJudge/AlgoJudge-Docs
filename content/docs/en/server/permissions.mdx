@@ -1,6 +1,6 @@
 ---
 title: Permissions
-description: The string form, the two scopes, the resolution rules, the three shipped templates, and all 52 keys.
+description: The string form, the two scopes, the resolution rules, the three shipped templates, and all 54 keys.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -108,17 +108,17 @@ touches nobody who already used it — except the people whose grants a mapping
 rule rewrites.
 </Callout>
 
-### `participant` — 7 keys
+### `participant` — 8 keys
 
 ```
 activity:read        submission:read:own    submission:create    result:read:own
-question:read:own    question:create        ranking:read
+question:read:own    question:create        ranking:read         printout:request
 ```
 
 This list is load-bearing beyond the grant editor: it is what the staff test
 measures against, and therefore what decides who appears in a ranking.
 
-### `manager` — 32 keys
+### `manager` — 34 keys
 
 Everything a participant has, plus:
 
@@ -131,6 +131,7 @@ submission:rejudge         submission:cancel     submission:exclude
 result:read:all            result:log:read:all
 question:read:all          question:answer       question:publish
 announcement:create
+printout:manage
 ranking:read:unfrozen      ranking:unfreeze
 user:create:temporary
 grant:read:all             grant:update
@@ -176,7 +177,7 @@ the moment somebody was allowed to time their own code.
 more likely to be a new one somebody has been given than an ordinary
 participant's, and guessing the other way would quietly put them in the ranking.
 
-## The catalogue — 52 keys
+## The catalogue — 54 keys
 
 ### Activity
 
@@ -271,6 +272,27 @@ governs managers, and is what lets a jury read a log the participants cannot.
 | `question:answer` | activity | answer a question |
 | `question:publish` | activity | make an answered question visible to everyone |
 | `announcement:create` | activity | publish an announcement |
+
+### Printouts
+
+| Permission | Scope | Means |
+|---|---|---|
+| `printout:request` | activity | ask for a page of source on paper |
+| `printout:manage` | both | work the queue: read a request and its source, print it, resolve it |
+
+**`printout:manage` is the one key an installation can hand out entirely on its
+own.** A grant carrying it and nothing else opens the printouts area of the
+panel and refuses every other area, which is what lets somebody standing at a
+printer be given that job and no other.
+
+It is staff-conferring, and that has a consequence worth knowing before you hand
+it out: holding it in an activity takes the holder out of that activity's
+ranking. Reading source other people wrote is what staff means, and a volunteer
+who is also competing has to be given the key in an activity they do not
+compete in.
+
+`printout:request` is in the participant template, so it confers nothing.
+Requesting is refused anyway unless the activity has the module switched on.
 
 ### Ranking
 

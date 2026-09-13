@@ -78,13 +78,19 @@ The word means different audiences for different owners. Under a submission,
 `Participant` means **its author**: the word that publishes a statement to a
 whole activity publishes a compiler log to exactly one reader.
 
+**One owner does not consult it.** A printout's reference is written with manager
+scope, and the rule that reads it asks instead for `printout:manage` **in the
+printout's own activity** — there is no second audience under a printout to tell
+apart, and the person who asked for it already had the text. The scope is a
+label there rather than a guard, which is worth knowing before building on it.
+
 `Name` is what an activity's attachment rules key on, never the uploaded file
 name.
 
 ### Owner kinds
 
 `ProblemVersion`, `ActivityDocument`, `InstanceDocument`, `InstanceLogo`,
-`Runner`, `Submission`, `Attempt`, `InstanceTheme`, `InstanceFont`.
+`Runner`, `Submission`, `Attempt`, `InstanceTheme`, `InstanceFont`, `Printout`.
 
 Exactly one owner column is set, and a check constraint holds it to agreeing
 with `OwnerKind`. The discriminator sits **beside** typed foreign keys rather
@@ -101,7 +107,39 @@ value.
 | `source` | submission | what was sent |
 | `log` | attempt | what one run said |
 | `details` | attempt | the per-test document |
+| `source` | printout | the page somebody asked to have printed |
 
 A superseded document reference is marked, never deleted: deleting it would
 leave the file it names with no reference at all, and an unreferenced file goes
 in twenty-four hours.
+
+## A printout is the one owner whose bytes are meant to go
+
+Every other owner keeps its file for as long as it exists. A
+[printout](/en/client/manager/printouts) is a page somebody wanted on paper, and
+once it is on paper the copy on the server is somebody's source code sitting
+where it has no further purpose.
+
+So resolving a print request **removes the reference and deletes the file**, in
+that order, in the same call. It is not marked superseded: superseding keeps a
+reference row, an unreferenced file is what the collector looks for, and a
+reference that still exists is not one. Marking it would have read exactly like
+a disposal and kept the bytes indefinitely.
+
+<Callout type="warn" title="What deletion means here">
+The Server stops serving the source and removes it from the store. On a
+PostgreSQL store that is a `DELETE`: the row's old version survives in the table
+until autovacuum reclaims it, in the write-ahead log, and in every backup taken
+before the request was resolved. Nothing here erases anything from a backup.
+</Callout>
+
+The record of the request stays — who asked, when, for what, who printed it, and
+the checksum of what was printed. Only the bytes go. `GET` on the printout
+afterwards answers 200 with no source rather than 404, because the row is the
+audit trail.
+
+The collector is the **backstop** for a delete that fails after the row is
+already stamped, not the mechanism. Its window is longer than it looks: the
+cutoff is measured from upload rather than from the moment a file lost its last
+reference, and the sweep runs once a day, so a file it is responsible for can
+last between one and two days.

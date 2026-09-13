@@ -43,6 +43,24 @@ attached to a problem or a submission.
 editable: "a manager with the right to update something taken away" is this set
 with that entry removed, not a second role layered over a first.
 
+**The copy is taken once.** A template that gains a key later does not reach the
+grants already made from it, and that is the property, not an oversight: what
+somebody holds is a fact written down, so nothing an administrator edits can
+quietly widen a thousand grants. The price is a migration duty — an installation
+whose version adds a participant permission has to re-issue the grants that
+should carry it. `printout:request`, added with the printing module, is the
+first key that arrived this way.
+
+A grant does not have to carry many keys. One carrying `printout:manage` alone
+is a complete, useful grant: it opens the print queue of that activity and
+refuses the rest of the panel.
+
+<Callout type="warn" title="A mapping rule is the exception">
+Where a grant is written by an identity provider's mapping rule, its permissions
+**are** re-derived from the template at every sign-in. That is the one place a
+template edit reaches people who already hold a grant.
+</Callout>
+
 An `Invited` grant confers nothing. It is an offer, and the user is not in the
 activity until they accept — filtered out once, when grants are loaded, rather
 than at each call site.

@@ -21,6 +21,12 @@ export const GLOSSARY: Record<string, string> = {
     Group: "Grupa",
     Ranking: "Ranking",
 
+    // The printing module's own word, added with it on 2026-09-13. The
+    // sidebar entry and the manager area are both *Wydruki*, in both halves
+    // of the product, so a page naming the button and a page using the word
+    // in prose say the same thing.
+    Printouts: "Wydruki",
+
     // **The two words for the person who runs a contest.** `Manager` is the
     // navigation item and `Staff` is the role. Neither was here on 2026-08-30,
     // and the omission cost something: the interface settled on *prowadzący*
@@ -45,6 +51,7 @@ export const TERMS = [
     { key: "Verdict", english: /\bverdicts?\b/i, polish: /werdykt/i },
     { key: "Group", english: /\bgroups?\b/i, polish: /grup/i },
     { key: "Ranking", english: /\branking\b/i, polish: /ranking/i },
+    { key: "Printouts", english: /\bprintouts?\b/i, polish: /wydruk/i },
 ] as const;
 
 /** Renderings that are wrong wherever they appear on a Polish page. */

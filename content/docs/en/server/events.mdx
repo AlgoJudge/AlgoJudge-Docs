@@ -110,7 +110,14 @@ refetches.
 | `problemChanged`, `activityChanged` | |
 | `managerSeriesChanged` | |
 | `submissionChanged`, `questionChanged` | |
+| `printoutChanged` | somebody asked for a page, or a request was taken, handed back or resolved |
 | `userChanged`, `runnerChanged`, `instanceChanged` | |
+
+`printoutChanged` has no participant counterpart. The person who asked learns
+that their page was printed when the paper arrives, and an event saying so would
+tell them nothing they are not about to be told by a human being. It exists for
+the other reason: two people working one printer queue must see each other take
+a row, or they print the same page twice.
 
 <Callout type="warn" title="`managerSeriesChanged` is not `seriesChanged`">
 They carry different payloads: the participant's requires `series` and `change`,
