@@ -99,9 +99,11 @@ Everything is JSON over HTTP, under `/api/v1`.
 | Token | `POST /api/v1/runner/auth/token` | anonymous |
 | Claim a job | `POST /api/v1/runner/jobs/claim` | bearer |
 | Renew a lease | `POST /api/v1/runner/jobs/{jobId}/lease` | bearer |
+| Renew many leases | `POST /api/v1/runner/jobs/leases` | bearer |
 | Report progress | `POST /api/v1/runner/jobs/{jobId}/progress` | bearer |
 | Report a result | `POST /api/v1/runner/jobs/{jobId}/report` | bearer |
 | Give a job back | `POST /api/v1/runner/jobs/{jobId}/release` | bearer |
+| Give many jobs back | `POST /api/v1/runner/jobs/releases` | bearer |
 | Read a file | `GET /api/v1/runner/files/{id}` | bearer |
 | Upload a file | `POST /api/v1/runner/files` | bearer |
 | Attach to an attempt | `POST /api/v1/runner/jobs/{jobId}/files` | bearer |
@@ -151,10 +153,12 @@ authenticate, be refused a replayed nonce, claim, read only its own package,
 report, resend the report and receive the same result, and lose a job to lease
 expiry.
 
-Four cases are worth writing even though nothing obliges an implementation to
+Five cases are worth writing even though nothing obliges an implementation to
 pass them, because each is a way of being wrong that looks like working: a
 released job is queued again **at once** with its delivery count where it was; a
 Runner waiting on an empty queue is handed a submission made afterwards in a
 fraction of that wait, rather than when it runs out; a `204` arrives **at** the
-deadline and not before; and a job reported as an infrastructure failure is
-queued again rather than failed, until the deliveries run out.
+deadline and not before; a job reported as an infrastructure failure is queued
+again rather than failed, until the deliveries run out; and a batch renewal
+carrying one stale lease renews the rest — a batch that refuses whole is a batch
+nobody can use.
