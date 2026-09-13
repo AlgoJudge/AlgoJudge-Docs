@@ -18,7 +18,7 @@ are its membership.
 | `Name` | what people see |
 | `Type` | discriminator, `name@version`. Never interpreted by the Server |
 | `RankingType` | which ranking the Client renders, for example `icpc` or `points` |
-| `TimeZone` | IANA zone the activity's clock is displayed in. **Every instant in the schema is stored UTC**; this is what a manager's "18:00" means when they type it |
+| `TimeZone` | IANA zone the activity's clock is **kept** in. **Every instant in the schema is stored UTC**; this is what a manager's "18:00" means when they type it, and what the Client names beside a reader's own clock. It is not what a reader sees |
 
 `RankingType` is deliberately separate from `Type`, and deliberately never
 branched on in the Server: the moment the Server reads it, adding a ranking

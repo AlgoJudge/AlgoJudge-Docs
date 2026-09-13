@@ -67,15 +67,33 @@ shows *Being prepared* in place of a state until you **Publish** it again. The
 one activity that does arrive unpublished is a
 [copy](/en/client/manager/copying), which nobody sat down and wrote.
 
-## Time is stored in UTC and shown in the activity's zone
+## Time is stored in UTC, entered in the activity's zone, and shown in yours
 
-The activity carries a **time zone**, and every instant it owns is displayed and
-entered in that zone, with the zone named on the field. What is stored is UTC.
+The activity carries a **time zone**. It is the clock a manager types in — a
+manager sitting in another country sets a contest that opens at 18:00 **in the
+contest's** clock without doing arithmetic, and the field names the zone. What
+is stored is UTC.
 
-That matters when you are not in the room: a manager sitting in another zone can
-set a contest that opens at 18:00 **in the contest's** clock without doing
-arithmetic, and the times a participant sees do not depend on where either of
-you is sitting.
+**What you read is your own clock.** Every date on a screen is drawn in the zone
+your browser is in, so a participant abroad never has to convert anything to
+know whether a round has opened.
+
+<Callout type="info" title="Hover a time to see both">
+A time opens a tooltip naming **both** clocks — the activity's first, then
+yours — each with its offset and its IANA identifier:
+
+```
+21.10.2026 00:00 UTC+2 (Europe/Warsaw)
+20.10.2026 18:00 UTC−4 (America/New_York)
+```
+
+It opens on hover and on keyboard focus, so it is not behind a mouse. Where your
+zone *is* the activity's, which it is for most participants, the tooltip has one
+line and the date carries no offset.
+</Callout>
+
+Where the two differ the offset is written beside the date as well, so a time
+that is not on the contest's clock never looks like one.
 
 ## The four tabs
 
