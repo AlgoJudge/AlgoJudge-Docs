@@ -261,6 +261,23 @@ says the job arrived.
 A Runner whose lease has already gone is refused with `runner.lease.stale`,
 which is a success from its side: the job it was giving back is already back.
 
+**A pool goes back in one call**, taking the same `jobs` list as the batch
+renewal below and answering the same per-item shape:
+
+```http
+POST /api/v1/runner/jobs/releases
+{ "jobs": [{ "jobId": "…", "leaseToken": "…" }] }
+```
+
+It means exactly what the single-job call means, carries no reason field for the
+same reason, and counts the three free releases per job. Nothing in the answer
+needs acting on: every code in it says the job is already back.
+
+**A stop is timed, which is why this exists.** One request a job, made one after
+another, is a race against whatever grace the platform allows a container on the
+way out — and what does not fit sits out its lease instead, on a Runner that is
+already gone.
+
 ### Renewing
 
 ```http
@@ -290,6 +307,43 @@ call goes through the same code as a renewal and pushes the deadline out by the
 lease the job was granted — never shortening it, by the rule above. An
 implementation that relied on that would hold its job here and lose it against a
 Server that does only what the contract asks.
+
+### Renewing a whole pool at once
+
+A Runner that holds one job renews it with the call above. A Runner that holds a
+pool — one forwarding to an external archive waits on somebody else's answer, so
+it can hold a hundred submissions — renews all of them in one request:
+
+```http
+POST /api/v1/runner/jobs/leases
+{ "leaseSeconds": 1200, "jobs": [{ "jobId": "…", "leaseToken": "…" }] }
+```
+
+The answer is `200` with one item per job:
+
+```json
+{ "results": [
+  { "jobId": "…", "leaseExpiresAt": "…" },
+  { "jobId": "…", "code": "runner.lease.stale" }
+] }
+```
+
+**An absent `code` means the lease was renewed.** The codes are the ones in the
+table below, and everything on this page holds per item — renewing never
+shortens, and `leaseExpiresAt` is authoritative.
+
+**Read the answer job by job.** One refusal is about one job: the others were
+renewed, and a Runner that treats the call as a single success or a single
+failure will either drop work nobody took from it or keep holding work somebody
+else has. Match by `jobId` rather than by position; a repeated id is answered
+once.
+
+An empty `jobs` list is valid and answers an empty `results`, which is how a
+Runner can ask whether a Server serves this at all. This Server refuses more than
+**512** jobs in one batch, with `422` and `runner.batch.size`.
+
+The per-job route is unchanged and is not going anywhere: a Runner that holds one
+job needs none of this.
 
 | Refusal | Code | Where |
 |---|---|---|

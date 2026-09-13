@@ -65,11 +65,12 @@ one download.
 
 ## Stopping one, and what it costs the archive
 
-**It hands back every job it is holding**, exactly as the sandboxing Runner
-hands back its one. On `SIGTERM` it stops asking for work, tells the Server each
-held job is free, and exits; each of those is claimable immediately and none of
-them spends a delivery. See [Runners](/en/runner) for what
-that means on the Server's side, which is the same for both Runners.
+**It hands back every job it is holding, in one call**, where the sandboxing
+Runner hands back its one. On `SIGTERM` it stops asking for work, tells the
+Server in a single request that the whole pool is free, and exits; each of those
+jobs is claimable immediately and none of them spends a delivery. See
+[Runners](/en/runner) for what that means on the Server's side, which is the
+same for both Runners.
 
 **What is different is what it cannot take back.** The submission is already on
 somebody else's service under this installation's account there, and the set of
@@ -80,10 +81,18 @@ always cost — and it is not avoided by leaving the Runner to be killed. What a
 polite stop saves is the waiting: without it every held job sits out its lease
 first, up to ten minutes each, on a Runner that is already gone.
 
-**So give it longer than the sandboxing one.** Twenty jobs is twenty calls to
-the Server, and a grace period shorter than they take turns a stop back into a
-kill. `AlgoJudge-Ops` ships `stop_grace_period: 60s` for this service against
-`30s` for the other.
+**Still give it longer than the sandboxing one.** The hand-back is one request
+whatever the pool holds, so the grace is no longer a multiple of it — but a
+Server that is remote, busy or behind a proxy makes that one request slower, and
+a grace shorter than it takes turns a stop back into a kill. `AlgoJudge-Ops`
+ships `stop_grace_period: 60s` for this service against `30s` for the other.
+
+**One case it does not cover**, because nothing can: an operator's update puts
+the Server into maintenance and waits for it to close before recreating the
+containers, and a closed Server accepts nothing from a Runner. A Runner stopped
+after that hands nothing back and its jobs return on their leases. Draining is
+open to it; closed is not, because a closed Server is one a backup may assume
+nothing is writing to.
 
 ## `external: true` is not a detail
 
