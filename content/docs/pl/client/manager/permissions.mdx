@@ -2,7 +2,7 @@
 title: Uprawnienia i nadania
 description: Jak zapisuje się prawa, jak się rozstrzygają i trzy reguły, które czynią model bezpiecznym.
 source: en/client/manager/permissions.mdx
-sourceSha256: 02859f004b146fab0f2dae843587b6abb862089dc2597e78c8fa51475ca70dd6
+sourceSha256: fd5b1d6c52db7f72fae551770f0d6a6d6506ba3e75f786c11e1720f4afc28261
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -106,7 +106,7 @@ nie jest ten sam zestaw co twoje prawa w całej instalacji.
 **`system:administrator` jest nieosiągalny przez mapowanie claimów.** Mapowanie
 decyduje, ile warta jest tu grupa z zewnętrznego katalogu, a katalog nigdy nie
 może wykreować administratora. Server pilnuje obu części: reguła mapowania nie może
-wskazać szablonu, który to uprawnienie zawiera, a do szablonu już zmapowanego nie
+wskazać roli, która to uprawnienie zawiera, a do roli już zmapowanej nie
 da się go dopisać.
 
 Ta sama reguła dotyczy mapowania co nadawania: nikt nie zmapuje na uprawnienie,
@@ -119,25 +119,35 @@ czynność w trzech postaciach — Server odmawia za każdym razem. Najpierw nad
 uprawnienie komuś innemu; gdy tylko ma je drugie aktywne nadanie systemowe,
 pierwsze jest znowu zwykłym wierszem.
 
-## Szablony
+## Role
 
-Szablon to nazwany zestaw uprawnień. **Wypełnia nowe nadanie i zostaje
-zapomniany** — nadanie trzyma kopię, a nazwa szablonu zostaje obok wyłącznie jako
-etykieta mówiąca, od czego zestaw się zaczął.
+Rola to nazwany zestaw uprawnień, a **nadanie na nią wskazuje**. Zmiana roli
+zmienia naraz uprawnienia wszystkich, którzy ją mają — także osób zapisanych
+dawno przed tą zmianą.
 
-<Callout type="warn" title="Zmiana szablonu nie dotyka nikogo, kto już go użył">
-Zakłada się to rozsądnie i błędnie, więc ekran mówi o tym na samej górze. Jeśli
-musisz zmienić to, co ma sto osób, zmieniasz ich nadania, a nie szablon, z
-którego przyszły.
+<Callout type="warn" title="Zmiana dociera do wszystkich, którzy mają tę rolę">
+Właśnie dlatego z rolą trzeba obchodzić się uważnie, i ekran o tym mówi: edytor
+roli pokazuje przed zapisem, ilu nadań dotknie zmiana. Jeśli chodziło o jedną
+osobę, zmień jej nadanie — nadanie może mieć własne uprawnienia obok roli.
 </Callout>
 
-Obszar **Szablony uprawnień** je wypisuje i oznacza te dostarczone z produktem
-jako wbudowane; tych nie usuniesz, bo po usunięciu jednego świeża instalacja nie
-miałaby od czego zacząć nadania.
+Rola należy albo do **instalacji**, albo do **jednej aktywności**. Rolę
+aktywności można nadać tylko w niej i pisze ją ten, kto tę aktywność prowadzi;
+role instalacji należą do administratora. To pozwala poprawić uprawnienia
+własnych uczestników bez ruszania tego, co wolno uczestnikom w całej instalacji.
+
+**Do roli nie wpiszesz uprawnienia, którego sam nie masz.** Reguła, która zawsze
+rządziła nadawaniem, rządzi teraz pisaniem tego, na co nadanie wskazuje — z tego
+samego powodu.
+
+Obszar **Role** je wypisuje i oznacza te dostarczone z produktem jako wbudowane;
+tych nie usuniesz, bo po usunięciu jednej świeża instalacja nie miałaby od czego
+zacząć nadania. Nie usuniesz też roli, którą ktoś nadal ma — odmowa mówi, ile
+osób.
 
 ### Trzy dostarczane
 
-**`participant`** — siedem uprawnień, i dokładnie tyle ma zwykły uczestnik:
+**`participant`** — osiem uprawnień, i dokładnie tyle ma zwykły uczestnik:
 
 ```
 activity:read
@@ -147,26 +157,25 @@ result:read:own
 question:read:own
 question:create
 ranking:read
+printout:request
 ```
 
-**`manager`** — wszystko, co ma uczestnik, plus to, czego trzeba do prowadzenia
-aktywności: zmienianie jej i archiwizowanie, zapisywanie ludzi, biblioteka zadań
-— czytanie własnych, zakładanie zadania, edycja, udostępnianie, archiwizowanie i
-podpinanie do serii (`read:own`, `create`, `update`, `share`, `archive`,
-`attach`) — cudze zgłoszenia i ich kod, ponowna ocena, anulowanie i wyłączanie z
-klasyfikacji, cudze wyniki i logi, wszystkie pytania wraz z odpowiadaniem i
-publikowaniem, ogłoszenia, czytanie i zdejmowanie zamrożenia rankingu, konta
-tymczasowe oraz czytanie i zmienianie nadań.
+**`manager`** — wszystko, co ma uczestnik, plus to, co potrzebne do prowadzenia
+aktywności: zmiana ustawień i archiwizacja, zapisywanie ludzi, biblioteka z zadaniami
+(`read:own`, `create`, `update`, `share`, `archive`, `attach`), cudze zgłoszenia
+razem z kodem, przesądzanie, anulowanie i wykluczanie, cudze wyniki i logi,
+wszystkie pytania z odpowiadaniem i publikowaniem, ogłoszenia, kolejka wydruków,
+podgląd i zdejmowanie zamrożenia rankingu, konta tymczasowe, odczyt i zapis
+nadań oraz odczyt i zapis ról **tej aktywności**.
 
-Celowo **nie ma w nim**: `activity:create`, `activity:delete`,
+Świadomie **nie ma** w nim: `activity:create`, `activity:delete`,
 `problem:read:all`, `problem:delete`, `problem:import:external`, `user:*` poza
-kontami tymczasowymi, `template:*`, `runner:*`, `instance:update`,
-`provider:manage` i `trial:run`. Prowadzący odpowiada za aktywność, a nie za
-instalację, w której ona działa.
+kontami tymczasowymi, `runner:*`, `instance:update`, `provider:manage` ani
+`trial:run`. Manager prowadzi aktywność; nie prowadzi instalacji.
 
 **`admin`** — jeden wpis, `system:administrator`. Jeden, bo omija resztę:
-administrator z listą pojedynczych uprawnień to administrator, którego da się po
-cichu przyciąć, a właśnie tej niespodzianki model ma unikać.
+administrator z listą pojedynczych uprawnień to administrator, któremu można po
+cichu coś zabrać, a przed taką niespodzianką model jest zbudowany.
 
 ## Gdzie edytuje się nadania
 
@@ -178,6 +187,12 @@ Dwa ekrany, jedna tabela pod spodem.
   aktywności i tam odbywają się zapisy.
 
 Nadanie decyduje też o tym, czy ktoś jest **prowadzącym**: Server wylicza to przy
-każdym zapisie z uprawnień w zestawie — cokolwiek ponad siedem uprawnień
-uczestnika, z wyjątkiem `trial:run` — a prowadzących nie ma ani w liczbie
-uczestników, ani w rankingu.
+każdym zapisie z tego, co nadanie niesie — z roli i z własnych wpisów razem,
+cokolwiek ponad osiem uprawnień uczestnika, z wyjątkiem `trial:run` — a
+prowadzących nie ma ani w liczbie uczestników, ani w rankingu.
+
+**Zmiana roli też to zmienia.** Dodanie uprawnienia prowadzącego do roli, do
+której zapisuje kurs, robi prowadzących ze wszystkich, którzy tę rolę mają, i
+wyprowadza ich z rankingu. Server przelicza tę flagę we wszystkich powiązanych
+nadaniach przy zapisie roli, więc tablica i licznik nigdy nie kłócą się z
+uprawnieniami.

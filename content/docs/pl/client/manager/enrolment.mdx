@@ -2,7 +2,7 @@
 title: Zapisy
 description: Nadanie w aktywności jest członkostwem. Obok niego nie ma żadnej listy.
 source: en/client/manager/enrolment.mdx
-sourceSha256: a9f1b635351bc391b7cb252572b16a9aa487417fa49acc0562232c7ca9f52a10
+sourceSha256: 2bcef57404093740e0c0ad5e1ad31816b0abb3d541386dde4a3968dc0ac82cc5
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -26,9 +26,12 @@ i dlatego te same wiersze zobaczysz w
 **Zapisz osobę** pyta o:
 
 1. **użytkownika** — konto, które już istnieje i nie jest jeszcze zapisane;
-2. **szablon**, od którego zacząć: wypełnia zestaw, a zostaje po nim tylko
-   nazwa — etykieta mówiąca, skąd ten zestaw się wziął;
-3. sam **zestaw uprawnień**, który możesz dowolnie edytować.
+2. **rolę** — tę, do której zapisuje ta aktywność, chyba że wybierzesz inną.
+   Nadanie **wskazuje** na nią, więc późniejsza poprawka tej roli dosięgnie też
+   tę osobę;
+3. **własne uprawnienia** tej osoby, ponad rolę. To, co daje rola, jest
+   zaznaczone i zablokowane; to, co zaznaczysz tutaj, należy do tej jednej
+   osoby.
 
 Edytor oferuje to, co **ty** masz w tej aktywności, a nie to, co masz w całej
 instalacji. Nikt nie nada uprawnienia, którego sam nie ma; okno mówi to wprost,
@@ -113,4 +116,4 @@ stoją, w tym `user:block` i `user:merge`, wymieniają
 Blokada w ogóle nie pozwala się zalogować — kończy istniejące sesje i nie
 dopuszcza nowych. To, co ktoś może wewnątrz aktywności, opisuje nadanie, i jedno
 nie zastępuje drugiego: blokujesz na poziomie całej instalacji i potrzebujesz do
-tego `user:block`, którego nie ma w dostarczanym szablonie `manager`.
+tego `user:block`, którego nie ma w dostarczanej roli `manager`.

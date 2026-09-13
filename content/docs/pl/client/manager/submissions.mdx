@@ -2,7 +2,7 @@
 title: Zgłoszenia
 description: Jak je znaleźć, skąd przyszły, jak ocenić ponownie i jak wyłączyć z rankingu.
 source: en/client/manager/submissions.mdx
-sourceSha256: 20d5ad4ef4001fc80bd81450d054f839eb3bd5171f9611799d84930c869fb29f
+sourceSha256: b45b31fb3a0ad53dda8954be253ac35a48b5dd1a81fb151acc32200e342d5438
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -72,7 +72,7 @@ To, co dzieje się z wcześniejszą próbą, zależy od tego, jak daleko zaszła
   mówi zdanie powyżej.
 
 Ponowna ocena to `submission:rejudge`, anulowanie to `submission:cancel`. Oba są
-w dostarczanym szablonie `manager`.
+w dostarczanej roli `manager`.
 
 ## Wyłączenie zgłoszenia z klasyfikacji
 
@@ -103,7 +103,7 @@ widzi.
 **Licz ponownie** cofa orzeczenie i kasuje razem z nim powód: zdanie tłumaczące
 stan, który już nie obowiązuje, jest gorsze niż jego brak.
 
-Uprawnienie to `submission:exclude`. Jest w dostarczanym szablonie `manager` i
+Uprawnienie to `submission:exclude`. Jest w dostarczanej roli `manager` i
 celowo osobne od `submission:rejudge` — ponowna ocena prosi Runnera, żeby
 spojrzał jeszcze raz, wyłączenie rozstrzyga wynik ręcznie, a instalacja, która
 chce wydać jedno bez drugiego, może to zrobić.

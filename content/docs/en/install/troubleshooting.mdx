@@ -83,7 +83,7 @@ when the container started. Set it in `.env` and recreate the Server.
 **Restart the Server.** At every start it looks for an active installation-wide
 grant carrying `system:administrator` — anybody's, not only the seeded
 account's — and where the installation has none, it gives the `admin` account
-the `admin` template back:
+the `admin` role back:
 
 ```bash
 docker compose restart server

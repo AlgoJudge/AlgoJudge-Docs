@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
 source: en/install/identity.mdx
-sourceSha256: 8455f33c9636d87a3693ede48130802ccc15a4496ca34abbbaa528236e2a9389
+sourceSha256: 92f5af5c103dd55fd2c0178536e4b7023c1d63e92ed1820cc48ca1050262fd92
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -161,8 +161,8 @@ których się to robi, to
 1. **Zarejestruj dostawcę** i skopiuj **adres powrotny**, który pokazuje ekran,
    na listę dozwolonych u samego dostawcy. AlgoJudge tę ścieżkę wylicza i zwraca;
    nie wymyślasz jej.
-2. **Napisz mapowanie** — które grupy katalogu stają się którym szablonem
-   uprawnień. Zacznij od `deny`, które nie wpuszcza nikogo, kogo mapowanie nie
+2. **Napisz mapowanie** — które grupy katalogu stają się którą rolą. Zacznij
+   od `deny`, które nie wpuszcza nikogo, kogo mapowanie nie
    nazywa.
 3. **Jeśli dostawca umie zgłaszać usunięcia**, ustaw sekret kanału zwrotnego
    i włącz kanał.
@@ -191,7 +191,7 @@ w konfiguracji dostawcy to kod wykonywany na zawartości tokenu. Czytamy dwa
 kształty claimu, żeby instalacja nie musiała wiedzieć, który ma u siebie: kilka
 claimów o tej samej nazwie albo jeden claim z tablicą lub obiektem JSON.
 
-Reguła mapowania to **wartość** claimu i **nazwa** szablonu uprawnień,
+Reguła mapowania to **wartość** claimu i **nazwa** roli,
 porównywane jako napisy, znak w znak. Nie ma wzorców, bo znak wieloznaczny na
 liście dozwolonych to sposób, w jaki lista dozwolonych przestaje nią być. Dwie
 zasady są egzekwowane i nie da się ich wyłączyć: **`system:administrator` jest

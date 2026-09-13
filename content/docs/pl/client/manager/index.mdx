@@ -2,7 +2,7 @@
 title: Zarządzanie
 description: Trzynaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
 source: en/client/manager/index.mdx
-sourceSha256: 4951a5b01d84bae76932944014c0597044c4a0163431ec96f072a230664cfa64
+sourceSha256: 325b4a961a074d9948e19fcb682aab095a5f9cd46951d34a0804c971ff0592c5
 ---
 
 Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
@@ -21,7 +21,7 @@ Obszar otworzy ci **którekolwiek jedno** z uprawnień w ostatniej kolumnie.
 |---|---|---|
 | [Użytkownicy](/pl/client/manager/enrolment) | Konta, hurtowe tworzenie loginów tymczasowych, blokowanie i notatki. | `user:read:all` |
 | [Nadania](/pl/client/manager/permissions) | Kto co może — w systemie i w każdej aktywności. | `grant:read:all` |
-| [Szablony uprawnień](/pl/client/manager/permissions) | Zestawy, od których zaczyna się nadanie, w tym te dostarczone z produktem. | `template:read` |
+| [Role](/pl/client/manager/permissions) | Zestawy, na które wskazuje nadanie. Zmiana jednej dociera do wszystkich, którzy ją mają. | `role:read`, `grant:update` |
 | [Zadania](/pl/client/manager/problems) | Biblioteka: treści, załączniki, paczki i wersje. | `problem:read:own`, `problem:read:all` |
 | [Aktywności](/pl/client/manager/activities) | Zawody i kursy: serie, podpięcia zadań, terminy i zapisy. | `activity:create`, `activity:update`, `activity:archive` |
 | [Zgłoszenia](/pl/client/manager/submissions) | Wszystkie zgłoszenia, ich kod, próby oceny i ponowna ocena. | `submission:read:all` |
@@ -48,13 +48,17 @@ Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
 
 ## Gdzie kończy się rola prowadzącego
 
-Siedem z trzynastu obszarów dotyczy instalacji, a nie pojedynczej aktywności:
-Użytkownicy, Szablony uprawnień, Runnery, Instancja, Logowania zewnętrzne,
-Platformy LTI i Zasoby zewnętrzne. Razem potrzebują pięciu uprawnień —
-`user:read:all`, `template:read`, `runner:read`, `instance:update` i
-`provider:manage` — i **żadnego z tych pięciu nie ma w dostarczanym szablonie
-`manager`**. Prowadzenie aktywności to co innego niż prowadzenie instalacji, w
-której ta aktywność działa.
+Sześć z trzynastu obszarów dotyczy instalacji, a nie pojedynczej aktywności:
+Użytkownicy, Runnery, Instancja, Logowania zewnętrzne, Platformy LTI i Zasoby
+zewnętrzne. Razem potrzebują czterech uprawnień — `user:read:all`,
+`runner:read`, `instance:update` i `provider:manage` — i **żadnego z tych
+czterech nie ma w dostarczanej roli `manager`**. Prowadzenie aktywności to co
+innego niż prowadzenie instalacji, w której ta aktywność działa.
+
+**Role były siódmym takim obszarem i już nie są.** `role:manage` ma zakres:
+trzymane w nadaniu na aktywność pisze role tej aktywności i nic więcej, więc
+manager poprawia uprawnienia własnych uczestników, nie sięgając wcale do ról
+instalacji.
 
 **Wydruki to obszar pomyślany tak, by dawać go osobno.** Nadanie, które niesie
 tylko `printout:manage`, otwiera właśnie jego i zamyka wszystkie pozostałe — tak

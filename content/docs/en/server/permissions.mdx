@@ -1,6 +1,6 @@
 ---
 title: Permissions
-description: The string form, the two scopes, the resolution rules, the three shipped templates, and all 54 keys.
+description: The string form, the two scopes, the resolution rules, the three shipped roles, and all 54 keys.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -50,9 +50,12 @@ In this order. The order is the decision.
    an activity, and submitting asks that separately.
 3. Otherwise the effective set is the **union**: every system contribution, plus
    the activity grant when one activity is asked about.
-4. **There is no subtraction anywhere in the model.**
-5. **Nobody may grant, or map onto, a permission they do not themselves hold.**
-   Enforced where a grant is written, not where it is read.
+4. **What one grant carries is itself a union** — the role it points at, and any
+   entries of its own beside it. Either half may be empty.
+5. **There is no subtraction anywhere in the model.**
+6. **Nobody may grant, or map onto, a permission they do not themselves hold.**
+   Enforced where a grant is written — and where a role is written, since a
+   grant points at one — never where it is read.
 
 <Mermaid chart={`
 flowchart TD
@@ -62,7 +65,8 @@ flowchart TD
     ov -->|no| adm{"system:administrator in any<br/>system contribution?"}
     adm -->|yes| bypass["Every permission check passes.<br/>Membership is asked separately"]
     adm -->|no| union["The union: every system contribution, plus<br/>the activity grant when one activity is asked about"]
-    union --> held{"Is the key in that set?"}
+    union --> each["Each of those grants is<br/>its role plus its own entries"]
+    each --> held{"Is the key in that set?"}
     held -->|yes| allowed["Allowed"]
     held -->|no| refused["Refused. Nothing subtracts,<br/>and there is nothing else to consult"]
 `} />
@@ -91,22 +95,35 @@ The Server's "which activities is this permission held in" query returns
 **null** for *not restricted* and a list for *these activities*. An empty list
 is a third answer and means none.
 
-## The three shipped templates
+## The three shipped roles
 
-Choosing a template **copies** its permissions into the grant. Nothing points
-back afterwards, which is the whole reason it is a template rather than a role:
-a role that grants keep pointing at is an object somebody has to keep correct
-for the lifetime of the installation.
+A grant **points at** a role. Editing one changes what everybody holding it may
+do, at once — including people enrolled long before the edit.
 
-The cost is stated plainly: a correction has to be applied to existing grants by
-hand.
+That is the opposite of what this page said until 2026-09-13, when a grant held
+a copy instead. What made it change was the cost being paid rather than
+predicted: a permission added by a new version reached nobody who already held a
+grant, and every installation had to re-issue them by hand.
 
-<Callout type="warn" title="One object does hold a live reference">
-An identity provider's [mapping rule](/en/server/identity) names a template, and
-the contribution is re-derived from it at **every sign-in**. Editing a template
-touches nobody who already used it — except the people whose grants a mapping
-rule rewrites.
+<Callout type="warn" title="An edit reaches everybody at once">
+This is a live link, so a role is worth treating as one. The panel shows how
+many grants an edit would reach before you save it, an activity's own role
+reaches only that activity, and nobody may put into a role a permission they do
+not themselves hold.
 </Callout>
+
+<Callout type="info" title="One kind of grant still holds a copy">
+An identity provider's [mapping rule](/en/server/identity) names a role, and the
+contribution it writes is a copy — a claim may match several rules and the
+contribution is the union of every role they name, which one link cannot say. It
+is rewritten from those rules at **every sign-in**, so editing a role reaches
+those people at their next sign-in rather than immediately.
+</Callout>
+
+A role belongs either to the installation or to **one activity**. An activity's
+role may only be granted inside it, and is written by whoever holds `role:manage`
+there — which is how a manager corrects what their own participants may do
+without touching what every participant in the installation may do.
 
 ### `participant` — 8 keys
 
@@ -118,7 +135,7 @@ question:read:own    question:create        ranking:read         printout:reques
 This list is load-bearing beyond the grant editor: it is what the staff test
 measures against, and therefore what decides who appears in a ranking.
 
-### `manager` — 34 keys
+### `manager` — 36 keys
 
 Everything a participant has, plus:
 
@@ -135,14 +152,17 @@ printout:manage
 ranking:read:unfrozen      ranking:unfreeze
 user:create:temporary
 grant:read:all             grant:update
+role:read                  role:manage
 ```
 
-The other twenty are deliberately **not** included: `activity:create`,
+The other eighteen are deliberately **not** included: `activity:create`,
 `activity:delete`, `trial:run`, `problem:read:all`, `problem:delete`,
-`problem:import:external`, every `user:` key beyond temporary accounts,
-`template:read`, `template:manage`, the four `runner:` keys, `instance:update`,
-`provider:manage` and `system:administrator`. A manager runs an activity; they
-do not run the installation it lives in.
+`problem:import:external`, every `user:` key beyond temporary accounts, the four
+`runner:` keys, `instance:update`, `provider:manage` and `system:administrator`.
+A manager runs an activity; they do not run the installation it lives in.
+
+`role:read` and `role:manage` are in the set, and they are scoped: held in an
+activity grant they reach that activity's roles and nothing else.
 
 ### `admin` — 1 key
 
@@ -160,11 +180,11 @@ when it carries any permission an ordinary participant does not hold. The Server
 computes that on every write and never accepts it from the caller.
 
 Two flags are kept per catalogue entry rather than one, because they are two
-questions: *does the participant template grant it* and *does holding it make
+questions: *does the participant role grant it* and *does holding it make
 somebody staff*. They differ for exactly one key.
 
 <Callout type="warn" title="`trial:run` is held without becoming staff">
-It is outside the participant template, because a trial spends a Runner and
+It is outside the participant role, because a trial spends a Runner and
 opening it is a manager's decision in one activity. It is not staff-conferring,
 because spending your own time on your own package is not seeing or changing
 other people's work.
@@ -291,7 +311,7 @@ ranking. Reading source other people wrote is what staff means, and a volunteer
 who is also competing has to be given the key in an activity they do not
 compete in.
 
-`printout:request` is in the participant template, so it confers nothing.
+`printout:request` is in the participant role, so it confers nothing.
 Requesting is refused anyway unless the activity has the module switched on.
 
 ### Ranking
@@ -319,28 +339,31 @@ activity scope. `user:merge` is its own key rather than part of `user:update`:
 it hands one person's submissions and points to somebody else, and it should not
 arrive with ordinary account editing.
 
-### Grants and templates
+### Grants and roles
 
 | Permission | Scope | Means |
 |---|---|---|
 | `grant:read:all` | both | see who holds what |
 | `grant:update` | both | change what someone holds |
-| `template:read` | global | see the templates — and so does `grant:update`, held anywhere |
-| `template:manage` | global | create, edit and delete templates |
+| `role:read` | both | see the roles — and so does `grant:update`, held anywhere |
+| `role:manage` | both | create, edit and delete roles, at the scope it is held |
 
 `grant:update` is why "nobody may grant a permission they do not hold" exists.
 An activity manager needs it to run their own group, and without that rule it is
-the same as being able to make oneself an administrator.
+the same as being able to make oneself an administrator. **The same rule governs
+writing a role**, because a grant points at one: nobody may put into a role a
+permission they do not themselves hold.
 
-**The template list answers to either key, held anywhere.** `template:read` is
-global, and a global key in an activity grant confers nothing, so an activity
-manager could never hold it — while applying a template is exactly what they do
-when they enrol somebody by hand. So `GET /api/v1/permission-templates` admits
-`template:read` **or** `grant:update` from any grant the caller holds, and
-putting `template:read` into a manager set of your own is not the fix it looks
-like. Reading one discloses nothing: a template is copied into a grant, never
-referenced, and the excess rule still refuses to hand on a permission the caller
-does not hold.
+`role:manage` is scoped, and the scope is the whole of what makes it safe to
+hand to a manager. Held at system scope it writes the installation's roles; held
+in an activity grant it writes that activity's, and nothing else.
+
+**The role list answers to either key, held anywhere.** `GET /api/v1/roles`
+admits `role:read` **or** `grant:update` from any grant the caller holds —
+applying a role is exactly what a manager does when they enrol somebody by hand,
+and `grant:update` is the manager grant written before roles existed. Reading a
+role discloses nothing, and the excess rule still refuses to hand on a permission
+the caller does not hold.
 
 ### Runners and the installation
 
@@ -359,7 +382,7 @@ because a mapping rule decides what a token buys. Its two guards are described
 in [Identity](/en/server/identity), and both are enforced rather than
 documented.
 
-`instance:update` is not in the manager template: running an activity is not
+`instance:update` is not in the manager role: running an activity is not
 running the installation it lives in.
 
 ### `system:administrator` is refused in an activity grant
@@ -371,12 +394,12 @@ means nothing in an activity.
 
 The refusal is narrow on purpose. Several `problem:*` keys are declared global
 too and are **not** refused in an activity grant, because the shipped `manager`
-template contains them: a rule that refused every global key would refuse the
-template this installation hands out.
+role contains them: a rule that refused every global key would refuse the
+role this installation hands out.
 
 Nor are they inert there. The problem library asks whether the key is held
 **anywhere** rather than at system scope, so managing one activity is what
-admits somebody to their own library — which is what the `manager` template
+admits somebody to their own library — which is what the `manager` role
 promises when it says it runs an activity's problems.
 
 ### The installation cannot lose its last administrator
@@ -394,7 +417,7 @@ again, including on the row that was refused a moment earlier.
 
 **The way back is a restart**, because `aj-admin` has no command for grants.
 Where no active system grant carries the key at all, the Server grants the
-`admin` template back to the seeded `admin` account on start and logs a warning.
+`admin` role back to the seeded `admin` account on start and logs a warning.
 It never rewrites a system grant somebody made by hand: where that account
 already holds one that does not administer, the log says so and the row is left
 alone, so an operator who moved the role onto a named person keeps their

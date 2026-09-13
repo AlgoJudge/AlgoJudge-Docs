@@ -141,7 +141,7 @@ the second on creation only; `provider.claimPath.invalid`;
 `provider.unmappedBehavior.unknown` and `provider.defaultTemplate.required`;
 `provider.deletionSecret.required` for a channel enabled without one; six
 `provider.rule.*` for a rule with no claim value, a value mapped twice, a
-template missing, unknown, carrying `system:administrator`, or carrying
+role missing, unknown, carrying `system:administrator`, or carrying
 permissions its author does not hold; and `provider.linked`, which refuses to
 delete a provider people still sign in through.
 
@@ -202,7 +202,7 @@ worth choosing it as though it were permanent.
 
 A provider carries one `ClaimPath` — `groups`, `realm_access.roles`, whatever
 that provider emits — and a list of rules. One rule is one line of an allowlist:
-*this claim value grants this template*.
+*this claim value grants this role*.
 
 **A dotted path, never an expression.** An expression in provider configuration
 is code executed against the contents of a token, and a token is written by
@@ -223,12 +223,18 @@ that can never be used and that an administrator has to explain.
 permanently: a claim path somebody mistyped cannot lock an installation out,
 because an administrator still signs in locally.
 
-### A mapping rule is the one live reference to a template
+### A mapping rule names a role, and writes a copy of it
 
-Choosing a [template](/en/server/permissions) for a grant copies its permissions
-and nothing points back. A mapping rule is different: the contribution is
-re-derived from it at every sign-in, so **editing the template a rule names does
-reach people**, at their next sign-in. Deleting a named template is refused.
+A [grant](/en/server/concepts/grant) points at a role, so editing that role
+reaches its holders at once. **The contribution a mapping rule writes is the
+exception**: a claim may match several rules and the contribution is the union of
+every role they name, which one link cannot express, so it is stored as a copy
+and re-derived from those rules at **every sign-in**. Editing a role a rule names
+therefore reaches those people at their next sign-in rather than immediately.
+
+Only a **global** role may be named: a mapping is the installation's, and a role
+belonging to one activity is not the installation's to hand out. Deleting a named
+role is refused.
 
 ### The two guards
 
@@ -239,16 +245,16 @@ hold.
 </Callout>
 
 Both are enforced twice, and the second time is the point. The write path
-refuses a rule pointing at a template that carries `system:administrator`, or at
+refuses a rule pointing at a role that carries `system:administrator`, or at
 permissions its author does not hold. The mapping then filters again when it is
-used — because a template can be edited after a rule names it, and "unreachable
+used — because a role can be edited after a rule names it, and "unreachable
 in every configuration" has to mean *at the moment the mapping is used*, not
 only at the moment it was written.
 
 A permission the catalogue does not describe is stripped at the same point. A
-template naming a key this Server has never heard of would otherwise be stored
-into a grant, and an unknown key counts as staff — so a typo in a template would
-quietly take somebody out of a ranking.
+role naming a key this Server has never heard of would otherwise be stored into
+a grant, and an unknown key counts as staff — so a typo in a role would quietly
+take somebody out of a ranking.
 
 ## The contribution a provider writes
 

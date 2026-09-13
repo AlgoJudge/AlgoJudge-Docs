@@ -30,35 +30,43 @@ attached to a problem or a submission.
 | Field | Meaning |
 |---|---|
 | `UserId` | who holds it. Stays resolvable after the account is emptied, so a past participant keeps their place in an activity's history |
-| `Permissions` | this user's own permissions, as a `jsonb` array of strings |
+| `RoleId` | the [role](/en/server/permissions) this grant points at, or null for a set held by hand |
+| `Permissions` | this grant's **own** entries, as a `jsonb` array of strings — additions on top of the role, or the whole set where there is none |
 | `SourceProviderId` | where this contribution came from. **Null is the manual one**; anything else names the identity provider that asserted it |
 | `OverrideSystem` | this activity grant is authoritative inside its activity |
 | `IsSystem` | a membership that runs the activity rather than takes part in it |
-| `CreatedFromTemplate` | which template it was created from. Informational, not a reference |
+| `CopiedFromRoleName` | which role a *copied* set started from. Informational, not a reference, and null on anything that points at one |
 | `GroupId` | the [group](/en/server/concepts/group) this person competes as, or null |
 | `State` | `Invited` or `Active` |
 | `GrantedByUserId` | who issued it |
 
-`Permissions` is filled in from a [template](/en/server/permissions) and then
-editable: "a manager with the right to update something taken away" is this set
-with that entry removed, not a second role layered over a first.
+What somebody holds through one grant is **the role's permissions and the
+grant's own, unioned**. Giving one person one extra key does not cut them off
+from corrections to the role, which is why the two are separate fields rather
+than one set.
 
-**The copy is taken once.** A template that gains a key later does not reach the
-grants already made from it, and that is the property, not an oversight: what
-somebody holds is a fact written down, so nothing an administrator edits can
-quietly widen a thousand grants. The price is a migration duty — an installation
-whose version adds a participant permission has to re-issue the grants that
-should carry it. `printout:request`, added with the printing module, is the
-first key that arrived this way.
+**A role is a live link.** Editing it changes what everybody pointing at it may
+do, at once — including people enrolled long before the edit. That is the
+opposite of what this page said until 2026-09-13, and the change was made
+because the old property had a bill: a permission added by a new version reached
+nobody who already held a grant, and `printout:request` is the key that arrived
+that way.
 
-A grant does not have to carry many keys. One carrying `printout:manage` alone
-is a complete, useful grant: it opens the print queue of that activity and
-refuses the rest of the panel.
+Three things keep a live link survivable, and all three are enforced: a role
+belongs either to the installation or to **one activity**, nobody may put into a
+role a permission they do not themselves hold, and `IsSystem` is recomputed for
+every linked grant whenever the role is edited.
 
-<Callout type="warn" title="A mapping rule is the exception">
-Where a grant is written by an identity provider's mapping rule, its permissions
-**are** re-derived from the template at every sign-in. That is the one place a
-template edit reaches people who already hold a grant.
+A grant does not have to point at a role at all. One carrying `printout:manage`
+and nothing else is a complete, useful grant: it opens the print queue of that
+activity and refuses the rest of the panel.
+
+<Callout type="warn" title="A mapping rule's contribution is still a copy">
+Where a grant is written by an identity provider's mapping rule, it points at no
+role: a claim may match several rules and the contribution is the union of every
+role they name, which one link cannot express. It is re-derived from those rules
+at **every sign-in**, so editing a role reaches those people at their next
+sign-in rather than at once.
 </Callout>
 
 An `Invited` grant confers nothing. It is an offer, and the user is not in the

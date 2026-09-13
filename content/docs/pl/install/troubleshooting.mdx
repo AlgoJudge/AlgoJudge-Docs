@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: c6a1dc1d68bf3e89e40f8b25453b56398871aaa25b2f3c67deaa233ca26fb3dc
+sourceSha256: 0259542c3a7e5dae156243ab9c8e9cc341903d9d6bc01311a360725075093b0d
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -87,7 +87,7 @@ gdy kontener startował. Ustaw go w `.env` i odtwórz Server.
 **Zrestartuj Server.** Przy każdym starcie sprawdza on, czy w instalacji jest
 jeszcze aktywne nadanie systemowe z kluczem `system:administrator` —
 czyjekolwiek, nie tylko na koncie zakładanym przy pierwszym starcie. Jeśli nie
-ma żadnego, przywraca kontu `admin` uprawnienia z szablonu `admin`:
+ma żadnego, przywraca kontu `admin` uprawnienia z roli `admin`:
 
 ```bash
 docker compose restart server

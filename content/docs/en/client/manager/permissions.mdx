@@ -104,7 +104,7 @@ which is not the same set as your rights across the installation.
 **`system:administrator` is unreachable through a claim mapping.** A mapping
 decides what an external directory's group is worth here, and a directory must
 never be able to mint an administrator. Both halves are guarded: a mapping rule
-cannot point at a template that carries it, and a template that is already mapped
+cannot point at a role that carries it, and a role that is already mapped
 cannot have it added.
 
 The same rule applies to mapping as to granting: nobody may map onto a permission
@@ -117,25 +117,37 @@ three spellings, and the Server refuses all three. Grant the key to somebody
 else first; the moment a second active system grant carries it, the first is an
 ordinary row again.
 
-## Templates
+## Roles
 
-A template is a named set of permissions. **It fills a new grant in and is then
-forgotten** — the grant holds a copy, and the template's name is kept beside it
-only as a label saying where the set started.
+A role is a named set of permissions, and **a grant points at it**. Editing a
+role changes what everybody holding it may do, at once — including people
+enrolled long before the edit.
 
-<Callout type="warn" title="Editing a template reaches nobody who already used it">
-This is the reasonable but wrong assumption, and the screen says so at the top.
-If you need to change what a hundred people hold, you change their grants, not
-the template they came from.
+<Callout type="warn" title="An edit reaches everybody holding the role">
+This is the whole reason a role is worth being careful with, and the screen says
+so: the role editor shows how many grants the change would reach before you save
+it. If you meant to change one person, change their grant instead — a grant may
+carry permissions of its own beside its role.
 </Callout>
 
-The **Permission templates** area lists them, and marks the ones that ship as
-built-in; those cannot be deleted, because removing one would leave a fresh
-installation nothing to grant from.
+A role belongs either to the **installation** or to **one activity**. An
+activity's role can only be granted inside that activity, and is written by
+whoever runs it; the installation's roles are an administrator's. That is what
+lets you correct what your own participants may do without touching what every
+participant in the installation may do.
+
+**You cannot put into a role a permission you do not hold yourself.** The rule
+that has always governed handing out a grant governs writing the thing a grant
+points at, for the same reason.
+
+The **Roles** area lists them, and marks the ones that ship as built-in; those
+cannot be deleted, because removing one would leave a fresh installation nothing
+to grant from. Neither can a role somebody still holds — the refusal says how
+many.
 
 ### The three that ship
 
-**`participant`** — seven permissions, and this is exactly what an ordinary
+**`participant`** — eight permissions, and this is exactly what an ordinary
 participant holds:
 
 ```
@@ -146,6 +158,7 @@ result:read:own
 question:read:own
 question:create
 ranking:read
+printout:request
 ```
 
 **`manager`** — everything a participant has, plus what is needed to run an
@@ -153,14 +166,13 @@ activity: updating and archiving it, enrolling people, the problem library
 (`read:own`, `create`, `update`, `share`, `archive`, `attach`), everybody's
 submissions and their source, rejudging, cancelling and excluding, everybody's
 results and logs, every question with answering and publishing, announcements,
-reading and lifting a ranking freeze, temporary accounts, and reading and
-updating grants.
+the printout queue, reading and lifting a ranking freeze, temporary accounts,
+reading and updating grants, and reading and writing **that activity's** roles.
 
 Deliberately **not** in it: `activity:create`, `activity:delete`,
 `problem:read:all`, `problem:delete`, `problem:import:external`, `user:*` beyond
-temporary accounts, `template:*`, `runner:*`, `instance:update`,
-`provider:manage` and `trial:run`. A manager runs an activity; they do not run
-the installation.
+temporary accounts, `runner:*`, `instance:update`, `provider:manage` and
+`trial:run`. A manager runs an activity; they do not run the installation.
 
 **`admin`** — one entry, `system:administrator`. One, because it bypasses the
 rest: an administrator with a list of individual permissions is an administrator
@@ -177,6 +189,11 @@ Two screens, one table behind them.
   and is where enrolment happens.
 
 A grant is also what decides whether somebody is **staff**: the Server computes
-that on every write from the permissions in the set — anything beyond the
-participant seven, `trial:run` excepted — and staff are absent from the
-participant count and from the ranking.
+that on every write from what the grant carries — its role and its own entries
+together, anything beyond the participant eight with `trial:run` excepted — and
+staff are absent from the participant count and from the ranking.
+
+**A role edit can change that too.** Adding a staff permission to the role a
+course enrols into makes everybody holding it staff, and takes them out of the
+ranking. The Server recomputes the flag on every linked grant when a role is
+saved, so the board and the count never disagree with the permissions.
