@@ -2,17 +2,26 @@
 title: Kod źródłowy
 description: Jak obejrzeć to, co wysłałeś, skopiować to, pobrać i wysłać poprawioną wersję.
 source: en/client/participant/source-code.mdx
-sourceSha256: fcf839c5dc5cec2a859d44c25aedee48f2bd948355025882d86bcf56e8ca5d59
+sourceSha256: a5d3ee14495e0056d8dfae6093986eda7f8694ce6b8855b9cda8514cf2152d84
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 **Kod źródłowy** na ekranie zgłoszenia otwiera to, co naprawdę wysłałeś.
 
-**O tym, czy możesz go przeczytać, decyduje aktywność — nawet jeżeli to Ty go
-wysłałeś.** Gdy aktywność nie udostępnia Ci plików zgłoszenia, na ekranie
-zgłoszenia nie ma przycisku **Kod źródłowy**, a jeżeli wejdziesz na adres
-edytora, zamiast kodu zobaczysz komunikat: *Kod źródłowy jest niedostępny*.
+**Nie Ty decydujesz o tym, czy możesz go przeczytać — nawet jeżeli to Ty go
+wysłałeś.** Przycisk **Kod źródłowy** znika z ekranu zgłoszenia z dwóch powodów:
+
+- **Aktywność nie udostępnia Ci plików zgłoszenia.** To osoba prowadząca
+  decyduje, które z nich może czytać uczestnik.
+- **Runda zabrała swoje treści** — jest wstrzymana z ukrytymi treściami zadań
+  albo zakończyła się w aktywności, która zamyka rundy po zakończeniu. Kod,
+  który napisałeś do treści, już niedostępnej, znika razem z nią i razem z nią
+  wraca.
+
+W obu przypadkach przycisku po prostu nie ma i ekran nie mówi, który z tych
+dwóch powodów zadziałał. Samo zgłoszenie zostaje na miejscu: nadal jest w
+**Moich zgłoszeniach**, z werdyktem, punktacją i wynikami testów.
 
 To pełny edytor, tylko do odczytu, dopóki sam tego nie zmienisz, z kolorowaniem
 składni Twojego języka. Zgłoszenie z kilkoma plikami dostaje zakładkę na plik;
@@ -33,6 +42,10 @@ wysłałeś.
 
 To kopia z jednej chwili, a nie odnośnik do zgłoszenia: na papierze wyjdzie to,
 co czytałeś. Zobacz [Drukowanie kodu](/pl/client/participant/printing).
+
+Żądanie wskazujące zgłoszenie z rundy, która zabrała swoje treści, zostanie
+odrzucone. Runda, która nie pokazuje Ci Twojego kodu, nie wydrukuje go także na
+papierze.
 
 ## Edytuj i wyślij ponownie
 

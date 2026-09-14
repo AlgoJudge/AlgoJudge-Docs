@@ -7,11 +7,19 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 **Source code** on a submission's screen opens what you actually sent.
 
-**Whether you may read it is the activity's decision, even though you sent
-it.** Where the activity does not share a submission's files with you, there
-is no **Source code** button on the submission's screen, and reaching the
-editor by its address gives you a notice instead: *The source code is not
-available*.
+**Whether you may read it is not yours to decide, even though you sent it.**
+Two things take the **Source code** button off a submission's screen:
+
+- **The activity does not share a submission's files with you.** Whoever runs
+  it decides which of them a participant may read.
+- **The round has taken its content back** — it is paused with the statements
+  hidden, or it has ended in an activity that closes its finished rounds. The
+  code you wrote against a statement you may no longer read goes with the
+  statement, and comes back with it.
+
+Either way the button is absent, and the screen does not say which of the two
+it is. Your submission itself stays where it was: it keeps its place in **My
+submissions**, its verdict, its score and its per-test results.
 
 It is a full editor, read-only until you say otherwise, with your language's
 highlighting. A submission carrying several files gets a tab per file; a
@@ -33,6 +41,10 @@ sent.
 It is a copy taken at that moment rather than a link to this submission: what
 comes out is what you were reading. See [Printing your
 code](/en/client/participant/printing).
+
+A request naming a submission whose round has taken its content back is
+refused. A round that will not show you your code will not put it on paper
+either.
 
 ## Edit and resubmit
 
