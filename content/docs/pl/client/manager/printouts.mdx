@@ -2,7 +2,7 @@
 title: Wydruki
 description: Kolejka kodu, który ktoś poprosił wydrukować, i co znika po potwierdzeniu.
 source: en/client/manager/printouts.mdx
-sourceSha256: 2c5ab63d59f51112b629b0f1bb224806e23ad80aa718e98cff6fdb3929ea55ce
+sourceSha256: 6fd29e85f8020acaec45147aded49422e6171bc75af36d1d18de6f2afef1c58e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -42,7 +42,9 @@ obsługuje się od początku: pierwszy jest ten, kto czeka najdłużej.
 W wierszu widać, kto poprosił i w jakiej grupie startuje, nazwę i slug
 aktywności, nazwę pliku (a pod nią tytuł, jeżeli został podany), godzinę prośby
 i stan. Nad listą stoją dwa filtry — aktywność i stan — oba zapisane w adresie,
-więc lista, nad którą pracujesz, jest linkiem.
+więc lista, nad którą pracujesz, jest linkiem. **Stan przyjmuje kilka wartości
+naraz**, więc *Czeka* i *Przy drukarce* razem to wszystko, z czym nikt jeszcze
+nie skończył.
 
 **Filtr aktywności powstaje z uprawnienia do wydruków**, a nie z ogólnej listy
 aktywności w panelu. Kto ma `printout:manage` w dwóch salach i nic poza tym,
