@@ -2,7 +2,7 @@
 title: Serie
 description: Runda, tydzień albo zajęcia - jak je zaplanować, przesunąć i wstrzymać.
 source: en/client/manager/series.mdx
-sourceSha256: 1e3853de0ad8a8b3ed7001bbad4dd17608e0e5c8a517d2b4fdaf684be09a2074
+sourceSha256: f2572b18031c01d3bcf06fd6423b22160d66107a1579611f73a51be8e21b6467
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -67,6 +67,17 @@ Gdy wstrzymujesz, ekran zadaje jedno pytanie:
 - **Zabierz również treści zadań.** Domyślnie wyłączone. Zabranie treści z
   ekranu komuś, kto właśnie ją czyta, jest brutalne — i tak zdążył ją
   przeczytać. Włącz to przy wycieku albo przy błędzie w treści.
+
+  **Zabiera to również kod źródłowy uczestników.** Dopóki jest włączone, nikt w
+  tej rundzie nie otworzy kodu, który wysłał, ani nie poprosi o niego na
+  papierze — treść, której już nie wolno mu czytać, i odpowiedź, którą do niej
+  napisał, to ta sama lektura. Zgłoszenia zostają na miejscu, z werdyktami i
+  wynikami; poza zasięgiem jest sam kod, a wznowienie go przywraca. Ciebie to
+  nie dotyczy: kadra czyta kod źródłowy zgłoszeń przez cały czas — po to właśnie
+  wstrzymuje się rundę przy wycieku.
+
+  Aktywność, która [zamyka zakończone rundy](/pl/client/manager/activities),
+  robi to samo w chwili zakończenia rundy.
 
 Gdy wznawiasz, pytanie jest inne, a ekran mówi, ile trwała przerwa:
 
