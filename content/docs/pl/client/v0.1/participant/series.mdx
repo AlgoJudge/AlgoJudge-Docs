@@ -2,7 +2,7 @@
 title: Rundy, tygodnie i zajęcia
 description: Skąd bierze się nazwa serii, co pokazują jej cztery stany i które z nich przyjmują zgłoszenia.
 source: en/client/v0.1/participant/series.mdx
-sourceSha256: af4c831a48453f7f7772a067a2356285c3f81d9aa380751e89e45868735bae43
+sourceSha256: 25f58d6970afe2ee0b55c27ae5ae2fa85a8b13b19ee648d990fee5fe25609ef1
 ---
 
 import { Mermaid } from "@/components/mermaid";
@@ -92,6 +92,10 @@ wstrzymywania.
 
 ## Ekran sam się aktualizuje
 
-Kiedy runda się otwiera, zamyka, zostaje wstrzymana, wznowiona albo przesunięta,
-przychodzi zdarzenie i strona przerysowuje się sama. Tak samo Twój status na
-zadaniu. Nie musisz siedzieć i odświeżać w sekundzie, w której runda się zaczyna.
+Kiedy runda **się otwiera albo zamyka**, przychodzi zdarzenie i strona
+przerysowuje się sama. Tak samo Twój status na zadaniu. Nie musisz siedzieć
+i odświeżać w sekundzie, w której runda się zaczyna.
+
+W wersji 0.1 wstrzymanie, wznowienie i przesunięcie nie docierały tu same —
+trzeba było przeładować stronę, żeby je zobaczyć. Poprawiono to po 0.1; bieżąca
+wersja tej strony opisuje to, co dzieje się teraz.
