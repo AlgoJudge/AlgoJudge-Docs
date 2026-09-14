@@ -10,9 +10,23 @@ activities.
 
 ## Finding one
 
-Filter by activity, then by series inside it, by state, or by a search on the
-user or the problem. **The filters are in the address**, so *look at this
-participant's attempts on B* is a link you can paste into a message.
+Filter by activity, then — inside it — by series, by problem, by participant, by
+state, by verdict, or by a search on the user or the problem. **The filters are
+in the address**, so *look at this participant's attempts on B* is a link you can
+paste into a message.
+
+Everything but the activity **takes several values at once**. The activity is the
+one that does not, because it decides what you are allowed to read here rather
+than what you are looking at.
+
+The verdict is typed rather than chosen from a list, with the verdicts on the
+rows in front of you offered as suggestions. There is no list to choose from:
+AlgoJudge stores whatever a judging system called the outcome and never reads it,
+so a new problem type may invent a verdict nobody here has seen — and a control
+that only offered a fixed set would be quietly wrong about what exists.
+
+The four that only make sense inside one activity — series, problem, participant
+and the rejudge of a whole series — stay switched off until you have named one.
 
 The list shows the state, the verdict, the score, the number of attempts, and a
 badge on anything that is **not counted**.
@@ -49,8 +63,11 @@ accounts* — nothing stronger.
 
 ## Rejudging
 
-**Rejudge** queues another evaluation. With a series filter set, the list also
-offers a rejudge of the whole series and tells you how many were queued.
+**Rejudge** queues another evaluation. With **exactly one** series narrowed to,
+the list also offers a rejudge of that whole series and tells you how many were
+queued. Narrow to two and the button goes: a rejudge of a round is an action on
+one round, and offering it against two would either queue twice or quietly pick
+one of them.
 
 A **rejudge adds an attempt; it never rewrites the one that was shown.** The
 earlier attempt keeps its result and its log, and both stay on the screen. An
