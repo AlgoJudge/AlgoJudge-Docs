@@ -2,7 +2,7 @@
 title: Zarządzanie
 description: Trzynaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
 source: en/client/manager/index.mdx
-sourceSha256: 325b4a961a074d9948e19fcb682aab095a5f9cd46951d34a0804c971ff0592c5
+sourceSha256: 40d361929d83158e944af34a04cafaf5d0f0b6a6d030d6652eba809a36e0bb8e
 ---
 
 Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
@@ -65,6 +65,29 @@ tylko `printout:manage`, otwiera właśnie jego i zamyka wszystkie pozostałe �
 powierza się to jedno zadanie komuś, kto stoi przy drukarce. Cenę opisuje strona
 tego obszaru: klucz czyni z tej osoby prowadzącego w danej aktywności, a
 prowadzący nie wchodzą do jej rankingu.
+
+## Aktualizacje i ich wyłączanie
+
+Każdy ekran panelu ma u góry te same dwie kontrolki: przełącznik z napisem
+**Aktualizacje włączone** albo **Aktualizacje wyłączone**, oraz **Odśwież**.
+
+Zostawiony w spokoju panel sam się aktualizuje: nadchodzące pytanie, ocenione
+zgłoszenie, ktoś, kto się zapisał, nowy Runner — wszystko to trafia na listę,
+którą właśnie czytasz, bez żadnego Twojego ruchu. Wyłączenie aktualizacji
+zatrzymuje to dla **całego panelu** — każdego ekranu, aż do ponownego włączenia —
+więc lista, którą przeglądasz, stoi. Pojawia się wtedy pomarańczowe **Czekają
+zmiany**: mówi, czego dotyczą, i celowo nie mówi ilu, bo jedno ponowne ocenienie
+to kilka wiadomości o jednym zgłoszeniu.
+
+Ponowne włączenie wczytuje wszystko na nowo. Tak samo **Odśwież**, bez włączania
+aktualizacji. A gdy otwarte jest okno dialogowe, panel stoi sam z siebie,
+niezależnie od przełącznika.
+
+<Callout type="warn" title="To nie jest wstrzymanie i wznowienie rundy">
+Wstrzymanie rundy to inna kontrolka, na ekranie samej aktywności, i ono zatrzymuje
+zawody: runda nie przyjmuje zgłoszeń, a jej zegar stoi. Ten przełącznik nie zmienia
+niczego, co widzi ktokolwiek inny — dotyczy Twojego ekranu, nie zawodów.
+</Callout>
 
 A jest jeszcze trzeci czytelnik. Instalacji AlgoJudge, kopii zapasowych,
 aktualizacji i odzyskiwania po awarii nie robi się z tego panelu w ogóle — to
