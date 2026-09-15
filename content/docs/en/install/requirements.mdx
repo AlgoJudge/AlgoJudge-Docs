@@ -72,7 +72,7 @@ start and chooses; **neither driver needs the daemon reconfigured.**
 |---|---|---|
 | Where it is the default | Docker Desktop | virtually every systemd Linux host |
 | Who creates the cgroup | the Runner | systemd, when the daemon asks it |
-| How many | one per run, removed afterwards | one per Runner, for its whole life |
+| How many | one per run, removed afterwards | one per lane, for the Runner's whole life |
 | A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
 | A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, made inside the judged container | the same — the driver decides nothing here |
 | Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run and measured from what the slice already held, which needs **Linux 6.12** |
@@ -112,11 +112,13 @@ every start.
 
 ## Cores and memory
 
-**A Runner judges one submission at a time**, and every test runs under
-`--cpus=1` — one processor's worth of time, whatever the program does with
+**A Runner judges one submission at a time**, and as many of that submission's
+tests at once as `RUNNER_TESTS_AT_ONCE` says — one **lane** each. Every test runs
+under `--cpus=1` — one processor's worth of time, whatever the program does with
 threads, because the accounting sums the whole subtree. So the arithmetic is not
-a throughput calculation: **one Runner is one concurrent submission and one
-core's worth of work**, and the question is only how many cores you can spare.
+a throughput calculation: a Runner is one concurrent submission however many
+lanes it has, **one lane is one core's worth of work**, and the question is only
+how many cores you can spare.
 
 **That is a quota, not a pin.** Which processors a submission actually runs on
 is the kernel's business, unless you divide the host yourself — see below.
@@ -138,16 +140,22 @@ solutions known to be correct.
 So the ceiling is a rule about correctness rather than about throughput, and the
 cores counted below have to be cores nothing else is on:
 
-| Physical cores | Runners |
+| Physical cores | Lanes |
 |---|---|
 | 4 | 2 |
-| 8 | **4** — what the `runner` profile starts |
+| 8 | 4 |
 | 16 | 8 |
 
-`lscpu` says how many there are — *Core(s) per socket* times *Socket(s)*, which
-is **not** the CPU count when a core carries two threads. To run fewer, remove
-the services you do not want from `compose.yaml` and leave their
-`RUNNER_*_CPUSET` unset.
+**Lanes rather than Runners, because the two are not the same count.** The
+`runner` profile starts two Runners and `runner-extra` the other two, so the
+middle row is two Runners of two lanes as readily as four of one. Choosing
+between those is a question of how many submissions are judged at once against
+how soon each of them is answered; it is not a question of size.
+
+`lscpu` says how many cores there are — *Core(s) per socket* times *Socket(s)*,
+which is **not** the CPU count when a core carries two threads. To run fewer
+lanes, lower `RUNNER_TESTS_AT_ONCE` or leave `runner-extra` out of
+`COMPOSE_PROFILES`.
 
 | Component | Cores | Memory | Notes |
 |---|---|---|---|
@@ -156,20 +164,24 @@ the services you do not want from `compose.yaml` and leave their
 | Client | — | 32 MiB | nginx and a static bundle |
 | nginx, the edge | — | 32 MiB | |
 | External Runner | — | 64 MiB | it forwards to the external judge and waits on the network; it starts no containers |
-| **each Runner** | **1** | **0.6 GiB** | its own process, plus one sandbox container at a time |
+| **each judging lane** | **1** | **0.6 GiB** | a share of the Runner's own process, and the containers one lane holds at a time |
 | the Docker daemon and the operating system | 1 | 750 MiB | not a rounding: several containers a second are created while judging |
 
-A Runner's 0.6 GiB is its process and the largest container it will hold — a
-build, capped at 512 MiB. It holds one at a time, but the budget has to be the
-largest.
+The 0.6 GiB a lane is the Runner's own process and the largest container that
+lane will hold. **A lane holds one judged container at the problem's memory limit
+plus 64 MiB, and a checker or interactor beside it at 256 MiB**, so four lanes on
+256 MiB problems is about 1.3 GiB for that Runner before inputs. The two builds
+stand outside the lanes — one at a time, capped at 512 MiB — and 0.6 GiB a lane
+is the figure that covers both shapes.
 
-### A worked example: four Runners
+### A worked example: four lanes
 
-One Client, one Server, four Runners and one External Runner:
+One Client, one Server, one External Runner, and four judging lanes — two
+Runners of two, or four of one:
 
 | | Cores | Memory |
 |---|---|---|
-| four Runners | 4 | 2.4 GiB |
+| four lanes | 4 | 2.4 GiB |
 | Server and Postgres | 1 | 1 GiB |
 | Client, edge, External Runner | — | 128 MiB |
 | daemon and operating system | 1 | 750 MiB |
@@ -180,7 +192,7 @@ page cache, and a problem whose tests are read once per submission and again for
 the next one is the difference between memory and a disk read per test.
 
 The rule underneath, for a size not in the table: **2 GiB of base, 0.6 GiB per
-Runner**, and one core per Runner on top of two for everything else.
+lane**, and one core per lane on top of two for everything else.
 
 An identity deployment is not part of this stack — it is [its own
 installation](/en/install/identity) — but if you run one on the same host, a
@@ -208,20 +220,31 @@ job container it starts.** It has to: a job container is the daemon's child
 rather than the Runner's, so it inherits no affinity and would otherwise spread
 over the whole host, quietly undoing the division you drew.
 
-**The division worth making is one Runner per physical core, given both of that
-core's threads.** Two threads of one core share their caches, so a job moving
-between them costs nothing; two *different* Runners on one core take each
+**The division worth making is one Runner per group of processors, and one lane
+per processor in the group.** Two *different* Runners on one core take each
 other's execution units, and a program then spends more processor time than it
 should for the same work — which is a wrong verdict, not a slow one.
-`AlgoJudge-Ops` exposes this as `RUNNER_1_CPUSET` and its siblings, and its
-`.env.example` shows how to read the pairs off the machine:
+
+**Two lanes on the two threads of one core do exactly that, and this is the half
+nothing checks.** A Runner refuses a width its set cannot give one processor
+each; whether those processors are separate cores is yours to arrange. A lane to
+a core is the clean division, and two lanes to a core is a submission answered
+sooner at a real cost in the number its verdict is decided by. Write the sibling
+pairs next to each other and let the cut fall between them —
+`0,8,1,9,2,10,3,11` at a width of four is four lanes of one core each where
+cpu0's partner is cpu8. `AlgoJudge-Ops` exposes the two halves as `RUNNER_1_CPUSET` and
+its siblings and as `RUNNER_TESTS_AT_ONCE`, and a Runner given more lanes than
+its set has processors refuses to start. The set is cut into lanes **in the order
+it is written**, so read the pairs off the machine rather than copying them:
 `thread_siblings_list` says `0-1` on one host and `0,8` on another, and a list
 copied from an example is exactly wrong on the second.
 
 What a pin does not buy is time. `--cpus=1` is on every job container either
 way, so a run cannot win processor time by spreading over cores. And a set
-narrower than a core takes away the one repair the host has, because the kernel
-cannot then move a starved run to a free processor.
+narrower than a core — which a lane is — takes away the one repair the host has,
+because the kernel cannot then move a starved run to a free processor. Nothing
+rescues a lane that is short of a processor, which is why more lanes than
+processors is refused at start rather than judged around.
 </Callout>
 
 Disk is covered under [backups](#disk-for-backups-ideally-not-the-databases)
@@ -231,10 +254,10 @@ downloads**: a package sits there with the tests unpacked out of it and the
 checker it declares already compiled, prepared once rather than per submission,
 so the same ceiling holds fewer packages than it would have held archives.
 
-**A Runner also holds one test file in memory while it judges it** — the input
-it hands the submission, which is a copy rather than a mount — so a host judging
-problems with very large tests wants room for the largest of them per Runner, on
-top of the figures above.
+**A Runner also holds one test file in memory per lane while it judges it** — the
+input it hands the submission, which is a sealed copy rather than a mount — so a
+host judging problems with very large tests wants room for the largest of them
+per lane, on top of the figures above.
 
 ## What keeps it running
 

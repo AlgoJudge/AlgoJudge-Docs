@@ -41,6 +41,55 @@ so an installation's Runners declare both — which is why a queue that looks st
 is diagnosed against the value the service actually has and not against this
 column.
 
+## Tests judged at once
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Runner__TestsAtOnce` | `1` | How many of **one submission's** tests this Runner judges at the same time |
+
+One is test after test, however many processors the Runner was given. Above one
+it buys latency on a single submission rather than throughput: that submission's
+tests are spread, and the participant waits for the slowest of them instead of
+for the sum. `AlgoJudge-Ops` sets it as `RUNNER_TESTS_AT_ONCE`.
+
+A **lane** is one place a test is judged — a piece of the processors the Runner
+was given, plus a measurement home of its own that
+[Isolation](/en/runner/isolation) describes. The Runner cuts its set into one
+lane per test **in the order the list is written**: thread siblings are `0,1` on
+one host and `0,8` on another, so that order is the operator's information and
+not ours to sort. Given the whole machine the Runner pins nothing at any width,
+and the host's scheduler places the tests.
+
+**A test's checker or interactor runs in the same lane as the test it judges**,
+so the two that talk to each other are confined together. The two builds are in
+no lane at all — the submission's compile and the build of the package's own
+judge each get the whole of what the Runner was given.
+
+**More lanes than the Runner has processors and it refuses to start**, naming
+`AJ_Runner__TestsAtOnce` and the set it read. A time limit is processor time, and
+two judged runs sharing one processor spend more of it for the same work — so
+what the refusal prevents is correct solutions reported as too slow, with nothing
+in the verdict saying why.
+
+**Two lanes on the two threads of one core have the same problem, and that half
+is not checked.** The refusal counts processors; whether they are separate cores
+is the operator's to arrange, and
+[What the host needs](/en/install/requirements) says how.
+
+A lane multiplies what the Runner holds: one judged container at the problem's
+memory limit plus 64 MiB, one checker or interactor container at 256 MiB, and one
+sealed copy of the test's input in the Runner's own memory. Four lanes on 256 MiB
+problems is about 1.3 GiB per Runner before inputs.
+
+**Trials are untouched by the width.** A package's limits are derived one test at
+a time whatever it says, because a limit inflated by contention this Runner
+inflicted on itself would be written into the package and paid by every
+submission to that problem afterwards.
+
+**And a submission's result does not depend on it either.** Outcomes are sorted
+back into test order before scoring, so the verdict, the score and the order of
+the table a participant reads are the same at every width.
+
 ## Polling and the lease
 
 | Variable | Default | |
