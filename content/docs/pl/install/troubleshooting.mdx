@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: e25df352c80941881c817636c2c01c38b416e997f431b6caf7f202486a70e6b6
+sourceSha256: edd9ea9c1c5da58980f627888867e5d2549f4a007df8b97675a19d51ce4ec61a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -307,13 +307,13 @@ daje.
 
 Zdarza się to wyłącznie na hoście ze sterownikiem cgroup **`systemd`** i Runner
 mówi o tym na poziomie `ERROR` przy każdym starcie. Jedna slice obsługuje tam
-wszystkie przebiegi, więc szczyt bierze się z wyzerowania `memory.peak` —
-interfejsu jądra, który pojawił się w **Linuksie 6.12**, a więc już nie
-w Ubuntu 24.04, za to w Debianie 13. O limicie czasu rozstrzyga czas procesora,
-więc każdy werdykt pozostaje w mocy, a szczyt samego ocenianego zgłoszenia też
-nie cierpi: ten czyta się z cgroup założonej świeżo na ten przebieg. Brakuje
-szczytu przebiegów, które nie są niczyim zgłoszeniem — kompilacji, programu
-weryfikującego, interaktora.
+wszystkie przebiegi jednego toru, więc szczyt bierze się z wyzerowania
+`memory.peak` — interfejsu jądra, który pojawił się w **Linuksie 6.12**, a więc
+już nie w Ubuntu 24.04, za to w Debianie 13. O limicie czasu rozstrzyga czas
+procesora, więc każdy werdykt pozostaje w mocy, a szczyt samego ocenianego
+zgłoszenia też nie cierpi: ten czyta się z cgroup założonej świeżo na ten
+przebieg. Brakuje szczytu przebiegów, które nie są niczyim zgłoszeniem —
+kompilacji, programu weryfikującego, interaktora.
 
 ```bash
 uname -r

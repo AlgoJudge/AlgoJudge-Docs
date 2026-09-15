@@ -299,13 +299,13 @@ nothing.
 ## The verdicts are right but no memory is reported
 
 Only on a host using the **`systemd`** cgroup driver, and the Runner says so at
-`ERROR` on every start. One slice serves every run there, so a peak is taken by
-resetting `memory.peak` — a kernel interface that arrived in **Linux 6.12**,
-which excludes Ubuntu 24.04 and includes Debian 13. A time limit is processor
-time, so every verdict stands, and a judged submission's own peak is unaffected:
-that one is read from a cgroup made fresh for the run. What is missing is the
-peak of the runs that are nobody's submission — a build, a checker, an
-interactor.
+`ERROR` on every start. One slice serves every run in a lane there, so a peak is
+taken by resetting `memory.peak` — a kernel interface that arrived in **Linux
+6.12**, which excludes Ubuntu 24.04 and includes Debian 13. A time limit is
+processor time, so every verdict stands, and a judged submission's own peak is
+unaffected: that one is read from a cgroup made fresh for the run. What is
+missing is the peak of the runs that are nobody's submission — a build, a
+checker, an interactor.
 
 ```bash
 uname -r

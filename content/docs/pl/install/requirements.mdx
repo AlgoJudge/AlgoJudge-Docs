@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2.15.0, cgroup v2, polecenia coreutils używane przez skrypty i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: 67cb731cf6f2d636c66438b5eb7772208ea9772f55861f8cec5b3cab9f97da3c
+sourceSha256: e432dcf9c3e812d83c02dd3390eac5f84c22ec9b8424d7f0ff9b55e73dabbfb6
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -76,7 +76,7 @@ wymaga przestawiania demona.**
 |---|---|---|
 | Gdzie jest domyślny | Docker Desktop | praktycznie każdy linuksowy serwer z systemd |
 | Kto tworzy cgroup | Runner | systemd, kiedy poprosi go o to demon |
-| Ile ich jest | jedna na przebieg, potem usuwana | jedna na Runnera, przez cały czas jego działania |
+| Ile ich jest | jedna na przebieg, potem usuwana | jedna na tor, przez cały czas działania Runnera |
 | Czas procesora przebiegu | odczyt z `cpu.stat` | przyrost `cpu.stat` w czasie przebiegu |
 | Szczyt pamięci **ocenianego** przebiegu | `memory.peak` cgroup mieszczącej samo zgłoszenie, zakładanej wewnątrz kontenera zadania | tak samo — tutaj sterownik o niczym nie decyduje |
 | Szczyt pamięci pozostałych przebiegów | odczyt z `memory.peak` | `memory.peak` zerowany na starcie przebiegu i liczony od tego, co slice już trzymał, co wymaga **Linuksa 6.12** |
@@ -118,11 +118,13 @@ ekran. Runner mówi o tym na poziomie `ERROR` przy każdym starcie.
 
 ## Rdzenie i pamięć
 
-**Runner ocenia jedno zgłoszenie naraz**, a każdy test dostaje `--cpus=1` — tyle
-czasu procesora, ile daje jeden rdzeń, niezależnie od tego, ile wątków uruchomi
-program, bo rozliczenie sumuje całe poddrzewo. Rachunek nie dotyczy więc
-przepustowości: **jeden Runner to jedno równoległe zgłoszenie i praca za jeden
-rdzeń**, a pytanie brzmi tylko, ile rdzeni możesz oddać.
+**Runner ocenia jedno zgłoszenie naraz**, a w nim tyle testów równocześnie, ile
+mówi `RUNNER_TESTS_AT_ONCE` — każdy na własnym **torze**. Każdy test dostaje
+`--cpus=1` — tyle czasu procesora, ile daje jeden rdzeń, niezależnie od tego, ile
+wątków uruchomi program, bo rozliczenie sumuje całe poddrzewo. Rachunek nie
+dotyczy więc przepustowości: Runner to jedno równoległe zgłoszenie niezależnie od
+liczby torów, **jeden tor to praca za jeden rdzeń**, a pytanie brzmi tylko, ile
+rdzeni możesz oddać.
 
 **To przydział, a nie przypięcie.** Na których procesorach zgłoszenie naprawdę
 pobiegnie, decyduje jądro — chyba że sam podzielisz maszynę; patrz niżej.
@@ -144,16 +146,22 @@ limitach** — w tym rozwiązania, o których wiadomo, że są poprawne.
 Górna granica jest więc regułą o poprawności, a nie o przepustowości, i rdzenie
 liczone niżej muszą być rdzeniami, na których nie ma nic innego:
 
-| Rdzenie fizyczne | Runnery |
+| Rdzenie fizyczne | Tory |
 |---|---|
 | 4 | 2 |
-| 8 | **4** — tyle uruchamia profil `runner` |
+| 8 | 4 |
 | 16 | 8 |
 
-Ile ich jest, powie `lscpu`: *Core(s) per socket* razy *Socket(s)*, co **nie**
-jest liczbą procesorów, gdy rdzeń niesie dwa wątki. Żeby uruchomić mniej, usuń
-z `compose.yaml` usługi, których nie chcesz, i zostaw ich `RUNNER_*_CPUSET`
-puste.
+**Tory, a nie Runnery, bo to nie jest ta sama liczba.** Profil `runner`
+uruchamia dwa Runnery, a `runner-extra` dokłada pozostałe dwa, więc środkowy
+wiersz to równie dobrze dwa Runnery po dwa tory, co cztery po jednym. Wybór
+między nimi to wybór między liczbą zgłoszeń ocenianych równocześnie a czasem
+odpowiedzi na każde z nich; nie jest to decyzja o rozmiarze maszyny.
+
+Ile jest rdzeni, powie `lscpu`: *Core(s) per socket* razy *Socket(s)*, co **nie**
+jest liczbą procesorów, gdy rdzeń niesie dwa wątki. Żeby mieć mniej torów,
+zmniejsz `RUNNER_TESTS_AT_ONCE` albo nie dopisuj `runner-extra` do
+`COMPOSE_PROFILES`.
 
 | Składnik | Rdzenie | Pamięć | Uwagi |
 |---|---|---|---|
@@ -162,20 +170,24 @@ puste.
 | Client | — | 32 MiB | nginx i statyczne pliki |
 | nginx na brzegu | — | 32 MiB | |
 | External Runner | — | 64 MiB | przekazuje do zewnętrznego sędziego i czeka na sieć; nie uruchamia kontenerów |
-| **każdy Runner** | **1** | **0,6 GiB** | własny proces plus jeden kontener sandboksa naraz |
+| **każdy tor oceniania** | **1** | **0,6 GiB** | część procesu samego Runnera i kontenery, które tor trzyma naraz |
 | demon Dockera i system | 1 | 750 MiB | to nie jest zaokrąglenie: podczas oceniania powstaje kilka kontenerów na sekundę |
 
-Te 0,6 GiB na Runnera to jego proces i największy kontener, jaki utrzyma —
-budowanie, ograniczone do 512 MiB. Utrzymuje jeden naraz, ale budżet musi
-wystarczyć na największy.
+Te 0,6 GiB na tor to proces samego Runnera i największy kontener, jaki ten tor
+utrzyma. **Tor trzyma jeden kontener oceniany, z limitem pamięci zadania
+powiększonym o 64 MiB, a obok niego program weryfikujący albo interaktor na
+256 MiB** — cztery tory przy zadaniach na 256 MiB to około 1,3 GiB na Runnera,
+jeszcze bez wejść. Budowania stoją poza torami, jedno naraz, ograniczone do
+512 MiB, i 0,6 GiB na tor wystarcza na jedno i na drugie.
 
-### Przykład: cztery Runnery
+### Przykład: cztery tory
 
-Jeden Client, jeden Server, cztery Runnery i jeden External Runner:
+Jeden Client, jeden Server, jeden External Runner i cztery tory oceniania — dwa
+Runnery po dwa albo cztery po jednym:
 
 | | Rdzenie | Pamięć |
 |---|---|---|
-| cztery Runnery | 4 | 2,4 GiB |
+| cztery tory | 4 | 2,4 GiB |
 | Server i Postgres | 1 | 1 GiB |
 | Client, brzeg, External Runner | — | 128 MiB |
 | demon i system | 1 | 750 MiB |
@@ -186,8 +198,8 @@ się pamięcią podręczną plików. Przy zadaniu, którego testy czyta się raz
 zgłoszenie i znów przy następnym, to jest różnica między pamięcią a odczytem z
 dysku na każdy test.
 
-Dla rozmiaru spoza tabeli: **2 GiB podstawy i 0,6 GiB na Runnera**, plus
-jeden rdzeń na Runnera ponad dwa na całą resztę.
+Dla rozmiaru spoza tabeli: **2 GiB podstawy i 0,6 GiB na tor**, plus jeden rdzeń
+na tor ponad dwa na całą resztę.
 
 Wdrożenie tożsamości nie należy do tego stosu — to [osobna
 instalacja](/pl/install/identity) — ale jeśli postawisz je na tym samym hoście,
@@ -217,21 +229,33 @@ dzieckiem demona, nie Runnera, więc nie dziedziczy żadnego powinowactwa i bez
 tego rozlałby się po całej maszynie, po cichu znosząc narysowany przez ciebie
 podział.
 
-**Podział, który warto zrobić, to jeden Runner na rdzeń fizyczny, z obydwoma
-jego wątkami.** Dwa wątki jednego rdzenia dzielą pamięci podręczne, więc
-przeniesienie zadania między nimi nic nie kosztuje; dwa *różne* Runnery na
-jednym rdzeniu odbierają sobie jednostki wykonawcze, a program zużywa wtedy
-więcej czasu procesora na tę samą pracę — czyli dostaje zły werdykt, a nie
-wolniejszy. `AlgoJudge-Ops` udostępnia to jako `RUNNER_1_CPUSET` i kolejne, a
-jego `.env.example` pokazuje, jak odczytać pary z maszyny:
-`thread_siblings_list` mówi `0-1` na jednym hoście, a `0,8` na innym — lista
-przepisana z przykładu jest na tym drugim dokładnie odwrotna.
+**Podział, który warto zrobić, to jeden Runner na grupę procesorów i jeden tor
+na procesor w tej grupie.** Dwa *różne* Runnery na jednym rdzeniu odbierają
+sobie jednostki wykonawcze, a program zużywa wtedy więcej czasu procesora na tę
+samą pracę — czyli dostaje zły werdykt, a nie wolniejszy.
+
+**Dwa tory na dwóch wątkach jednego rdzenia robią dokładnie to samo i akurat
+tego nikt nie sprawdza.** Runner odmawia szerokości, której jego zbiór nie
+pokryje po procesorze na tor; czy to osobne rdzenie, ustawiasz sam. Tor na
+rdzeń to podział czysty, a dwa tory na rdzeń to zgłoszenie ocenione szybciej,
+kosztem liczby, na której opiera się werdykt. Zapisz pary bliźniacze obok
+siebie, żeby cięcie wypadło między nimi — `0,8,1,9,2,10,3,11` przy czterech
+torach to cztery tory po jednym rdzeniu tam, gdzie partnerem cpu0 jest cpu8.
+`AlgoJudge-Ops` udostępnia obie połowy
+jako `RUNNER_1_CPUSET` i kolejne oraz jako `RUNNER_TESTS_AT_ONCE`, a Runner,
+który dostał więcej torów niż procesorów w swoim zbiorze, odmawia startu. Zbiór
+jest cięty na tory **w takiej kolejności, w jakiej go zapisano**, więc odczytaj
+pary z maszyny, zamiast je przepisywać: `thread_siblings_list` mówi `0-1` na
+jednym hoście, a `0,8` na innym — lista przepisana z przykładu jest na tym drugim
+dokładnie odwrotna.
 
 Czego przypięcie nie daje, to czasu. `--cpus=1` obowiązuje na każdym kontenerze
 zadania tak czy inaczej, więc przebieg nie zdobędzie czasu procesora przez
-rozłożenie się na kilka rdzeni. A zbiór węższy niż rdzeń odbiera hostowi jedyną
-dostępną naprawę, bo jądro nie może wtedy przenieść zagłodzonego przebiegu na
-wolny procesor.
+rozłożenie się na kilka rdzeni. A zbiór węższy niż rdzeń — a tor właśnie taki
+jest — odbiera hostowi jedyną dostępną naprawę, bo jądro nie może wtedy przenieść
+zagłodzonego przebiegu na wolny procesor. Toru, któremu brakuje procesora, nic
+już nie uratuje i dlatego nadmiar torów kończy się odmową startu, a nie
+ocenianiem mimo wszystko.
 </Callout>
 
 Dysk opisuje sekcja o [kopiach zapasowych](#dysk-na-kopie-najlepiej-nie-ten-od-bazy)
@@ -241,10 +265,10 @@ same pobrania**: obok archiwum leżą rozpakowane testy i skompilowany checker,
 przygotowane raz zamiast przy każdym zgłoszeniu — więc ten sam limit mieści mniej
 paczek, niż zmieściłby samych archiwów.
 
-**Runner trzyma też w pamięci jeden plik testowy w trakcie sprawdzania** — to
-wejście, które podaje zgłoszeniu, i jest to kopia, a nie montowanie. Host
+**Runner trzyma też w pamięci jeden plik testowy na tor** — to wejście, które
+podaje zgłoszeniu, i jest to zapieczętowana kopia, a nie montowanie. Host
 sprawdzający zadania z bardzo dużymi testami potrzebuje na to miejsca na każdy
-Runner, ponad wartości podane wyżej.
+tor, ponad wartości podane wyżej.
 
 ## Co wznawia usługi po awarii
 

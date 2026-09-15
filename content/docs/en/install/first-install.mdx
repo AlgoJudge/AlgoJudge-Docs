@@ -123,10 +123,13 @@ directory, a work directory a job container cannot read, cgroup v1 or an unknown
 cgroup driver, a `.env` that is tracked by Git. `make up` runs it first, so the
 ordinary path is checked whether or not anybody remembers the script exists.
 
-**The `runner` profile starts four Runners**, `runner-1` to `runner-4`. Four
-suits eight physical cores; on a smaller host run fewer, because more Runners
-than physical cores does not judge faster and does stop judging accurately —
-[What the host needs](/en/install/requirements) has the table.
+**The `runner` profile starts two Runners**, `runner-1` and `runner-2`;
+`runner-extra` adds `runner-3` and `runner-4` on a host with the processors to
+carry them. Each of them judges as many of one submission's tests at once as
+`RUNNER_TESTS_AT_ONCE` says, one lane each, so what has to fit the host is the
+lanes rather than the Runners: more lanes than physical cores does not judge
+faster and does stop judging accurately — [What the host
+needs](/en/install/requirements) has the table.
 
 ## 4. The administrator
 

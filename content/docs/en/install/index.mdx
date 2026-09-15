@@ -25,7 +25,7 @@ version instead.
 
 ## The services
 
-Nine services, and seven profile names — the Server and the Client each carry two,
+Nine services, and eight profile names — the Server and the Client each carry two,
 which is what lets one half be brought up without the other.
 
 | Service | Profiles | What it is |
@@ -34,13 +34,16 @@ which is what lets one half be brought up without the other.
 | `server` | `app`, `server` | the API at `/api/v1`, published on `127.0.0.1:8080` |
 | `client` | `app`, `client` | the browser application, published on `127.0.0.1:8082` |
 | `nginx` | `edge` | TLS, one origin for both halves, ports 80 and 443 |
-| `runner-1` … `runner-4` | `runner` | one image, four identities. Each evaluates one submission at a time in sibling containers |
+| `runner-1`, `runner-2` | `runner` | one image, two identities. Each evaluates one submission at a time in sibling containers, several of that submission's tests at once |
+| `runner-3`, `runner-4` | `runner-extra` | two more of the same, for a host with the processors to carry them |
 | `external-runner` | `external-runner` | forwards them to an outside archive instead. **Not in the default set** — see [An external judge](/en/install/external-runner) |
 
-**Four is the reference, not a minimum.** It suits eight physical cores and
-leaves four for everything else; on a smaller host run fewer, because more
-Runners than physical cores does not judge faster and does stop judging
-accurately. [What the host needs](/en/install/requirements) has the table.
+**What has to fit the host is lanes, not Runners.** A Runner judges as many of
+one submission's tests at once as `RUNNER_TESTS_AT_ONCE` says — one lane each —
+and a lane is one core's worth of work, so two Runners of two lanes ask of the
+host exactly what four Runners of one ask. More lanes than physical cores does
+not judge faster and does stop judging accurately. [What the host
+needs](/en/install/requirements) has the table.
 
 Three Compose networks carry them, so that the database is not reachable from
 the edge and evaluation traffic is separable from HTTP:
@@ -91,11 +94,12 @@ them.
 | **T3** | `app,data` | [your own reverse proxy](/en/install/reverse-proxy) in front |
 | — | `client,server,data` | one half at a time, for debugging and staged updates |
 
-**`external-runner` is an addition to any of them, not a fifth one.** Add it
-beside `runner`, or give it a machine of its own. It is outside the default set
-because it signs in to an outside archive under an account there — [An external
-judge](/en/install/external-runner) says what it needs and what it cannot do for
-you.
+**`external-runner` and `runner-extra` are additions to any of them, not further
+arrangements.** `runner-extra` starts `runner-3` and `runner-4` beside the two
+`runner` starts. Add `external-runner` beside `runner`, or give it a machine of
+its own; it is outside the default set because it signs in to an outside archive
+under an account there — [An external judge](/en/install/external-runner) says
+what it needs and what it cannot do for you.
 
 ## A Runner may live on another machine entirely
 
@@ -108,8 +112,9 @@ RUNNER_NAME_PREFIX=lab-a       # different on every host
 RUNNER_WORK_DIR=/srv/algojudge/runner-work
 ```
 
-The prefix names all four — `lab-a-1` to `lab-a-4` — and **has to differ per
-host**, or two machines' Runners appear in the panel under one set of names.
+The prefix names each Runner on the host — `lab-a-1` to `lab-a-4` — and **has to
+differ per host**, or two machines' Runners appear in the panel under one set of
+names.
 
 **A Runner opens every connection itself.** It needs no inbound port and works
 from behind a domestic router with no address of its own. It has no `depends_on`
