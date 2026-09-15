@@ -153,6 +153,36 @@ recreated.
 `scripts/update.sh` pulls all four, so an installation kept up to date with it
 does not meet this.
 
+## Every job fails with `predates the input arriving as a descriptor`
+
+The same cause as the entry above and the same fix: pull the four images, then
+restart every Runner. A test's input is not mounted into the container — the
+Runner holds it in memory and hands the shim the descriptor over a socket — so a
+shim from before that would open the socket as though it were a file and report a
+run that measured nothing. The Runner refuses the run instead, which is a
+sentence an operator can act on.
+
+## A checker fails on every submission, or judges against nothing
+
+Submissions to a problem whose package brings a checker come back as
+infrastructure failures, often worded as though the author's checker did not
+build.
+
+**`RUNNER_CACHE_DIR` is not a directory the Docker daemon can open.** A package
+is unpacked and its checker built once, in the cache, and a judge's container
+mounts both — and the daemon resolves that bind, so the directory has to exist on
+the host and be readable by uid **65534**, exactly as the work directory is.
+
+```bash
+sudo mkdir -p /srv/algojudge/runner-cache
+sudo chmod 755 /srv/algojudge/runner-cache
+./scripts/preflight.sh
+```
+
+A Runner pointed at a path the daemon cannot open at all refuses to start
+judging and says so naming `AJ_Cache__HostPath`, so this entry is the narrower
+case: a directory that exists and is not the one the Runner writes to.
+
 ## Nothing **external** is being judged
 
 A different list, because the ordinary causes are not the causes here. The first
@@ -241,6 +271,10 @@ tell the two apart.
 ```bash
 sudo chmod 755 /srv/algojudge/runner-work
 ```
+
+**The cache has the same two halves**, for the same reason: the Runner unpacks
+each package there as root and a judge's container reads it back as 65534. `sudo
+chmod 755 /srv/algojudge/runner-cache`, and `scripts/preflight.sh` probes both.
 
 ## Every job fails, and the Runner said something about cgroups
 

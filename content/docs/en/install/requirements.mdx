@@ -225,8 +225,16 @@ cannot then move a starved run to a free processor.
 </Callout>
 
 Disk is covered under [backups](#disk-for-backups-ideally-not-the-databases)
-below. Beyond that a Runner keeps a package cache bounded at 10 GiB and the
-External Runner one bounded at 256 MiB.
+below. Beyond that the Runners share a package cache bounded at 10 GiB and the
+External Runner one bounded at 256 MiB. **That 10 GiB holds more than the
+downloads**: a package sits there with the tests unpacked out of it and the
+checker it declares already compiled, prepared once rather than per submission,
+so the same ceiling holds fewer packages than it would have held archives.
+
+**A Runner also holds one test file in memory while it judges it** — the input
+it hands the submission, which is a copy rather than a mount — so a host judging
+problems with very large tests wants room for the largest of them per Runner, on
+top of the figures above.
 
 ## What keeps it running
 

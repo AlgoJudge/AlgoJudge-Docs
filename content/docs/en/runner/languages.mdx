@@ -143,11 +143,16 @@ version we do not ship or add one to a fork. Four things are expected of it.
 
 ### The shim, and how to get one
 
-A measured run is started as `aj-shim <input-file> <program> [args...]`. The shim
-becomes PID 1, opens the input file onto the submission's standard input, drops
-to `65534`, forks, and reports the child's own processor time and peak memory —
-see [Isolation](/en/runner/isolation) for what that is worth and why it is not
-trusted on its own.
+A measured run is started as `aj-shim <input> <output> <program> [args...]`. The
+shim becomes PID 1, takes the two channels onto the submission's standard input
+and output, drops to `65534`, forks, and reports the child's own processor time
+and peak memory — see [Isolation](/en/runner/isolation) for what that is worth
+and why it is not trusted on its own.
+
+The input is a **socket** for a batch problem: the Runner has the test's input
+in a sealed file in memory and hands the descriptor over it, which is how a
+judged container comes to hold no part of the package. For an interactive one it
+is a named pipe with the interactor at the far end.
 
 **Copy ours rather than writing one.** It is statically linked and depends on
 nothing in the image around it:
@@ -159,11 +164,13 @@ COPY --from=ghcr.io/algojudge/lang-gcc:0.1.0 /usr/local/bin/aj-shim /usr/local/b
 Pin the same version as the Runner, for the reason the callout above gives about
 tags that move.
 
-<Callout type="info" title="An image without it still judges">
-Leave the shim out and nothing breaks: the report is absent, the reading from the
-cgroup stands on its own, and the container's own start is inside the measurement
-again — 33 to 74 ms of it, against limits that can be 100. The Runner says so
-once per image rather than once per submission.
+<Callout type="warn" title="An image without it cannot judge">
+Leave the shim out and the image judges nothing: a judged container keeps no log
+and writes its answer to a channel only the shim opens, and the test's input
+arrives as a descriptor only the shim can receive. The Runner refuses the run
+and says which image, once per image rather than once per submission — and an
+image replaced under the same tag needs the Runner **restarted**, because the
+answer is remembered.
 
 What you must not do is ship a *different* program under that name. The Runner
 reads what the report says; a shim that reports less than the program spent is a

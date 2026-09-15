@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 0259542c3a7e5dae156243ab9c8e9cc341903d9d6bc01311a360725075093b0d
+sourceSha256: e25df352c80941881c817636c2c01c38b416e997f431b6caf7f202486a70e6b6
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -158,6 +158,36 @@ na każdym zleceniu także wobec poprawionej kopii — dopóki nie powstanie na 
 `scripts/update.sh` pobiera wszystkie cztery, więc instalacja utrzymywana nim
 tego nie spotka.
 
+## Każde zlecenie zawodzi z `predates the input arriving as a descriptor`
+
+Przyczyna i lekarstwo są te same co wyżej: pobierz cztery obrazy, a potem
+zrestartuj każdy Runner. Wejście testu nie jest montowane do kontenera — Runner
+trzyma je w pamięci i podaje shimowi deskryptor przez gniazdo — więc shim
+sprzed tej zmiany otworzyłby gniazdo tak, jakby było plikiem, i zgłosiłby
+przebieg bez pomiaru. Runner woli odmówić, bo to zdanie, na które operator może
+zareagować.
+
+## Checker zawodzi na każdym zgłoszeniu albo ocenia wobec pustki
+
+Zgłoszenia do zadania, którego paczka niesie checker, wracają jako awarie
+infrastruktury — często opisane tak, jakby to checker autora się nie zbudował.
+
+**`RUNNER_CACHE_DIR` nie jest katalogiem, który demon Dockera potrafi otworzyć.**
+Paczka jest rozpakowywana, a jej checker budowany raz, w pamięci podręcznej, i
+kontener sędziego montuje jedno i drugie — a montowanie rozwiązuje demon, więc
+katalog musi istnieć na hoście i być czytelny dla uid **65534**, dokładnie tak
+jak katalog roboczy.
+
+```bash
+sudo mkdir -p /srv/algojudge/runner-cache
+sudo chmod 755 /srv/algojudge/runner-cache
+./scripts/preflight.sh
+```
+
+Runner wskazany na ścieżkę, której demon w ogóle nie potrafi otworzyć, odmawia
+oceniania i mówi o `AJ_Cache__HostPath`. Ten wpis dotyczy przypadku węższego:
+katalog istnieje, ale nie jest tym, do którego Runner zapisuje.
+
 ## Nic **zewnętrznego** nie jest oceniane
 
 Lista jest inna, bo zwykłe przyczyny tutaj nie występują. Dwie pierwsze opisuje
@@ -247,6 +277,11 @@ wyjątku zawodzi natychmiast, co właśnie odróżnia te dwie przyczyny.
 ```bash
 sudo chmod 755 /srv/algojudge/runner-work
 ```
+
+**Pamięć podręczna ma te same dwie połowy**, z tego samego powodu: Runner
+rozpakowuje tam każdą paczkę jako root, a kontener sędziego czyta ją jako 65534.
+`sudo chmod 755 /srv/algojudge/runner-cache`, a `scripts/preflight.sh` sprawdza
+obie.
 
 ## Każde zlecenie zawodzi, a Runner napisał coś o cgroup
 
