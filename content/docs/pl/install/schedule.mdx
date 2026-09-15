@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: 18a84e7b339a9a386db9f339a00e5c7e48bd30be88de6a5b93d3147451b2c761
+sourceSha256: 62f094a6b760eeb60a1f5f1f9b053b4772f0a4b438422cc5532166bc8d6ac6cc
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -27,11 +27,15 @@ Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
   nie ma, należy do kogoś innego i zostaje nietknięty;
 - **własne logi tego repozytorium** w `/var/log/algojudge/`, rotowane po 32 MB.
 
-**Żaden z dwóch wolumenów pamięci podręcznej nie jest sprzątany**, bo żaden tego
-nie potrzebuje: Runner ogranicza `runner-cache` do 10 GiB, a zewnętrzny Runner
-`external-runner-cache` do 256 MiB, oba od środka. To wolumeny nazwane, więc
-przeżywają `down` i zmianę obrazu — a skasowanie któregoś kosztuje pobranie
-danych, nie zlecenie.
+**Żadna z dwóch pamięci podręcznych nie jest sprzątana**, bo żadna tego nie
+potrzebuje: każdy Runner ogranicza `RUNNER_CACHE_DIR` do 10 GiB, a zewnętrzny
+Runner `external-runner-cache` do 256 MiB, oba od środka. Obie przeżywają `down`
+i zmianę obrazu — a skasowanie którejś kosztuje pobranie danych, nie zlecenie.
+
+Ta pierwsza to **katalog wspólny dla czterech Runnerów**: leży w nim każda
+paczka wraz z rozpakowanymi testami i skompilowanym checkerem. Druga to wolumen
+nazwany z kodem źródłowym uczestników. Żadnej nie obejmuje kopia zapasowa — z
+tego samego powodu, z którego żadnej się nie sprząta.
 
 <Callout type="warn" title="Nigdy globalny prune">
 `docker system prune` i `docker volume prune` nie wiedzą, że na hoście może

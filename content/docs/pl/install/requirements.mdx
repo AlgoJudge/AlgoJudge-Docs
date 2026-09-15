@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2.15.0, cgroup v2, polecenia coreutils używane przez skrypty i dysk na kopie. Logi stack ogranicza sobie sam.
 source: en/install/requirements.mdx
-sourceSha256: 766320a5a39723c41b2b0e34219988b4018d4f5b13dcfa72aa8346478200ce0c
+sourceSha256: 67cb731cf6f2d636c66438b5eb7772208ea9772f55861f8cec5b3cab9f97da3c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -235,8 +235,16 @@ wolny procesor.
 </Callout>
 
 Dysk opisuje sekcja o [kopiach zapasowych](#dysk-na-kopie-najlepiej-nie-ten-od-bazy)
-poniżej. Poza tym Runner trzyma pamięć podręczną paczek ograniczoną do 10 GiB, a
-External Runner do 256 MiB.
+poniżej. Poza tym Runnery dzielą pamięć podręczną paczek ograniczoną do 10 GiB, a
+External Runner ma własną, ograniczoną do 256 MiB. **Te 10 GiB mieści więcej niż
+same pobrania**: obok archiwum leżą rozpakowane testy i skompilowany checker,
+przygotowane raz zamiast przy każdym zgłoszeniu — więc ten sam limit mieści mniej
+paczek, niż zmieściłby samych archiwów.
+
+**Runner trzyma też w pamięci jeden plik testowy w trakcie sprawdzania** — to
+wejście, które podaje zgłoszeniu, i jest to kopia, a nie montowanie. Host
+sprawdzający zadania z bardzo dużymi testami potrzebuje na to miejsca na każdy
+Runner, ponad wartości podane wyżej.
 
 ## Co wznawia usługi po awarii
 

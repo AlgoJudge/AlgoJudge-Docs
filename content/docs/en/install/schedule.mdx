@@ -25,10 +25,15 @@ Four things, and each one filtered to this installation:
   labels belongs to somebody else and is left alone;
 - **this repository's own logs** under `/var/log/algojudge/`, rotated past 32 MB.
 
-**Neither cache volume is swept**, because neither needs it: the Runner bounds
-`runner-cache` at 10 GiB and the external Runner bounds `external-runner-cache`
-at 256 MiB, both from inside. They are named volumes, so they survive a `down`
-and an image change — and deleting either costs a download rather than a job.
+**Neither cache is swept**, because neither needs it: each Runner bounds
+`RUNNER_CACHE_DIR` at 10 GiB and the external Runner bounds
+`external-runner-cache` at 256 MiB, both from inside. Both survive a `down` and
+an image change — and deleting either costs a download rather than a job.
+
+The Runner's is a **directory the four share**, holding each package with the
+tests unpacked from it and the checker built out of it; the external Runner's is
+a named volume holding participants' source. Neither is backed up, for the same
+reason neither is swept.
 
 <Callout type="warn" title="Never a global prune">
 `docker system prune` and `docker volume prune` do not know that the host may

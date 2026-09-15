@@ -85,6 +85,7 @@ job is renewing its lease instead, which says the same thing more precisely.
 | Variable | Default | |
 |---|---|---|
 | `AJ_Cache__Path` | `/var/cache/algojudge-runner` | The package cache |
+| `AJ_Cache__HostPath` | the value of `AJ_Cache__Path` | The same directory as the **container runtime's daemon** sees it |
 | `AJ_Cache__MaxBytes` | `10737418240` (10 GiB) | Cache ceiling |
 | `AJ_Work__Path` | `/var/lib/algojudge-runner/work` | Scratch, as **this process** sees it |
 | `AJ_Work__HostPath` | the value of `AJ_Work__Path` | Scratch, as the **container runtime's daemon** sees it |
@@ -94,13 +95,24 @@ job is renewing its lease instead, which says the same thing more precisely.
 The package cache is the only state a Runner keeps besides its key. Losing it
 costs a re-download, nothing more.
 
-The pipes pair is not about space: a judged run's output travels on a **named
-pipe**, which holds no bytes at all, so what it needs is a filesystem that can
-*make* one. A bind mount of a Windows or macOS directory cannot — a developer's
-checkout, not a deployment. A `tmpfs:` entry on the Runner's own service will
-not do either: that is private to the Runner's mount namespace, and the daemon
-would make an empty directory instead, which is the failure the callout below
-describes.
+**An entry holds more than the download.** Each package sits in a directory of
+its own with the archive, the tests unpacked out of it and the checker or
+interactor it declares already compiled — prepared once for every submission to
+that problem rather than per submission, under a lock several Runners sharing
+the directory can all see. The ceiling counts all three, so the same number of
+bytes holds fewer packages than it would have held archives.
+
+**`AJ_Cache__HostPath` is why a shared cache is a directory and not a volume.**
+A judge's container is given the unpacked package and the program built from it
+by bind mount, and the daemon resolves a bind mount — so it has to be a path the
+daemon can open. The Runner writes a marker at start and reads it back through a
+throwaway container, and refuses to judge if it cannot see it.
+
+The pipes pair is not about space: a judged run's channels hold no bytes at all,
+so what they need is a filesystem that can *make* a named pipe and a Unix
+socket. A `tmpfs:` entry on the Runner's own service will not do: that is
+private to the Runner's mount namespace, and the daemon would make an empty
+directory instead, which is the failure the callout below describes.
 
 <Callout type="warn" title="AJ_Work__HostPath is the path the Docker daemon can open, not the path the Runner sees">
 A bind mount is resolved by the container runtime's **daemon**. When the Runner
@@ -108,12 +120,13 @@ is itself in a container, the path it sees is not a path the daemon can open —
 and a path the daemon cannot open produces an **empty directory** rather than an
 error.
 
-The failure that follows is silent and looks like nothing at all: tests run
-against an empty mount, and every submission is judged against no input.
+The failure that follows is silent and looks like nothing at all: a checker
+reads an empty `/in`, or does not build because its source was not there.
 
-Where the Runner is **not** containerised the two paths are the same and this can
+Where the Runner is **not** containerised the two paths are the same and both can
 be left alone. Where it is, `AJ_Work__HostPath` must name the host directory that
-is bind-mounted at `AJ_Work__Path`.
+is bind-mounted at `AJ_Work__Path`, and `AJ_Cache__HostPath` the one at
+`AJ_Cache__Path`.
 </Callout>
 
 ## The sandbox and the language images

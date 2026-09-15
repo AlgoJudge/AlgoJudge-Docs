@@ -67,7 +67,7 @@ flowchart TD
     judge --> tests
     subgraph tests["Once per test, in a container of its own, never reused"]
         direction LR
-        inp["1a.in, mounted<br/>read-only at /in/1a.in"] --> prog["The submission,<br/>under the shim"]
+        inp["1a.in, sealed into memory<br/>and handed over as a descriptor"] --> prog["The submission,<br/>under the shim"]
         prog --> read["The Runner reads the pipe<br/>as it is written"]
         read --> cmp["Compared with 1a.out,<br/>token by token"]
         cmp --> stop["The first token that differs<br/>stops the run there"]
@@ -80,10 +80,11 @@ That is the loop with **no judging program**, which is the ordinary case. A
 package that brings one replaces the middle of it, and the two sections below
 are those two wirings.
 
-**The output is a pipe and the input is a file**, and the asymmetry is
-deliberate: nobody re-reads their own output, so reading it forwards costs
-nothing and buys the early stop above — while a solution that reads its input
-twice would work on its author's machine and fail on a pipe.
+**The output is a pipe and the input is a sealed file in memory**, and the
+asymmetry is deliberate: nobody re-reads their own output, so reading it forwards
+costs nothing and buys the early stop above — while a solution that reads its
+input twice would work on its author's machine and fail on a pipe. Neither is a
+mount, so a judged container holds no part of the package at all.
 [Isolation](/en/runner/isolation) has the rest of what a test container is
 given.
 
@@ -100,7 +101,7 @@ sequenceDiagram
     participant R as The Runner
     participant C as The checker's container
     Note over S,C: started together, and waited for together
-    R->>S: 1a.in, mounted read-only at /in/1a.in
+    R->>S: 1a.in, as a descriptor on /aj-out/stdin
     R->>C: argv 1 to 3, being /in/1a.in, /answers/1a.out, /in/1a.out
     S->>R: what it prints, on /aj-out/stdout
     R->>C: the same bytes, on /answers/1a.out
@@ -127,7 +128,7 @@ sequenceDiagram
     participant S as The submission's container
     participant R as The Runner
     participant I as The interactor's container
-    Note over S: no input file is mounted, and that is the whole of<br/>what makes a problem interactive
+    Note over S: the submission is given no input at the start, and that is<br/>the whole of what makes a problem interactive
     R->>I: argv 1 to 3, being /in/1a.in, /answers/verdict, /in/1a.out
     loop for as long as the two have anything to say
         S->>R: a question, on /aj-out/stdout
@@ -140,7 +141,8 @@ sequenceDiagram
 `} />
 
 `1a.in` is still there and is still read — by the **interactor**, which is where
-a guessing problem keeps its secret. What changed is who it is mounted for.
+a guessing problem keeps its secret, and which is the one container the package's
+tests are mounted into.
 
 <Callout type="info" title="An interactor must ignore SIGPIPE">
 A submission that is stopped — by its time limit, or because it crashed — closes

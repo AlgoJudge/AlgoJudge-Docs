@@ -114,10 +114,15 @@ Four rules define what one test is:
 
 1. **One test, one container, never reused.** A fresh container is the only
    answer that does not depend on cleanup having been written correctly.
-2. **The program is given its own test's input and nothing else** — one file,
-   mounted read-only, for a batch problem; a channel with the interactor on the
-   far end for an interactive one. Mounting the whole test directory would put
-   the expected answer inside the submission's own container.
+2. **The program is given its own test's input and nothing else** — and as a
+   descriptor rather than as a path. Nothing of the package is mounted into a
+   judged container: the Runner reads `<test>.in` into a sealed file in memory
+   and hands the descriptor to the measuring shim over a socket the submission
+   cannot reach, and an interactive problem gets a channel with the interactor
+   on the far end. Mounting the test directory would put the expected answer
+   inside the submission's own container, and mounting one file out of the
+   shared cache would be an inode every submission to that problem holds at
+   once.
 3. **Nothing a program writes reaches the next test**, for the scratch tmpfs and
    for `/dev/shm`.
 4. **A package-supplied checker or interactor is contained on the same terms.**
@@ -137,12 +142,16 @@ Two consequences that are easy to get backwards:
   cover it. It breaks none of the four rules — it is new with the container, and
   tmpfs pages are charged to the memory limit — but it is a surface nobody
   declared, which is why rule 3 names it explicitly.
-- **The input is a mounted file, not a pipe** — for a batch problem. A pipe
-  would be marginally stricter and is deliberately not used: it is not seekable,
-  so a solution that reads its input twice would work on its author's machine
-  and fail here. An **interactive** problem has no file to mount: its input does
-  not exist until an interactor decides what to send, so there the cost above is
-  inherent and is paid.
+- **The input is a sealed file in memory — neither a mount nor a pipe** — for a
+  batch problem. The two properties wanted here pull against each other and this
+  holds both. A pipe is not seekable, so a solution that reads its input twice
+  would work on its author's machine and fail here; and a mount out of the
+  shared cache would be an inode every submission to that problem holds at once.
+  A descriptor handed over a socket is seekable and is nobody else's: it is
+  sealed against writing and against changing its length, because a program may
+  reopen its own standard input through `/proc/self/fd`. An **interactive**
+  problem has no file at all: its input does not exist until an interactor
+  decides what to send, so there the cost is inherent and is paid.
 - **The output is a pipe in every case**, which is where that objection stops
   applying: nobody re-reads their own output. It is read once, forwards, and
   that is what lets a wrong answer be found at the first differing token and the
@@ -298,11 +307,14 @@ a submission with privileges.
 What the separation buys is one-directional, and that direction is the point: the
 submission cannot read the shim's environment, signal it, or trace it.
 
-<Callout type="info" title="An image without a shim still judges">
-A toolchain may point at an image of your own, and one built before this — or
-without it — is not refused. The report is simply absent, the cgroup reading
-stands on its own, and the container start is inside the number again. The Runner
-says so once per image rather than once per submission.
+<Callout type="warn" title="An image without the shim cannot judge">
+A toolchain may point at an image of your own, and it has to carry the shim. A
+judged container is started with no log driver and its standard error goes
+nowhere, so without the shim there is neither an answer to compare nor a
+measurement to compare against — and the input, which arrives as a descriptor on
+a socket, has nothing to receive it. The Runner refuses such a run rather than
+reporting one that produced nothing, and it decides once per image: pull the
+image **and restart the Runner**.
 </Callout>
 
 
