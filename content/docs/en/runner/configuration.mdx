@@ -147,13 +147,16 @@ job is renewing its lease instead, which says the same thing more precisely.
 
 | Variable | Default | |
 |---|---|---|
-| `AJ_Cache__Path` | `/var/cache/algojudge-runner` | The package cache |
-| `AJ_Cache__HostPath` | the value of `AJ_Cache__Path` | The same directory as the **container runtime's daemon** sees it |
+| `AJ_Cache__Path` | `/var/cache/algojudge-runner` | The package cache, as **this process** sees it |
+| `AJ_Cache__Volume` | unset | The **named volume** mounted at `AJ_Cache__Path`. Set it and the daemon is given the volume by name, and each package travels into a judged container as a `subpath` of it |
+| `AJ_Cache__HostPath` | the value of `AJ_Cache__Path` | The same directory as the **container runtime's daemon** sees it. Ignored where `AJ_Cache__Volume` is set |
 | `AJ_Cache__MaxBytes` | `10737418240` (10 GiB) | Cache ceiling |
 | `AJ_Work__Path` | `/var/lib/algojudge-runner/work` | Scratch, as **this process** sees it |
-| `AJ_Work__HostPath` | the value of `AJ_Work__Path` | Scratch, as the **container runtime's daemon** sees it |
+| `AJ_Work__Volume` | unset | The **named volume** mounted at `AJ_Work__Path`, as above. **Never one shared between two Runners**: an expired lease can be re-issued while the first is still working, and a scratch is emptied by whoever claims the job |
+| `AJ_Work__HostPath` | the value of `AJ_Work__Path` | Scratch, as the **container runtime's daemon** sees it. Ignored where `AJ_Work__Volume` is set |
 | `AJ_Pipes__Path` | unset | Where a judged run's channels are made, when the work directory cannot hold them. Unset leaves them in the job's own scratch |
-| `AJ_Pipes__HostPath` | the value of `AJ_Pipes__Path` | The same directory as the **daemon** sees it. Set both or neither |
+| `AJ_Pipes__Volume` | unset | The **named volume** mounted at `AJ_Pipes__Path`, as above |
+| `AJ_Pipes__HostPath` | the value of `AJ_Pipes__Path` | The same directory as the **daemon** sees it. Ignored where `AJ_Pipes__Volume` is set |
 
 The package cache is the only state a Runner keeps besides its key. Losing it
 costs a re-download, nothing more.
@@ -165,11 +168,22 @@ that problem rather than per submission, under a lock several Runners sharing
 the directory can all see. The ceiling counts all three, so the same number of
 bytes holds fewer packages than it would have held archives.
 
-**`AJ_Cache__HostPath` is why a shared cache is a directory and not a volume.**
-A judge's container is given the unpacked package and the program built from it
-by bind mount, and the daemon resolves a bind mount — so it has to be a path the
-daemon can open. The Runner writes a marker at start and reads it back through a
-throwaway container, and refuses to judge if it cannot see it.
+**A volume is named, a directory is resolved, and the Runner needs exactly one
+of the two.** A judge's container is given the unpacked package and the program
+built from it, and the **daemon** is what has to reach them. Name a volume in
+`AJ_Cache__Volume` and it reaches it by name, each package travelling in as a
+`subpath` of that volume; leave it unset and `AJ_Cache__HostPath` has to be a
+path the daemon can open. Either way the Runner writes a marker at start and
+reads it back through a throwaway container, and refuses to judge if it cannot
+see it.
+
+<Callout type="warn" title="A volume needs Docker Engine 26 or Podman 5">
+Mounting a **subdirectory** of a volume is `subpath`, which arrived in Engine
+26 / API 1.45 (April 2024). The Runner checks at start and refuses rather than
+judging against an empty directory, and it refuses a volume that does not exist
+rather than letting the daemon bring an empty one into being. Below that floor,
+use the host paths.
+</Callout>
 
 The pipes pair is not about space: a judged run's channels hold no bytes at all,
 so what they need is a filesystem that can *make* a named pipe and a Unix
@@ -190,6 +204,11 @@ Where the Runner is **not** containerised the two paths are the same and both ca
 be left alone. Where it is, `AJ_Work__HostPath` must name the host directory that
 is bind-mounted at `AJ_Work__Path`, and `AJ_Cache__HostPath` the one at
 `AJ_Cache__Path`.
+
+**None of this applies to a volume.** `AJ_Work__Volume` and `AJ_Cache__Volume`
+are names the daemon already knows, so there is no second spelling to keep in
+step and no path to get wrong. That is why the Compose stack sets them: see
+[Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
 </Callout>
 
 ## The sandbox and the language images
@@ -266,7 +285,10 @@ fallback to the default: an operator whose setting did nothing would otherwise
 never learn it.
 
 **A wrong `AJ_Work__HostPath` does not fail at all.** It is the opposite case and
-the reason the callout above exists.
+the reason the callout above exists. A wrong `AJ_Work__Volume` does fail, at
+start and by name: the Runner asks the daemon for the volume and refuses when
+there is no such thing, rather than letting `docker run -v` create an empty one
+under that name.
 
 **And two settings are accepted and then quietly do the wrong thing.** The poll
 interval is advisory rather than checked, so an `AJ_Poll__MaxSeconds` below

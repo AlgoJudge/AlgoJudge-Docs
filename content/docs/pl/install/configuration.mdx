@@ -1,8 +1,8 @@
 ---
 title: Wszystkie ustawienia w `.env`
-description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i trzy klucze, które domyślnej nie mają wcale.
+description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i dwa klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: 22e4527c2d56e81d181b1aaf2acc8d59a62b7216ba42f2cc052751451b81c496
+sourceSha256: 3b369f0132b5956ecfb4f547b6664c9ab0f74ab9ea8ed94aa645b4f3dfb344f5
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -14,11 +14,15 @@ Sąsiednie strony tłumaczą ustawienia w kolejności, w jakiej się je napotyka
 jest referencją: wszystkie klucze w jednym miejscu, żeby dało się sprawdzić
 wartość znalezioną w cudzym `.env`.
 
-<Callout type="warn" title="Trzy klucze nie mają wartości domyślnej i bez nich stos nie wstanie">
-`AJ_ADMIN_TOKEN`, `POSTGRES_PASSWORD` i `RUNNER_WORK_DIR`. Compose odmawia
-startu, zamiast podstawić pusty łańcuch, i jest to zamierzone: token
-administratora, który po cichu zrobiłby się pusty, zostawiłby zamknięte `/admin`
-— a razem z nim jedyną drogę do ustawienia hasła administratora.
+<Callout type="warn" title="Dwa klucze nie mają wartości domyślnej i bez nich stos nie wstanie">
+`AJ_ADMIN_TOKEN` i `POSTGRES_PASSWORD`. Compose odmawia startu, zamiast
+podstawić pusty łańcuch, i jest to zamierzone: token administratora, który po
+cichu zrobiłby się pusty, zostawiłby zamknięte `/admin` — a razem z nim jedyną
+drogę do ustawienia hasła administratora.
+
+Trzecim był `RUNNER_WORK_DIR`, do 2026-09-16. Od tego dnia Runnery trzymają
+pamięć podręczną i katalog roboczy w wolumenach Dockera i nie ma już żadnej
+ścieżki na hoście do wybrania.
 </Callout>
 
 ## Co działa i skąd
@@ -82,11 +86,40 @@ z tego proxy.
 
 | Klucz | Domyślnie | |
 |---|---|---|
-| `RUNNER_WORK_DIR` | **wymagane** | **bezwzględna ścieżka na hoście**. Niech utworzy ją Compose — zakłada ją jako root, z prawami 0755, a tego właśnie trzeba: Runner zapisuje tam jako root, a każdy kontener zadania czyta ją jako uid 65534. Katalog ręcznie zamknięty przed innymi nie przechodzi drugiej połowy i wtedy każde zlecenie zgłasza `Permission denied (os error 13)`. Ścieżka, której demon nie potrafi otworzyć, staje się pustym katalogiem, a nie błędem |
-| `RUNNER_CACHE_DIR` | `/srv/algojudge/runner-cache` | **bezwzględna ścieżka na hoście**, wspólna dla wszystkich Runnerów na tym hoście. Każda paczka jest tam pobierana, rozpakowywana i jej checker kompilowany **raz na wszystkie**, pod blokadą; każdy Runner ogranicza to od środka do 10 GiB. Katalog, a nie wolumen nazwany, bo kontener checkera montuje rozpakowaną paczkę prosto stamtąd, a demon rozwiązuje montowanie po ścieżce. **Trzymaj go poza `RUNNER_WORK_DIR`** — zaplanowane sprzątanie usuwa stamtąd katalogi po wieku |
+| `RUNNER_WORK_DIR` | puste | **zostaw puste.** Katalog roboczy każdego Runnera to jego własny wolumen, `algojudge_runner-N-work`, i nigdy jeden na dwa Runnery: wygasła dzierżawa bywa wydana ponownie, gdy pierwszy Runner jeszcze pracuje, więc wspólny katalog roboczy oznaczałby, że jeden kasuje robotę drugiego. Ustaw to **wyłącznie** przy nakładce katalogowej opisanej niżej, i wtedy jako **bezwzględną ścieżkę na hoście** |
+| `RUNNER_CACHE_DIR` | puste | **zostaw puste.** Wszystkie Runnery na hoście dzielą jeden wolumen, `algojudge_runner-cache`: każda paczka jest tam pobierana, rozpakowywana i jej checker kompilowany **raz na wszystkie**, pod blokadą, a każdy Runner ogranicza to od środka do 10 GiB. `docker compose down -v` usuwa go razem z resztą i wtedy pierwsze zgłoszenie do każdej paczki pobiera i kompiluje od nowa. Ustaw to wyłącznie przy nakładce katalogowej, i wtedy jako **bezwzględną ścieżkę na hoście** trzymaną **poza `RUNNER_WORK_DIR`**, skąd zaplanowane sprzątanie usuwa katalogi po wieku |
 | `RUNNER_NAME_PREFIX` | `runner` | pod tym rejestruje się każdy z nich: to plus `-1` do `-4`. **Drugi host z własnymi Runnerami potrzebuje innego przedrostka**, inaczej panel pokaże dwa wiersze o tej samej nazwie |
 | `RUNNER_1_CPUSET` … `RUNNER_4_CPUSET` | puste | z których procesorów może korzystać każdy Runner. Puste zostawia rozmieszczenie planiście hosta. Podział, który warto zrobić, to **jeden Runner na grupę rdzeni i jeden tor na rdzeń w tej grupie** — ile torów, mówi `RUNNER_TESTS_AT_ONCE` niżej. Procesor na tor to dolna granica, poniżej której Runner odmawia startu; rdzeń na tor to tyle, ile tor naprawdę potrzebuje, a różnicę zmierzono na 196 ms czasu procesora na test wobec 318 ms — dość, by poprawne rozwiązania przekroczyły swój limit. Runner czyta topologię przy starcie i ostrzega, raz na każdy tor, który dostał wątek zamiast rdzenia. Runner tnie zbiór na tory w takiej kolejności, w jakiej go zapisano, więc odczytaj ją z maszyny, zamiast przepisywać przykład: `thread_siblings_list` mówi `0-1` na jednym hoście, a `0,8` na innym. `RUNNER_3_CPUSET` i `RUNNER_4_CPUSET` należą do tych dwóch Runnerów, które uruchamia `runner-extra`. Patrz [Czego wymaga host](/pl/install/requirements) |
-| `RUNNER_TESTS_AT_ONCE` | `4` | ile testów **jednego zgłoszenia** Runner ocenia równocześnie, po jednym na tor. Skraca to oczekiwanie na pojedyncze zgłoszenie, a nie podnosi przepustowości: uczestnik czeka na najwolniejszy test, a nie na sumę wszystkich. **Jeśli torów jest więcej niż procesorów w `RUNNER_n_CPUSET`, Runner odmawia startu** i wymienia obie wartości — limit czasu jest czasem procesora, a dwa oceniane przebiegi dzielące jeden procesor zużywają go więcej na tę samą pracę, więc poprawne rozwiązania wracałyby jako zbyt wolne, a werdykt nie mówiłby dlaczego. Tor kosztuje też pamięć: cztery przy zadaniach na 256 MiB to około 1,3 GiB na Runnera, jeszcze bez wejść. Własna wartość domyślna obrazu to `1` |
+| `RUNNER_TESTS_AT_ONCE` | `2` | ile testów **jednego zgłoszenia** Runner ocenia równocześnie, po jednym na tor. Skraca to oczekiwanie na pojedyncze zgłoszenie, a nie podnosi przepustowości: uczestnik czeka na najwolniejszy test, a nie na sumę wszystkich. **Jeśli torów jest więcej niż procesorów w `RUNNER_n_CPUSET`, Runner odmawia startu** i wymienia obie wartości — limit czasu jest czasem procesora, a dwa oceniane przebiegi dzielące jeden procesor zużywają go więcej na tę samą pracę, więc poprawne rozwiązania wracałyby jako zbyt wolne, a werdykt nie mówiłby dlaczego. Tor kosztuje też pamięć: cztery przy zadaniach na 256 MiB to około 1,3 GiB na Runnera, jeszcze bez wejść. `.env.example` wysyła `2`, co odpowiada dwóm Runnerom po cztery procesory z domyślnych cpusetów; własna wartość domyślna obrazu to `1` |
+
+## Gdzie Runnery trzymają swoje bajty [#where-the-runners-keep-their-bytes]
+
+Nic tego nie konfiguruje i o to właśnie chodzi. Każdy Runner dostaje
+wolumeny Dockera i nie ma żadnej ścieżki na hoście do nazwania, założenia ani
+uwłaszczenia:
+
+| Wolumen | |
+|---|---|
+| `algojudge_runner-cache` | każda paczka, którą Runnery pobrały, rozpakowały i której checker skompilowały, **wspólny dla wszystkich** pod blokadą, ograniczony przez Runnera do 10 GiB |
+| `algojudge_runner-N-work` | katalog roboczy jednego Runnera, jedno zgłoszenie naraz, **nigdy wspólny** |
+
+<Callout type="warn" title="Host, który uruchamia Runnery, potrzebuje Dockera Engine 26 albo Podmana 5">
+Kontener sędziego montuje **podkatalog** wspólnego wolumenu z pamięcią
+podręczną, a to montowanie `subpath` — pojawiło się w Engine 26 / API 1.45
+(kwiecień 2024). Na starszym demonie Runner odmawia oceniania, zamiast
+oceniać na pustym katalogu, a `scripts/preflight.sh` mówi o tym wcześniej.
+
+Taka instalacja zostaje przy katalogach na hoście, których stos używał do
+2026-09-16; jest to rozwiązanie wspierane, a nie wycofywane:
+
+```bash
+cp compose.directories.yaml compose.override.yaml
+```
+
+a potem ustawia `RUNNER_WORK_DIR` w `.env`. Jeśli ustawia też
+`COMPOSE_FILE`, musi wymienić w nim `compose.override.yaml`: Compose czyta
+ten plik sam z siebie tylko dopóki `COMPOSE_FILE` jest nieustawione.
+</Callout>
 | `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | co ten Runner oferuje do oceny. Wartość, która nie nazywa niczego — zabłąkany przecinek — jest odrzucana przy starcie |
 | `RUNNER_TAGS` | puste | pule. **Czytane wyłącznie przy pierwszej rejestracji**; nazwanie puli zabiera Runnera z kolejki ogólnej |
 | `RUNNER_STOP_GRACE` | `30s` | ile Docker czeka, zanim zabije Runnera. Po `SIGTERM` Runner oddaje swoje zlecenie, żeby inny wziął je od razu; **skrócenie tego poniżej czasu, jakiego potrzebują te wywołania, zamienia zatrzymanie w zabicie**, a zabity Runner zostawia zlecenie dzierżawie. Patrz [Aktualizacja i wycofanie](/pl/install/update) |

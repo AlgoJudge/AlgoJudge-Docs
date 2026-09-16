@@ -1,6 +1,6 @@
 ---
 title: What the host needs
-description: Docker with Compose v2.15.0, cgroup v2, the coreutils the scripts use, and disk for backups. The stack bounds its own logs.
+description: Docker with Compose v2.15.0 and, where Runners judge, Engine 26; cgroup v2, the coreutils the scripts use, and disk for backups and volumes.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -13,6 +13,24 @@ The stack is one `compose.yaml` with profiles. Everything in this section is
 **2.15.0 is the floor because of `cgroup: host`**, which the Runner service sets
 and which Compose first shipped in that version. `up -d --wait`, used by the
 install and update scripts, needs 2.1.1.
+
+### On a host that runs Runners, the engine must be 26 or later
+
+Podman 5 or later, equivalently; both are April 2024. A package is unpacked
+once into the volume the Runners share, and each judged container mounts its
+**subdirectory** out of there — a `subpath` mount, which arrived in Engine 26 /
+API 1.45. An older daemon cannot express it at all, so the Runner refuses to
+judge rather than judge against an empty directory.
+
+```bash
+docker version --format '{{.Server.APIVersion}}'    # 1.45 or higher
+```
+
+**An installation below that floor is still supported.** It keeps the host
+directories this stack used until 2026-09-16 — see
+[Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
+Nothing else in the stack needs 26, so an application host with no Runners is
+unaffected.
 
 ## cgroup v2, and it is not optional
 
@@ -303,6 +321,20 @@ one of these hosts. `git`, `flock` and `crontab` are optional and each degrades
 with a message rather than failing: no `git` means no revision in a backup's
 manifest, no `flock` means two scripts can overlap, no `crontab` means the
 schedule is yours to install.
+
+## Disk where Docker keeps its volumes
+
+On a host that runs Runners, everything they hold lives under Docker's data
+root — usually `/var/lib/docker/volumes` — rather than under a path you chose.
+The shared package cache is the large one, **bounded by the Runner at 10 GiB**;
+each Runner's scratch is one submission at a time.
+
+```bash
+docker system df -v | grep runner
+```
+
+On a machine whose `/var` is small and whose `/srv` is not, either move
+Docker's data root or keep host directories, as above.
 
 ## Disk for backups, ideally not the database's
 

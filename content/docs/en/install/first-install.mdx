@@ -44,36 +44,26 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-**Three values have no default** and the stack will not start without them.
-Generate each secret separately — reusing one across two of these means one
-disclosure is two compromises.
+**Two values have no default** and the stack will not start without them.
+Generate each separately — reusing one across two of these means one disclosure
+is two compromises.
 
 ```ini
 AJ_ADMIN_TOKEN=          # openssl rand -base64 36
 POSTGRES_PASSWORD=       # openssl rand -base64 36, a different one
-RUNNER_WORK_DIR=         # an ABSOLUTE host path, e.g. /srv/algojudge/runner-work
 ```
 
-`RUNNER_WORK_DIR` must be absolute because the Runner hands this string to the
-Docker daemon, and **a path the daemon cannot open becomes an empty directory
-rather than an error**. Every submission then runs against nothing and no test
-fails visibly. `preflight.sh` refuses a relative one for that reason.
+**There is no third, and nothing to create on disk.** `RUNNER_WORK_DIR` was one
+until 2026-09-16: the Runners now keep everything they download, prepare and
+work on in Docker volumes, which the daemon creates root-owned and mode 0755
+without being asked. That is exactly what they need — a Runner writes as root
+and every job container mounts the volume read-only and reads it as uid
+**65534**.
 
-**Make it yourself before the first start**, or let Compose make it:
-
-```bash
-sudo mkdir -p /srv/algojudge/runner-work
-```
-
-Compose creates a missing bind-mount source as **root, mode 0755**, which is
-what this needs: the Runner writes there as root, and every job container mounts
-it read-only and reads it as uid **65534**. A directory locked down by hand
-passes for the Runner and fails for the job — every submission then fails with
-`Permission denied (os error 13)`. `preflight.sh` probes both halves, writing as
-root and reading back as 65534, and says which one failed.
-
-*`chown 65532:65532` also works and is not needed; the runner service runs as
-root so that it can measure. What breaks it is a directory locked down by hand.*
+If this host's Docker is older than **Engine 26** (Podman 5), see
+[Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes)
+before the first start: that installation keeps host directories instead, and
+`RUNNER_WORK_DIR` comes back with them.
 
 Two more worth reading before the first start:
 
