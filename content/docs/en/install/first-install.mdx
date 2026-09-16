@@ -31,8 +31,14 @@ otherwise correct.
 <Callout type="info" title="The four language images are not services">
 `docker compose pull` fetches six of the eight. `lang-gcc`, `lang-clang`,
 `lang-python` and `lang-pypy` are values the Runner is handed rather than
-services, so Compose never touches them: the Runner pulls one when the host has
-none, and `scripts/update.sh` pulls all four when an installation is updated.
+services, so Compose never touches them. **`scripts/pull.sh` is what fetches
+them**, and `make up` runs it; `scripts/update.sh` does the same on the update
+path. The Runner fetches them at start as well, and will not register without
+them.
+
+Skipping that step was the whole of a real failure: until 2026-09-16 nothing on
+the install path fetched these at all, so an installation that was installed and
+never updated had no toolchain and every submission failed.
 </Callout>
 
 ## 1. Clone and configure
@@ -104,14 +110,20 @@ certificate that is already there.
 
 ```bash
 ./scripts/preflight.sh
+./scripts/pull.sh
 docker compose up -d --wait
 ```
+
+or `make up`, which is those three.
 
 `preflight.sh` refuses with a sentence rather than half way up: an empty
 password, a missing or short token, a CIDR with host bits, a relative work
 directory, a work directory a job container cannot read, cgroup v1 or an unknown
-cgroup driver, a `.env` that is tracked by Git. `make up` runs it first, so the
-ordinary path is checked whether or not anybody remembers the script exists.
+cgroup driver, a `.env` that is tracked by Git.
+
+**`pull.sh` fetches several gigabytes on a host that runs Runners** and takes
+minutes. That is the compiler toolchain, and it is normal. It is also the step
+Compose cannot do for you, because the four language images are not services.
 
 **The `runner` profile starts two Runners**, `runner-1` and `runner-2`;
 `runner-extra` adds `runner-3` and `runner-4` on a host with the processors to

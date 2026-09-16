@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: dce416b588c9940d941f9b4eabc6e49d4957508af072266dd9bce10d5dea56f8
+sourceSha256: ac355da5081b95dbde5af374306f65296b7ac3553bb96a6bf5fa001a89033592
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -32,8 +32,13 @@ publiczny. Warto o tym wiedzieć, bo wraca z każdym nowym obrazem, a objawem je
 <Callout type="info" title="Cztery obrazy językowe nie są usługami">
 `docker compose pull` pobiera sześć z ośmiu. `lang-gcc`, `lang-clang`,
 `lang-python` i `lang-pypy` to wartości przekazywane Runnerowi, a nie usługi,
-więc Compose ich nie dotyka: Runner pobiera obraz, gdy hosta go nie ma, a
-`scripts/update.sh` pobiera wszystkie cztery przy aktualizacji instalacji.
+więc Compose ich nie dotyka. **Pobiera je `scripts/pull.sh`**, uruchamiany przez
+`make up`; `scripts/update.sh` robi to samo przy aktualizacji. Runner pobiera je
+także sam przy starcie i bez nich się nie zarejestruje.
+
+Pominięcie tego kroku było całą przyczyną realnej awarii: do 2026-09-16 nic na
+ścieżce instalacji ich nie pobierało, więc instalacja, której nigdy nie
+zaktualizowano, nie miała kompilatorów i każde zgłoszenie padało.
 </Callout>
 
 ## 1. Klon i konfiguracja
@@ -107,15 +112,20 @@ certyfikatu, który już tam leży.
 
 ```bash
 ./scripts/preflight.sh
+./scripts/pull.sh
 docker compose up -d --wait
 ```
+
+albo `make up`, czyli te trzy naraz.
 
 `preflight.sh` odmawia od razu i jednym zdaniem, zamiast w połowie podnoszenia
 stosu: puste hasło, brakujący lub zbyt krótki token, CIDR z bitami hosta,
 względny katalog pracy, katalog pracy, którego kontener zadania nie przeczyta,
-cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git. `make up`
-uruchamia go najpierw, więc zwykłą drogę sprawdzamy niezależnie od tego, czy
-ktoś pamięta, że ten skrypt istnieje.
+cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git.
+
+**`pull.sh` na hoście z Runnerami pobiera kilka gigabajtów** i trwa minuty. To
+są kompilatory i tak ma być. To również ten krok, którego Compose nie zrobi za
+Ciebie, bo cztery obrazy językowe nie są usługami.
 
 **Profil `runner` uruchamia dwa Runnery**, `runner-1` i `runner-2`;
 `runner-extra` dokłada `runner-3` i `runner-4` na hoście, który ma na nie

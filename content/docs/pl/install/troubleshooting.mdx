@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 5e6401d0f9dbcaba997b0119e48c34eb848eb2d172b459b740eb46c019e7a1e9
+sourceSha256: 980eef0abab145b007b89a1a0429cf383f0c1e944646e32c7a1f95fb2a6a5d7a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -149,24 +149,32 @@ Runner mówi to o jednym z czterech obrazów językowych i ma rację: `aj-shim` 
 tym, co czyni oceniany przebieg mierzalnym, więc obraz sprzed jego powstania nie
 oceni niczego.
 
-**Host ma starą kopię.** Milczą o tym dwie rzeczy, obie zamierzone: `docker
-compose pull` nie pobiera obrazów językowych — to wartości przekazywane
-Runnerowi, a nie usługi — a Runner pobiera obraz wyłącznie wtedy, gdy hosta nie
-ma go **wcale**, nigdy dlatego, że istnieje nowszy.
+**Host ma starą kopię**, a `docker compose pull` jej nie wymieni: obrazy językowe
+to wartości przekazywane Runnerowi, a nie usługi, więc Compose ich nie dotyka.
 
 ```bash
-docker pull ghcr.io/algojudge/lang-gcc:0     # oraz clang, python, pypy
+./scripts/pull.sh
 docker compose restart runner-1              # każdy runner-N, który uruchamiasz
 ```
 
-<Callout type="warn" title="Restart nie jest opcjonalny">
-Runner bada każdy obraz raz, przy pierwszym użyciu, i pamięta odpowiedź przez
-całe życie procesu. Ten, który już uznał, że obraz nie ma shima, będzie zawodził
-na każdym zleceniu także wobec poprawionej kopii — dopóki nie powstanie na nowo.
+<Callout type="info" title="Restart to prosta odpowiedź i nigdy nie jest błędem">
+Runner pobiera swoje obrazy językowe przy starcie, więc restart jest też tym, co
+je przynosi.
+
+Pobranie ręczne też działa: działający Runner przyjmuje podmieniony obraz bez
+restartu, bo to, co o obrazie pamięta, jest zapisane pod jego
+**identyfikatorem**, a pobrany obraz ma inny identyfikator.
+
+*Do 2026-09-16 ta strona mówiła coś przeciwnego — że restart jest konieczny, bo
+Runner bada każdy obraz raz i pamięta odpowiedź przez całe życie procesu. To
+było zmierzone i było prawdą o Runnerze, który zapisywał to pod **nazwą**
+obrazu. Klucz się od tego czasu zmienił.*
 </Callout>
 
-`scripts/update.sh` pobiera wszystkie cztery, więc instalacja utrzymywana nim
-tego nie spotka.
+**Runner z 2026-09-16 lub nowszy w ogóle tego nie spotka**: pobiera wszystkie
+cztery przy starcie, bezwarunkowo, a jeśli nie może — kończy pracę zamiast się
+zarejestrować. `make up` i `scripts/update.sh` też je pobierają, więc zwykle są
+już właściwe, zanim Runner spojrzy.
 
 ## Każde zlecenie zawodzi z `predates the input arriving as a descriptor`
 

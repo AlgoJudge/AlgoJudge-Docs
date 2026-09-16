@@ -143,25 +143,33 @@ The Runner says it of one of the four language images, and means it: `aj-shim` i
 what makes a judged run measurable, so an image from before it existed cannot
 judge anything.
 
-**The host has an old copy.** Two things keep that quiet, and both are by design:
-`docker compose pull` does not fetch the language images — they are values the
-Runner is handed, not services — and the Runner pulls one only when the host has
-**none at all**, never because a newer one exists.
+**The host has an old copy**, and `docker compose pull` cannot replace it: the
+language images are values the Runner is handed, not services, so Compose never
+touches them.
 
 ```bash
-docker pull ghcr.io/algojudge/lang-gcc:0     # and clang, python, pypy
+./scripts/pull.sh
 docker compose restart runner-1              # every runner-N you run
 ```
 
-<Callout type="warn" title="The restart is not optional">
-A Runner probes each image once, the first time it uses it, and remembers the
-answer for as long as the process lives. One that has already decided an image
-has no shim goes on failing every job against the corrected copy until it is
-recreated.
+<Callout type="info" title="Restarting is the simple answer and is never wrong">
+A Runner fetches its language images at start, so a restart is also what gets
+them.
+
+Fetching by hand works too: a running Runner takes up a replaced image without a
+restart, because what it remembers about an image is filed under that image's
+**id**, and a fetched image has a different id.
+
+*This page said the opposite until 2026-09-16 — that a restart was required
+because a Runner probes each image once and remembers the answer for the life of
+the process. That was measured, and was true of a Runner that filed what it
+remembered under the image's **name**. The keying has since changed.*
 </Callout>
 
-`scripts/update.sh` pulls all four, so an installation kept up to date with it
-does not meet this.
+**A Runner from 2026-09-16 or later does not meet this at all**: it fetches all
+four at start, unconditionally, and exits rather than registering if it cannot.
+`make up` and `scripts/update.sh` fetch them too, so the images are usually
+already right by the time it looks.
 
 ## Every job fails with `predates the input arriving as a descriptor`
 
