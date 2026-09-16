@@ -2,7 +2,7 @@
 title: Co się stało z moim zgłoszeniem
 description: Sześć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
 source: en/client/participant/results.mdx
-sourceSha256: 0923c689bd5c887026fd6a6b541a4b2781bf1083bdbeb09795bf696eb45315ac
+sourceSha256: b8bf6bc00944b2d8020ad70a32b9d3b97ab4959739de76f27f12ae284418e134
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -111,6 +111,12 @@ wątków się sumują.
 Czekać jednak nie można w nieskończoność. Zgłoszenie, które długo po swoim
 limicie wciąż działa, zostaje zatrzymane i oznaczone jako *Limit czasu*, tak samo
 jak takie, które za długo liczyło; w uwadze widać, o który przypadek chodzi.
+
+**Program musi skończyć sam.** To, że program sprawdzający jest zadowolony
+z Twojej odpowiedzi, nie kończy przebiegu za Ciebie: ten, który wypisze
+odpowiedź i pisze dalej, dostaje *Limit wyjścia*, a ten, który potem czeka na
+wejście, które nigdy nie nadejdzie — *Limit czasu*. Wypisz odpowiedź
+i zakończ.
 
 Kolumna **Uwagi** zaczyna się od powodu, za każdym razem tymi samymi słowami,
 więc kolumnę porażek da się przeczytać z góry na dół: *Zła odpowiedź*, *Limit

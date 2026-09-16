@@ -2,7 +2,7 @@
 title: Paczki
 description: Co dostaje Runner i skąd zadanie bierze swoje testy i limity.
 source: en/client/manager/packages.mdx
-sourceSha256: 131090200af06e279cfd4e4230afeffafb33de5096469f2921aad3f7909f986c
+sourceSha256: f1b00cf3503e34e32f3dc77fc3971e6fc98ad2aac6c8dfa41ee32bb9360dfca4
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -44,7 +44,7 @@ package.zip
 | `languages` | w czym wolno zgłaszać. Puste znaczy, że paczka nic nie narzuca, a wtedy wolno wszystko, co Runner umie zbudować |
 | `overrideLimits` | limity na język, kluczem jest rodzina (`cpp`, `python`) albo jeden toolchain (`pypy3`). Tutaj zapisujesz, że Python jest wolniejszy |
 | `groups` | grupy punktowe, ich punkty i opcjonalnie własne limity |
-| `checker` | brak oznacza, że decydują pliki `.out`. Dostaje odpowiedź uczestnika strumieniowo, w trakcie jej powstawania, więc musi ją czytać sekwencyjnie i tylko raz — nie da się w niej cofnąć. Kiedy jest, plików `.out` w ogóle nie musi być |
+| `checker` | brak oznacza, że decydują pliki `.out`. Dostaje odpowiedź uczestnika strumieniowo, w trakcie jej powstawania, więc musi ją czytać sekwencyjnie i tylko raz — nie da się w niej cofnąć. Kiedy jest, plików `.out` w ogóle nie musi być. **Skończywszy pracę, nie zatrzymuje zgłoszenia** — program, który pisze dalej, gdy checker widział już dość, wpada na limit wyjścia i nie zostaje zaakceptowany |
 | `interactor` | zadanie jest interaktywne: zgłoszenie nie dostaje pliku z wejściem, tylko czyta to, co interaktor przysyła mu w odpowiedzi na jego własne wypisywanie. Podaje się go **zamiast** checkera, nigdy obok — załączenie jednego z nich w karcie „Programy” blokuje drugi. Kiedy jest, **żaden** z plików testu nie jest wymagany |
 | `groups[].tests` | ile testów ma grupa, gdy nie wysyłasz dla nich plików. Może to podać tylko zadanie interaktywne i najwyżej 26 — gdzie indziej testy liczą się z plików |
 | `modelSolution` | służy do kalibracji limitów, nigdy do oceniania |

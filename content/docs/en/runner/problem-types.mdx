@@ -25,7 +25,8 @@ what came out.
 | What decides the language | the participant's own declaration, travelling with the submission |
 | Before the build | [the policy profile](/en/runner/policy) |
 | Per test | one container, [isolated](/en/runner/isolation), never reused |
-| What decides a test | the package's own **checker** where it has one, an **interactor** where it has one instead, and otherwise the Runner comparing token by token. All three read the answer as it is written, so a wrong one stops the program at the first token that differs |
+| What decides a test | the package's own **checker** where it has one, an **interactor** where it has one instead, and otherwise the Runner comparing token by token. All three read the answer as it is written; where the Runner is the one comparing, a wrong answer stops the program at the first token that differs |
+| What a submission must do | **end by itself.** A judge being satisfied does not excuse one that keeps writing or will not stop — see below |
 | What a test needs | both files with no judging program; a checker makes the expected output optional; an interactor makes both optional, and a group may then simply say how many tests it has |
 | Scoring | by group, as the package defines them |
 
@@ -113,8 +114,34 @@ sequenceDiagram
 writes into; it never touches the one the submission is writing. The two
 containers share no directory — they run as the same unprivileged user, so a
 shared one would be a place each could reach the other's — and every byte
-between them is copied by the Runner. That is also what keeps the byte counter,
-the output cap and the early stop in code the package did not write.
+between them is copied by the Runner. That is also what keeps the byte counter
+and the output cap in code the package did not write.
+
+<Callout type="warn" title="A submission has to end by itself to be accepted">
+**A checker or an interactor finishing does not stop the submission**, and does
+not rescue one that will not stop. Whatever limit the program then reaches is
+what ends it: one that keeps writing meets the output cap, one that waits for
+something that will never come meets a time limit. Either way it is not
+accepted, however satisfied the judge was.
+
+A judge that **refused** is a different matter: its verdict and its comment
+outrank whatever stopped the run, so a participant is told *why* their answer is
+wrong rather than *that we stopped it*. The two exceptions are a deadlock and
+the kernel's memory kill, which know something the judge could not — a
+submission holding its question in an unflushed buffer makes an interactor
+refuse for want of anything to read, and *no processor time for 12 s* is the
+sentence that tells a participant they are stuck rather than slow.
+
+**This was the other way round until 2026-09-16**, and it was changed because it
+was never one answer: a judge's exit and the output cap are decided in the same
+loop, so the same submission was `Accepted` on an idle host and `Output limit
+exceeded` on a busy one — measured at 24% of runs under load. A verdict a
+participant cannot reproduce is worse than either answer.
+
+**What it means for a package.** A problem whose submissions legitimately go on
+writing after the judge has seen enough now needs its output cap to allow for
+that, or its judge to read to the end. Most do neither and are unaffected.
+</Callout>
 
 ### When the package brings an interactor
 

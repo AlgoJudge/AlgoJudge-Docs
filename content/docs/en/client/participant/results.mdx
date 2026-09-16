@@ -105,6 +105,11 @@ Waiting is not free without end. A submission still running long after its limit
 is stopped and marked *Time limit*, the same as one that computed too long; the
 comment says which.
 
+**Your program has to finish by itself.** A judging program being satisfied with
+your answer does not end the run for you: one that prints its answer and then
+keeps writing is marked *Output limit*, and one that then waits for input that
+will never arrive is marked *Time limit*. Print the answer and return.
+
 The **Comments** column leads with the reason, in the same words every time, so
 a column of failures can be read straight down: *Wrong answer*, *Time limit*,
 *Memory limit*, *Output limit*, *Runtime error*, *Rule violation*, *Compilation
