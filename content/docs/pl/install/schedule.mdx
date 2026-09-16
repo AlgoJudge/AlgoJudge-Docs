@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: 62f094a6b760eeb60a1f5f1f9b053b4772f0a4b438422cc5532166bc8d6ac6cc
+sourceSha256: 8ffc1b69e48e68478f835d048ee33bbfc8a057404e12473a738bd332d712bb81
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -32,10 +32,10 @@ potrzebuje: każdy Runner ogranicza `RUNNER_CACHE_DIR` do 10 GiB, a zewnętrzny
 Runner `external-runner-cache` do 256 MiB, oba od środka. Obie przeżywają `down`
 i zmianę obrazu — a skasowanie którejś kosztuje pobranie danych, nie zlecenie.
 
-Ta pierwsza to **katalog wspólny dla czterech Runnerów**: leży w nim każda
-paczka wraz z rozpakowanymi testami i skompilowanym checkerem. Druga to wolumen
-nazwany z kodem źródłowym uczestników. Żadnej nie obejmuje kopia zapasowa — z
-tego samego powodu, z którego żadnej się nie sprząta.
+Ta pierwsza to **katalog wspólny dla wszystkich Runnerów na hoście**: leży w nim
+każda paczka wraz z rozpakowanymi testami i skompilowanym checkerem. Druga to
+wolumen nazwany z kodem źródłowym uczestników. Żadnej nie obejmuje kopia
+zapasowa — z tego samego powodu, z którego żadnej się nie sprząta.
 
 <Callout type="warn" title="Nigdy globalny prune">
 `docker system prune` i `docker volume prune` nie wiedzą, że na hoście może

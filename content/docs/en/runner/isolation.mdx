@@ -39,7 +39,7 @@ ran out of disk.
 | `--user 65534:65534` | never root, even inside |
 | `memory.max` with `memory.swap.max` **zero**, on a cgroup holding the submission alone | without the second the limit means nothing — the program swaps instead of being killed. A kill is told from two places and either is enough: the runtime's `OOMKilled`, and the kernel's own `memory.events` — where it takes **both** `oom_kill` and `oom`, since the first counts kills by any OOM killer including the system one, and the second counts this cgroup reaching its own limit. The container keeps a `--memory` of its own for the shim, unrelated to the problem's |
 | `--pids-limit` | a fork bomb hits a wall |
-| `--cpus`, and `--cpuset-cpus` **only where the Runner was given a set** | capping CPU is not pinning it, and only the cap is unconditional. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast. A set is carried to **every** container the Runner starts — both builds, the judged run, and a checker or interactor beside it — when an operator confined the Runner itself, because they inherit no affinity of their own; given the whole machine the Runner pins nothing, which is what lets the host move a run that is starving |
+| `--cpus`, and `--cpuset-cpus` **only where the Runner was given a set** | capping CPU is not pinning it, and only the cap is unconditional. The threading hole is closed by the accounting — `cpu.stat` sums the whole subtree, so two threads reach the limit twice as fast. A set is carried to **every** container the Runner starts, because they inherit no affinity of their own — but not the same set to each of them. It is cut into **one lane per test judged at once**, in the order the operator wrote it, and a judged run gets its lane; **a test's checker or interactor runs in the lane of the test it judges**, so the two that talk to each other are confined together. Both builds stand outside the lanes and get the whole of it. Given the whole machine the Runner pins nothing at any width, which is what lets the host move a run that is starving |
 | **three deadlines**, and [none of them is the limit](#three-deadlines-and-none-of-them-is-the-limit) | a time limit is processor time, so the sandbox needs its own way of ending a run that is *not* spending any: one stuck in an uninterruptible syscall, one waiting for input that never comes |
 | an output cap counted **as the bytes cross** | nothing stores what a submission prints. It travels on a pipe from the program to whatever is comparing it, and the count is taken in passing. Collected and read afterwards, a flooding program fills the host's disk before anybody looks |
 | **nothing on the container's own streams** | a judged container is started with no log driver at all, and the submission's standard error goes to `/dev/null`. There is nothing for the runtime to write down, which is where a flood used to land. The interactor beside it is silent for the same reason: its conversation is on pipes. The two containers whose output *is* read — the build, whose stdout is the compilation error you are shown, and the checker, whose stdout is its verdict — get a small bounded driver rather than whatever the host was set to |
@@ -378,9 +378,9 @@ docker info --format '{{.CgroupDriver}}'
 | | `cgroupfs` | `systemd` |
 |---|---|---|
 | Where it is the default | Docker Desktop | virtually every systemd Linux host |
-| What the daemon is told | a path, `/algojudge/<run>` | a slice name, `algojudge-<fingerprint>.slice` |
+| What the daemon is told | a path, `/algojudge/<run>` | a slice name: `algojudge-<fingerprint>.slice` for the first lane, `algojudge-<fingerprint>_l1.slice` for the one beside it |
 | Who creates the cgroup | the Runner | systemd, when the daemon asks it |
-| How many | one per run, removed afterwards | **one per Runner**, for its whole life |
+| How many | one per run, removed afterwards | **one per lane**, for the Runner's whole life |
 | A run's processor time | read from `cpu.stat` | the change in `cpu.stat` across the run |
 | A **judged** run's peak memory | `memory.peak` of the cgroup holding the submission, read by the shim from inside | the same — the driver decides nothing here, because that cgroup is the container's own child |
 | Any other run's peak memory | read from `memory.peak` | `memory.peak` reset at the start of the run, less what the slice already held |
@@ -388,8 +388,8 @@ docker info --format '{{.CgroupDriver}}'
 | To report a peak as well | the same | the same, and **Linux 6.12** for the runs that are nobody's submission, whose peak still comes from a reset |
 | Kernel | 5.19 and later | 5.19 to judge; **6.12** to report the peak of a build, a checker or an interactor, which no screen shows |
 
-**One slice rather than one per run, and it is not a preference.** A slice
-systemd creates for a container is never collected: it stays loaded
+**One slice per lane rather than one per run, and it is not a preference.** A
+slice systemd creates for a container is never collected: it stays loaded
 indefinitely, and removing its directory does not release the unit. A slice per
 test would therefore be a permanent systemd unit per test, growing for as long
 as the installation judges anything. Nothing the Runner can reach takes them
@@ -398,27 +398,32 @@ away — only `systemctl stop` as root does.
 What one costs is beside the point, and small: on a host holding 250 leftover
 slices, freeing 238 of them released nothing measurable from `systemd` itself.
 It is that nothing ever ends them. If you have recreated a Runner's identity —
-a lost volume, a `docker compose down -v` — its old slice stays behind, and
-`systemctl stop 'algojudge-<fingerprint>.slice'` is what takes it away.
+a lost volume, a `docker compose down -v` — its old slices stay behind, and
+`systemctl stop 'algojudge-<fingerprint>*.slice'` is what takes them away.
 
-**One cgroup does outlive the Runner, deliberately.** Its home — the slice under
-`systemd`, the directory under `cgroupfs` — is never removed, because a Runner
-cannot: `rmdir` on a live slice is undone by systemd, and stopping the unit needs
-a D-Bus connection this Runner does not hold. The cost is one empty slice per
-Runner identity that has *judged* something, since the slice is created when a
-container first starts under it rather than when the Runner does. A reboot
-clears them; so does `systemctl stop 'algojudge-*.slice'`.
+**One cgroup per lane does outlive the Runner, deliberately.** Its home — the
+slice under `systemd`, the directory under `cgroupfs` — is never removed, because
+a Runner cannot: `rmdir` on a live slice is undone by systemd, and stopping the
+unit needs a D-Bus connection this Runner does not hold. The cost is one empty
+slice per lane of every Runner identity that has *judged* something, since a
+slice is created when a container first starts under it rather than when the
+Runner does. A reboot clears them; so does `systemctl stop 'algojudge-*.slice'`.
 
 That is what makes the systemd numbers differences rather than readings, and
-what makes **one run at a time** part of the arrangement: the Runner claims one
-job at a time and judges one test at a time, and a mutex holds the invariant so
-a second caller would wait rather than spoil both readings.
+what makes **one run at a time in a slice** part of the arrangement: the Runner
+claims one job at a time, a lane judges one test at a time, and a mutex per lane
+holds the invariant so a second caller would wait rather than spoil both
+readings. A slice of its own for every lane is what that costs — two readings
+taken across one slice would each contain the other. Under `cgroupfs` a width
+costs nothing here, because every run already has a cgroup to itself.
 
 <Callout type="warn" title="A slice is a name, and a dash in it is a level of nesting">
 `algojudge-a-b.slice` is not one slice named with two dashes; it is a slice
 inside `algojudge-a.slice` inside `algojudge.slice`, and systemd creates every
 level. So the Runner's instance id is flattened before it becomes part of a unit
-name.
+name, and a lane's suffix is an underscore: `algojudge-<fingerprint>_l1.slice` is
+a **sibling** of the first lane's slice, where the same name with a dash would
+have been a child of it.
 </Callout>
 
 Neither driver is a host requirement, and no daemon has to be reconfigured for

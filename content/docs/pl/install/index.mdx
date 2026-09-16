@@ -2,7 +2,7 @@
 title: Czym jest instalacja
 description: Dziewięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
 source: en/install/index.mdx
-sourceSha256: fc2d847ad2c24e65629b47831fe10e0b5ae69982897692583fb5bb7524e8cade
+sourceSha256: 6461a799ea8bab0169a131775849be641197a47259a116eecca2be33baa339b4
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -28,7 +28,7 @@ kosztuje i jak zamiast tego przypiąć konkretną wersję.
 
 ## Usługi
 
-Dziewięć usług i siedem nazw profili — Server i Client mają po dwie, dzięki czemu
+Dziewięć usług i osiem nazw profili — Server i Client mają po dwie, dzięki czemu
 można podnieść jedną połowę bez drugiej.
 
 | Usługa | Profile | Czym jest |
@@ -37,13 +37,16 @@ można podnieść jedną połowę bez drugiej.
 | `server` | `app`, `server` | API pod `/api/v1`, publikowane na `127.0.0.1:8080` |
 | `client` | `app`, `client` | aplikacja w przeglądarce, publikowana na `127.0.0.1:8082` |
 | `nginx` | `edge` | TLS, jeden origin dla obu połówek, porty 80 i 443 |
-| `runner-1` … `runner-4` | `runner` | jeden obraz, cztery tożsamości. Każdy ocenia jedno zgłoszenie naraz, w kontenerach siostrzanych |
+| `runner-1`, `runner-2` | `runner` | jeden obraz, dwie tożsamości. Każdy ocenia jedno zgłoszenie naraz, w kontenerach siostrzanych, a kilka jego testów równocześnie |
+| `runner-3`, `runner-4` | `runner-extra` | jeszcze dwa takie same, dla hosta, który ma na nie procesory |
 | `external-runner` | `external-runner` | zamiast oceniać, przekazuje je do zewnętrznego archiwum. **Nie ma go w domyślnym zestawie** — patrz [Zewnętrzny sędzia](/pl/install/external-runner) |
 
-**Cztery to punkt odniesienia, a nie minimum.** Tyle pasuje do ośmiu rdzeni
-fizycznych i zostawia cztery na całą resztę; na mniejszej maszynie uruchom mniej,
-bo więcej Runnerów niż rdzeni fizycznych nie przyspiesza oceniania, a psuje jego
-rzetelność. Tabelę znajdziesz w [Czego wymaga host](/pl/install/requirements).
+**Do maszyny dopasowuje się tory, a nie Runnery.** Runner ocenia równocześnie
+tyle testów jednego zgłoszenia, ile mówi `RUNNER_TESTS_AT_ONCE` — każdy na
+własnym torze — a jeden tor to praca za jeden rdzeń, więc dwa Runnery po dwa tory
+wymagają od maszyny dokładnie tyle, co cztery po jednym. Więcej torów niż rdzeni
+fizycznych nie przyspiesza oceniania, a psuje jego rzetelność. Tabelę znajdziesz
+w [Czego wymaga host](/pl/install/requirements).
 
 Niosą je trzy sieci Compose, żeby baza nie była osiągalna z krawędzi, a ruch
 oceniania dał się oddzielić od HTTP:
@@ -94,11 +97,12 @@ Compose.
 | **T3** | `app,data` | [własne reverse proxy](/pl/install/reverse-proxy) z przodu |
 | — | `client,server,data` | po jednej połowie, do debugowania i etapowych aktualizacji |
 
-**`external-runner` to dodatek do każdego z nich, a nie piąty układ.** Dopisz go
-obok `runner` albo daj mu osobną maszynę. Nie ma go w zestawie domyślnym, bo
-loguje się do zewnętrznego archiwum na tamtejsze konto — [Zewnętrzny
-sędzia](/pl/install/external-runner) mówi, czego wymaga i czego za Ciebie nie
-zrobi.
+**`external-runner` i `runner-extra` to dodatki do każdego z nich, a nie kolejne
+układy.** `runner-extra` uruchamia `runner-3` i `runner-4` obok tych dwóch, które
+stawia `runner`. `external-runner` dopisz obok `runner` albo daj mu osobną
+maszynę; nie ma go w zestawie domyślnym, bo loguje się do zewnętrznego archiwum
+na tamtejsze konto — [Zewnętrzny sędzia](/pl/install/external-runner) mówi, czego
+wymaga i czego za Ciebie nie zrobi.
 
 ## Runner może działać na zupełnie innej maszynie
 
@@ -111,7 +115,7 @@ RUNNER_NAME_PREFIX=lab-a       # inny na każdym hoście
 RUNNER_WORK_DIR=/srv/algojudge/runner-work
 ```
 
-Przedrostek nazywa wszystkie cztery — `lab-a-1` do `lab-a-4` — i **musi się
+Przedrostek nazywa każdy Runner na hoście — `lab-a-1` do `lab-a-4` — i **musi się
 różnić między hostami**, inaczej Runnery z dwóch maszyn pojawią się w panelu pod
 tymi samymi nazwami.
 

@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: faca8ec5498f7a4a0df41904ede2b3ed13a9025d1b81db2b48200ec67fa51d7a
+sourceSha256: c45f9102a2d6f1d42f3ae27100366687fd2c47ab057243d3b697c58d2c0b2c4f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -130,10 +130,13 @@ cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git. `make up`
 uruchamia go najpierw, więc zwykłą drogę sprawdzamy niezależnie od tego, czy
 ktoś pamięta, że ten skrypt istnieje.
 
-**Profil `runner` uruchamia cztery Runnery**, od `runner-1` do `runner-4`.
-Cztery pasują do ośmiu rdzeni fizycznych; na mniejszej maszynie uruchom mniej,
-bo więcej Runnerów niż rdzeni fizycznych nie przyspiesza oceniania, a psuje jego
-rzetelność — tabelę ma [Czego wymaga host](/pl/install/requirements).
+**Profil `runner` uruchamia dwa Runnery**, `runner-1` i `runner-2`;
+`runner-extra` dokłada `runner-3` i `runner-4` na hoście, który ma na nie
+procesory. Każdy z nich ocenia równocześnie tyle testów jednego zgłoszenia,
+ile mówi `RUNNER_TESTS_AT_ONCE`, po jednym teście na tor — więc do maszyny
+dopasowuje się tory, a nie Runnery: więcej torów niż rdzeni fizycznych nie
+przyspiesza oceniania, a psuje jego rzetelność. Tabelę ma [Czego wymaga
+host](/pl/install/requirements).
 
 ## 4. Administrator
 
