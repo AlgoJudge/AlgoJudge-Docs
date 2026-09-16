@@ -71,6 +71,20 @@ two judged runs sharing one processor spend more of it for the same work — so
 what the refusal prevents is correct solutions reported as too slow, with nothing
 in the verdict saying why.
 
+**A processor is the floor; a lane wants a core.** A lane holds three things at
+once — the judged run, the judge reading it, and the shim measuring it — and one
+thread of a core is not enough processor for three. Measured on 2026-09-15, one
+submission of 72 tests alone on an idle host: **196 ms of processor time a test
+in lanes of a whole core against 318 ms in lanes of one thread**, which put 610
+of 864 tests over a limit none of them reached at the wider setting. Per
+submission the two arrangements answer in the same time, so the narrow one buys
+throughput and pays for it in the verdicts.
+
+The Runner reads `thread_siblings_list` at start and **says so, once per lane
+that holds a thread whose sibling went elsewhere**. A warning and not a refusal:
+a host may publish no topology, or have no siblings to give, and the arrangement
+still judges — it is charged more for it.
+
 **Two lanes on the two threads of one core have the same problem, and that half
 is not checked.** The refusal counts processors; whether they are separate cores
 is the operator's to arrange, and
