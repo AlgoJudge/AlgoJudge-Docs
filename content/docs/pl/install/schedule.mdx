@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: 8ffc1b69e48e68478f835d048ee33bbfc8a057404e12473a738bd332d712bb81
+sourceSha256: 60800fc1f81c7d8d56ef579ec6d7f5bdd5185f011c0f8177f69da09398f441db
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -28,7 +28,7 @@ Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
 - **własne logi tego repozytorium** w `/var/log/algojudge/`, rotowane po 32 MB.
 
 **Żadna z dwóch pamięci podręcznych nie jest sprzątana**, bo żadna tego nie
-potrzebuje: każdy Runner ogranicza `RUNNER_CACHE_DIR` do 10 GiB, a zewnętrzny
+potrzebuje: każdy Runner ogranicza `algojudge_runner-cache` do 10 GiB, a zewnętrzny
 Runner `external-runner-cache` do 256 MiB, oba od środka. Obie przeżywają `down`
 i zmianę obrazu — a skasowanie którejś kosztuje pobranie danych, nie zlecenie.
 

@@ -26,7 +26,7 @@ Four things, and each one filtered to this installation:
 - **this repository's own logs** under `/var/log/algojudge/`, rotated past 32 MB.
 
 **Neither cache is swept**, because neither needs it: each Runner bounds
-`RUNNER_CACHE_DIR` at 10 GiB and the external Runner bounds
+`algojudge_runner-cache` at 10 GiB and the external Runner bounds
 `external-runner-cache` at 256 MiB, both from inside. Both survive a `down` and
 an image change — and deleting either costs a download rather than a job.
 

@@ -1,8 +1,8 @@
 ---
 title: Czego wymaga host
-description: Docker z Compose v2.15.0, cgroup v2, polecenia coreutils używane przez skrypty i dysk na kopie. Logi stack ogranicza sobie sam.
+description: Docker z Compose v2.15.0, a tam gdzie oceniają Runnery — Engine 26; cgroup v2, polecenia coreutils używane przez skrypty oraz dysk na kopie i wolumeny.
 source: en/install/requirements.mdx
-sourceSha256: e432dcf9c3e812d83c02dd3390eac5f84c22ec9b8424d7f0ff9b55e73dabbfb6
+sourceSha256: eebd31286c1f570a72be04cf2974786131c0ccef94ba9b35274283cc83c5b522
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -15,6 +15,24 @@ instalacji i aktualizacji, wymaga 2.1.1.
 
 Cały stos to jeden `compose.yaml` z profilami. Wszystko w tej sekcji to `docker
 compose` — wtyczka, nie starszy skrypt `docker-compose`.
+
+### Host, który uruchamia Runnery, potrzebuje silnika w wersji 26 lub nowszej
+
+Równoważnie Podmana 5 lub nowszego; jedno i drugie to kwiecień 2024. Paczka
+jest rozpakowywana raz do wspólnego wolumenu Runnerów, a każdy kontener
+sędziego montuje stamtąd jej **podkatalog** — montowaniem `subpath`, które
+pojawiło się w Engine 26 / API 1.45. Starszy demon nie potrafi tego w ogóle
+wyrazić, więc Runner odmawia oceniania, zamiast oceniać na pustym katalogu.
+
+```bash
+docker version --format '{{.Server.APIVersion}}'    # 1.45 albo wyżej
+```
+
+**Instalacja poniżej tego progu nadal jest wspierana.** Zostaje przy katalogach
+na hoście, których stos używał do 2026-09-16 — patrz
+[Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
+Nic innego w stosie nie potrzebuje wersji 26, więc hosta aplikacji bez Runnerów
+to nie dotyczy.
 
 ## cgroup v2, obowiązkowo
 
@@ -315,6 +333,21 @@ z tych hostów. `git`, `flock` i `crontab` są opcjonalne i każde ustępuje
 z komunikatem, zamiast przerywać pracę: bez `git` w manifeście kopii nie ma
 numeru rewizji, bez `flock` dwa skrypty mogą się nałożyć, bez `crontab`
 harmonogram instalujesz sam.
+
+## Dysk tam, gdzie Docker trzyma wolumeny
+
+Na hoście, który uruchamia Runnery, wszystko, co one trzymają, leży pod
+katalogiem danych Dockera — zwykle `/var/lib/docker/volumes` — a nie pod
+ścieżką, którą wybrałeś. Duża jest wspólna pamięć podręczna paczek,
+**ograniczona przez Runnera do 10 GiB**; katalog roboczy każdego Runnera to
+jedno zgłoszenie naraz.
+
+```bash
+docker system df -v | grep runner
+```
+
+Na maszynie, której `/var` jest mały, a `/srv` nie, albo przenieś katalog
+danych Dockera, albo zostań przy katalogach na hoście, jak wyżej.
 
 ## Dysk na kopie, najlepiej nie ten od bazy
 

@@ -2,7 +2,7 @@
 title: Czym jest instalacja
 description: Dziewięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
 source: en/install/index.mdx
-sourceSha256: 6461a799ea8bab0169a131775849be641197a47259a116eecca2be33baa339b4
+sourceSha256: 090b4f16d7fe9359d1aafc1770c412614fbf78fb964204ca7a82f222be5f6420
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -107,13 +107,18 @@ wymaga i czego za Ciebie nie zrobi.
 ## Runner może działać na zupełnie innej maszynie
 
 Każdy host z Runnerem klonuje to samo repozytorium i uruchamia
-`COMPOSE_PROFILES=runner` z trzema wartościami w swoim `.env`:
+`COMPOSE_PROFILES=runner` z dwiema wartościami w swoim `.env`:
 
 ```ini
 SERVER_URL=https://twoja.domena
 RUNNER_NAME_PREFIX=lab-a       # inny na każdym hoście
-RUNNER_WORK_DIR=/srv/algojudge/runner-work
 ```
+
+**Taki host potrzebuje Dockera Engine 26 lub nowszego** i miejsca tam, gdzie
+Docker trzyma wolumeny: pamięć podręczna i katalogi robocze Runnerów leżą na
+maszynie, która ocenia, a nie na hoście aplikacji. Maszyna w pracowni ze
+starszym silnikiem zostaje przy katalogach na hoście — patrz
+[Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
 
 Przedrostek nazywa każdy Runner na hoście — `lab-a-1` do `lab-a-4` — i **musi się
 różnić między hostami**, inaczej Runnery z dwóch maszyn pojawią się w panelu pod

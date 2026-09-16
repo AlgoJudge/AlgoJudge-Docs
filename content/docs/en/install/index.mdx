@@ -104,13 +104,18 @@ what it needs and what it cannot do for you.
 ## A Runner may live on another machine entirely
 
 Each Runner host clones the same repository and runs `COMPOSE_PROFILES=runner`
-with three values in its `.env`:
+with two values in its `.env`:
 
 ```ini
 SERVER_URL=https://your.domain
 RUNNER_NAME_PREFIX=lab-a       # different on every host
-RUNNER_WORK_DIR=/srv/algojudge/runner-work
 ```
+
+**That host needs Docker Engine 26 or later**, and disk where Docker keeps its
+volumes: the Runners' cache and scratch live on the machine that judges, not on
+the application host. A lab machine below that engine keeps host directories
+instead — see
+[Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
 
 The prefix names each Runner on the host — `lab-a-1` to `lab-a-4` — and **has to
 differ per host**, or two machines' Runners appear in the panel under one set of

@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: edd9ea9c1c5da58980f627888867e5d2549f4a007df8b97675a19d51ce4ec61a
+sourceSha256: 5e6401d0f9dbcaba997b0119e48c34eb848eb2d172b459b740eb46c019e7a1e9
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -123,12 +123,22 @@ Od najczęstszej przyczyny:
    `algojudge/lang-*:local`, które ma tylko host deweloperski. `compose.yaml`
    ustawia wszystkie cztery zmienne `AJ_Sandbox__Image__*` z `REGISTRY`
    i `RUNNER_TAG`; jeśli je nadpisałeś, sprawdź `docker images`.
-3. **`RUNNER_WORK_DIR` jest zły.** To najpaskudniejszy przypadek, bo zawodzi
-   *po cichu*: demon Dockera dostaje tę ścieżkę wprost, a ścieżka, której nie
+3. **Demon jest starszy niż Docker Engine 26.** Paczka jest rozpakowywana we
+   wspólnym wolumenie Runnerów, a każdy kontener sędziego montuje stamtąd jej
+   podkatalog — montowaniem `subpath`, które pojawiło się w Engine 26 / API
+   1.45 (kwiecień 2024) i w Podmanie 5. Runner **odmawia oceniania** i mówi o
+   tym, zamiast oceniać na niczym. `./scripts/preflight.sh` zgłasza to
+   wcześniej niż pierwsze zgłoszenie, a
+   `docker version --format '{{.Server.APIVersion}}'` podaje tę liczbę. Albo
+   zaktualizuj demona, albo zostań przy katalogach na hoście — patrz
+   [Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
+4. **`RUNNER_WORK_DIR` jest zły**, co jest przyczyną tylko tam, gdzie ta
+   nakładka jest w użyciu. To najpaskudniejszy przypadek, bo zawodzi *po
+   cichu*: demon Dockera dostaje tę ścieżkę wprost, a ścieżka, której nie
    potrafi otworzyć, daje **pusty katalog**, a nie błąd. Każde zlecenie działa
    wtedy na niczym. Musi być **bezwzględna** i musi być ścieżką, którą potrafi
    otworzyć demon, a nie tylko Twoja powłoka.
-4. **Tagi.** Runner z ustawionym `RUNNER_TAGS` wypada z puli ogólnej, a praca bez
+5. **Tagi.** Runner z ustawionym `RUNNER_TAGS` wypada z puli ogólnej, a praca bez
    tagów idzie do puli ogólnej. Puste znaczy pulę ogólną po obu stronach. **Tagi
    są czytane raz, przy pierwszej rejestracji** — późniejsza zmiana zmiennej nie
    robi nic, a zmienia je ponowna rejestracja.
@@ -172,11 +182,23 @@ zareagować.
 Zgłoszenia do zadania, którego paczka niesie checker, wracają jako awarie
 infrastruktury — często opisane tak, jakby to checker autora się nie zbudował.
 
-**`RUNNER_CACHE_DIR` nie jest katalogiem, który demon Dockera potrafi otworzyć.**
-Paczka jest rozpakowywana, a jej checker budowany raz, w pamięci podręcznej, i
-kontener sędziego montuje jedno i drugie — a montowanie rozwiązuje demon, więc
-katalog musi istnieć na hoście i być czytelny dla uid **65534**, dokładnie tak
-jak katalog roboczy.
+**Pamięć podręczna nie jest tą, do której Runner zapisuje.** Paczka jest
+rozpakowywana, a jej checker budowany raz, w pamięci podręcznej, i kontener
+sędziego montuje jedno i drugie — więc demon musi sięgnąć po dokładnie te
+bajty, które przygotował Runner.
+
+Domyślnie pamięć podręczna to wolumen `algojudge_runner-cache`, do którego demon
+sięga po nazwie, więc nie ma tu czego pomylić; ten wpis dotyczy wtedy prawie
+zawsze Runnera wskazanego ręcznie gdzie indziej:
+
+```bash
+docker compose exec runner-1 env | grep AJ_Cache__
+docker volume inspect algojudge_runner-cache
+```
+
+**Tam, gdzie w użyciu są katalogi na hoście**, jest to ścieżka i zwykłą
+przyczyną jest ścieżka, której demon nie potrafi otworzyć. Musi istnieć na
+hoście i być czytelna dla uid **65534**, dokładnie tak jak katalog roboczy.
 
 ```bash
 sudo mkdir -p /srv/algojudge/runner-cache
@@ -184,9 +206,10 @@ sudo chmod 755 /srv/algojudge/runner-cache
 ./scripts/preflight.sh
 ```
 
-Runner wskazany na ścieżkę, której demon w ogóle nie potrafi otworzyć, odmawia
-oceniania i mówi o `AJ_Cache__HostPath`. Ten wpis dotyczy przypadku węższego:
-katalog istnieje, ale nie jest tym, do którego Runner zapisuje.
+Runner, który w ogóle nie widzi swojej pamięci podręcznej, odmawia oceniania i
+mówi o `AJ_Cache__HostPath` albo `AJ_Cache__Volume`. Ten wpis dotyczy przypadku
+węższego: pamięć podręczna istnieje, ale nie jest tą, do której Runner
+zapisuje.
 
 ## Nic **zewnętrznego** nie jest oceniane
 
@@ -267,9 +290,11 @@ jest tym, które obsługuje demon. Usługa Runnera działa jako root, więc jest
 przyczyną tylko tam, gdzie ktoś usunął to z `compose.yaml` — wtedy Runner
 zawodzi przy **starcie** i nigdy nie bierze żadnego zlecenia.
 
-**Druga: kontener zadania nie potrafi odczytać `RUNNER_WORK_DIR`.** Runner
-zapisuje tam pliki zgłoszenia jako root, a każdy kontener zadania montuje ten
-katalog tylko do odczytu i czyta go jako uid **65534**. Katalog ręcznie zamknięty
+**Druga: kontener zadania nie potrafi odczytać `RUNNER_WORK_DIR`** — co jest
+przyczyną tylko tam, gdzie w użyciu są katalogi na hoście: wolumen demon zakłada
+z właścicielem root i prawami 0755, a to jest już poprawne. Runner zapisuje tam
+pliki zgłoszenia jako root, a każdy kontener zadania montuje ten katalog tylko
+do odczytu i czyta go jako uid **65534**. Katalog ręcznie zamknięty
 przed innymi przechodzi próbę Runnera i nie przechodzi próby zadania, więc
 gniazdo działa bez zarzutu, Runner rejestruje się, bierze zlecenie — i każde bez
 wyjątku zawodzi natychmiast, co właśnie odróżnia te dwie przyczyny.

@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: c45f9102a2d6f1d42f3ae27100366687fd2c47ab057243d3b697c58d2c0b2c4f
+sourceSha256: dce416b588c9940d941f9b4eabc6e49d4957508af072266dd9bce10d5dea56f8
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -45,40 +45,27 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-**Trzy wartości nie mają domyślnych** i bez nich stos nie wystartuje. Każdy
-sekret generuj osobno: jeśli ten sam trafi w dwa miejsca, jeden wyciek
-kompromituje oba.
+**Dwie wartości nie mają domyślnych** i bez nich stos nie wystartuje. Każdą
+generuj osobno: jeśli ta sama trafi w dwa miejsca, jeden wyciek kompromituje
+oba.
 
 ```ini
 AJ_ADMIN_TOKEN=          # openssl rand -base64 36
 POSTGRES_PASSWORD=       # openssl rand -base64 36, inny
-RUNNER_WORK_DIR=         # BEZWZGLĘDNA ścieżka na hoście, np. /srv/algojudge/runner-work
 ```
 
-`RUNNER_WORK_DIR` musi być bezwzględna, bo Runner podaje ten napis demonowi
-Dockera, a **ścieżka, której demon nie potrafi otworzyć, staje się pustym
-katalogiem, nie błędem**. Każde zgłoszenie ocenia się wtedy na pustce i żaden
-test nie zawodzi w widoczny sposób. Właśnie dlatego `preflight.sh` odrzuca
-ścieżkę względną.
+**Trzeciej nie ma i nie ma też nic do założenia na dysku.** Do 2026-09-16 był
+nią `RUNNER_WORK_DIR`; dziś Runnery trzymają wszystko, co pobierają,
+przygotowują i nad czym pracują, w wolumenach Dockera. Demon zakłada je sam,
+z właścicielem root i prawami 0755, a dokładnie tego trzeba: Runner zapisuje
+jako root, a każdy kontener zadania montuje wolumen tylko do odczytu i czyta go
+jako uid **65534**.
 
-**Załóż ten katalog sam** przed pierwszym uruchomieniem albo pozwól utworzyć go
-Compose:
-
-```bash
-sudo mkdir -p /srv/algojudge/runner-work
-```
-
-Compose zakłada brakujący katalog montowany z hosta jako **root, z prawami
-0755** — i o to właśnie chodzi: Runner zapisuje tu jako root, a każdy kontener
-zadania montuje ten katalog tylko do odczytu i czyta go jako uid **65534**.
-Katalog ręcznie zamknięty przed innymi przechodzi próbę Runnera, a nie przechodzi
-próby zadania, i wtedy każde zgłoszenie kończy się komunikatem `Permission denied
-(os error 13)`. `preflight.sh` sprawdza obie połowy — zapis jako root i odczyt
-jako 65534 — i mówi, która zawiodła.
-
-*`chown 65532:65532` też zadziała i nie jest potrzebny — usługa Runnera działa
-jako root, żeby móc mierzyć. Psuje to dopiero katalog ręcznie zamknięty przed
-innymi.*
+Jeśli Docker na tym hoście jest starszy niż **Engine 26** (albo Podman 5),
+zajrzyj przed pierwszym uruchomieniem do
+[Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes):
+taka instalacja zostaje przy katalogach na hoście, a razem z nimi wraca
+`RUNNER_WORK_DIR`.
 
 Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
 
