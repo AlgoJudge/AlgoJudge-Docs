@@ -313,8 +313,13 @@ judged container is started with no log driver and its standard error goes
 nowhere, so without the shim there is neither an answer to compare nor a
 measurement to compare against — and the input, which arrives as a descriptor on
 a socket, has nothing to receive it. The Runner refuses such a run rather than
-reporting one that produced nothing, and it decides once per image: pull the
-image **and restart the Runner**.
+reporting one that produced nothing, and since 2026-09-16 it refuses to start at
+all rather than register with an image that cannot judge.
+
+What it decided about an image is filed under that **image's id**, not its name,
+so fetching a replacement is enough on its own — a running Runner takes it up.
+Restarting also works and is the simpler answer, because a Runner fetches its
+images at start.
 </Callout>
 
 

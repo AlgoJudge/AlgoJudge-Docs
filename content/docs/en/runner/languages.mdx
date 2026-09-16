@@ -114,14 +114,26 @@ The defaults, and the older `AJ_Sandbox__Image__Cpp` spelling that is still read
 are on [Configuration](/en/runner/configuration) — stated once, so that the two
 pages cannot drift apart.
 
-<Callout type="warn" title="The language images are pulled separately from the Runner, and a Runner without them judges nothing">
+<Callout type="warn" title="A Runner fetches the four images at start, and will not register without them">
 The Runner image contains no compiler. Every submission is built and run inside
-one of the four images above, and a Runner that cannot pull them starts, is
-approved, claims work, and fails every job it is given.
+one of the four images above, so at start the Runner fetches each one the
+operator named and proves it carries the measuring shim. **A Runner that cannot
+get all four exits instead of registering**, naming the `AJ_Sandbox__Image__*`
+setting it could not satisfy — so nothing is claimed that it would fail.
 
-The defaults are the tags a **development** stack builds locally. A deployment
-names all four explicitly and pins the same version as the Runner — that pairing
-is what the release was tested as.
+**Until 2026-09-16 it did the opposite**, and an installation could run for
+weeks that way: nothing on the judging path fetched anything, so a Runner
+started, was approved, claimed work and failed every job. If you are reading an
+older account of this, that is what it describes.
+
+A fetch that fails over a copy already on the host is a **warning**, not a
+refusal: the air-gapped installation and the private registry an anonymous pull
+cannot authenticate to both keep judging with what they have.
+
+The defaults are the tags a **development** stack builds locally, so a
+development Runner wants them built before it starts. A deployment names all
+four explicitly and pins the same version as the Runner — that pairing is what
+the release was tested as.
 </Callout>
 
 The compiler version is a capability the Runner **reports**, which is why the

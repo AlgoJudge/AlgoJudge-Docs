@@ -61,9 +61,13 @@ had just pulled sat unused.
 `lang-gcc`, `lang-clang`, `lang-python` and `lang-pypy` are not services, so
 `docker compose pull` never fetches them and no service comparison can see them.
 The update pulls all four by name and compares them against what
-`state/current.lock` recorded. A new one counts as "something new", because a
-Runner probes each image once and remembers — it picks a replacement up only when
-its container is recreated.
+`state/current.lock` recorded, and a new one counts as "something new".
+
+A Runner takes a replacement up **without being recreated**: what it remembers
+about an image is filed under the image's id, and a fetched image has a
+different id. It is recreated here anyway, and that is worth keeping for its own
+reason — a Runner fetches its images at start, so a restart is also the thing
+that gets them.
 </Callout>
 
 ## Versions are tags; what is running is a digest

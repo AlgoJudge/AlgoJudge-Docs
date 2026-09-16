@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: bfb51ff4752bf1b21367e989aadf031dd27ba45393bc89e3f99a3215657df24f
+sourceSha256: 78bdb16a1676afe9e8014e9b8c438a116abdb0f3bbbfaf923f317bee17a40036
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -63,9 +63,13 @@ obraz leżałby nieużywany.
 `lang-gcc`, `lang-clang`, `lang-python` i `lang-pypy` nie są usługami, więc
 `docker compose pull` nigdy ich nie pobiera i żadne porównanie usług ich nie
 widzi. Aktualizacja pobiera wszystkie cztery po nazwie i zestawia je z tym, co
-zapisał `state/current.lock`. Nowy obraz liczy się jako „coś nowego”, bo Runner
-bada każdy obraz raz i to zapamiętuje — podmieniony zauważy dopiero wtedy, gdy
-jego kontener powstanie na nowo.
+zapisał `state/current.lock`; nowy obraz liczy się jako „coś nowego”.
+
+Runner przyjmuje podmieniony obraz **bez odtwarzania kontenera**: to, co o nim
+pamięta, jest zapisane pod **identyfikatorem** obrazu, a pobrany obraz ma inny
+identyfikator. Kontener i tak tu powstaje na nowo, i to się przydaje z innego
+powodu — Runner pobiera swoje obrazy przy starcie, więc restart jest też tym,
+co je przynosi.
 </Callout>
 
 ## Wersje to tagi; to, co działa, to digest
