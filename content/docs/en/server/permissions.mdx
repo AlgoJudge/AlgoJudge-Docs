@@ -95,6 +95,47 @@ The Server's "which activities is this permission held in" query returns
 **null** for *not restricted* and a list for *these activities*. An empty list
 is a third answer and means none.
 
+### A panel list asked without an activity narrows instead of refusing
+
+**An activity named in a query is a question at that scope**, and the key is
+required there — no key in that activity, no list. **No activity is a different
+question**, *everything I may read*, and the answer to that one is a narrowing.
+
+So a manager whose only grant is on one course opens the panel's unfiltered
+submissions list and is shown that course. Asking at system scope instead
+refuses them, because a grant on an activity contributes nothing to a question
+asked with no activity in it — and that is every manager an activity's grant
+editor makes.
+
+**Holding the key nowhere is still a refusal.** An empty page would tell
+somebody who may not look that there is nothing to see, which is a different
+sentence and the wrong one.
+
+Four of the panel's lists resolve their scope this way — submissions
+(`submission:read:all`), questions (`question:read:all`), grants
+(`grant:read:all`) and printouts (`printout:manage`). The rule lives in one
+place rather than in each list: a security rule written four times is a security
+rule that drifts three times.
+
+An activity that withheld the key from itself drops out of the narrowing. An
+activity grant carrying `OverrideSystem` is the whole answer inside its
+activity, so one that does not carry the permission withholds it however widely
+it is held elsewhere — including from somebody who holds it system-wide.
+
+<Callout type="info" title="Some surfaces ask only *anywhere*">
+The problem library is the installation's rather than one activity's and is
+still a manager's work, so it answers to `problem:read:own` held **anywhere**
+and then shows what that person owns, what the installation shares, and what is
+shared with them. `problem:create`, `problem:update`, `problem:archive`,
+`problem:share` and the enrolment picker's `user:read:all` ask the same way.
+Managing one activity is what admits somebody to them; asked at system scope
+they refuse every manager whose grant is on an activity.
+
+Listing the installation's accounts and reading somebody's sessions are
+administration and still ask at system scope. `/manager/users` is not a
+manager's screen.
+</Callout>
+
 ## The three shipped roles
 
 A grant **points at** a role. Editing one changes what everybody holding it may
@@ -135,7 +176,7 @@ question:read:own    question:create        ranking:read         printout:reques
 This list is load-bearing beyond the grant editor: it is what the staff test
 measures against, and therefore what decides who appears in a ranking.
 
-### `manager` — 36 keys
+### `manager` — 37 keys
 
 Everything a participant has, plus:
 
@@ -150,15 +191,16 @@ question:read:all          question:answer       question:publish
 announcement:create
 printout:manage
 ranking:read:unfrozen      ranking:unfreeze
-user:create:temporary
+user:read:all              user:create:temporary
 grant:read:all             grant:update
 role:read                  role:manage
 ```
 
-The other eighteen are deliberately **not** included: `activity:create`,
+The other seventeen are deliberately **not** included: `activity:create`,
 `activity:delete`, `trial:run`, `problem:read:all`, `problem:delete`,
-`problem:import:external`, every `user:` key beyond temporary accounts, the four
-`runner:` keys, `instance:update`, `provider:manage` and `system:administrator`.
+`problem:import:external`, the `user:` keys that create and edit accounts, the
+four `runner:` keys, `instance:update`, `provider:manage` and
+`system:administrator`.
 A manager runs an activity; they do not run the installation it lives in.
 
 `role:read` and `role:manage` are in the set, and they are scoped: held in an
@@ -326,7 +368,7 @@ Requesting is refused anyway unless the activity has the module switched on.
 
 | Permission | Scope | Means |
 |---|---|---|
-| `user:read:all` | global | see the account list |
+| `user:read:all` | both | name a person — search accounts, and see the account list at system scope |
 | `user:create` | global | create an account |
 | `user:update` | global | edit an account |
 | `user:block` | global | stop an account signing in |

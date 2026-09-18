@@ -68,6 +68,68 @@ The match is on the whole remaining segment, trailing slash normalised: a suffix
 test would let `POST /identity/register/` through the guard and refuse
 `/identity/manage/2fa/register`, which this rule has nothing to say about.
 
+## Closed unless somebody opened it
+
+**Authorisation here is opt-out, not opt-in.** A fallback policy requires an
+authenticated user of every endpoint, so a controller carrying no attribute at
+all is refused before it runs. Left to the framework's own default the reverse
+is true — an endpoint that says nothing is anonymous — and a route added without
+`[Authorize]` would be a hole nothing reports.
+
+That is a floor, not the rule. What a caller may *do* is the [permission
+model](/en/server/permissions), and several open endpoints authorise themselves
+in the handler because a policy cannot express what they check: a file is
+readable if any reference to it is, a Runner proves a key it registered, a
+platform arrives with a signed launch and no account yet.
+
+### The open surface is named one address at a time
+
+**49 addresses answer without a session.** Each is a decision somebody wrote
+down rather than an omission:
+
+| Group | Addresses | Why it is open |
+|---|---|---|
+| Public | 4 | `/health`, `/instance`, and a file plus its metadata. A probe that needs a session is not a probe, the sign-in screen has to draw itself before anybody is signed in, and the terms of service the registration form links are a file |
+| Signing in | 10 | the act of signing in is what starts a session, and a federated one leaves and comes back. The provider's deletion back channel is here too, authorised by the shared secret the provider was registered with |
+| [Runner](/en/server/concepts/runner) | 18 | a Runner is a machine with a key, not a person with a session |
+| [LTI](/en/server/lti) | 5 | a platform calls these before there is anybody to be signed in as, and each is authorised by what the platform signed |
+| The operator's surface | 11 | not on the network at all: loopback **and** the token, as above. Anonymous here means there is no account to sign in as, which is the situation it exists to rescue |
+| The event socket | 1 | the handshake refuses an anonymous caller itself, with the `401` the Client is written to expect |
+
+`EndpointCensusTests` pins that list from both ends: it fails on an address that
+became open without being named, and on a name that is no longer open. A second
+test refuses any endpoint stating neither attribute, so the census reads what
+somebody chose rather than what happened to come out.
+
+`/robots.txt` is answered by middleware in front of routing — a robots file is
+only ever read at the root of a host — so it is not an endpoint and not in that
+census.
+
+### `MapIdentityApi` is opened one endpoint at a time
+
+The helper maps `manage/*` with its own authorisation and the rest with none.
+Opening the group wholesale would apply *after* each endpoint's own metadata and
+win, and `manage/2fa` would be reachable by anybody. The attribute is added only
+where the framework left none, which is exactly the set that was already
+anonymous.
+
+What may be reached at all is the surface rules above; this decides only who has
+to be signed in first.
+
+### An address that matches nothing is a 404, not a 401
+
+The fallback policy is applied to a request with **no endpoint** as well, so left
+alone every mistyped path would answer `Unauthorized`. Two things that costs:
+this Server's error contract says `not_found`, and the Client reads a `401` as
+*your session ended* and sends the reader to the sign-in screen — so a typo in an
+address would look like being signed out.
+
+<Callout type="warn" title="Switch on 404 `not_found` for an address that is not there">
+A request that matched no endpoint is answered `404` with `code: "not_found"`, in
+front of authorisation, because there is nothing there to authorise. A `401` from
+this Server means a session, not a spelling.
+</Callout>
+
 ## Errors
 
 Every failure is `application/problem+json` (RFC 9457), including the ones
@@ -131,6 +193,19 @@ wants. **To anything not entitled to be here, this surface does not exist.**
 An absent, empty or whitespace token setting closes the whole group. There is no
 "no token means no check" reading: the failure shuts the door rather than
 opening it.
+
+**So does the development token, everywhere but Development.** The value the
+development stack ships, `admin-token-development-only`, is published — it is in
+a compose file anybody can read — so outside a Development environment the
+Server treats it as no token at all and closes the group. The start-up log says
+which of the two it was:
+
+```text
+AJ_Admin__Token is the well-known development token, so /admin is closed.
+```
+
+An installation that copied the development value has a closed surface and a
+line naming the reason, rather than an open one nobody noticed.
 
 Because the surface is unreachable from the network, the way an operator uses it
 is `docker exec` into the Server's container — which is what `aj-admin` does.

@@ -2,7 +2,7 @@
 title: Zarządzanie
 description: Trzynaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
 source: en/client/manager/index.mdx
-sourceSha256: 40d361929d83158e944af34a04cafaf5d0f0b6a6d030d6652eba809a36e0bb8e
+sourceSha256: 7f6beb4f37227be87674e21015fef23332bffd3a7c7c7cff3e96af62f11ce869
 ---
 
 Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
@@ -42,6 +42,12 @@ Obszar zobaczysz, gdy masz jego uprawnienie **gdziekolwiek** — wystarczy w
 jednej aktywności. Kto prowadzi jeden kurs, i tak potrzebuje panelu, w którym
 ten kurs się znajduje.
 
+**Jedynym wyjątkiem są Użytkownicy** — ten obszar pyta o swoje uprawnienie na
+poziomie całej instalacji. Jego uprawnienie, `user:read:all`, jest w dostarczanej
+roli `manager`, żeby wyszukiwarki przy zapisach i uprawnieniach miały kogo
+proponować; liczone jak pozostałe, kafelek pokazałby się każdemu prowadzącemu, a
+lista za nim odmówiłaby.
+
 Same ekrany są surowsze. Wewnątrz aktywności możesz nadać to, co masz *w tej
 aktywności*, a to nie jest ten sam zestaw co twoje prawa w całej instalacji.
 Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
@@ -51,9 +57,11 @@ Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
 Sześć z trzynastu obszarów dotyczy instalacji, a nie pojedynczej aktywności:
 Użytkownicy, Runnery, Instancja, Logowania zewnętrzne, Platformy LTI i Zasoby
 zewnętrzne. Razem potrzebują czterech uprawnień — `user:read:all`,
-`runner:read`, `instance:update` i `provider:manage` — i **żadnego z tych
-czterech nie ma w dostarczanej roli `manager`**. Prowadzenie aktywności to co
-innego niż prowadzenie instalacji, w której ta aktywność działa.
+`runner:read`, `instance:update` i `provider:manage`. **Trzech z tych czterech
+nie ma w dostarczanej roli `manager`**, a `user:read:all` jest w niej tylko po
+to, żeby prowadzący mógł wskazać osobę — sam obszar Użytkownicy pyta o nie na
+poziomie instalacji. Prowadzenie aktywności to co innego niż prowadzenie
+instalacji, w której ta aktywność działa.
 
 **Role były siódmym takim obszarem i już nie są.** `role:manage` ma zakres:
 trzymane w nadaniu na aktywność pisze role tej aktywności i nic więcej, więc
@@ -68,7 +76,7 @@ prowadzący nie wchodzą do jej rankingu.
 
 ## Aktualizacje i ich wyłączanie
 
-Każdy ekran panelu ma u góry te same dwie kontrolki: przełącznik z napisem
+Każdy ekran panelu ma u góry te same dwie kontrolki: przycisk z napisem
 **Aktualizacje włączone** albo **Aktualizacje wyłączone**, oraz **Odśwież**.
 
 Zostawiony w spokoju panel sam się aktualizuje: nadchodzące pytanie, ocenione

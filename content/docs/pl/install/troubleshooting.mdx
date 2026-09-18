@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 980eef0abab145b007b89a1a0429cf383f0c1e944646e32c7a1f95fb2a6a5d7a
+sourceSha256: 7d742f990ba089f0440d9ea915234a5e3408e95ff9437514bd0cfc92e71080e7
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -81,6 +81,17 @@ docker compose exec -T server aj-admin status
 
 Jeśli odpowie `AJ_Admin__Token is not set in this container`, token był pusty,
 gdy kontener startował. Ustaw go w `.env` i odtwórz Server.
+
+**Drugą przyczynę zamknięcia tej powierzchni widać w innym komunikacie.** Server
+wypisuje go w logu przy starcie:
+
+```text
+AJ_Admin__Token is the well-known development token, so /admin is closed.
+```
+
+To instalacja z wartością, którą dostarcza stos deweloperski,
+`admin-token-development-only` — jest opublikowana, więc nie jest żadnym tokenem.
+Wpisz do `.env` własny sekret i odtwórz Server.
 
 ## Nikt nie może administrować instalacją
 
@@ -185,6 +196,53 @@ sprzed tej zmiany otworzyłby gniazdo tak, jakby było plikiem, i zgłosiłby
 przebieg bez pomiaru. Runner woli odmówić, bo to zdanie, na które operator może
 zareagować.
 
+## Test kończy się na `nothing opened the run's output channel`
+
+```text
+test 03: nothing opened the run's output channel within 30s
+```
+
+**Kontener, który miał ocenić ten test, nie wystartował.** Runner czeka
+trzydzieści sekund, aż ktokolwiek otworzy wyjście przebiegu, i wtedy mówi o tym
+wprost, zamiast zgłosić pustą odpowiedź — a ta byłaby błędnym werdyktem
+przypisanym zgłoszeniu, które nigdy nie ruszyło. To awaria infrastruktury, więc
+zlecenie wraca do kolejki, zamiast upaść, aż wyczerpią się jego doręczenia.
+
+Własny komunikat demona o kontenerze, którego nie dało się uruchomić, stoi w logu
+Runnera linię wyżej i zwykle nazywa przyczynę wprost:
+
+```bash
+docker compose logs runner-1 | tail -40
+```
+
+Trzy przyczyny, od najczęstszej:
+
+1. **Obraz językowy nie startuje na tym hoście.** `docker images` pokazuje, czy
+   wszystkie cztery są na miejscu; kontener, który ginie na `OCI runtime create
+   failed`, nie otworzy niczego.
+2. **Katalog roboczy nie jest tym, który widzi demon** — przyczyna możliwa
+   wyłącznie tam, gdzie w użyciu są katalogi na hoście. Kanały przebiegu
+   powstają w katalogu roboczym zlecenia i są montowane do kontenera, a ścieżka,
+   której demon nie potrafi otworzyć, daje **pusty katalog**, a nie błąd — więc
+   w środku nie ma potoku, który shim mógłby otworzyć. `RUNNER_WORK_DIR` musi
+   być bezwzględny i otwieralny przez demona, nie tylko przez Twoją powłokę.
+3. **Katalog roboczy nie potrafi trzymać nazwanego potoku.** Kanał to FIFO
+   i gniazdo uniksowe, a nie bajty, więc system plików, który nie tworzy ani
+   jednego, ani drugiego, kończy się tutaj. Zwykłą drogą do tego jest wpis
+   `tmpfs:` przy usłudze runnera: należy on do przestrzeni montowań samego
+   Runnera, a demon robi obok własny pusty katalog.
+
+<Callout type="warn" title="Na Dockerze Desktop pamięć podręczna nie ma dobrego miejsca pod /var">
+`/var` w jego maszynie wirtualnej jest zamontowany jako `noexec`, więc checker
+zbudowany do pamięci podręcznej w tym miejscu nie da się uruchomić, a jego
+kontener ginie przy starcie — i to jest jedna z dróg, którymi test trafia tutaj.
+Trzymaj pamięć podręczną w nazwanym wolumenie, bo to właśnie dostarcza ten stos.
+</Callout>
+
+**Checker albo interactor, którego własnego kanału nikt nie otworzył, czyta się
+inaczej**: wraca jako **zepsuty checker**, a nie z powyższym zdaniem. Przyczyna
+jest ta sama, a zaczynać należy od wpisu poniżej.
+
 ## Checker zawodzi na każdym zgłoszeniu albo ocenia wobec pustki
 
 Zgłoszenia do zadania, którego paczka niesie checker, wracają jako awarie
@@ -262,7 +320,20 @@ ponawia. Pobieraj oba obrazy z tego samego wydania, zamiast pozwalać ruchomym
 tagom się rozjechać — dlaczego muszą chodzić razem, mówi [Aktualizacja i
 wycofanie](/pl/install/update).
 
-**Nazwane ustawienie odpytywania albo dzierżawy** to trzecia przyczyna: Runner
+**`AJ_Runner__TestsAtOnce` w treści odmowy** należy do Runnera oceniającego: nie
+wystartuje z większą liczbą torów, niż jego zbiór ma procesorów. Kryją się tu dwie
+pułapki.
+
+**Szerokość to jedna wartość dla wszystkich Runnerów.** `RUNNER_TESTS_AT_ONCE`
+trafia do wszystkich czterech usług z tej samej kotwicy, więc jeden wąski
+`RUNNER_2_CPUSET` to pętla na `runner-2`, podczas gdy `runner-1` ocenia bez
+zarzutu — czytaj log tego, który się zapętlił, a nie tego, który działa.
+
+**Runner bez cpusetu czyta całą maszynę.** Zostawienie pustego zbioru nie
+rozluźnia sprawdzenia: szerokość cztery na maszynie o dwóch procesorach zostanie
+odrzucona, czy zbiór jest wąski, czy go nie ma.
+
+**Nazwane ustawienie odpytywania albo dzierżawy** to czwarta przyczyna: Runner
 sprawdza swoje odstępy nawzajem, zanim cokolwiek zrobi. Żadnej z nich nie da się
 osiągnąć wartościami, które dostarcza ten stos — biorą się z własnego `.env`.
 `AJ_Poll__WaitSeconds` powyżej 300 jest odrzucane, bo 300 to własny sufit

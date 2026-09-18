@@ -85,7 +85,7 @@ front of it, and every visitor is recorded as arriving from that proxy.
 | `RUNNER_WORK_DIR` | empty | **leave it empty.** Each Runner's scratch is a volume of its own, `algojudge_runner-N-work`, and never one between two: an expired lease can be re-issued while the first Runner is still working, so a shared scratch would be one Runner deleting the other's work. Set this **only** with the directories overlay described below, and then as an **absolute host path** |
 | `RUNNER_CACHE_DIR` | empty | **leave it empty.** Every Runner on the host shares one volume, `algojudge_runner-cache`: each package is downloaded, unpacked and its checker built there once between them, under a lock, and each Runner bounds it at 10 GiB from inside. `docker compose down -v` removes it with everything else, and the next submission of every package downloads and builds again. Set this only with the directories overlay, and then as an **absolute host path** kept **out of `RUNNER_WORK_DIR`**, whose contents the scheduled clean-up removes by age |
 | `RUNNER_NAME_PREFIX` | `runner` | what each of them registers as: this with `-1` to `-4` after it. **A second host running Runners needs a different prefix**, or the panel shows two rows called the same thing |
-| `RUNNER_1_CPUSET` … `RUNNER_4_CPUSET` | empty | which processors each Runner may use. Empty lets the host's scheduler place every job. The division worth making is **one Runner per group of cores, and one lane per core in the group** — `RUNNER_TESTS_AT_ONCE` below says how many lanes. A processor apiece is the floor the Runner refuses below; a core apiece is what a lane wants, and the difference was measured at 196 ms of processor time a test against 318 ms, enough to put correct solutions over their limit. The Runner reads the topology at start and warns, once per lane that got a thread rather than a core. The set is cut into lanes in the order it is written, so read the machine rather than copying an example: `thread_siblings_list` says `0-1` on one host and `0,8` on another. `RUNNER_3_CPUSET` and `RUNNER_4_CPUSET` belong to the two Runners `runner-extra` starts. See [What the host needs](/en/install/requirements) |
+| `RUNNER_1_CPUSET` … `RUNNER_4_CPUSET` | `0,1,2,3` and `4,5,6,7`; 3 and 4 empty | which processors each Runner may use. **`.env.example` pins the first two**, so an installation that copies it is pinned to processors 0–7 — read your own machine before keeping them, because `RUNNER_2_CPUSET=4,5,6,7` names processors a host with fewer than eight does not have. Empty lets the host's scheduler place every job. The division worth making is **one Runner per group of cores, and one lane per core in the group** — `RUNNER_TESTS_AT_ONCE` below says how many lanes. A processor apiece is the floor the Runner refuses below; a core apiece is what a lane wants, and the difference was measured at 196 ms of processor time a test against 318 ms, enough to put correct solutions over their limit. The Runner reads the topology at start and warns, once per lane that got a thread rather than a core. The set is cut into lanes in the order it is written, so read the machine rather than copying an example: `thread_siblings_list` says `0-1` on one host and `0,8` on another. `RUNNER_3_CPUSET` and `RUNNER_4_CPUSET` belong to the two Runners `runner-extra` starts. See [What the host needs](/en/install/requirements) |
 | `RUNNER_TESTS_AT_ONCE` | `2` | how many of **one submission's** tests each Runner judges at the same time, one lane each. It buys latency on a single submission rather than throughput: the participant waits for the slowest test instead of for the sum of them. **A Runner given more lanes than its cpuset has processors refuses to start**, naming both — a time limit is processor time, and two judged runs sharing a processor spend more of it for the same work, so correct solutions come back too slow with nothing in the verdict saying why. A lane also costs memory: four of them on 256 MiB problems is about 1.3 GiB per Runner before inputs. `.env.example` ships `2`, matching the two Runners of four processors the default cpusets describe; the image's own default is `1` |
 
 ## Where the Runners keep their bytes
@@ -136,13 +136,14 @@ judge](/en/install/external-runner).
 | `EXTERNAL_PROBLEM_TYPES` | empty | empty declares the archive's own type. A typo here is silence, not an error |
 | `EXTERNAL_RUNNER_TAGS` | empty | pools, read at the first registration only |
 | `EXTERNAL_RUNNER_LOG` | `info` | becomes `RUST_LOG` |
-| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | twice the sandboxing Runner's, because it hands back up to twenty pending submissions at one call each |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | twice the sandboxing Runner's, because it hands its whole pending pool back — up to `AJ_External__MaxPending`, 100 by default — in a single call |
 
-Its lease and its polling intervals are deliberately not offered: they check one
-another at startup, the image's defaults satisfy all of it, and the well-meant
-change — polling somebody else's service more gently — is the one that breaks it.
-A lease that could expire between two renewals is a submission the archive
-receives twice.
+Its lease and its polling intervals are deliberately not offered: the image's
+defaults are sound and a few of the values still check one another at startup.
+
+**Polling more gently is safe.** The leases are held on a timer of their own — a
+quarter of the lease the Server granted — so asking somebody else's archive less
+often does not hold the leases less often.
 
 ## Backups
 

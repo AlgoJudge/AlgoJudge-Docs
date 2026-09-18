@@ -94,6 +94,7 @@ shows an error first.
 | `submissionStateChanged` | sent as a job is claimed, finishes, or is cancelled |
 | `rankingChanged` | |
 | `questionAnswered`, `questionPublished`, `announcementPublished` | |
+| `printoutStateChanged` | your own printout request was taken, handed back or resolved |
 
 `submissionStateChanged` carries the submission whole, as the **participant's**
 projection: rescaled score, no per-test document, nobody else's submission.
@@ -113,11 +114,11 @@ refetches.
 | `printoutChanged` | somebody asked for a page, or a request was taken, handed back or resolved |
 | `userChanged`, `runnerChanged`, `instanceChanged` | |
 
-`printoutChanged` has no participant counterpart. The person who asked learns
-that their page was printed when the paper arrives, and an event saying so would
-tell them nothing they are not about to be told by a human being. It exists for
-the other reason: two people working one printer queue must see each other take
-a row, or they print the same page twice.
+`printoutChanged` goes only to `printout:manage`. The person who asked hears
+about their own request through **`printoutStateChanged`** instead, so the two
+events carry the same news to two audiences. `printoutChanged` exists for the
+queue: two people working one printer must see each other take a row, or they
+print the same page twice.
 
 <Callout type="warn" title="`managerSeriesChanged` is not `seriesChanged`">
 They carry different payloads: the participant's requires `series` and `change`,

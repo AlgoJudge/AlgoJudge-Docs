@@ -2,7 +2,7 @@
 title: Aktywności
 description: Zawody, kurs albo zbiór treningowy i cztery zakładki, w których się je buduje.
 source: en/client/manager/activities.mdx
-sourceSha256: 8d0c13d109fcfa97459e023070d73eea759caedc6ee075dfdb9b848980a9c912
+sourceSha256: 1f41cdd45496f2561c029adf0a60f963ce6461548f1e5b64bacc064226785b40
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -29,6 +29,25 @@ flowchart TD
 `} />
 
 ## Tworzenie
+
+**Tworzenie aktywności należy do instalacji, a nie do żadnej aktywności.** *Nowa
+aktywność*, *Importuj z pliku* i *Skopiuj na nową edycję* wymagają uprawnienia
+`activity:create`, a Server sprawdza je **w zakresie całej instalacji**: nadanie
+w pojedynczej aktywności nie wystarczy, a dostarczana rola `manager` tego
+uprawnienia nie ma. Kto je ma, widzi na liście aktywności wszystkie trzy
+przyciski; kto nie ma go nigdzie, nie widzi żadnego, bo panel nie proponuje
+przycisku, który odpowiedziałby 403.
+
+Sama lista zostaje w obu przypadkach. Jest zawężona do aktywności, którymi
+zarządzasz, i po to właśnie jest, a do prowadzenia ich służą `activity:update` i
+`activity:archive`. Kto aktywność założy, ten od razu jest w środku, bo przy
+zakładaniu dostaje w niej nadanie prowadzącego — zobacz
+[Zapisy](/pl/client/manager/enrolment).
+
+Archiwum wczytuje też [biblioteka zadań](/pl/client/manager/problems), a tam
+`activity:create` jest potrzebne dopiero wtedy, gdy **paczka zawiera
+aktywność**. Okno mówi to po wczytaniu pliku i zanim cokolwiek zatwierdzisz,
+zamiast zapisać zadania i dopiero potem odmówić aktywności, dla której były.
 
 **Nowa aktywność** pyta o trzy pola i o nic więcej:
 

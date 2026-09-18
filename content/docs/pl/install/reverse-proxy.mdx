@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: 7c1113668cddcfaf4d86cb974a84373a8d7d5e47d34772b2bfbdd0240d6b8aab
+sourceSha256: 56d7ceeb463cefcfecd9621c327e4608fcc9c690d1ea1d6b9dc7602fdb393b3a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -159,6 +159,59 @@ zepsułby aplikację, albo byłby `unsafe-inline`, czyli nagłówkiem, który ni
 mówi. Zamknięcie tego należy do Clienta.
 </Callout>
 
+## Co sprawia, że Client daje się zainstalować
+
+Client instaluje się jak aplikacja: przeglądarka, która dostanie manifest,
+zapamiętuje ikonę, otwiera aplikację we własnym oknie i rysuje ją z kopii
+zapisanej na urządzeniu, gdy sieci nie ma. Co z tego ma uczestnik, opisuje
+[jego własna strona](/pl/client/participant). O tym, czy dostanie to w ogóle,
+decydują trzy nagłówki odpowiedzi, a **obraz Clienta wysyła wszystkie trzy** —
+więc za proxy, które przepuszcza kontener, nie ma nic do dodania. Nie buforuj
+przed nim i nie podmieniaj jego `Cache-Control`.
+
+**TLS nie jest tu opcjonalny.** Service worker rejestruje się wyłącznie w
+bezpiecznym kontekście, więc instalacja wystawiona po zwykłym `http://` to
+instalacja bez kopii na urządzeniu i bez propozycji instalacji. Nic tego nie
+zgłosi: aplikacja działa, tylko nigdy nie da się jej zainstalować.
+
+Jeżeli zbudowane pliki serwujesz sam, zamiast kierować ruch na kontener, tak to
+wygląda w wersji dostarczanej.
+
+```nginx
+location @app {
+    add_header Cache-Control "no-store";
+    try_files /index.html =404;
+}
+
+location = /sw.js {
+    add_header Cache-Control "no-cache";
+}
+
+location = /manifest.webmanifest {
+    types { }
+    default_type application/manifest+json;
+    add_header Cache-Control "no-cache";
+}
+```
+
+`@app` to miejsce, w które trafia `try_files $uri $uri/ @app`, więc `no-store`
+obejmuje **każdą nawigację**, a nie tylko dosłowne `GET /index.html`. To
+nawigacja niesie bieżące skróty zasobów i adres API, który kontener wpisał przy
+starcie, więc ta z bufora podaje przeglądarce poprzednie wydanie i nieaktualny
+adres.
+
+`types { }` opróżnia mapę typów w tej jednej lokalizacji, żeby decydował
+`default_type`. To, czy dana wersja nginxa zna `.webmanifest`, bywa różne, a
+manifest podany jako `application/octet-stream` przeglądarka pomija — po cichu,
+przy działającej aplikacji, która przestała być instalowalna.
+
+<Callout type="warn" title="Zbuforowany `/sw.js` przeżyje poprawkę">
+Worker jest tym jedynym plikiem, który decyduje o buforowaniu całej reszty, więc
+przeglądarka z jego kopią trzyma się starych reguł tak długo, jak długo tę kopię
+ma, a do niej nie sięgniesz. `no-cache` na tej jednej ścieżce jest tym, co
+pozwala pomyłkę naprawić.
+</Callout>
+
 ## Dwa różne originy
 
 Client i Server mogą też stać na różnych originach i to działa. Wtedy
@@ -234,7 +287,10 @@ services:
 Jeden indeks na origin — `AJ_Cors__AllowedOrigins=a,b` nie wiąże **żadnego**, po
 cichu. Znacznik `<img>` nie potrzebuje CORS w ogóle, więc rysunek może się
 narysować, gdy wszystkie wywołania API są odrzucane; objawem brakującego originu
-jest ekran offline, a nie brakujący obrazek.
+jest strona przerwy Clienta z napisem *Server nie odpowiada*, a nie brakujący
+obrazek.
+
+
 
 ## Certyfikaty
 

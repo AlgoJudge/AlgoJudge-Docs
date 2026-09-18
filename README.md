@@ -100,11 +100,10 @@ old documentation is the only documentation that works for an existing
 installation. Archived versions are served `noindex` with a banner naming the
 current one, and **no `canonical`** — an older page is not the same page.
 
-**There are no version directories yet**, because no product repository carries
-a `v*` tag. Today each section's content lives at its version-less path, which
-*is* the page. On the day of the first release, `npm run snapshot` copies a
-section to `v0.1/` and the version-less path becomes a 302 to the newest. There
-is **no backfill**: a version directory is created on release day or not at all.
+**Five sections carry a `v0.1/` directory.** `npm run snapshot` copied each on
+its repository's release day, and the version-less path is now a 302 to the
+newest version rather than a page. There is **no backfill**: a version directory
+is created on release day or not at all.
 
 A snapshot writes three things and **all three are committed**: the copied
 pages, `versions.json` and `deploy/redirects.conf`, which the image's nginx

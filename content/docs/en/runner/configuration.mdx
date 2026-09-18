@@ -168,6 +168,24 @@ that problem rather than per submission, under a lock several Runners sharing
 the directory can all see. The ceiling counts all three, so the same number of
 bytes holds fewer packages than it would have held archives.
 
+**The cache has to be on a filesystem that supports `flock` and an atomic
+rename.** That is what "prepared once" rests on. Before a Runner unpacks
+anything it takes an `flock` on a file under the cache's own `locks/`, and it
+publishes the result by renaming a directory into place — so several Runners
+sharing the cache prepare one package between them instead of all preparing it
+into the same directory.
+
+Every ordinary filesystem does both. A named volume does, and so does a Docker
+Desktop bind of a Windows directory — measured 2026-09-15. The shipped default
+is a named volume, so this is a warning for a cache pointed somewhere else by
+hand: a network mount, or anything exotic.
+
+**Nothing tests it at start**, and the two ways it goes wrong are not alike. A
+filesystem that refuses the lock fails the preparation by name, at the first
+submission to a problem. One that grants the lock only on the host that took it
+grants it to two Runners at once, and both then unpack into one entry believing
+they are alone — no message, and a package assembled out of two.
+
 **A volume is named, a directory is resolved, and the Runner needs exactly one
 of the two.** A judge's container is given the unpacked package and the program
 built from it, and the **daemon** is what has to reach them. Name a volume in

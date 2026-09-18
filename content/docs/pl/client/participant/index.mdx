@@ -2,7 +2,7 @@
 title: Dla uczestnika
 description: Jak się zalogować, wejść do aktywności, wysłać rozwiązanie i przeczytać, co wróciło.
 source: en/client/participant/index.mdx
-sourceSha256: 7beb6104093cc10b204187e72b93b11af6d84401d2c4cb26010479d4d57cb677
+sourceSha256: 80ff741975a74d12be4d6c53244c497a05ff52fa20438cd037703c3aa3907a73
 ---
 
 Jesteś tu po to, żeby wziąć udział w zawodach albo w zajęciach, a nie żeby je
@@ -35,6 +35,51 @@ wraca.
 Wszystko, co robisz, dzieje się wewnątrz jednej aktywności. Nawigacja po lewej
 zmienia się, gdy do jakiejś wejdziesz, a to, co w niej znajdziesz, zależy od
 tego, co włączył organizator.
+
+## AlgoJudge na Twoim urządzeniu
+
+**AlgoJudge da się zainstalować.** Jeżeli przeglądarka to proponuje —
+*Zainstaluj* na komputerze, *Dodaj do ekranu głównego* w menu udostępniania na
+telefonie — dostajesz ikonę, która otwiera aplikację we własnym oknie, bez kart
+i bez paska adresu. To ta sama instalacja pod tym samym adresem; zmienia się
+tylko okno wokół niej.
+
+**Na ikonie jest napis AlgoJudge, a nie nazwa Twojej uczelni ani zawodów.**
+Nazwa instalacji, jej logo i kolory przychodzą z Servera dopiero wtedy, gdy
+strona zaczyna się już rysować, więc w chwili zapisywania skrótu przeglądarka
+nie zna jeszcze żadnego z nich. Tytuł karty idzie za instalacją; skrót nie może.
+Jeżeli przeglądarka pozwala poprawić nazwę przy dodawaniu, to jest miejsce, w
+którym odróżnisz dwie instalacje.
+
+**Logowanie przez uczelnię dzieje się w zainstalowanym oknie.** Zainstalowana
+aplikacja obejmuje cały adres, więc wyjście do dostawcy tożsamości i powrót
+zostają w tym oknie, zamiast otwierać przeglądarkę obok. Zobacz
+[Logowanie](/pl/client/participant/signing-in).
+
+**Otwiera się bez sieci i sama mówi, co się dzieje.** Aplikacja trzyma swoją
+kopię na urządzeniu, więc okno otworzy się i w pociągu, i w piwnicy: zobaczysz
+własny ekran AlgoJudge *To urządzenie jest offline*, a nie stronę błędu
+przeglądarki. Nic, co wymaga Servera, nie zadziała do powrotu połączenia — ani
+treść zadania, ani wysłanie zgłoszenia, ani ranking — a ekran czeka i sam wraca
+do aplikacji, gdy połączenie wróci.
+
+Ten ekran ma jeszcze dwie postacie i rozpoznasz je po treści. *Trwa przerwa
+techniczna* znaczy, że ktoś pracuje nad instalacją, a *Server nie odpowiada* —
+że nie da się jej stąd osiągnąć. W żadnym z tych trzech przypadków nic z tego,
+co już wysłałeś, nie przepada.
+
+**Aplikacja się nie starzeje.** Przy każdym otwarciu z działającym połączeniem
+bierze z instalacji bieżącą wersję; kopia na urządzeniu odpowiada tylko wtedy,
+gdy sieci nie ma.
+
+**Jeżeli i tej kopii nie ma** — pierwsze wejście zrobione bez sieci albo
+przeglądarka, która wyczyściła dane — pod adresem odpowie mała strona z napisem
+*Brak połączenia*, po polsku i po angielsku naraz, bo nic na niej nie wie, który
+język wybrałeś.
+
+**Gdy okno jest zamknięte, nic do Ciebie nie dociera.** Zainstalowana aplikacja
+nie wysyła powiadomień systemowych. Werdykt pojawia się na otwartym ekranie i
+czeka na Ciebie, gdy wrócisz.
 
 ## Dwie rzeczy, które warto wiedzieć przed startem
 

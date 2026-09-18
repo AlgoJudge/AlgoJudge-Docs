@@ -154,6 +154,59 @@ be `unsafe-inline`, which is a header that says nothing. Closing it belongs in
 the Client.
 </Callout>
 
+## What makes the Client installable
+
+The Client installs: a browser that is given the manifest keeps an icon, opens
+the application in a window of its own, and draws it from a copy on the device
+when the network is gone. What a participant gets out of that is
+[their own page](/en/client/participant). Three response headers decide whether
+they get it at all, and **the Client image already sends all three** — so behind
+a proxy that passes the container through there is nothing to add. Do not cache
+in front of it, and do not replace its `Cache-Control`.
+
+**TLS is not optional for this.** A service worker registers only in a secure
+context, so an installation reached over plain `http://` is one with no copy on
+the device and no install prompt. Nothing reports it: the application works, it
+simply never becomes installable.
+
+Where you serve the built files yourself rather than proxying the container,
+this is the shipped form.
+
+```nginx
+location @app {
+    add_header Cache-Control "no-store";
+    try_files /index.html =404;
+}
+
+location = /sw.js {
+    add_header Cache-Control "no-cache";
+}
+
+location = /manifest.webmanifest {
+    types { }
+    default_type application/manifest+json;
+    add_header Cache-Control "no-cache";
+}
+```
+
+`@app` is where `try_files $uri $uri/ @app` lands, so `no-store` covers **every
+navigation** rather than only a literal `GET /index.html`. A navigation is what
+carries the current asset hashes and the API address the container wrote in at
+start-up, so a cached one hands a browser the previous build and a stale
+address.
+
+`types { }` empties the type map for that one location so `default_type`
+decides. Whether an nginx build knows `.webmanifest` varies by version, and a
+manifest served as `application/octet-stream` is one the browser ignores —
+silently, with the application still working and no longer installable.
+
+<Callout type="warn" title="A cached `/sw.js` outlives the fix">
+The worker is the one file that decides how everything else is cached, so a
+browser holding a copy holds the old rules for as long as it keeps it, and you
+cannot reach into that browser. `no-cache` on this single path is what keeps a
+mistake correctable.
+</Callout>
+
 ## Two different origins
 
 Serving the Client and the Server on different origins works. Then
@@ -226,8 +279,10 @@ services:
 
 One index per origin — `AJ_Cors__AllowedOrigins=a,b` binds **zero**, silently.
 An `<img>` needs no CORS at all, so a figure can draw while every API call is
-being refused; the symptom of a missing origin is the offline screen, not a
-missing picture.
+being refused; the symptom of a missing origin is the Client's maintenance page
+saying *The Server is not answering*, not a missing picture.
+
+
 
 ## Certificates
 

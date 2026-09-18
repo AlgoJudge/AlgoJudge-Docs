@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i dwa klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: 3b369f0132b5956ecfb4f547b6664c9ab0f74ab9ea8ed94aa645b4f3dfb344f5
+sourceSha256: 0f8f20a1fe55094b9fb64b1b619704fff657e9fef243118207509961ac0a3504
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -89,7 +89,7 @@ z tego proxy.
 | `RUNNER_WORK_DIR` | puste | **zostaw puste.** Katalog roboczy każdego Runnera to jego własny wolumen, `algojudge_runner-N-work`, i nigdy jeden na dwa Runnery: wygasła dzierżawa bywa wydana ponownie, gdy pierwszy Runner jeszcze pracuje, więc wspólny katalog roboczy oznaczałby, że jeden kasuje robotę drugiego. Ustaw to **wyłącznie** przy nakładce katalogowej opisanej niżej, i wtedy jako **bezwzględną ścieżkę na hoście** |
 | `RUNNER_CACHE_DIR` | puste | **zostaw puste.** Wszystkie Runnery na hoście dzielą jeden wolumen, `algojudge_runner-cache`: każda paczka jest tam pobierana, rozpakowywana i jej checker kompilowany **raz na wszystkie**, pod blokadą, a każdy Runner ogranicza to od środka do 10 GiB. `docker compose down -v` usuwa go razem z resztą i wtedy pierwsze zgłoszenie do każdej paczki pobiera i kompiluje od nowa. Ustaw to wyłącznie przy nakładce katalogowej, i wtedy jako **bezwzględną ścieżkę na hoście** trzymaną **poza `RUNNER_WORK_DIR`**, skąd zaplanowane sprzątanie usuwa katalogi po wieku |
 | `RUNNER_NAME_PREFIX` | `runner` | pod tym rejestruje się każdy z nich: to plus `-1` do `-4`. **Drugi host z własnymi Runnerami potrzebuje innego przedrostka**, inaczej panel pokaże dwa wiersze o tej samej nazwie |
-| `RUNNER_1_CPUSET` … `RUNNER_4_CPUSET` | puste | z których procesorów może korzystać każdy Runner. Puste zostawia rozmieszczenie planiście hosta. Podział, który warto zrobić, to **jeden Runner na grupę rdzeni i jeden tor na rdzeń w tej grupie** — ile torów, mówi `RUNNER_TESTS_AT_ONCE` niżej. Procesor na tor to dolna granica, poniżej której Runner odmawia startu; rdzeń na tor to tyle, ile tor naprawdę potrzebuje, a różnicę zmierzono na 196 ms czasu procesora na test wobec 318 ms — dość, by poprawne rozwiązania przekroczyły swój limit. Runner czyta topologię przy starcie i ostrzega, raz na każdy tor, który dostał wątek zamiast rdzenia. Runner tnie zbiór na tory w takiej kolejności, w jakiej go zapisano, więc odczytaj ją z maszyny, zamiast przepisywać przykład: `thread_siblings_list` mówi `0-1` na jednym hoście, a `0,8` na innym. `RUNNER_3_CPUSET` i `RUNNER_4_CPUSET` należą do tych dwóch Runnerów, które uruchamia `runner-extra`. Patrz [Czego wymaga host](/pl/install/requirements) |
+| `RUNNER_1_CPUSET` … `RUNNER_4_CPUSET` | `0,1,2,3` i `4,5,6,7`; 3 i 4 puste | z których procesorów może korzystać każdy Runner. **`.env.example` przypina dwa pierwsze**, więc instalacja, która go skopiuje, jest przypięta do procesorów 0–7 — odczytaj własną maszynę, zanim to zostawisz, bo `RUNNER_2_CPUSET=4,5,6,7` nazywa procesory, których host z mniej niż ośmioma nie ma. Puste zostawia rozmieszczenie planiście hosta. Podział, który warto zrobić, to **jeden Runner na grupę rdzeni i jeden tor na rdzeń w tej grupie** — ile torów, mówi `RUNNER_TESTS_AT_ONCE` niżej. Procesor na tor to dolna granica, poniżej której Runner odmawia startu; rdzeń na tor to tyle, ile tor naprawdę potrzebuje, a różnicę zmierzono na 196 ms czasu procesora na test wobec 318 ms — dość, by poprawne rozwiązania przekroczyły swój limit. Runner czyta topologię przy starcie i ostrzega, raz na każdy tor, który dostał wątek zamiast rdzenia. Runner tnie zbiór na tory w takiej kolejności, w jakiej go zapisano, więc odczytaj ją z maszyny, zamiast przepisywać przykład: `thread_siblings_list` mówi `0-1` na jednym hoście, a `0,8` na innym. `RUNNER_3_CPUSET` i `RUNNER_4_CPUSET` należą do tych dwóch Runnerów, które uruchamia `runner-extra`. Patrz [Czego wymaga host](/pl/install/requirements) |
 | `RUNNER_TESTS_AT_ONCE` | `2` | ile testów **jednego zgłoszenia** Runner ocenia równocześnie, po jednym na tor. Skraca to oczekiwanie na pojedyncze zgłoszenie, a nie podnosi przepustowości: uczestnik czeka na najwolniejszy test, a nie na sumę wszystkich. **Jeśli torów jest więcej niż procesorów w `RUNNER_n_CPUSET`, Runner odmawia startu** i wymienia obie wartości — limit czasu jest czasem procesora, a dwa oceniane przebiegi dzielące jeden procesor zużywają go więcej na tę samą pracę, więc poprawne rozwiązania wracałyby jako zbyt wolne, a werdykt nie mówiłby dlaczego. Tor kosztuje też pamięć: cztery przy zadaniach na 256 MiB to około 1,3 GiB na Runnera, jeszcze bez wejść. `.env.example` wysyła `2`, co odpowiada dwóm Runnerom po cztery procesory z domyślnych cpusetów; własna wartość domyślna obrazu to `1` |
 
 ## Gdzie Runnery trzymają swoje bajty [#where-the-runners-keep-their-bytes]
@@ -141,13 +141,15 @@ Czytaj tylko wtedy, gdy `external-runner` jest w `COMPOSE_PROFILES`. Zobacz
 | `EXTERNAL_PROBLEM_TYPES` | puste | puste deklaruje własny typ archiwum. Literówka daje tu ciszę, a nie błąd |
 | `EXTERNAL_RUNNER_TAGS` | puste | pule, czytane wyłącznie przy pierwszej rejestracji |
 | `EXTERNAL_RUNNER_LOG` | `info` | staje się `RUST_LOG` |
-| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | dwa razy tyle co u Runnera oceniającego, bo oddaje do dwudziestu zgłoszeń w toku, po jednym wywołaniu na każde |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | dwa razy tyle co u Runnera oceniającego, bo jednym wywołaniem oddaje całą pulę zgłoszeń w toku — najwyżej tyle, ile wynosi `AJ_External__MaxPending`, domyślnie 100 |
 
-Jego dzierżawy ani odstępów odpytywania celowo nie udostępniamy: sprawdzają się
-nawzajem przy starcie, domyślne wartości obrazu spełniają wszystkie te warunki,
-a zmiana w dobrej wierze — łagodniejsze odpytywanie cudzego archiwum — jest
-właśnie tą, która to psuje. Dzierżawa, która mogłaby wygasnąć między dwoma
-odnowieniami, to zgłoszenie, które archiwum dostanie dwa razy.
+Jego dzierżawy ani odstępów odpytywania celowo nie udostępniamy: domyślne
+wartości obrazu są dobrane, a część z nich nadal sprawdza się nawzajem przy
+starcie.
+
+**Łagodniejsze odpytywanie jest bezpieczne.** Dzierżawy odnawia osobny licznik —
+co ćwierć dzierżawy przyznanej przez Server — więc rzadsze pytanie cudzego
+archiwum nie oznacza rzadszego odnawiania.
 
 ## Kopie zapasowe
 

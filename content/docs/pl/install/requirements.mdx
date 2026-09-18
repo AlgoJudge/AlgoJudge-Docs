@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2.15.0, a tam gdzie oceniają Runnery — Engine 26; cgroup v2, polecenia coreutils używane przez skrypty oraz dysk na kopie i wolumeny.
 source: en/install/requirements.mdx
-sourceSha256: eebd31286c1f570a72be04cf2974786131c0ccef94ba9b35274283cc83c5b522
+sourceSha256: 0f9ee281725ec6ef23998dbd19be6bfa01bbe5947be8d4705b5497bb6ecfe29e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -247,14 +247,17 @@ dzieckiem demona, nie Runnera, więc nie dziedziczy żadnego powinowactwa i bez
 tego rozlałby się po całej maszynie, po cichu znosząc narysowany przez ciebie
 podział.
 
-**Podział, który warto zrobić, to jeden Runner na grupę procesorów i jeden tor
-na procesor w tej grupie.** Dwa *różne* Runnery na jednym rdzeniu odbierają
-sobie jednostki wykonawcze, a program zużywa wtedy więcej czasu procesora na tę
-samą pracę — czyli dostaje zły werdykt, a nie wolniejszy.
+**Podział, który warto zrobić, to jeden Runner na grupę rdzeni i jeden tor na
+rdzeń w tej grupie.** Dwa *różne* Runnery na jednym rdzeniu odbierają sobie
+jednostki wykonawcze, a program zużywa wtedy więcej czasu procesora na tę samą
+pracę — czyli dostaje zły werdykt, a nie wolniejszy.
 
-**Dwa tory na dwóch wątkach jednego rdzenia robią dokładnie to samo i akurat
-tego nikt nie sprawdza.** Runner odmawia szerokości, której jego zbiór nie
-pokryje po procesorze na tor; czy to osobne rdzenie, ustawiasz sam. Tor na
+**Dwa tory na dwóch wątkach jednego rdzenia robią dokładnie to samo i sprawdzają
+to teraz dwie rzeczy.** Runner odmawia szerokości, której jego zbiór nie pokryje
+po procesorze na tor, a przy starcie czyta `thread_siblings_list` i ostrzega raz
+za każdy tor, który dostał wątek zamiast rdzenia. `scripts/preflight.sh` liczy
+osobne rdzenie w każdym zbiorze i ostrzega — nie odmawia — gdy jest ich mniej niż
+torów. Host, który nie publikuje topologii, nie ma tu nic do powiedzenia. Tor na
 rdzeń to podział czysty, a dwa tory na rdzeń to zgłoszenie ocenione szybciej,
 kosztem liczby, na której opiera się werdykt. Zapisz pary bliźniacze obok
 siebie, żeby cięcie wypadło między nimi — `0,8,1,9,2,10,3,11` przy czterech

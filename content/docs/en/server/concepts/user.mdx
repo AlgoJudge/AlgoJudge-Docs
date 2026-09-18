@@ -54,6 +54,42 @@ emptied one is anonymised when the undo window closes. `user:merge` is its own
 permission because it hands one person's submissions and points to somebody
 else.
 
+### Emptying the name is only the first half
+
+What somebody wrote, and what they left in a queue, carries their name as surely
+as the name field does. Deletion reaches those too.
+
+**Questions they asked keep their row and lose their content.** Topic and body
+both become `[deleted]`. A question signed with a class and a surname is not
+anonymous because the account row is.
+
+**Print requests still outstanding are disposed of** — the ones waiting in the
+queue and the ones somebody at a printer has already taken. Bytes somebody asked
+to have printed are theirs, and a deleted account must not leave them sitting in
+a queue for whoever is next at the printer. Disposal is the same act an operator
+performs on a request they finish with: the reference goes, the
+[file](/en/server/concepts/file) goes with it, and the record of the request
+stays. The outcome is recorded as discarded, with nobody named as having
+resolved it.
+
+**Every session is closed and stripped, not only the open ones.** The rows stay,
+because what is deleted is the person and not the record that somebody signed
+in; the address and the user agent are cleared from all of them. An
+anonymisation that leaves personal data behind is not one.
+
+**Submissions stay and their origin does not.** A submission is somebody's mark
+in a contest and survives erasure by design, so `IpAddress` and `DeviceId` are
+cleared and the submission is not. The exclusion reason goes with them; the
+exclusion itself stays. Whether a submission counted is contest history, and
+clearing that would quietly move a board — the sentence about a named person is
+not history.
+
+<Callout type="warn" title="None of this reaches a backup">
+Every step above rewrites rows and deletes bytes in the live store. A backup
+taken before the deletion still holds the name, the addresses and the source
+somebody asked to have printed, and restoring one brings them back.
+</Callout>
+
 ## Passwords
 
 Ordinary participants authenticate through OIDC; see

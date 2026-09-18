@@ -97,9 +97,10 @@ loses that set; the Server reclaims the leases, requeues the jobs, and each one 
 sent to the archive a second time under your account.
 
 **Stopping it politely does not avoid that, and is still worth doing.** On
-`SIGTERM` it hands every job it is holding back to the queue at once — up to
-twenty, one call each, which is what `EXTERNAL_RUNNER_STOP_GRACE` is sixty
-seconds for. The answers still coming from the archive have nowhere to land
+`SIGTERM` it hands every job it is holding back to the queue **in a single
+request**, whatever the pool holds — up to `AJ_External__MaxPending`, a hundred
+by default. `EXTERNAL_RUNNER_STOP_GRACE` is sixty seconds for that one request,
+not for a count of them. The answers still coming from the archive have nowhere to land
 either way.
 
 Before a window that will restart it, drain first — see

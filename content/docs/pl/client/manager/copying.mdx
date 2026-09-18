@@ -2,7 +2,7 @@
 title: Kopiowanie i import
 description: Kopia jest kształtem, a nie historią - wewnątrz instalacji i między dwiema.
 source: en/client/manager/copying.mdx
-sourceSha256: bbf1d095b005ed708ebf75f6325060936261b565d66e652612c9c89c53088150
+sourceSha256: d332a1eed02dd15c2c8df58e4439169ecdaa415e8e0416e81e713d36c5b4142c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -111,6 +111,20 @@ kontrolna.
 Czytnik przyjmuje też eksport z **ZawodyWeb**. Najpierw konwertuje go na paczkę
 wymiany, więc dalej wszystko idzie tą samą ścieżką, a to, czego konwersja nie
 umiała przenieść, zobaczysz, zanim zatwierdzisz.
+
+### Paczka nazywa tylko te moduły, które zna
+
+**Paczka może nazwać jeden moduł albo żaden.** Moduły to *Pytania i ogłoszenia*
+oraz *Wydruki*; archiwum z instalacji, która miała tylko jeden z nich, wymienia
+tylko ten jeden — i zaimportuje się. Moduł, którego nikt nie nazwał, to co
+innego niż moduł nazwany jako `false`: import daje mu wartość, od której zaczyna
+nowa aktywność — pytania włączone, wydruki wyłączone — a zmienisz ją w zakładce
+**Ustawienia**.
+
+**Odmowa nazywa pole, o które chodziło.** Gdy Server nie przyjmuje kształtu
+tego, o co paczka poprosiła, okno pokazuje obok jego zdania nazwę składowej,
+która mu przeszkadza — `modules: …` — więc odpowiedź na ekranie da się
+wykorzystać, zamiast samego „One or more validation errors occurred”.
 
 ### Ograniczenie rozmiaru
 

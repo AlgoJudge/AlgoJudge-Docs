@@ -108,6 +108,40 @@ and be judged on nothing but its output. An installation that lets its Runners
 compete for cores will reach the same net with programs that were merely
 waiting, and there the verdict is wrong rather than merely slow.
 
+### The fourth watches a channel, not a run
+
+Every pipe a judged run is read through is **opened under a bound of 30 seconds**,
+on the Runner's side. A blocking open of a pipe waits for a writer for ever, and
+a container that never started never writes — so without the bound one judge
+that failed to start held the job until somebody restarted the Runner.
+
+**The bound is on the open, not on the run.** Once a writer holds the pipe the
+deadline stops applying, and a program that computes for an hour is untouched by
+it: silence from a writer that has already arrived is a program still thinking,
+which is none of this deadline's business. Each open carries its own window
+rather than sharing one.
+
+**A channel nobody opened is an infrastructure failure, and it says so:**
+
+```text
+test <name>: nothing opened the run's output channel within 30s
+```
+
+The shim opens that pipe before the program runs, so one still unopened at the
+deadline means the container did not start. Reported as output it would be a
+wrong answer pinned on a submission that never ran. [When something is not
+working](/en/install/troubleshooting) is the operator's entry for it.
+
+Thirty seconds is two orders of magnitude above what it bounds — the whole of a
+container's own start was some 374 ms on the machine that number was taken on —
+and it is the same length as the checker's own wall clock, which is a different
+quantity that happens to agree.
+
+**It is a net rather than the mechanism.** The Runner still releases every
+channel on every path out of a test, which ends the wait at once where something
+is already waiting; the deadline is what makes that an optimisation instead of
+the only way out.
+
 ## One container per test, never reused
 
 Four rules define what one test is:

@@ -110,6 +110,21 @@ A **ZawodyWeb** export is read too. It is converted into a bundle first, so
 everything after that point is the same code path, and whatever the conversion
 could not carry is listed before you commit.
 
+### An archive names only the modules it knows
+
+**A bundle may name one module, or neither.** The modules are *Questions and
+announcements* and *Printouts*; an archive exported from an installation that
+had only one of them names only that one, and it imports. A member nobody named
+is not the same as one named `false` — the import gives it the value a new
+activity starts with, questions on and printouts off, and the settings tab is
+where you change it.
+
+**A refusal names the field it was about.** Where the Server objects to the
+shape of what the bundle asked for, the dialog shows the member it objected to —
+`modules: …` — beside the Server's own sentence, so what you are given is
+something to act on rather than *One or more validation errors occurred* with
+nothing in it.
+
 ### The size ceiling
 
 Everything passes through browser memory. A bundle over **64 MB** warns, and one

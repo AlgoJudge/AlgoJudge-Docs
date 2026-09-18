@@ -74,9 +74,30 @@ onto an empty screen is a promise this screen cannot keep.
 
 ## While it is still being judged
 
-Instead of an empty table you get a blue panel with a spinner: *Waiting for a
-Runner to pick this up*, then *A Runner is evaluating this submission*. It
-replaces itself with the result when one arrives. You do not have to reload.
+Instead of an empty table you get a panel with a spinner, titled with the state:
+*Waiting for a Runner to pick this up*, then *A Runner is evaluating this
+submission*. It replaces itself with the result when one arrives. You do not have
+to reload.
+
+**The panel is grey while the submission is only queued, and blue once a Runner
+has it.** It is the same distinction the badge in the header draws, so the colour
+alone tells you whether anything is happening yet.
+
+**A submission being judged says how long the Runner has had it.** *Running for*
+stands beside the spinner with a counter that climbs — `m:ss`, and `h:mm:ss` past
+the hour.
+
+It counts from the moment a Runner took the submission, not from the moment you
+sent it. A submission still in the queue shows no number at all: nobody is
+working on it, so there is nothing to count.
+
+**It says how long, and no more.** How far through the tests the evaluation has
+got is not shown while it runs; the result arrives whole, when it is finished.
+
+The counter reads the clock on every tick instead of adding a second to itself,
+so a page left open in a background tab shows you the true elapsed time when you
+come back to it, not a number that fell behind while the browser throttled it.
+
 
 ## The per-test table
 

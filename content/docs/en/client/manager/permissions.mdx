@@ -170,9 +170,14 @@ the printout queue, reading and lifting a ranking freeze, temporary accounts,
 reading and updating grants, and reading and writing **that activity's** roles.
 
 Deliberately **not** in it: `activity:create`, `activity:delete`,
-`problem:read:all`, `problem:delete`, `problem:import:external`, `user:*` beyond
-temporary accounts, `runner:*`, `instance:update`, `provider:manage` and
-`trial:run`. A manager runs an activity; they do not run the installation.
+`problem:read:all`, `problem:delete`, `problem:import:external`, the `user:`
+keys that create and edit accounts, `runner:*`, `instance:update`,
+`provider:manage` and `trial:run`. A manager runs an activity; they do not run
+the installation.
+
+`user:read:all` **is** in it, so that a manager can name a person in the
+enrolment and grant pickers. The Users area still asks for it across the
+installation, so holding it here opens no list of accounts.
 
 **`admin`** — one entry, `system:administrator`. One, because it bypasses the
 rest: an administrator with a list of individual permissions is an administrator

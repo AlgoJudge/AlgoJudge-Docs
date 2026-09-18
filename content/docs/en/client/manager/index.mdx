@@ -40,6 +40,11 @@ An area is offered when you hold its permission **anywhere** — in one activity
 is enough. Somebody who runs a single course still needs the panel that course
 lives in.
 
+**Users is the one exception**, and it asks for its key at system scope. Its
+key, `user:read:all`, is in the shipped `manager` role so that the enrolment and
+grant pickers have somebody to choose from; read the usual way, the card would
+appear for every activity manager and the list behind it would refuse.
+
 The screens themselves are stricter. Inside an activity, what you may hand out
 is what you hold *in that activity*, which is not the same set as your rights
 across the installation. See [Permissions and
@@ -50,9 +55,10 @@ grants](/en/client/manager/permissions).
 Six of the thirteen areas are about the installation rather than about any one
 activity: Users, Runners, Instance, External logins, LTI platforms and External
 content. Between them they need four permissions — `user:read:all`,
-`runner:read`, `instance:update` and `provider:manage` — and **none of the four
-is in the shipped `manager` role**. Running an activity is not running the
-installation it lives in.
+`runner:read`, `instance:update` and `provider:manage`. **Three of the four are
+not in the shipped `manager` role**, and `user:read:all` is there only so that a
+manager can name a person — the Users area itself asks for it at system scope.
+Running an activity is not running the installation it lives in.
 
 **Roles used to be a seventh, and is not any more.** `role:manage` is scoped:
 held in an activity grant it writes that activity's roles and nothing else, so a
@@ -67,7 +73,7 @@ are not in its ranking.
 
 ## Updates, and turning them off
 
-Every screen in the panel carries the same two controls at the top: a switch
+Every screen in the panel carries the same two controls at the top: a button
 reading **Updates on** or **Updates off**, and **Refresh**.
 
 Left alone, the panel keeps itself current: a question arriving, a submission

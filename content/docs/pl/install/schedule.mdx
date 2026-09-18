@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: 60800fc1f81c7d8d56ef579ec6d7f5bdd5185f011c0f8177f69da09398f441db
+sourceSha256: ecf64c4f930df9cbf081e570797de9b24383c8ca1a1ea5b5905353dc1b0198b6
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -15,7 +15,9 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
 
-- **katalogi robocze** starsze niż `GC_TMP_RETENTION_DAYS` (domyślnie 7). Runner
+- **przestrzeń robocza starsza niż `GC_TMP_RETENTION_DAYS`** (domyślnie 7),
+  sprzątana z wnętrza jednorazowego kontenera osobno dla każdego Runnera, bo
+  przestrzeń robocza każdego z nich to wolumen bez ścieżki na hoście. Runner
   zabity w trakcie oceniania nie posprząta po sobie, a zlecenie, które robił,
   wraca do kolejki przez dzierżawę — więc pozostałości są normalne, a nie usterką;
 - **zakończone kontenery zadań**, których nic nie zbierze, znajdowane po
@@ -30,10 +32,11 @@ Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
 **Żadna z dwóch pamięci podręcznych nie jest sprzątana**, bo żadna tego nie
 potrzebuje: każdy Runner ogranicza `algojudge_runner-cache` do 10 GiB, a zewnętrzny
 Runner `external-runner-cache` do 256 MiB, oba od środka. Obie przeżywają `down`
-i zmianę obrazu — a skasowanie którejś kosztuje pobranie danych, nie zlecenie.
+i zmianę obrazu — **ale nie `down -v`**, które usuwa je razem z resztą —
+a skasowanie którejś kosztuje pobranie danych, nie zlecenie.
 
-Ta pierwsza to **katalog wspólny dla wszystkich Runnerów na hoście**: leży w nim
-każda paczka wraz z rozpakowanymi testami i skompilowanym checkerem. Druga to
+Ta pierwsza to **jeden wolumen wspólny dla wszystkich Runnerów na hoście**: leży
+w nim każda paczka wraz z rozpakowanymi testami i skompilowanym checkerem. Druga to
 wolumen nazwany z kodem źródłowym uczestników. Żadnej nie obejmuje kopia
 zapasowa — z tego samego powodu, z którego żadnej się nie sprząta.
 
