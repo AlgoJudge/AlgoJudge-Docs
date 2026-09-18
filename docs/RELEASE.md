@@ -57,10 +57,17 @@ the eight product images; this ninth serves `docs.algojudge.pl` and is pulled by
 whoever deploys that site alone. So its package being private on its first push —
 as every new one is — costs a `docker login ghcr.io` and nothing else.
 
-`docs.algojudge.pl` still has **no DNS record and no chosen host**. The tag
-therefore publishes an image that nothing serves yet, which is the right order:
-the image exists on the day the host is found, rather than being built from
-whatever `main` had become by then.
+**`docs.algojudge.pl` is live.** Read 2026-09-18: it resolves to
+`srv1.algojudge.pl` (`146.59.13.48`), `/` answers 302 to `/en/`, and `/en/`
+answers 200 with the title *AlgoJudge documentation*. `lib/site.ts` has carried
+`documented.released = "0.1"` since 2026-09-08, and 188 files sit under a
+`v0.1/` directory.
+
+This paragraph said the domain had **no DNS record and no chosen host** until
+2026-09-18, and so did nine documents in the workspace. The site had been
+serving for some time; `AlgoJudge-Client/docs/RELEASE.md` recorded it answering
+on **2026-09-09**, nine days before anything else noticed. Nothing propagates a
+fact like this on its own, which is the whole reason for the section below.
 
 ## The order across repositories is fixed
 
@@ -295,6 +302,53 @@ Run `npm outdated` and `npm audit` **read-only**. The lockfile must not move: no
 - **The nginx base was raised on 2026-09-08**, from `1.29-alpine` — last built
   2026-04-17 — to `1.30-alpine`, built 2026-09-03. See *The two images this
   repository pins*, which is the check that found it.
+
+## After the tag
+
+**This file had no such section until 2026-09-18, and it is the only one of the
+six that did not.** What follows is what nothing here was asking for.
+
+### A tag is not a release
+
+`release.yml` holds `contents: read`. It builds and pushes the image and
+**creates no GitHub Release and writes no release notes.** Nothing in CI does,
+and **nothing goes red when a Release is missing** — a tag with no Release looks
+exactly like a tag with one, from every angle except the releases page.
+
+The evidence is this repository. `v0.1.0` was pushed and carried no GitHub
+Release beside it, found on 2026-09-18 by `gh release list -R
+AlgoJudge/AlgoJudge-Docs` answering with nothing. The tag was correct; the step
+after it was never assigned to anybody.
+
+- [ ] `gh release list -R AlgoJudge/AlgoJudge-Docs` names the tag just pushed.
+
+The release note's shape is `/release` in the workspace,
+`reference/release-notes.md`. Write it there and create the Release by hand.
+
+### The site has to be served from the new image
+
+Unlike the eight product images, nothing pulls this one on a schedule. Whoever
+deploys `docs.algojudge.pl` pulls it, and until they do, the tag names an image
+the live site is not running.
+
+- [ ] `docs.algojudge.pl/en/` answers 200 **from the image this tag built**, not
+      from the one before it.
+
+### The public website does not link to this repository at all
+
+`algojudge.pl` lists five component repositories — Client, Server, Runner,
+External-Runner, Ops — with a card and a version badge each. **There is no
+`docs` card**, no URL for it in `AlgoJudge-Website/src/config/site.ts` and no
+entry in `src/config/repositories.ts`, although this repository is public and
+tagged.
+
+That is a gap rather than a stale fact, and it is not this runbook's to close.
+The procedure is `/website-sync` in the workspace.
+
+**Do not simply raise the site's counts of five to six.** Some of those fives
+count *architectural responsibilities*, and `docs/REPOSITORIES.md` records this
+repository as *Runtime component: no* — raising those would make a true sentence
+false.
 
 ## The one thing a green suite does not tell you
 
