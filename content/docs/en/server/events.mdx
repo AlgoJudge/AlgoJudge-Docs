@@ -26,7 +26,7 @@ A replay buffer would make the socket a second source of truth, and the first
 disagreement between the two would be a bug nobody could reproduce.
 </Callout>
 
-An event is an optimisation. Treat it as a signal to refetch, not as a payload
+An event is an optimization. Treat it as a signal to refetch, not as a payload
 to trust — even where a payload carries a whole object, which several do, so
 that a screen can redraw without a round trip.
 
@@ -36,7 +36,7 @@ that a screen can redraw without a round trip.
 { "type": "submissionStateChanged", "data": { "activityId": "…", "submission": {} } }
 ```
 
-No wrapper, no batching, no ids, no acknowledgements. JSON is camelCase and null
+No wrapper, no batching, no ids, no acknowledgments. JSON is camelCase and null
 members are omitted rather than sent.
 
 The payload of each type is the one declared beside it in the Client's API
@@ -91,7 +91,7 @@ shows an error first.
 | `activityTimesChanged` | |
 | `seriesChanged` | one event rather than five, differing only in `change`: `opened`, `closed`, `paused`, `resumed`, `rescheduled`. `opened` carries the problems that were withheld until then |
 | `problemStatusChanged` | |
-| `submissionStateChanged` | sent as a job is claimed, finishes, or is cancelled |
+| `submissionStateChanged` | sent as a job is claimed, finishes, or is canceled |
 | `rankingChanged` | |
 | `questionAnswered`, `questionPublished`, `announcementPublished` | |
 | `printoutStateChanged` | your own printout request was taken, handed back or resolved |
@@ -140,7 +140,7 @@ counted live** from the connection registry and never stored, and the users
 screen shows it as "active". A socket that died silently and stayed counted
 would make the screen lie about who is present.
 
-`ping` is carried outside the event catalogue and is not one of the three
+`ping` is carried outside the event catalog and is not one of the three
 dispatchers' types, so a Client drops it the same way it drops any type it does
 not know.
 

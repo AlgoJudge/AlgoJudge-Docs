@@ -100,7 +100,7 @@ group, **including the endpoint that sets the administrator's password**. See
 | `DataProtection:Certificates:<n>:Path` | `AJ_DataProtection__Certificates__0__Path` | none |
 | `DataProtection:Certificates:<n>:Password` | `…__Password` | empty |
 
-`ephemeral` is refused outside Development, and an unrecognised value is refused
+`ephemeral` is refused outside Development, and an unrecognized value is refused
 everywhere. The certificate list **rotates by prepending**: the first entry
 encrypts, every entry decrypts, and dropping an old one makes existing keys
 unreadable. [Backup](/en/install/backup) says what this means for a database

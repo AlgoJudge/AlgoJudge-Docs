@@ -23,7 +23,7 @@ A **grant** holds a set of them and is scoped to exactly one of two things:
 
 - the **whole installation**, where it applies in every activity;
 - **one activity**, where it also *is* the membership. See
-  [Enrolment](/en/client/manager/enrolment).
+  [Enrollment](/en/client/manager/enrollment).
 
 The same string means the same thing at either scope. What changes is how far it
 reaches.
@@ -164,7 +164,7 @@ printout:request
 **`manager`** — everything a participant has, plus what is needed to run an
 activity: updating and archiving it, enrolling people, the problem library
 (`read:own`, `create`, `update`, `share`, `archive`, `attach`), everybody's
-submissions and their source, rejudging, cancelling and excluding, everybody's
+submissions and their source, rejudging, canceling and excluding, everybody's
 results and logs, every question with answering and publishing, announcements,
 the printout queue, reading and lifting a ranking freeze, temporary accounts,
 reading and updating grants, and reading and writing **that activity's** roles.
@@ -176,7 +176,7 @@ keys that create and edit accounts, `runner:*`, `instance:update`,
 the installation.
 
 `user:read:all` **is** in it, so that a manager can name a person in the
-enrolment and grant pickers. The Users area still asks for it across the
+enrollment and grant pickers. The Users area still asks for it across the
 installation, so holding it here opens no list of accounts.
 
 **`admin`** — one entry, `system:administrator`. One, because it bypasses the
@@ -191,7 +191,7 @@ Two screens, one table behind them.
 - The **Grants** area lists every grant in the installation, filterable by scope
   and by activity, and is where a system-scope grant is made.
 - An activity's **Participants** tab is the same rows filtered to that activity,
-  and is where enrolment happens.
+  and is where enrollment happens.
 
 A grant is also what decides whether somebody is **staff**: the Server computes
 that on every write from what the grant carries — its role and its own entries
@@ -199,6 +199,6 @@ together, anything beyond the participant eight with `trial:run` excepted — an
 staff are absent from the participant count and from the ranking.
 
 **A role edit can change that too.** Adding a staff permission to the role a
-course enrols into makes everybody holding it staff, and takes them out of the
+course enrolls into makes everybody holding it staff, and takes them out of the
 ranking. The Server recomputes the flag on every linked grant when a role is
 saved, so the board and the count never disagree with the permissions.

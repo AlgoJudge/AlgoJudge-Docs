@@ -25,7 +25,7 @@ One attempt at evaluating a [submission](/en/server/concepts/submission). A
 | `Attempt` | increments from 1 within its submission. A rejudge adds an attempt |
 | `ProblemVersionId` | the content version being evaluated. The source of truth, copied onto `Result` |
 | `RunnerId` | null until a Runner claims the job |
-| `State` | `Queued`, `Running`, `Completed`, `Failed`, `Cancelled`, `Superseded` |
+| `State` | `Queued`, `Running`, `Completed`, `Failed`, `Canceled`, `Superseded` |
 | `LeaseToken` | handed to the Runner on claim and required back when it reports |
 | `LeaseSeconds` | how long the lease was, as granted at claim |
 | `LeaseExpiresAt` | when the lease runs out. Moved by every renewal, which is why `LeaseSeconds` is kept beside it |
@@ -39,13 +39,13 @@ One attempt at evaluating a [submission](/en/server/concepts/submission). A
 
 ### The permitted transitions
 
-A job leaves `Queued` by being claimed, by being cancelled, or by a rejudge
+A job leaves `Queued` by being claimed, by being canceled, or by a rejudge
 superseding it. From `Running`, a verdict makes it `Completed` and a manager
-makes it `Cancelled`; everything else puts it **back in `Queued`** — an expired
+makes it `Canceled`; everything else puts it **back in `Queued`** — an expired
 lease, a Runner handing it back because it is stopping, a revoked Runner key, or
 an infrastructure failure that is going to be tried again. `Failed` is where an
 infrastructure failure lands once the delivery cap is reached. A finished
-attempt never leaves its state: cancelling one is refused with
+attempt never leaves its state: canceling one is refused with
 `attempt.finished`.
 
 <Mermaid chart={`
@@ -55,8 +55,8 @@ flowchart LR
     running -->|"an infrastructure failure,<br/>at the delivery cap"| failed(["Failed"])
     running -->|"the lease expired, the Runner handed it back,<br/>its key was revoked, or it will be tried again"| queued
     queued -->|"a rejudge overtakes it"| superseded(["Superseded"])
-    queued -->|"a manager cancels"| cancelled(["Cancelled"])
-    running -->|"a manager cancels"| cancelled
+    queued -->|"a manager cancels"| canceled(["Canceled"])
+    running -->|"a manager cancels"| canceled
 `} />
 
 **A rejudge is a new job, and it also ends a queued sibling.** `Superseded` is
@@ -64,7 +64,7 @@ the only terminal state never reached from `Running`, and no Runner ever meets
 one: leaving `Queued` is exactly what takes the row out of the claim's reach, so
 a superseded attempt is one nobody was holding. An attempt a Runner *is* holding
 is left alone — it finishes, keeps its result and its attachments, and the new
-attempt waits behind it on the claim's fourth filter. Cancelling it instead
+attempt waits behind it on the claim's fourth filter. Canceling it instead
 would throw away work already done, and on a forwarding Runner a submission
 already spent at somebody else's service.
 

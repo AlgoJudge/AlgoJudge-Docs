@@ -6,14 +6,14 @@ description: Standing an installation up from files on disk instead of clicking 
 import { Callout } from "fumadocs-ui/components/callout";
 
 Everything an installation says about itself — its name, how it admits people,
-its welcome page, its privacy policy, its mark, its colours — lives in the
+its welcome page, its privacy policy, its mark, its colors — lives in the
 database. Pre-configuration is how it gets there from files rather than from
 somebody clicking.
 
 `AlgoJudge-Ops` mounts its own `preconfig/` directory read-only at
 `/etc/algojudge/preconfig` and points `AJ_Preconfiguration__Path` at it. The
 directory is committed so the mount never fails; everything an installation puts
-in it is git-ignored, because what an organisation configures is theirs. With
+in it is git-ignored, because what an organization configures is theirs. With
 the setting unset the feature is off and the endpoints refuse, naming it.
 
 `AlgoJudge-Server/preconfig.example/` is a filled-in directory to copy from.
@@ -106,7 +106,7 @@ instance:
 
 - `format` and `version` are **required**, and a version this Server does not
   know is refused rather than guessed at: a later version may mean something
-  different by a key this one recognises.
+  different by a key this one recognizes.
 - Every key under `instance:` is optional. Absent means leave alone.
 - **An unknown key is refused and named**, with the accepted ones listed. A typo
   quietly ignored is how a configuration file comes to claim something that is
@@ -148,7 +148,7 @@ exactly as the panel does it.
 
 ### theme.yml
 
-The colours and typeface, its own document with its own `format` of
+The colors and typeface, its own document with its own `format` of
 `algojudge-theme` and `version: 1`. It is **byte for byte the file the manager
 panel publishes**, so a theme exported from the panel drops in here and a theme
 written here reads back in the panel — which is also what lets the checksum
@@ -166,11 +166,11 @@ dark:
 
 - **Every key is optional and absent means the product's default** — not black,
   not empty. A theme stating two keys changes two things.
-- A colour is six hexadecimal digits after a hash and nothing else: not a
+- A color is six hexadecimal digits after a hash and nothing else: not a
   keyword, not `rgb()`, not `var()`. These values are written into a stylesheet,
   and a field that took anything else would let this file carry CSS.
 - The dark scheme is stated in full rather than derived from the light one. A
-  dark scheme worked out from a light colour fails a contrast floor
+  dark scheme worked out from a light color fails a contrast floor
   unpredictably.
 - A typeface is a **file this installation stores**, not a name it hopes the
   reader's machine has. Put the `.woff2` faces in `fonts/` beside the theme and

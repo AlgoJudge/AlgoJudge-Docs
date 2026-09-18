@@ -121,7 +121,7 @@ Then, still on that day:
       been released.
 - [x] **The eight GHCR packages are public.** A package created by its first push
       is private and no workflow can change that; somebody with access to the
-      organisation's packages set each to Public on 2026-09-08. It returns with
+      organization's packages set each to Public on 2026-09-08. It returns with
       every new image, so it stays on this list.
 - [ ] **Commit the copied pages, `versions.json` and `deploy/redirects.conf`.**
       All three are read from the build context: `versions.json` by `next build`
@@ -149,7 +149,7 @@ Then, still on that day:
       ```
 
       `URL` takes no trailing slash. Its default is `http://127.0.0.1:3000`,
-      which is `next dev` — a different artefact from the export that ships, so
+      which is `next dev` — a different artifact from the export that ships, so
       pass the served `out/` explicitly. **Playwright is resolved out of
       `../AlgoJudge-Client/node_modules`** (`CLIENT_DIR` overrides the
       location), so that repository has to be checked out beside this one with

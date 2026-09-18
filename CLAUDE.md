@@ -41,6 +41,8 @@ Two known traps:
 ## Language
 
 - **English is the source language.** Every page is written in English first.
+- **The English is American**: *color*, *behavior*, *license*, *organization*.
+  `scripts/check-american-english.py` in the workspace finds a British spelling.
 - **Polish covers `/client/` and `/install/` only**, and is written *with* the
   English rather than translated from it afterwards.
 - **Polish uses the interface's own words.** They live in `lib/glossary.ts`,
@@ -78,8 +80,8 @@ is `sha256`, never `hash`; in prose, SHA-256.
 - Generated content is not committed: the REST reference under
   `content/docs/en/server/rest/` and everything in `.sources/` are build output.
 - **A section's front page ends with where its software lives and on what
-  terms**, rendered from `lib/sections.ts` by `components/licence-note.tsx` —
-  not written into a page, and not repeated on the pages below it. `licence` is
+  terms**, rendered from `lib/sections.ts` by `components/license-note.tsx` —
+  not written into a page, and not repeated on the pages below it. `license` is
   a repository for every section including `protocol`, which is where it differs
   from `repository`; the *source is in* sentence is skipped where `repository`
   is `null`, because a section describing a contract between two programs has no
@@ -99,8 +101,8 @@ is `sha256`, never `hash`; in prose, SHA-256.
   (`linkedFromCode`). `check:links` reads `.mdx` files, so without that it is the
   one internal link nothing would notice breaking.
 - **The same two facts are the last two entries of a section's sidebar**, as
-  `external:` entries in its `meta.json`: the repository, then the licence.
-  Which repository, which licence and what the licence link is called in each
+  `external:` entries in its `meta.json`: the repository, then the license.
+  Which repository, which license and what the license link is called in each
   language are all `lib/sections.ts`, never the `meta.json`. A section that
   documents no repository a reader should open declares `repository: null` and
   carries **neither** link. `npm run check:section-links` holds the halves
@@ -118,7 +120,7 @@ npm run check:section-links && npm run check:no-playground
 **A new check is not trusted until it has been shown to fail.** Break the thing
 it is meant to catch, watch it go red, put it back.
 
-## Licence
+## License
 
 **The code is MIT and the pages are CC BY 4.0**, and `README.md` has the table
 that says which is which. A page carries prose under CC BY and its samples under

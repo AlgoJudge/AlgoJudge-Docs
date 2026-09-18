@@ -223,7 +223,7 @@ processor-second falls when the sibling is busy, so the same solution measures
 differently depending on what is beside it. For a judge that is a
 reproducibility problem, and it is why contest hosts commonly disable SMT.
 
-On a shared VPS the neighbour is invisible and nothing can be done about it.
+On a shared VPS the neighbor is invisible and nothing can be done about it.
 </Callout>
 
 <Callout type="warn" title="Divide the host between the Runners">
@@ -307,7 +307,7 @@ systemctl is-enabled docker
 |---|---|
 | A service that **hangs** rather than exits | Nothing restarts it: a restart policy acts on exit. A hung Runner's *job* is recovered by the Server's lease — it expires and the job returns to the queue — but the Runner stays hung until somebody looks |
 | A container **crash-looping** | It is restarted for ever, with the delay growing to a minute. Nothing escalates and nothing tells you. A flapping container is the first thing to look for when an installation is up but does nothing |
-| A **failed health check** | Nothing. In Compose a health check reports and does not restart; that is an orchestrator's behaviour, not this one's |
+| A **failed health check** | Nothing. In Compose a health check reports and does not restart; that is an orchestrator's behavior, not this one's |
 
 State survives a restart because the volumes are named. A Runner keeps its
 identity key across one, so it stays approved rather than arriving as a new

@@ -2,7 +2,7 @@
 title: Co się stało z moim zgłoszeniem
 description: Sześć stanów, nagłówek, tabela testów i wynik, który żadnej tabeli nie ma.
 source: en/client/participant/results.mdx
-sourceSha256: a7b6b0bcdff4282891ad4238cd5d5575ffd9497c7c59d157ecfa85d0bc668ff0
+sourceSha256: 849e625ffa5485ac599622196c24b57d2334185dd7db1be6d1f8835e8b60629c
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -39,8 +39,8 @@ flowchart LR
     running -->|"jest werdykt"| done["Oceniono"]
     running -->|"ocena się zepsuła"| failed["Błąd oceny"]
     queued -->|"wyprzedziła je ponowna ocena"| superseded["Zastąpiono"]
-    queued -->|"prowadzący je odwołał"| cancelled["Anulowano"]
-    running --> cancelled
+    queued -->|"prowadzący je odwołał"| canceled["Anulowano"]
+    running --> canceled
 `} />
 
 Nic, co Runner już trzyma, nie zostaje przerwane: rozpoczęta próba dobiega

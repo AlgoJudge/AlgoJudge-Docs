@@ -139,7 +139,7 @@ quantity that happens to agree.
 
 **It is a net rather than the mechanism.** The Runner still releases every
 channel on every path out of a test, which ends the wait at once where something
-is already waiting; the deadline is what makes that an optimisation instead of
+is already waiting; the deadline is what makes that an optimization instead of
 the only way out.
 
 ## One container per test, never reused
@@ -193,7 +193,7 @@ Two consequences that are easy to get backwards:
   at.
 
 The build step gets **no writable host path**. It writes to its own container
-layer and the artefact is read back through the runtime API. The alternative was
+layer and the artifact is read back through the runtime API. The alternative was
 opening a directory to every user on the host.
 
 ## What a submission is charged for

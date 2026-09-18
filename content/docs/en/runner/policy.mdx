@@ -83,7 +83,7 @@ much of the above whatever a submission includes:
 | Calling the kernel directly | `syscall`, `ptrace` | on |
 | Inline assembly | `asm`, `__asm`, `__asm__` | on |
 | Creating threads | `pthread_create`, `thrd_create`, `std::thread`, `std::async` | on |
-| Changing compiler optimisation | `#pragma GCC optimize`, `#pragma GCC target`, `#pragma omp` | on |
+| Changing compiler optimization | `#pragma GCC optimize`, `#pragma GCC target`, `#pragma omp` | on |
 
 **"Changing the file system" is off by default**, and the reason is worth
 carrying: `remove` collides with `std::remove` and `std::remove_if`, which are

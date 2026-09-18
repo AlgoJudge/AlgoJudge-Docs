@@ -29,7 +29,7 @@ with an empty body, so there would be nothing to read.
 | `AJ_Runner__Name` | `$HOSTNAME`, else `algojudge-runner` | The name shown in the manager panel |
 | `AJ_Runner__KeyPath` | `/var/lib/algojudge-runner/identity.key` | The Ed25519 key. Generated on first start; put it on a volume |
 | `AJ_Runner__ProblemTypes` | `standard-io@1` | Comma-separated. What this Runner offers to evaluate |
-| `AJ_Runner__Tags` | empty | Comma-separated pools. **A seed, honoured at the first registration only** — see [Tags and routing](/en/runner/routing) |
+| `AJ_Runner__Tags` | empty | Comma-separated pools. **A seed, honored at the first registration only** — see [Tags and routing](/en/runner/routing) |
 
 `AJ_Runner__ProblemTypes` is how a Runner that should also take `output-only@1`
 work is told to: `standard-io@1,output-only@1`. Which types a Runner advertises
@@ -189,7 +189,7 @@ they are alone — no message, and a package assembled out of two.
 **A volume is named, a directory is resolved, and the Runner needs exactly one
 of the two.** A judge's container is given the unpacked package and the program
 built from it, and the **daemon** is what has to reach them. Name a volume in
-`AJ_Cache__Volume` and it reaches it by name, each package travelling in as a
+`AJ_Cache__Volume` and it reaches it by name, each package traveling in as a
 `subpath` of that volume; leave it unset and `AJ_Cache__HostPath` has to be a
 path the daemon can open. Either way the Runner writes a marker at start and
 reads it back through a throwaway container, and refuses to judge if it cannot
@@ -218,7 +218,7 @@ error.
 The failure that follows is silent and looks like nothing at all: a checker
 reads an empty `/in`, or does not build because its source was not there.
 
-Where the Runner is **not** containerised the two paths are the same and both can
+Where the Runner is **not** containerized the two paths are the same and both can
 be left alone. Where it is, `AJ_Work__HostPath` must name the host directory that
 is bind-mounted at `AJ_Work__Path`, and `AJ_Cache__HostPath` the one at
 `AJ_Cache__Path`.
@@ -278,8 +278,8 @@ configuration. They carry no `AJ_` prefix, and the Runner never validates them.
 | Variable | |
 |---|---|
 | `RUST_LOG` | The log filter, in the usual `tracing` grammar. Unset, the Runner logs at `info`; a malformed filter falls back to `info` rather than refusing to start |
-| `DOCKER_HOST` | Where the container runtime's socket is. **Only a `unix://…` value is honoured** — anything else is ignored in silence, and the Runner goes on using the local default |
-| `NO_COLOR` | Set to anything to drop the colour from the log output |
+| `DOCKER_HOST` | Where the container runtime's socket is. **Only a `unix://…` value is honored** — anything else is ignored in silence, and the Runner goes on using the local default |
+| `NO_COLOR` | Set to anything to drop the color from the log output |
 | `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` | The usual proxy configuration. A proxy URL may carry a credential, and one written here **appears in the process listing** |
 
 <Callout type="warn" title="Two variables to leave alone">

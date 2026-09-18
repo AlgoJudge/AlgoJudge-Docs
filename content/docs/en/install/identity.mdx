@@ -36,7 +36,7 @@ installation's choice and archives nothing.
 | | Keycloak | Authentik |
 |---|---|---|
 | Containers | **2** — Keycloak, PostgreSQL | 4 — server, worker, PostgreSQL, Redis |
-| Licence | Apache-2.0 throughout; a CNCF project | open core: MIT core, a proprietary `enterprise/` directory in the same repository |
+| License | Apache-2.0 throughout; a CNCF project | open core: MIT core, a proprietary `enterprise/` directory in the same repository |
 | Audit log with before/after, and log export | included | an Enterprise feature |
 | Configuration re-applied on its own | **no** — an import establishes a realm and skips one that exists; so drift has to be noticed | **yes** — blueprints are re-applied on a schedule |
 | Reporting a deleted account back to AlgoJudge | yes, an **Event Listener SPI provider** | yes, an event matcher and a webhook transport |
@@ -47,7 +47,7 @@ installation's choice and archives nothing.
 
 ## Why Keycloak suits an institution
 
-**The licence.** Keycloak is Apache-2.0 throughout and a CNCF project.
+**The license.** Keycloak is Apache-2.0 throughout and a CNCF project.
 Authentik is an open core: an MIT core with a proprietary `enterprise/`
 directory in the same repository, and **the audit log with before and after
 values, and log export, are Enterprise features**. For software a public body
@@ -178,7 +178,7 @@ screens are [External logins](/en/client/manager/logins).
 | `scopes` | `openid` is requested whether or not it is listed |
 | `claimPath` | a dotted path — `groups`, `realm_access.roles`. **Never an expression** |
 | `unmappedBehavior` | `deny` *(default)* or `defaultRole` |
-| `accountUrl` | configuration, not discovery: OIDC standardises no such URL |
+| `accountUrl` | configuration, not discovery: OIDC standardizes no such URL |
 | `deletionChannelEnabled`, `deletionSecret` | the back channel, per provider |
 | `callbackPath` | **computed and returned**, for pasting into the provider |
 

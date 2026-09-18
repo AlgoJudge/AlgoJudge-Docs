@@ -1,5 +1,5 @@
 ---
-title: Enrolment
+title: Enrollment
 description: A grant in an activity is the membership. There is no roster beside it.
 ---
 
@@ -20,12 +20,12 @@ checkbox, and why the same rows appear under
 
 ## Enrolling one person
 
-**Enrol someone** asks for:
+**Enroll somebody** asks for:
 
 1. the **user** — an account that already exists, and one not already enrolled.
    **Type to find one**: the box is empty until you do, and it asks the Server
    as you type rather than offering a list to scroll;
-2. a **role** — the one this activity enrols into, unless you choose another.
+2. a **role** — the one this activity enrolls into, unless you choose another.
    The grant **points at** it, so a later correction to that role reaches this
    person too;
 3. any **permissions of their own**, on top of the role. What the role gives is
@@ -55,7 +55,7 @@ activity is not one. **Submit** and the submissions panel in the corner are both
 absent from an activity you are not in, the form at its address says so rather
 than opening, and the Server refuses the submission however it arrives.
 
-So enrol yourself, with this switch on: you submit like anybody and stay out of
+So enroll yourself, with this switch on: you submit like anybody and stay out of
 the count and the ranking. An activity you made yourself already has you in it,
 because creating one writes its creator a manager grant, and
 [measuring a model solution](/en/client/manager/packages) is a trial rather than
@@ -66,17 +66,17 @@ a submission, so none of this applies to it.
 A grant is *active* or *invited*. An invited grant confers nothing — it is an
 offer, and the person is not in the activity until they accept it.
 
-## Letting people enrol themselves
+## Letting people enroll themselves
 
 On the activity's settings tab, **who may join**:
 
 | Policy | What happens |
 |---|---|
-| closed | nobody enrols themselves. A manager puts them in |
-| password | anybody with an account and the join code enrols themselves |
-| open | anybody with an account enrols themselves |
+| closed | nobody enrolls themselves. A manager puts them in |
+| password | anybody with an account and the join code enrolls themselves |
+| open | anybody with an account enrolls themselves |
 
-Both policies that admit self-enrolment offer a **link to hand out**. Where a
+Both policies that admit self-enrollment offer a **link to hand out**. Where a
 join code is set, it rides in the link's fragment rather than in a query
 parameter — a fragment is not sent to a server, so it reaches no access log, no
 proxy and no referrer header.
@@ -85,11 +85,11 @@ A closed activity is hidden from the lists of people who are not in it either
 way. The other two can be hidden as well and stay reachable by their address,
 which is what a link is for.
 
-A manager may always enrol somebody by hand, whatever the policy says.
+A manager may always enroll somebody by hand, whatever the policy says.
 
 ## A class that has no accounts yet
 
-**Temporary accounts** creates accounts in bulk and enrols them here as they are
+**Temporary accounts** creates accounts in bulk and enrolls them here as they are
 made. The button appears only if you may do both halves: `activity:enroll` **in
 this activity**, because a grant is per activity, and `user:create:temporary`
 anywhere, because creating accounts is not scoped to the activity they end up
@@ -104,7 +104,7 @@ have to search from.
 The **Users** area is the account list: creating one, editing it, blocking it,
 resetting a password, reading its sessions, and merging one account's work onto
 another. What each of those means to the stored account — why *approved* is not
-*confirmed*, why a deletion anonymises rather than removes, and what a session
+*confirmed*, why a deletion anonymizes rather than removes, and what a session
 row actually holds — is [User](/en/server/concepts/user). The permissions
 those acts sit behind, `user:block` and `user:merge` among them, are listed in
 [Permissions](/en/server/permissions).

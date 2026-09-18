@@ -36,8 +36,8 @@ const COMPONENT_REF = /^#\/components\/([^/]+)\/(.+)$/;
  * **One tag's worth of document, not the whole API.**
  *
  * The page component is a client component, so whatever it is handed is
- * serialised into the page. Handing it the bundled document put all 160 paths
- * and all 196 schemas into every one of the 90 REST pages: 210 kB serialised per
+ * serialized into the page. Handing it the bundled document put all 160 paths
+ * and all 196 schemas into every one of the 90 REST pages: 210 kB serialized per
  * page, a 456 kB HTML file for a tag with eight paths, and a 166 MB export. A
  * reader opening *Account* downloaded the whole API surface.
  *

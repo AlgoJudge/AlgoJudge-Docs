@@ -8,7 +8,7 @@ import { notFound } from "next/navigation";
 import { ArchiveBanner } from "@/components/archive-banner";
 import { FallbackNotice } from "@/components/fallback-notice";
 import { getMDXComponents } from "@/components/mdx";
-import { LicenceNote } from "@/components/licence-note";
+import { LicenseNote } from "@/components/license-note";
 import { OpenAPIPage } from "@/components/api-page";
 import { i18nConfig, type Locale } from "@/lib/i18n";
 import { hreflang, ogLocale, OG_IMAGE, site, SITE_NAME } from "@/lib/site";
@@ -28,7 +28,7 @@ type Schemas = NonNullable<Awaited<ReturnType<typeof loadSchemas>>>;
  * it without the generated file having to change.
  *
  * **It narrows before it binds.** `OpenAPIPage` is a client component, so
- * whatever crosses this boundary is serialised into the page — and the
+ * whatever crosses this boundary is serialized into the page — and the
  * operations the page renders are a prop of that element rather than something
  * the page's front matter knows, so this is the first place both halves are in
  * hand.
@@ -51,7 +51,7 @@ export default async function Page(props: { params: Promise<Params> }) {
     const MDX = page.data.body;
 
     // `fallbackLanguage: "en"` hands back the English page when the requested
-    // one was never written. That is the accepted behaviour, not a defect — but
+    // one was never written. That is the accepted behavior, not a defect — but
     // the reader is owed the fact.
     //
     // **`page.locale` is not the way to find out**, which is the trap here: it
@@ -85,7 +85,7 @@ export default async function Page(props: { params: Promise<Params> }) {
                     })}
                 />
                 </div>
-                {front ? <LicenceNote section={front} locale={lang} /> : null}
+                {front ? <LicenseNote section={front} locale={lang} /> : null}
             </DocsBody>
         </DocsPage>
     );

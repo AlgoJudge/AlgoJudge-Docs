@@ -1,4 +1,4 @@
-import { licenceUrl, repositoryUrl, type Section } from "@/lib/sections";
+import { licenseUrl, repositoryUrl, type Section } from "@/lib/sections";
 import { linkedFromCode } from "@/lib/site";
 
 /**
@@ -19,31 +19,31 @@ import { linkedFromCode } from "@/lib/site";
  * **The first sentence is skipped where a section has no repository of its
  * own.** `protocol` is that section: it describes a contract between two
  * programs rather than one program, so *the source is in X* would have to pick
- * one of them. Its licence link still resolves, because the contract is served
- * by a Server and that Server is software somebody runs under a licence.
+ * one of them. Its license link still resolves, because the contract is served
+ * by a Server and that Server is software somebody runs under a license.
  */
 interface Words {
     source: [string, string];
-    licence: [string, string];
+    license: [string, string];
     pages: [string, string, string];
 }
 
 const text: Record<string, Words> = {
     en: {
         source: ["The source is in ", ". "],
-        licence: ["This project is licensed under MIT. See ", ". "],
+        license: ["This project is licensed under MIT. See ", ". "],
         pages: ["This documentation is ", "CC BY 4.0", "."],
     },
     pl: {
         source: ["Kod źródłowy jest w ", ". "],
-        licence: ["Ten projekt jest na licencji MIT. Zobacz plik ", ". "],
+        license: ["Ten projekt jest na licencji MIT. Zobacz plik ", ". "],
         pages: ["Ta dokumentacja jest na licencji ", "CC BY 4.0", "."],
     },
 };
 
 const link = "font-medium underline underline-offset-4 hover:text-fd-foreground";
 
-export function LicenceNote({ section, locale }: { section: Section; locale: string }) {
+export function LicenseNote({ section, locale }: { section: Section; locale: string }) {
     const words = text[locale] ?? text.en;
 
     return (
@@ -57,11 +57,11 @@ export function LicenceNote({ section, locale }: { section: Section; locale: str
                     {words.source[1]}
                 </>
             ) : null}
-            {words.licence[0]}
-            <a href={licenceUrl(section.licence)} rel="noreferrer noopener" target="_blank" className={link}>
+            {words.license[0]}
+            <a href={licenseUrl(section.license)} rel="noreferrer noopener" target="_blank" className={link}>
                 LICENSE
             </a>
-            {words.licence[1]}
+            {words.license[1]}
             {words.pages[0]}
             <a href={linkedFromCode(locale)[0]} className={link}>
                 {words.pages[1]}

@@ -3,7 +3,7 @@
 //
 // Fumadocs builds a sidebar from `meta.json`, so both links have to be written
 // there - twelve entries across six files today. `lib/sections.ts` already
-// carries the repository and the licence, and a fact written twice is a fact
+// carries the repository and the license, and a fact written twice is a fact
 // that drifts. This is the check that stops it: the pair must be present, must
 // name what is declared, must be in that order, and must be the last two
 // entries, because links that leave the site do not belong in the middle of a
@@ -13,13 +13,13 @@
 // describes a contract between two programs rather than one program, so there
 // is no single repository to send a reader to, and what versions it is not one
 // either. So the absence is checked too, and it is the absence of
-// **both**: a licence link with no repository beside it would be a licence
+// **both**: a license link with no repository beside it would be a license
 // belonging to nothing.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { i18nConfig } from "../lib/i18n.ts";
-import { licenceLabel, licenceUrl, repositoryUrl, sections } from "../lib/sections.ts";
+import { licenseLabel, licenseUrl, repositoryUrl, sections } from "../lib/sections.ts";
 
 const ROOT = "content/docs";
 
@@ -55,7 +55,7 @@ for (const section of sections) {
 
         const want = [
             `external:[${section.repository}](${repositoryUrl(section.repository)})`,
-            `external:[${licenceLabel[locale] ?? licenceLabel.en}](${licenceUrl(section.licence)})`,
+            `external:[${licenseLabel[locale] ?? licenseLabel.en}](${licenseUrl(section.license)})`,
         ];
 
         if (links.length !== want.length) {
@@ -66,14 +66,14 @@ for (const section of sections) {
 
         const wrong = want.findIndex((one, index) => links[index] !== one);
         if (wrong !== -1) {
-            fail(where, "the repository and licence links do not match lib/sections.ts, or are the wrong way round");
+            fail(where, "the repository and license links do not match lib/sections.ts, or are the wrong way round");
             console.error(`         meta.json      : ${links[wrong]}`);
             console.error(`         lib/sections.ts: ${want[wrong]}`);
             continue;
         }
 
         if (JSON.stringify(pages.slice(-want.length)) !== JSON.stringify(want)) {
-            fail(where, "the repository and licence links are not the last two entries");
+            fail(where, "the repository and license links are not the last two entries");
             console.error(`         links that leave the site belong at the end of the page list`);
         }
     }

@@ -29,7 +29,7 @@ import path from "node:path";
  * Assets ships two drawings that differ only in `fill`. Taking both would put a
  * second copy of every `id` in the drawing — `logo`, `gavel`, `text`, `tspan395`
  * — into one document. `fill: currentColor` beats the presentation attribute
- * instead, so the mark is drawn in the colour of the text beside it and needs
+ * instead, so the mark is drawn in the color of the text beside it and needs
  * nothing to switch when the theme does.
  *
  * `overflow: visible` because an outermost `<svg>` clips to its viewport, and

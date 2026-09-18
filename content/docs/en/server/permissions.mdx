@@ -6,7 +6,7 @@ description: The string form, the two scopes, the resolution rules, the three sh
 import { Callout } from "fumadocs-ui/components/callout";
 import { Mermaid } from "@/components/mermaid";
 
-The Server is what enforces authorisation, so the whole vocabulary lives in one
+The Server is what enforces authorization, so the whole vocabulary lives in one
 place: `AlgoJudge.Server/Authorization/Permissions.cs`. The Client fetches it
 rather than hard-coding it, so an installation that adds an entry does not need
 a Client release to show it.
@@ -127,7 +127,7 @@ The problem library is the installation's rather than one activity's and is
 still a manager's work, so it answers to `problem:read:own` held **anywhere**
 and then shows what that person owns, what the installation shares, and what is
 shared with them. `problem:create`, `problem:update`, `problem:archive`,
-`problem:share` and the enrolment picker's `user:read:all` ask the same way.
+`problem:share` and the enrollment picker's `user:read:all` ask the same way.
 Managing one activity is what admits somebody to them; asked at system scope
 they refuse every manager whose grant is on an activity.
 
@@ -221,7 +221,7 @@ A grant is **systemic** — out of the participant count and out of the ranking 
 when it carries any permission an ordinary participant does not hold. The Server
 computes that on every write and never accepts it from the caller.
 
-Two flags are kept per catalogue entry rather than one, because they are two
+Two flags are kept per catalog entry rather than one, because they are two
 questions: *does the participant role grant it* and *does holding it make
 somebody staff*. They differ for exactly one key.
 
@@ -235,11 +235,11 @@ Inferring one flag from the other would have emptied a whole activity's board
 the moment somebody was allowed to time their own code.
 </Callout>
 
-**A key the catalogue does not describe counts as staff.** An unknown right is
+**A key the catalog does not describe counts as staff.** An unknown right is
 more likely to be a new one somebody has been given than an ordinary
 participant's, and guessing the other way would quietly put them in the ranking.
 
-## The catalogue — 54 keys
+## The catalog — 54 keys
 
 ### Activity
 
@@ -284,7 +284,7 @@ not learn the name of any particular archive.
 | `submission:source:read:all` | both | read the source of someone else's submission |
 | `submission:rejudge` | both | queue another evaluation attempt |
 | `submission:cancel` | both | cancel a queued or running job |
-| `submission:exclude` | both | rule that one submission counts towards no standing |
+| `submission:exclude` | both | rule that one submission counts toward no standing |
 
 `submission:source:read:all` is separate from `submission:read:all` on purpose:
 seeing that someone submitted, and reading what they wrote, are different
@@ -295,7 +295,7 @@ hand.
 ### Holding the key is not being in the activity
 
 `submission:create` is the first of two questions; the second is membership.
-Submitting is refused — 403, code `enrolment.required` — unless the submitter
+Submitting is refused — 403, code `enrollment.required` — unless the submitter
 holds an **active** grant in that activity. *Resolution* unions permissions, and
 membership is not a permission: nothing carries it in from anywhere else.
 Without the second question a submission would be graded and listed among the
@@ -402,7 +402,7 @@ in an activity grant it writes that activity's, and nothing else.
 
 **The role list answers to either key, held anywhere.** `GET /api/v1/roles`
 admits `role:read` **or** `grant:update` from any grant the caller holds —
-applying a role is exactly what a manager does when they enrol somebody by hand,
+applying a role is exactly what a manager does when they enroll somebody by hand,
 and `grant:update` is the manager grant written before roles existed. Reading a
 role discloses nothing, and the excess rule still refuses to hand on a permission
 the caller does not hold.

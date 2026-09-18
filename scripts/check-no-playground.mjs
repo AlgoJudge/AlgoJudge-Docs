@@ -15,11 +15,11 @@
 // is. A hostname in a sentence is not a request, and an earlier version of this
 // check that could not tell the two apart failed on four pages that were right.
 //
-// **Script is not scanned, and neither are the chunks.** Next serialises the
+// **Script is not scanned, and neither are the chunks.** Next serializes the
 // whole page - prose, link targets, nav configuration - into an RSC payload
 // inside a `<script>`, so every URL a page merely mentions appears there. The
 // bundled chunks look more promising and are not: tried on 2026-08-30, scanning
-// `out/_next/static` for absolute URLs reported a core-js licence header, a
+// `out/_next/static` for absolute URLs reported a core-js license header, a
 // base-ui error-page link, an F# grammar's issue tracker and a handful of URL
 // parser fixtures - none of them a fetch, and nothing in a minified bundle
 // distinguishes a string from a call site.

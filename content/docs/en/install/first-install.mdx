@@ -23,7 +23,7 @@ The eight packages — `algojudge-server`, `algojudge-client`, `algojudge-runner
 needs no registry login, from anywhere.
 
 A GHCR package created by its first push is **private**, though, and no workflow
-can change that: somebody with access to the organisation's packages sets it to
+can change that: somebody with access to the organization's packages sets it to
 Public, once. It is worth knowing because it returns with every new image, and
 the symptom is a `denied` on `docker compose pull` in an installation that is
 otherwise correct.
@@ -159,7 +159,7 @@ container's own environment, so the token never enters your shell history. It is
 the only supported way to reach the operator's surface: `/api/v1/admin/**`
 answers on the Server's own loopback interface, and a request through nginx —
 **or through the published `127.0.0.1:8080`** — arrives as the bridge gateway
-and gets a 404. That is measured behaviour, not a guess.
+and gets a 404. That is measured behavior, not a guess.
 
 ## 5. Approve the Runners
 
