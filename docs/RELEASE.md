@@ -2,10 +2,9 @@
 
 For whoever cuts the release. A reader of the site wants the site.
 
-Everything below was checked against this repository on **2026-09-07**, on
-`release/0.1.0`. **The five product repositories carry `v0.1.0` since 2026-09-08
-and their eight images are public** — this site is the one that has not been
-released, which is what the list below is for.
+The five product repositories carry `v0.1.0` and their eight images are public.
+This site carries `v0.1.0`, its image is published, and `docs.algojudge.pl`
+serves it.
 
 ## This site has no single version
 
@@ -57,17 +56,13 @@ the eight product images; this ninth serves `docs.algojudge.pl` and is pulled by
 whoever deploys that site alone. So its package being private on its first push —
 as every new one is — costs a `docker login ghcr.io` and nothing else.
 
-**`docs.algojudge.pl` is live.** Read 2026-09-18: it resolves to
-`srv1.algojudge.pl` (`146.59.13.48`), `/` answers 302 to `/en/`, and `/en/`
-answers 200 with the title *AlgoJudge documentation*. `lib/site.ts` has carried
-`documented.released = "0.1"` since 2026-09-08, and 188 files sit under a
-`v0.1/` directory.
+**`docs.algojudge.pl` is live.** It resolves to `srv1.algojudge.pl`
+(`146.59.13.48`), `/` answers 302 to `/en/`, and `/en/` answers 200 with the
+title *AlgoJudge documentation*. `lib/site.ts` carries
+`documented.released = "0.1"`, and 188 files sit under a `v0.1/` directory.
 
-This paragraph said the domain had **no DNS record and no chosen host** until
-2026-09-18, and so did nine documents in the workspace. The site had been
-serving for some time; `AlgoJudge-Client/docs/RELEASE.md` recorded it answering
-on **2026-09-09**, nine days before anything else noticed. Nothing propagates a
-fact like this on its own, which is the whole reason for the section below.
+The tag therefore names an image for a host that exists. Confirm the live site
+is running it — see *After the tag*.
 
 ## The order across repositories is fixed
 
@@ -112,12 +107,12 @@ no version, so `v0.2` will not break them again.
 
 Then, still on that day:
 
-- [ ] **`lib/site.ts`: `documented.released` from `null` to `"0.1"`.** Nothing
-      sets it — `scripts/snapshot.mjs` does not touch this file — and
+- [x] **`lib/site.ts`: `documented.released` is `"0.1"`.** Nothing sets it —
+      `scripts/snapshot.mjs` does not touch this file — and
       `lib/layout.shared.tsx` renders it beside the title on every page, so
-      until it is changed a released site says *unreleased* and *przed 0.1*.
-      It names the product rather than a section, so it changes once, on the
-      first of these releases.
+      while it is `null` a released site says *unreleased* and *przed 0.1*. It
+      names the product rather than a section, so it changes once, on the first
+      of these releases. It is set; the next value it takes is `"0.2"`.
 - [x] **The pre-release warnings are out.** They stopped being true when the
       products released rather than when this site does, so they came out then:
       `content/docs/{en,pl}/install/first-install.mdx`,
@@ -305,51 +300,37 @@ Run `npm outdated` and `npm audit` **read-only**. The lockfile must not move: no
 
 ## After the tag
 
-**This file had no such section until 2026-09-18, and it is the only one of the
-six that did not.** What follows is what nothing here was asking for.
+### This repository has no GitHub Release
 
-### This repository has no GitHub Release, and that is the decision
+**The tag is the publication.** There is no release note for this repository and
+no Release beside its tag. The other five repositories each carry a Release for
+every tag; this one carries none, by decision — `/release` in the workspace
+states the exception in its Phase 7.
 
-**The tag is the publication here.** `gh release list -R
-AlgoJudge/AlgoJudge-Docs` answers with nothing against one tag, and that is
-correct: the workspace's `/release` skill states the exception in its Phase 7 —
-*not for `AlgoJudge-Docs`; there the tag is the publication and no GitHub
-Release is created*. The other five repositories each carry a Release for every
-tag, 7 for 7, checked 2026-09-18.
-
-**It is written here because it was missing here**, and a reader comparing this
-repository against its five siblings sees one tag and no Release and reasonably
-concludes somebody forgot. Somebody did make exactly that mistake on 2026-09-18
-and had to be corrected by the record. An exception that lives in one document
-is an exception nobody obeys — and, worse, one that invites a well-meant repair.
-
-There is therefore **no release note for this repository**. What the site says
-about a version lives on the pages themselves and in `documented.released`.
+What the site says about a version lives on the pages and in
+`documented.released`.
 
 ### The site has to be served from the new image
 
-Unlike the eight product images, nothing pulls this one on a schedule. Whoever
-deploys `docs.algojudge.pl` pulls it, and until they do, the tag names an image
-the live site is not running.
+Nothing pulls this image on a schedule. Whoever deploys `docs.algojudge.pl`
+pulls it, and until they do, the tag names an image the live site is not
+running.
 
-- [ ] `docs.algojudge.pl/en/` answers 200 **from the image this tag built**, not
-      from the one before it.
+- [ ] `docs.algojudge.pl/en/` answers 200 from the image this tag built.
 
-### The public website does not link to this repository at all
+### The public website has no card for this repository
 
 `algojudge.pl` lists five component repositories — Client, Server, Runner,
-External-Runner, Ops — with a card and a version badge each. **There is no
-`docs` card**, no URL for it in `AlgoJudge-Website/src/config/site.ts` and no
-entry in `src/config/repositories.ts`, although this repository is public and
-tagged.
+External-Runner, Ops — with a card and a version badge each. There is no `docs`
+card, no URL for it in `AlgoJudge-Website/src/config/site.ts` and no entry in
+`src/config/repositories.ts`.
 
-That is a gap rather than a stale fact, and it is not this runbook's to close.
-The procedure is `/website-sync` in the workspace.
-
-**Do not simply raise the site's counts of five to six.** Some of those fives
-count *architectural responsibilities*, and `docs/REPOSITORIES.md` records this
-repository as *Runtime component: no* — raising those would make a true sentence
+**Do not raise the site's counts of five to six.** Some of those fives count
+architectural responsibilities, and `docs/REPOSITORIES.md` records this
+repository as *Runtime component: no*; raising those makes a true sentence
 false.
+
+The correction is `/website-sync` in the workspace, not this runbook's step.
 
 ## The one thing a green suite does not tell you
 
