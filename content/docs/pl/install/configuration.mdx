@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i dwa klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: 3b369f0132b5956ecfb4f547b6664c9ab0f74ab9ea8ed94aa645b4f3dfb344f5
+sourceSha256: ef274911c5b63376ed5d7275665b84af0617c1b9e68ed1764e0a09820d97ed72
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -141,7 +141,7 @@ Czytaj tylko wtedy, gdy `external-runner` jest w `COMPOSE_PROFILES`. Zobacz
 | `EXTERNAL_PROBLEM_TYPES` | puste | puste deklaruje własny typ archiwum. Literówka daje tu ciszę, a nie błąd |
 | `EXTERNAL_RUNNER_TAGS` | puste | pule, czytane wyłącznie przy pierwszej rejestracji |
 | `EXTERNAL_RUNNER_LOG` | `info` | staje się `RUST_LOG` |
-| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | dwa razy tyle co u Runnera oceniającego, bo oddaje do dwudziestu zgłoszeń w toku, po jednym wywołaniu na każde |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | dwa razy tyle co u Runnera oceniającego, bo jednym wywołaniem oddaje całą pulę zgłoszeń w toku — najwyżej tyle, ile wynosi `AJ_External__MaxPending`, domyślnie 100 |
 
 Jego dzierżawy ani odstępów odpytywania celowo nie udostępniamy: sprawdzają się
 nawzajem przy starcie, domyślne wartości obrazu spełniają wszystkie te warunki,

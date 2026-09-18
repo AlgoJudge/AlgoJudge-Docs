@@ -136,7 +136,7 @@ judge](/en/install/external-runner).
 | `EXTERNAL_PROBLEM_TYPES` | empty | empty declares the archive's own type. A typo here is silence, not an error |
 | `EXTERNAL_RUNNER_TAGS` | empty | pools, read at the first registration only |
 | `EXTERNAL_RUNNER_LOG` | `info` | becomes `RUST_LOG` |
-| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | twice the sandboxing Runner's, because it hands back up to twenty pending submissions at one call each |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | twice the sandboxing Runner's, because it hands its whole pending pool back — up to `AJ_External__MaxPending`, 100 by default — in a single call |
 
 Its lease and its polling intervals are deliberately not offered: they check one
 another at startup, the image's defaults satisfy all of it, and the well-meant
