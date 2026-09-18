@@ -238,14 +238,17 @@ job container it starts.** It has to: a job container is the daemon's child
 rather than the Runner's, so it inherits no affinity and would otherwise spread
 over the whole host, quietly undoing the division you drew.
 
-**The division worth making is one Runner per group of processors, and one lane
-per processor in the group.** Two *different* Runners on one core take each
-other's execution units, and a program then spends more processor time than it
-should for the same work — which is a wrong verdict, not a slow one.
+**The division worth making is one Runner per group of cores, and one lane per
+core in the group.** Two *different* Runners on one core take each other's
+execution units, and a program then spends more processor time than it should
+for the same work — which is a wrong verdict, not a slow one.
 
-**Two lanes on the two threads of one core do exactly that, and this is the half
-nothing checks.** A Runner refuses a width its set cannot give one processor
-each; whether those processors are separate cores is yours to arrange. A lane to
+**Two lanes on the two threads of one core do exactly that, and two things now
+check it.** A Runner refuses a width its set cannot give one processor each,
+and reads `thread_siblings_list` at start to warn once for every lane that got a
+thread rather than a core. `scripts/preflight.sh` counts distinct cores in each
+cpuset and warns — it does not refuse — when there are fewer than there are
+lanes. A host publishing no topology has nothing to say either way. A lane to
 a core is the clean division, and two lanes to a core is a submission answered
 sooner at a real cost in the number its verdict is decided by. Write the sibling
 pairs next to each other and let the cut fall between them —

@@ -13,9 +13,11 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 Four things, and each one filtered to this installation:
 
-- **work directories** older than `GC_TMP_RETENTION_DAYS` (7 by default). A
-  Runner killed mid-evaluation cannot clean up after itself, and the job it was
-  doing goes back on the queue by lease — so strays are normal, not a defect;
+- **scratch older than `GC_TMP_RETENTION_DAYS`** (7 by default), swept from
+  inside a throwaway container per Runner, because each Runner's scratch is a
+  volume with no host path. A Runner killed mid-evaluation cannot clean up after
+  itself, and the job it was doing goes back on the queue by lease — so strays
+  are normal, not a defect;
 - **exited job containers** nothing will collect, found by the label the Runner
   puts on them — `algojudge.sandbox=1`, never by name, because a name filter
   matches a substring and would take somebody else's container with it. The
@@ -28,9 +30,10 @@ Four things, and each one filtered to this installation:
 **Neither cache is swept**, because neither needs it: each Runner bounds
 `algojudge_runner-cache` at 10 GiB and the external Runner bounds
 `external-runner-cache` at 256 MiB, both from inside. Both survive a `down` and
-an image change — and deleting either costs a download rather than a job.
+an image change — **but not `down -v`**, which removes them with everything else
+— and deleting either costs a download rather than a job.
 
-The Runner's is a **directory every Runner on the host shares**, holding each
+The Runner's is **one volume every Runner on the host shares**, holding each
 package with the tests unpacked from it and the checker built out of it; the
 external Runner's is a named volume holding participants' source. Neither is
 backed up, for the same reason neither is swept.

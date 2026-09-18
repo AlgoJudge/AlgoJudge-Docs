@@ -314,7 +314,20 @@ and a refused registration is not one a Runner retries. Pull both images from th
 same release rather than letting the moving tags drift — [Update and
 rollback](/en/install/update) says why they have to move together.
 
-**A named poll or lease setting** is the third: a Runner checks its intervals
+**`AJ_Runner__TestsAtOnce` named in the refusal** is the sandboxing Runner's
+own: it will not start with more lanes than its cpuset has processors. Two traps
+sit in it.
+
+**The width is one value for every Runner.** `RUNNER_TESTS_AT_ONCE` reaches all
+four services from the same anchor, so one narrow `RUNNER_2_CPUSET` is a loop on
+`runner-2` while `runner-1` judges perfectly — read the log of the one that is
+looping, not of the one that works.
+
+**A Runner with no cpuset reads the whole machine.** Leaving the set empty does
+not make the check lenient: a width of four on a machine with two processors is
+refused whether the set is narrow or absent.
+
+**A named poll or lease setting** is the fourth: a Runner checks its intervals
 against one another before it does anything. None of these can be reached with
 the values this stack ships; they are what a `.env` of your own can produce.
 `AJ_Poll__WaitSeconds` above 300 is refused because 300 is the Server's own

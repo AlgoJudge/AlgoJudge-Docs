@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: bf32929cab5db91bd01fa3dcff1b69117529d16ce6a751477c848da5835be4bb
+sourceSha256: 752716919fcd48515be0e2b17cb4abde0739e071c576f5620369e0dfe1ca6076
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -320,7 +320,20 @@ ponawia. Pobieraj oba obrazy z tego samego wydania, zamiast pozwalać ruchomym
 tagom się rozjechać — dlaczego muszą chodzić razem, mówi [Aktualizacja i
 wycofanie](/pl/install/update).
 
-**Nazwane ustawienie odpytywania albo dzierżawy** to trzecia przyczyna: Runner
+**`AJ_Runner__TestsAtOnce` w treści odmowy** należy do Runnera oceniającego: nie
+wystartuje z większą liczbą torów, niż jego zbiór ma procesorów. Kryją się tu dwie
+pułapki.
+
+**Szerokość to jedna wartość dla wszystkich Runnerów.** `RUNNER_TESTS_AT_ONCE`
+trafia do wszystkich czterech usług z tej samej kotwicy, więc jeden wąski
+`RUNNER_2_CPUSET` to pętla na `runner-2`, podczas gdy `runner-1` ocenia bez
+zarzutu — czytaj log tego, który się zapętlił, a nie tego, który działa.
+
+**Runner bez cpusetu czyta całą maszynę.** Zostawienie pustego zbioru nie
+rozluźnia sprawdzenia: szerokość cztery na maszynie o dwóch procesorach zostanie
+odrzucona, czy zbiór jest wąski, czy go nie ma.
+
+**Nazwane ustawienie odpytywania albo dzierżawy** to czwarta przyczyna: Runner
 sprawdza swoje odstępy nawzajem, zanim cokolwiek zrobi. Żadnej z nich nie da się
 osiągnąć wartościami, które dostarcza ten stos — biorą się z własnego `.env`.
 `AJ_Poll__WaitSeconds` powyżej 300 jest odrzucane, bo 300 to własny sufit
