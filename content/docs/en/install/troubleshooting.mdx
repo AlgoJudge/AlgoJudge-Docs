@@ -78,6 +78,17 @@ docker compose exec -T server aj-admin status
 If that says `AJ_Admin__Token is not set in this container`, the token was empty
 when the container started. Set it in `.env` and recreate the Server.
 
+**A second message closes the surface for a different reason.** The Server's own
+start-up log carries it:
+
+```text
+AJ_Admin__Token is the well-known development token, so /admin is closed.
+```
+
+That is an installation running the value the development stack ships,
+`admin-token-development-only`, which is published and therefore no token at
+all. Put a secret of your own in `.env` and recreate the Server.
+
 ## Nobody can administer the installation
 
 **Restart the Server.** At every start it looks for an active installation-wide

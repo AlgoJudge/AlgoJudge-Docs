@@ -2,7 +2,7 @@
 title: Uprawnienia i nadania
 description: Jak zapisuje się prawa, jak się rozstrzygają i trzy reguły, które czynią model bezpiecznym.
 source: en/client/manager/permissions.mdx
-sourceSha256: fd5b1d6c52db7f72fae551770f0d6a6d6506ba3e75f786c11e1720f4afc28261
+sourceSha256: a205dd2eaecbfea3458847159a2d8f584f048fdc68709ed69401eede1cce877e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -169,9 +169,14 @@ podgląd i zdejmowanie zamrożenia rankingu, konta tymczasowe, odczyt i zapis
 nadań oraz odczyt i zapis ról **tej aktywności**.
 
 Świadomie **nie ma** w nim: `activity:create`, `activity:delete`,
-`problem:read:all`, `problem:delete`, `problem:import:external`, `user:*` poza
-kontami tymczasowymi, `runner:*`, `instance:update`, `provider:manage` ani
-`trial:run`. Manager prowadzi aktywność; nie prowadzi instalacji.
+`problem:read:all`, `problem:delete`, `problem:import:external`, tych kluczy
+`user:`, które tworzą i edytują konta, `runner:*`, `instance:update`,
+`provider:manage` ani `trial:run`. Manager prowadzi aktywność; nie prowadzi
+instalacji.
+
+`user:read:all` **jest** w nim — po to, żeby prowadzący mógł wskazać osobę przy
+zapisach i nadaniach. Obszar Użytkownicy nadal pyta o nie na poziomie całej
+instalacji, więc posiadanie go tutaj nie otwiera żadnej listy kont.
 
 **`admin`** — jeden wpis, `system:administrator`. Jeden, bo omija resztę:
 administrator z listą pojedynczych uprawnień to administrator, któremu można po

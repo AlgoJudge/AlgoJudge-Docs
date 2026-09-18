@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: fa1abbd8c27ab92de11107a88713abf2d0c5f33ee8d28264cfb164987e96f152
+sourceSha256: bf32929cab5db91bd01fa3dcff1b69117529d16ce6a751477c848da5835be4bb
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -81,6 +81,17 @@ docker compose exec -T server aj-admin status
 
 Jeśli odpowie `AJ_Admin__Token is not set in this container`, token był pusty,
 gdy kontener startował. Ustaw go w `.env` i odtwórz Server.
+
+**Drugą przyczynę zamknięcia tej powierzchni widać w innym komunikacie.** Server
+wypisuje go w logu przy starcie:
+
+```text
+AJ_Admin__Token is the well-known development token, so /admin is closed.
+```
+
+To instalacja z wartością, którą dostarcza stos deweloperski,
+`admin-token-development-only` — jest opublikowana, więc nie jest żadnym tokenem.
+Wpisz do `.env` własny sekret i odtwórz Server.
 
 ## Nikt nie może administrować instalacją
 

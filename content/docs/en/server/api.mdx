@@ -194,6 +194,19 @@ An absent, empty or whitespace token setting closes the whole group. There is no
 "no token means no check" reading: the failure shuts the door rather than
 opening it.
 
+**So does the development token, everywhere but Development.** The value the
+development stack ships, `admin-token-development-only`, is published — it is in
+a compose file anybody can read — so outside a Development environment the
+Server treats it as no token at all and closes the group. The start-up log says
+which of the two it was:
+
+```text
+AJ_Admin__Token is the well-known development token, so /admin is closed.
+```
+
+An installation that copied the development value has a closed surface and a
+line naming the reason, rather than an open one nobody noticed.
+
 Because the surface is unreachable from the network, the way an operator uses it
 is `docker exec` into the Server's container — which is what `aj-admin` does.
 
