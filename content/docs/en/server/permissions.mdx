@@ -95,6 +95,47 @@ The Server's "which activities is this permission held in" query returns
 **null** for *not restricted* and a list for *these activities*. An empty list
 is a third answer and means none.
 
+### A panel list asked without an activity narrows instead of refusing
+
+**An activity named in a query is a question at that scope**, and the key is
+required there — no key in that activity, no list. **No activity is a different
+question**, *everything I may read*, and the answer to that one is a narrowing.
+
+So a manager whose only grant is on one course opens the panel's unfiltered
+submissions list and is shown that course. Asking at system scope instead
+refuses them, because a grant on an activity contributes nothing to a question
+asked with no activity in it — and that is every manager an activity's grant
+editor makes.
+
+**Holding the key nowhere is still a refusal.** An empty page would tell
+somebody who may not look that there is nothing to see, which is a different
+sentence and the wrong one.
+
+Four of the panel's lists resolve their scope this way — submissions
+(`submission:read:all`), questions (`question:read:all`), grants
+(`grant:read:all`) and printouts (`printout:manage`). The rule lives in one
+place rather than in each list: a security rule written four times is a security
+rule that drifts three times.
+
+An activity that withheld the key from itself drops out of the narrowing. An
+activity grant carrying `OverrideSystem` is the whole answer inside its
+activity, so one that does not carry the permission withholds it however widely
+it is held elsewhere — including from somebody who holds it system-wide.
+
+<Callout type="info" title="Some surfaces ask only *anywhere*">
+The problem library is the installation's rather than one activity's and is
+still a manager's work, so it answers to `problem:read:own` held **anywhere**
+and then shows what that person owns, what the installation shares, and what is
+shared with them. `problem:create`, `problem:update`, `problem:archive`,
+`problem:share` and the enrolment picker's `user:read:all` ask the same way.
+Managing one activity is what admits somebody to them; asked at system scope
+they refuse every manager whose grant is on an activity.
+
+Listing the installation's accounts and reading somebody's sessions are
+administration and still ask at system scope. `/manager/users` is not a
+manager's screen.
+</Callout>
+
 ## The three shipped roles
 
 A grant **points at** a role. Editing one changes what everybody holding it may

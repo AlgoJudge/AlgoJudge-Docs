@@ -85,6 +85,69 @@ Staying on `0` takes every later one on the next update.
 **Below 1.0 that is more than fixes.** A minor is allowed to change what the one
 before it did, so `0` follows those too. An installation that wants only fixes
 writes `0.1`, and one that wants to decide every version writes `0.1.0`.
+## Updating an installation that keeps host directories
+
+An installation whose Runners keep their cache and scratch in host directories
+moves to named volumes on the next update. Three things follow, and none of them
+loses anything a participant can see.
+
+**The package cache starts empty.** The first submission to each problem
+downloads the package and builds the checker it declares again — minutes, once,
+per problem. **Do not update on a contest morning** for that reason alone.
+
+**The old directories are left where they are.** Nothing removes them and
+nothing reads them either. `RUNNER_CACHE_DIR` and `RUNNER_WORK_DIR` become
+inert: take them out of `.env` once you are satisfied, and then the directories
+themselves.
+
+```bash
+sudo rm -rf /srv/algojudge/runner-cache /srv/algojudge/runner-work
+```
+
+**A daemon below Docker Engine 26 has to keep the directories**, and the update
+does not check that for you before it starts. A judge's container mounts a
+subdirectory of the shared cache volume, which is a `subpath` mount and arrived
+in Engine 26 / API 1.45. Run `./scripts/preflight.sh` first — it reports the
+daemon's API version against 1.45 — and copy the overlay before `up -d`:
+
+```bash
+cp compose.directories.yaml compose.override.yaml
+```
+
+The two paths are already in `.env`, so nothing else changes. That is a
+supported arrangement rather than a deprecated one: see [Where the Runners keep
+their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
+
+<Callout type="warn" title="A volume left under that name is attached, not replaced">
+An installation that used a cache volume before it used host directories may
+still own one called `algojudge_runner-cache`, holding a layout no current
+Runner reads. The new cache volume has that same name, so Compose attaches the
+old one instead of making a fresh one. Remove it before the first start.
+
+```bash
+docker volume ls
+docker volume rm algojudge_runner-cache
+```
+</Callout>
+
+**And a rollback leaves the new cache behind, deliberately.** A Runner of the
+older generation keeps its entries under two-character shards at the top of the
+directory; a newer one keeps them under `packages/`, where the older code never
+looks. So the older Runner finds nothing, downloads again, and the two layouts
+sit side by side rather than one being handed to the other — which would have
+been every submission failing on a package that could not be opened. What is
+left is dead weight only the newer Runner can see, and an installation that
+stays rolled back can empty the cache for the price of a download.
+
+```bash
+docker compose stop runner-1 runner-2
+docker volume rm algojudge_runner-cache
+docker compose start runner-1 runner-2
+```
+
+Stop the Runners first: the volume is in use while they are up, and `volume rm`
+refuses rather than half-doing it.
+
 `latest` is not offered — an installation that changed version because somebody
 pulled is not a deployment.
 
@@ -135,6 +198,28 @@ This bites hardest on [T2](/en/install), where the Runners are on hosts of their
 own. Those hosts have their own `update.sh`, and one that is not updated in step
 goes quiet on its **next restart** rather than immediately — the shape of failure
 nobody notices until a contest.
+
+## A Server too old for the external Runner
+
+The direction above has a mirror. The external Runner renews its leases and
+gives work back **in batches**, so it checks before it claims anything: it sends
+an empty renewal, and a Server that answers `404` to that is one this Runner
+cannot hold a lease against.
+
+It says so and stops, naming the route —
+`this Server does not serve POST runner/jobs/leases` — and goes on: that Server
+is older than the batch lease routes this Runner needs, so either update the
+Server, or run a Runner from the release that matches it.
+
+**A container that will not start is the better half of this.** Finding out
+later means a pool of leases quietly expiring behind a process that looks
+healthy, and every submission in that pool sent to the archive a second time
+when its job is requeued.
+
+The check runs after the Runner has been approved, so one still waiting for
+approval says that instead. Anything other than a `404` — an unreachable Server,
+a maintenance window — is not this check's to decide: the Runner warns, carries
+on, and waits it out as it always does.
 
 ## The Runner during an update
 

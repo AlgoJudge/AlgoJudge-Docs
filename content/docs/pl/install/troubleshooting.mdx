@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: 980eef0abab145b007b89a1a0429cf383f0c1e944646e32c7a1f95fb2a6a5d7a
+sourceSha256: fa1abbd8c27ab92de11107a88713abf2d0c5f33ee8d28264cfb164987e96f152
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -184,6 +184,53 @@ trzyma je w pamięci i podaje shimowi deskryptor przez gniazdo — więc shim
 sprzed tej zmiany otworzyłby gniazdo tak, jakby było plikiem, i zgłosiłby
 przebieg bez pomiaru. Runner woli odmówić, bo to zdanie, na które operator może
 zareagować.
+
+## Test kończy się na `nothing opened the run's output channel`
+
+```text
+test 03: nothing opened the run's output channel within 30s
+```
+
+**Kontener, który miał ocenić ten test, nie wystartował.** Runner czeka
+trzydzieści sekund, aż ktokolwiek otworzy wyjście przebiegu, i wtedy mówi o tym
+wprost, zamiast zgłosić pustą odpowiedź — a ta byłaby błędnym werdyktem
+przypisanym zgłoszeniu, które nigdy nie ruszyło. To awaria infrastruktury, więc
+zlecenie wraca do kolejki, zamiast upaść, aż wyczerpią się jego doręczenia.
+
+Własny komunikat demona o kontenerze, którego nie dało się uruchomić, stoi w logu
+Runnera linię wyżej i zwykle nazywa przyczynę wprost:
+
+```bash
+docker compose logs runner-1 | tail -40
+```
+
+Trzy przyczyny, od najczęstszej:
+
+1. **Obraz językowy nie startuje na tym hoście.** `docker images` pokazuje, czy
+   wszystkie cztery są na miejscu; kontener, który ginie na `OCI runtime create
+   failed`, nie otworzy niczego.
+2. **Katalog roboczy nie jest tym, który widzi demon** — przyczyna możliwa
+   wyłącznie tam, gdzie w użyciu są katalogi na hoście. Kanały przebiegu
+   powstają w katalogu roboczym zlecenia i są montowane do kontenera, a ścieżka,
+   której demon nie potrafi otworzyć, daje **pusty katalog**, a nie błąd — więc
+   w środku nie ma potoku, który shim mógłby otworzyć. `RUNNER_WORK_DIR` musi
+   być bezwzględny i otwieralny przez demona, nie tylko przez Twoją powłokę.
+3. **Katalog roboczy nie potrafi trzymać nazwanego potoku.** Kanał to FIFO
+   i gniazdo uniksowe, a nie bajty, więc system plików, który nie tworzy ani
+   jednego, ani drugiego, kończy się tutaj. Zwykłą drogą do tego jest wpis
+   `tmpfs:` przy usłudze runnera: należy on do przestrzeni montowań samego
+   Runnera, a demon robi obok własny pusty katalog.
+
+<Callout type="warn" title="Na Dockerze Desktop pamięć podręczna nie ma dobrego miejsca pod /var">
+`/var` w jego maszynie wirtualnej jest zamontowany jako `noexec`, więc checker
+zbudowany do pamięci podręcznej w tym miejscu nie da się uruchomić, a jego
+kontener ginie przy starcie — i to jest jedna z dróg, którymi test trafia tutaj.
+Trzymaj pamięć podręczną w nazwanym wolumenie, bo to właśnie dostarcza ten stos.
+</Callout>
+
+**Checker albo interactor, którego własnego kanału nikt nie otworzył, czyta się
+inaczej**: wraca jako **zepsuty checker**, a nie z powyższym zdaniem. Przyczyna
+jest ta sama, a zaczynać należy od wpisu poniżej.
 
 ## Checker zawodzi na każdym zgłoszeniu albo ocenia wobec pustki
 

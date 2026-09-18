@@ -180,6 +180,53 @@ shim from before that would open the socket as though it were a file and report 
 run that measured nothing. The Runner refuses the run instead, which is a
 sentence an operator can act on.
 
+## A test fails with `nothing opened the run's output channel`
+
+```text
+test 03: nothing opened the run's output channel within 30s
+```
+
+**The container that should have judged the test did not start.** The Runner
+waits thirty seconds for something to open the run's output, then says so rather
+than reporting an empty answer — which would be a wrong answer pinned on a
+submission that never ran. It is an infrastructure failure, so the job is queued
+again rather than failed, until its deliveries run out.
+
+The daemon's own message about the container it could not start is above this
+line in the Runner's log, and usually names the cause outright:
+
+```bash
+docker compose logs runner-1 | tail -40
+```
+
+Three causes, commonest first:
+
+1. **A language image will not start on this host.** `docker images` says
+   whether all four are there; a container that dies at `OCI runtime create
+   failed` never opens anything.
+2. **The work directory is not the one the daemon sees**, which is a cause only
+   where host directories are in use. A run's channels are made in the job's
+   scratch and bind-mounted into the container, and a path the daemon cannot
+   open produces an **empty directory** rather than an error — so there is no
+   pipe inside for the shim to open. `RUNNER_WORK_DIR` must be absolute and
+   openable by the daemon, not only by your shell.
+3. **The scratch cannot hold a named pipe.** A channel is a FIFO and a Unix
+   socket rather than bytes, so a filesystem that makes neither fails here. A
+   `tmpfs:` entry on the runner service is the usual way into this: it is
+   private to the Runner's own mount namespace, and the daemon makes an empty
+   directory of its own instead.
+
+<Callout type="warn" title="On Docker Desktop the cache has no good home under /var">
+`/var` inside its virtual machine is mounted `noexec`, so a checker built into a
+cache there cannot be executed and its container dies at start — and that is one
+of the ways a test arrives here. Put the cache in a named volume, which is what
+this stack ships.
+</Callout>
+
+**A checker or interactor whose own channel nobody opened reads differently**: it
+comes back as a **broken checker**, not with the sentence above. Same cause, and
+[the entry below](/en/install/troubleshooting) is where to start.
+
 ## A checker fails on every submission, or judges against nothing
 
 Submissions to a problem whose package brings a checker come back as

@@ -2,7 +2,7 @@
 title: Aktywności
 description: Czym jest aktywność, jak znaleźć swoją i jak się do niej dostać.
 source: en/client/participant/activities.mdx
-sourceSha256: d0f25cd677be2b55c0e05fafe8f296cd7750e07b3e5b97f5e06bb2fd712393d2
+sourceSha256: 925ee3f6246b3d020539c2f39e2629f171dc1c793659cfe559bb832cb3afe397
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -134,6 +134,64 @@ przez to nie tracisz: listę masz pod **Moje zgłoszenia** w nawigacji, a
 formularz pod sąsiednim wpisem **Wyślij zgłoszenie**.
 
 Rozwinięty czy zwinięty — panel pamięta to na czas sesji.
+
+## Na telefonie
+
+**Granica przebiega przy 768 pikselach.** Na takim ekranie i węższym Client
+układa się inaczej, a nie po prostu rysuje mniejszy. Nic nie ubywa — część
+sterowania stoi gdzie indziej. Jedyny wyjątek to panel zgłoszeń w rogu, którego
+w ogóle nie ma; powód jest opisany przy nim wyżej.
+
+### Pasek i nawigacja
+
+Górny pasek zostawia to, po co kciuk sięga bez otwierania czegokolwiek:
+przycisk z trzema kreskami, znak produktu, odliczanie trwającej rundy i
+przełącznik jasnego i ciemnego motywu. **Menu Twojego konta i wybór języka
+przenoszą się do nawigacji**, na jej dół, pod linię oddzielającą. To dwie
+najszersze kontrolki paska — obok wszystkiego innego nie mieszczą się w jego
+szerokości. Wybór języka to wciąż przycisk **Język**, a menu konta wciąż stoi
+pod Twoim własnym imieniem.
+
+Przycisk z trzema kreskami w lewym górnym rogu wysuwa nawigację na cały ekran.
+Jest to pełna nawigacja — nie ma tu wąskiego paska z samymi ikonami ani
+przycisku **Zwiń**, który by go robił — i **zamyka się, gdy tylko dotkniesz w
+niej jakiegoś wpisu**. Wpis zdążył już zmienić stronę pod spodem, a obok panelu
+nie ma przyciemnionego miejsca, w które dałoby się stuknąć.
+
+Dwie pozycje, które szerokie okno trzyma w nawigacji, tutaj nie występują: znak
+operatora u góry oraz odnośniki na dole — **O projekcie** i dokumenty prawne
+instalacji. Te dokumenty mają własne adresy — `/terms`, `/privacy`, `/cookies` i
+`/accessibility` — i otwierają się przy każdej szerokości. Z paska znika też
+nazwa operatora obok znaku produktu, i z tego samego powodu: długa nazwa
+wydziału zepchnęłaby zegar i przycisk menu poza krawędź.
+
+### Listy stają się kartami
+
+Lista, która na komputerze jest tabelą, tutaj jest **kartą na każdy wiersz**.
+Wiersz nagłówka znika, a każda wartość niesie nazwę kolumny, z której pochodzi —
+zgłoszenie czyta się w dół: *Data wysłania*, *Zadanie*, *Język*, *Status*,
+*Wynik* — zamiast w poprzek. Komórki, w której nic nie ma, karta nie pokazuje;
+nie zostaje po niej sama nazwa kolumny.
+
+Nic nie jest obcinane, żeby zrobić miejsce. Szeroka tabela na telefonie albo
+gubi prawe kolumny za krawędzią, albo zmniejsza pismo tak, że liczby przestają
+być czytelne. Karta nie robi ani jednego, ani drugiego — jest za to wyższa.
+
+Tak czyta się **Moje zgłoszenia**, **Pytania i ogłoszenia**, **Wydruki** oraz
+tabelę testów pod wynikiem. Wyjątkiem są dwie tablice rankingowe — zobacz
+[Ranking](/pl/client/participant/ranking).
+
+### Lista aktywności
+
+Na kafelku w **Aktywnościach** luźne wiersze organizatora — *Prowadzący: …* i
+cokolwiek jeszcze napisał — stoją **pod** nazwą aktywności, na całej szerokości
+kafelka i mniejszym pismem. W szerokim oknie są kolumną obok nazwy; na telefonie
+nie ma miejsca na dwie kolumny, więc jest jedna. Wiersz **Wynik** wszędzie
+zachowuje swój rozmiar, bo to Twój wynik, a nie szczegół opisu aktywności.
+
+Wewnątrz aktywności wiersz zadania zawija się tak samo. `[slug] Nazwa` zostaje w
+pierwszym wierszu, a plakietka stanu i przycisk **Wyślij zgłoszenie** schodzą do
+drugiego, zamiast ściskać się obok.
 
 ## Start w grupie
 

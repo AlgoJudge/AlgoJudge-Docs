@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: 6096c92fa50af083b6d181409dfb0db7d3c633c62a351f8ebe6c08a1fc5b58d8
+sourceSha256: 3b1b5ca28d32930af1adcbdbacd2ca2dc76dbd5b762f5976bff04722bf0f4a07
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -88,6 +88,72 @@ zostanie na `0`, dostanie przy następnej aktualizacji każde późniejsze wydan
 robiła poprzednia, a `0` bierze także takie wydania. Kto chce wyłącznie
 poprawek, wpisuje `0.1`; kto chce decydować o każdej wersji — `0.1.0`.
 `latest` nie jest oferowany
+## Aktualizacja instalacji, która trzyma katalogi na hoście
+
+Instalacja, w której Runnery trzymają pamięć podręczną i katalog roboczy
+w katalogach na hoście, przy najbliższej aktualizacji przenosi je do nazwanych
+wolumenów. Wynikają z tego trzy rzeczy i żadna nie gubi niczego, co uczestnik
+mógłby zobaczyć.
+
+**Pamięć podręczna paczek startuje pusta.** Pierwsze zgłoszenie do każdego
+zadania na nowo pobiera paczkę i buduje zadeklarowany w niej checker — minuty,
+raz, na zadanie. **Nie aktualizuj w poranek zawodów** choćby z tego jednego
+powodu.
+
+**Stare katalogi zostają tam, gdzie były.** Nic ich nie usuwa i nic ich też nie
+czyta. `RUNNER_CACHE_DIR` i `RUNNER_WORK_DIR` przestają na cokolwiek wpływać:
+usuń je z `.env`, kiedy nabierzesz pewności, a potem same katalogi.
+
+```bash
+sudo rm -rf /srv/algojudge/runner-cache /srv/algojudge/runner-work
+```
+
+**Demon starszy niż Docker Engine 26 musi zostać przy katalogach**, a
+aktualizacja nie sprawdzi tego za Ciebie, zanim ruszy. Kontener sędziego montuje
+podkatalog wspólnego wolumenu pamięci podręcznej, czyli montowanie `subpath`,
+które pojawiło się w Engine 26 / API 1.45. Najpierw uruchom
+`./scripts/preflight.sh` — pokazuje wersję API demona wobec 1.45 — a przed `up
+-d` skopiuj nakładkę:
+
+```bash
+cp compose.directories.yaml compose.override.yaml
+```
+
+Obie ścieżki są już w `.env`, więc nic więcej się nie zmienia. To układ
+wspierany, a nie wycofywany: patrz [Gdzie Runnery trzymają swoje
+bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
+
+<Callout type="warn" title="Wolumen zostawiony pod tą nazwą zostaje podłączony, a nie zastąpiony">
+Instalacja, która używała wolumenu pamięci podręcznej, zanim przeszła na
+katalogi na hoście, może wciąż mieć wolumen o nazwie `algojudge_runner-cache`
+z układem, którego żaden dzisiejszy Runner nie czyta. Nowy wolumen nazywa się
+tak samo, więc Compose podłącza ten stary, zamiast utworzyć świeży. Usuń go
+przed pierwszym startem.
+
+```bash
+docker volume ls
+docker volume rm algojudge_runner-cache
+```
+</Callout>
+
+**A wycofanie zostawia nową pamięć podręczną w spokoju, i to celowo.** Runner
+starszej generacji trzyma swoje wpisy w dwuznakowych katalogach u góry,
+nowszy — pod `packages/`, gdzie starszy kod nigdy nie zagląda. Starszy Runner nie
+znajduje więc nic, pobiera od nowa, i oba układy leżą obok siebie, zamiast żeby
+jeden trafił w ręce drugiego — a to oznaczałoby każde zgłoszenie upadające na
+paczce, której nie da się otworzyć. Zostaje martwy ciężar, który widzi tylko
+nowszy Runner; instalacja, która zostaje wycofana na stałe, może opróżnić pamięć
+podręczną za cenę jednego pobrania.
+
+```bash
+docker compose stop runner-1 runner-2
+docker volume rm algojudge_runner-cache
+docker compose start runner-1 runner-2
+```
+
+Najpierw zatrzymaj Runnery: dopóki działają, wolumen jest w użyciu i `volume rm`
+odmawia, zamiast zrobić to po połowie.
+
 — instalacja, która zmieniła wersję, bo ktoś zrobił pull, nie jest wdrożeniem.
 
 ## Wycofanie
@@ -138,6 +204,28 @@ Najdotkliwiej dotyczy to układu [T2](/pl/install), gdzie Runnery stoją na
 własnych hostach. Te hosty mają własny `update.sh`, a ten, którego nie
 zaktualizowano razem z resztą, cichnie dopiero **przy kolejnym restarcie** — czyli
 w sposób, którego nikt nie zauważy aż do zawodów.
+
+## Server zbyt stary dla zewnętrznego Runnera
+
+Kierunek opisany wyżej ma swoje odbicie. Zewnętrzny Runner odnawia dzierżawy
+i oddaje pracę **zbiorczo**, więc sprawdza to, zanim cokolwiek weźmie: wysyła
+puste odnowienie, a Server, który odpowiada na nie `404`, to Server, u którego
+ten Runner nie utrzyma dzierżawy.
+
+Mówi o tym i kończy pracę, nazywając trasę —
+`this Server does not serve POST runner/jobs/leases` — i dalej: że ten Server
+jest starszy niż trasy dzierżaw zbiorczych, których ten Runner potrzebuje, więc
+albo zaktualizuj Server, albo uruchom Runnera z wydania, które do niego pasuje.
+
+**Kontener, który nie wstaje, to lepsza połowa tej sytuacji.** Dowiedzieć się
+później znaczy: pula dzierżaw po cichu wygasa za procesem, który wygląda zdrowo,
+a każde zgłoszenie z tej puli trafia do archiwum drugi raz, kiedy jego zlecenie
+wróci do kolejki.
+
+Sprawdzenie odbywa się po zatwierdzeniu Runnera, więc ten, który wciąż na
+zatwierdzenie czeka, pisze o zatwierdzeniu. Cokolwiek innego niż `404` — Server
+nieosiągalny, przerwa techniczna — nie należy do tego sprawdzenia: Runner
+ostrzega, idzie dalej i przeczekuje to tak jak zawsze.
 
 ## Runner w trakcie aktualizacji
 

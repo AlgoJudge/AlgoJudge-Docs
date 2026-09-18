@@ -2,7 +2,7 @@
 title: Instancja
 description: Jak nazywa się instalacja, jaki nosi znak, jakie publikuje dokumenty i w jakich kolorach.
 source: en/client/manager/instance.mdx
-sourceSha256: 76d0440cc07c7cf57a0af4581b1469a66b6f220697d1a25cca68adaeb9057e0b
+sourceSha256: afeff57f8cd64d86471b4755c6dfb510fddd68a9733f83d8918b7590d37376a6
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -153,6 +153,28 @@ Dokument istnieje wtedy i tylko wtedy, gdy jest opublikowany — nie ma osobnej
 flagi. Każdy rodzaj ma historię, a język bez własnego tekstu wraca do
 domyślnego. Jedyny załącznik, na który taki dokument może wskazać, to własny znak
 instalacji, pod ustaloną nazwą.
+
+### Jak się je pisze
+
+Markdown, pisany obok żywego podglądu, który rysuje ten sam komponent co u
+czytelnika — w tym samym edytorze, w którym pisze się treść zadania. Jedna
+zakładka na język, a podgląd rysuje tę zakładkę, na której stoisz, czyli język,
+który zaraz opublikujesz.
+
+Podgląd sprawdza dokument sam z siebie, więc dokument, który zostałby odrzucony,
+pokazuje ci tę samą odmowę zamiast pustego pola. **Publikowanie sprawdza
+wszystkie języki, nie tylko ten na ekranie**, bo tłumaczenie, na które nikt nie
+spojrzał, to właśnie ten sposób, w jaki zepsuty dokument wychodzi na zewnątrz.
+
+Na znak instalacji wskazujesz ustaloną nazwą `logo.svg`, a podgląd zamienia ją
+na ten sam adres, na jaki zamienia ją każdy ekran czytelnika — strona główna,
+regulamin i polityka prywatności, formularz pokazujący je przed rejestracją —
+łącznie ze znakiem dla danego języka, gdy instalacja ustawiła po jednym na
+język. Podgląd pokazuje więc znak tam, gdzie pokaże go opublikowana strona.
+
+Wyłącz **Pokazuj znak w aplikacji**, a dokument wskazujący na `logo.svg` zgłosi
+brakujący załącznik — i w podglądzie, i czytelnikowi. To prawda, a wyjęcie tego
+odwołania z tekstu należy do ciebie.
 
 ## Czym zajmuje się administrator
 

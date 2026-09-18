@@ -29,6 +29,26 @@ flowchart TD
 
 ## Creating one
 
+**Creating one belongs to the installation rather than to any activity.** *New
+activity*, *Import from a file* and *Copy for a new run* all need
+`activity:create`, and the Server asks for it **across the installation** — a
+grant inside a single activity cannot carry it, and the shipped `manager` role
+does not hold it. Hold it and all three controls are on the activity list; hold
+it nowhere and none of them is drawn, because the panel does not offer a control
+that would answer 403.
+
+The list itself stays either way. It is narrowed to the activities you manage,
+which is the screen's whole point, and running one is what `activity:update` and
+`activity:archive` are for. Whoever does create an activity is in it from that
+moment, because creating one writes its creator a manager grant — see
+[Enrolment](/en/client/manager/enrolment).
+
+An archive is read on [the problem library](/en/client/manager/problems) as
+well, and there `activity:create` is asked for only by a **bundle that carries
+an activity**. The dialog says so once it has read the file and before you
+commit, rather than writing the problems and then refusing the activity they
+were for.
+
 **New activity** asks for three things and nothing more:
 
 - a **name**;
