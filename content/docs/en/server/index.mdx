@@ -107,8 +107,8 @@ Each is read off the released code rather than remembered.
 | | |
 |---|---|
 | **Nine hosted services** | the maintenance drainer, the lease reaper, the round scheduler, the deletion sweeper, the merge sweeper, the address sweeper, the file collector, the storage migrator, and the LTI module's grade synchroniser |
-| **Thirty-two `DbSet`s** | on top of the framework's own identity context |
-| **One migration per context** | the application and the LTI module keep separate migration histories in one database, and each holds exactly one, `version_0_1_0` |
+| **Thirty-three `DbSet`s** | on top of the framework's own identity context |
+| **Separate migration histories** | the application and the LTI module keep their own in one database. The application's begins at `version_0_1_0`, the squash every installation starts from |
 | **One event catalogue** | `events.json` is committed, so both sides of the socket can diff their names against it rather than against each other |
 
 **Every identifier is a UUIDv7** — time-ordered, so inserts append to an index

@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
 source: en/install/identity.mdx
-sourceSha256: 92f5af5c103dd55fd2c0178536e4b7023c1d63e92ed1820cc48ca1050262fd92
+sourceSha256: 0c6854490e2a7a8c8fa164ab598d4dac51f9d0627b78374f3ffb16fe248954c3
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -181,7 +181,7 @@ których się to robi, to
 | `clientId`, `clientSecret` | sekret jest **tylko do zapisu** |
 | `scopes` | `openid` żądamy niezależnie od tego, czy jest tu wymieniony |
 | `claimPath` | ścieżka z kropkami — `groups`, `realm_access.roles`. **Nigdy wyrażenie** |
-| `unmappedBehavior` | `deny` *(domyślnie)* albo `defaultTemplate` |
+| `unmappedBehavior` | `deny` *(domyślnie)* albo `defaultRole` |
 | `accountUrl` | konfiguracja, nie discovery: OIDC nie standaryzuje takiego adresu |
 | `deletionChannelEnabled`, `deletionSecret` | kanał zwrotny, osobno na dostawcę |
 | `callbackPath` | **wyliczany i zwracany**, do wklejenia u dostawcy |
