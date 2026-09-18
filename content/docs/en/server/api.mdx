@@ -141,13 +141,24 @@ supplies the body.
 | `status` | the HTTP status |
 | `title` | |
 | `detail` | |
-| `code` | **stable across releases** |
+| `code` | **stable within a release line** — see below |
 | `errors` | field name to messages, on a validation failure |
 
 <Callout type="warn" title="Switch on `code`, not on the status">
 A `503` may equally come from an edge proxy that has never heard of this
 product. The code is the Server's own word for what happened.
 </Callout>
+
+**A code does not change inside a release line.** Between lines it may: `0.2`
+is not compatible with `0.1`, and a code whose concept was renamed is renamed
+with it. The set is committed as `error-codes.json` in the Server's repository
+and held to the source by a test, so a change to it is a decision somebody took
+and wrote in a release note rather than a rename that reached some literals and
+not others.
+
+**`0` is the tag an installation asks for**, and it moves through every `0.x`
+release. An integrator switching on a code should read the release note before
+that tag carries them across a line.
 
 ### A page past the end is not an error
 
