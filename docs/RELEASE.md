@@ -308,22 +308,23 @@ Run `npm outdated` and `npm audit` **read-only**. The lockfile must not move: no
 **This file had no such section until 2026-09-18, and it is the only one of the
 six that did not.** What follows is what nothing here was asking for.
 
-### A tag is not a release
+### This repository has no GitHub Release, and that is the decision
 
-`release.yml` holds `contents: read`. It builds and pushes the image and
-**creates no GitHub Release and writes no release notes.** Nothing in CI does,
-and **nothing goes red when a Release is missing** — a tag with no Release looks
-exactly like a tag with one, from every angle except the releases page.
+**The tag is the publication here.** `gh release list -R
+AlgoJudge/AlgoJudge-Docs` answers with nothing against one tag, and that is
+correct: the workspace's `/release` skill states the exception in its Phase 7 —
+*not for `AlgoJudge-Docs`; there the tag is the publication and no GitHub
+Release is created*. The other five repositories each carry a Release for every
+tag, 7 for 7, checked 2026-09-18.
 
-The evidence is this repository. `v0.1.0` was pushed and carried no GitHub
-Release beside it, found on 2026-09-18 by `gh release list -R
-AlgoJudge/AlgoJudge-Docs` answering with nothing. The tag was correct; the step
-after it was never assigned to anybody.
+**It is written here because it was missing here**, and a reader comparing this
+repository against its five siblings sees one tag and no Release and reasonably
+concludes somebody forgot. Somebody did make exactly that mistake on 2026-09-18
+and had to be corrected by the record. An exception that lives in one document
+is an exception nobody obeys — and, worse, one that invites a well-meant repair.
 
-- [ ] `gh release list -R AlgoJudge/AlgoJudge-Docs` names the tag just pushed.
-
-The release note's shape is `/release` in the workspace,
-`reference/release-notes.md`. Write it there and create the Release by hand.
+There is therefore **no release note for this repository**. What the site says
+about a version lives on the pages themselves and in `documented.released`.
 
 ### The site has to be served from the new image
 
