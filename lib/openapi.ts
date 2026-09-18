@@ -7,7 +7,7 @@ import { createOpenAPI } from "fumadocs-openapi/server";
  *
  * **No `proxyUrl`, deliberately.** A proxy exists to let the playground reach an
  * API the browser cannot; the playground is switched off (see
- * `components/api-page.tsx`), and adding one would be the first step towards
+ * `components/api-page.tsx`), and adding one would be the first step toward
  * putting `docs.algojudge.pl` in the Server's `Cors:AllowedOrigins`. Accepted
  * 2026-08-09: introducing a playground later is a CORS decision, not a framework
  * one.

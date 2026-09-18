@@ -47,9 +47,9 @@ export interface Section {
      * section describes some. `protocol` is the one where the two fields differ:
      * it links no repository in its sidebar, because the repository that
      * versions it holds internal documents - but the contract it describes is
-     * served by a Server, and that is software somebody runs under a licence.
+     * served by a Server, and that is software somebody runs under a license.
      */
-    readonly licence: string;
+    readonly license: string;
     readonly title: Readonly<Record<"en" | "pl", string>>;
     readonly description: Readonly<Record<"en" | "pl", string>>;
 }
@@ -59,7 +59,7 @@ export const sections: readonly Section[] = [
         slug: "install",
         polish: true,
         repository: "AlgoJudge-Ops",
-        licence: "AlgoJudge-Ops",
+        license: "AlgoJudge-Ops",
         title: { en: "Install and operate", pl: "Instalacja i utrzymanie" },
         description: {
             en: "Standing up an installation, keeping it running, and getting it back.",
@@ -70,7 +70,7 @@ export const sections: readonly Section[] = [
         slug: "client",
         polish: true,
         repository: "AlgoJudge-Client",
-        licence: "AlgoJudge-Client",
+        license: "AlgoJudge-Client",
         title: { en: "Using AlgoJudge", pl: "Korzystanie z AlgoJudge" },
         description: {
             en: "The application itself, for the people who compete in it and the people who run it.",
@@ -81,7 +81,7 @@ export const sections: readonly Section[] = [
         slug: "server",
         polish: false,
         repository: "AlgoJudge-Server",
-        licence: "AlgoJudge-Server",
+        license: "AlgoJudge-Server",
         title: { en: "Server", pl: "Server" },
         description: {
             en: "The domain model, the permission model, and the REST reference.",
@@ -92,7 +92,7 @@ export const sections: readonly Section[] = [
         slug: "runner",
         polish: false,
         repository: "AlgoJudge-Runner",
-        licence: "AlgoJudge-Runner",
+        license: "AlgoJudge-Runner",
         title: { en: "Runner", pl: "Runner" },
         description: {
             en: "The machines that evaluate submissions, and how to run one.",
@@ -103,7 +103,7 @@ export const sections: readonly Section[] = [
         slug: "protocol",
         polish: false,
         repository: null,
-        licence: "AlgoJudge-Server",
+        license: "AlgoJudge-Server",
         title: { en: "Protocol", pl: "Protokół" },
         description: {
             en: "The contract between a Server and a Runner.",
@@ -114,19 +114,16 @@ export const sections: readonly Section[] = [
 
 export const sectionSlugs = sections.map((section) => section.slug);
 
-/** Where a repository lives. The organisation holds every one of them. */
-export const ORGANISATION = "https://github.com/AlgoJudge";
+/** Where a repository lives. The organization holds every one of them. */
+export const ORGANIZATION = "https://github.com/AlgoJudge";
 
-export const repositoryUrl = (name: string) => `${ORGANISATION}/${name}`;
+export const repositoryUrl = (name: string) => `${ORGANIZATION}/${name}`;
 
-/**
- * What the sidebar calls the licence link. The file is `LICENSE` because that is
- * the conventional name; this is prose beside a page list, so it is a word.
- */
-export const licenceLabel: Record<string, string> = { en: "Licence", pl: "Licencja" };
+/** What the sidebar calls the license link, per locale. */
+export const licenseLabel: Record<string, string> = { en: "License", pl: "Licencja" };
 
-/** The licence file itself, on the default branch, so the link opens the text. */
-export const licenceUrl = (name: string) => `${repositoryUrl(name)}/blob/main/LICENSE`;
+/** The license file itself, on the default branch, so the link opens the text. */
+export const licenseUrl = (name: string) => `${repositoryUrl(name)}/blob/main/LICENSE`;
 
 const VERSION = /^v\d+\.\d+$/;
 

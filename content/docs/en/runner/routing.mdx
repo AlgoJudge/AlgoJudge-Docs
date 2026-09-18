@@ -40,7 +40,7 @@ Runners that may take its work. Under GitLab's rule it would narrow it.
 
 ## Empty means `default`, on both sides
 
-Both lists are normalised — trimmed, lowercased, de-duplicated, blanks dropped —
+Both lists are normalized — trimmed, lowercased, de-duplicated, blanks dropped —
 and an **empty list is read as `["default"]`**.
 
 | Runner | Work | |
@@ -50,7 +50,7 @@ and an **empty list is read as `["default"]`**.
 | `[gpu]` | `[lab-a, gpu]` | judged — one shared tag is enough |
 | `[lab-a]` | `[]` → `[default]` | **not** judged |
 | `[]` → `[default]` | `[lab-a]` | **not** judged |
-| `[]` → `[default]` | `[]` → `[default]` | judged — the behaviour before tags existed |
+| `[]` → `[default]` | `[]` → `[default]` | judged — the behavior before tags existed |
 
 <Callout type="warn" title="Tagging a Runner takes it out of the general pool as surely as it puts it into a reserved one">
 Rows four and five are the whole of the exclusivity, and they are the same rule

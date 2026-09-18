@@ -1,6 +1,6 @@
 ---
 title: Activity
-description: A contest or a course — the outermost container, the unit of enrolment, and the owner of the limits the Server itself enforces.
+description: A contest or a course — the outermost container, the unit of enrollment, and the owner of the limits the Server itself enforces.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -46,11 +46,11 @@ Archiving is the ordinary way an activity ends. Deleting one destroys
 submissions participants may still want to look back at, which is why
 `activity:delete` is a separate permission and is not in the manager template.
 
-## Enrolment
+## Enrollment
 
 | Field | Meaning |
 |---|---|
-| `JoinPolicy` | `Closed`, `Password` or `Open`. These are the three answers to **self**-enrolment; a manager may always enrol somebody by hand, which is what a grant is |
+| `JoinPolicy` | `Closed`, `Password` or `Open`. These are the three answers to **self**-enrollment; a manager may always enroll somebody by hand, which is what a grant is |
 | `JoinPassword` | the join code under `Password` |
 | `Unlisted` | hidden from the activity list of anybody not enrolled — reachable by its address and nothing else. Independent of the policy |
 
@@ -120,7 +120,7 @@ Two parts of the product are optional per activity, and each is one boolean.
 
 Off, a module is not an empty screen: the participant's navigation loses the
 entry entirely. A course that never answers questions should look like a course
-with no questions in it, not like one whose organisers are ignoring them.
+with no questions in it, not like one whose organizers are ignoring them.
 
 The switch governs what may be **added**. Asking is refused with 403 and the
 code `questions.disabled` or `printouts.disabled`; what was already asked stays

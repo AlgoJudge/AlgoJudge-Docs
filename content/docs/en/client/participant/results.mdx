@@ -24,7 +24,7 @@ wherever you are.
 | **Running** | a Runner is evaluating it |
 | **Completed** | it finished, and there is a verdict |
 | **Failed** | the evaluation itself broke |
-| **Cancelled** | a manager called it off, queued or mid-evaluation |
+| **Canceled** | a manager called it off, queued or mid-evaluation |
 | **Superseded** | a rejudge overtook it before a Runner picked it up, so it was never evaluated |
 
 <Mermaid chart={`
@@ -34,8 +34,8 @@ flowchart LR
     running -->|"a verdict"| done["Completed"]
     running -->|"the evaluation broke"| failed["Failed"]
     queued -->|"a rejudge overtook it"| superseded["Superseded"]
-    queued -->|"a manager called it off"| cancelled["Cancelled"]
-    running --> cancelled
+    queued -->|"a manager called it off"| canceled["Canceled"]
+    running --> canceled
 `} />
 
 Nothing a Runner already holds is interrupted: an attempt in flight finishes,
@@ -50,7 +50,7 @@ While a submission is still being judged, the badge shows the state. Once it is
 done, the badge shows the **verdict** instead — the short label the Runner
 produced, such as `Accepted`.
 
-**The colour comes from the score, never from the verdict text.** Full marks are
+**The color comes from the score, never from the verdict text.** Full marks are
 green, some marks yellow, none red. A verdict is a string belonging to the
 problem type, and matching on the word "Accepted" would work for one type and
 quietly mislead for another.
@@ -79,8 +79,8 @@ Instead of an empty table you get a panel with a spinner, titled with the state:
 submission*. It replaces itself with the result when one arrives. You do not have
 to reload.
 
-**The panel is grey while the submission is only queued, and blue once a Runner
-has it.** It is the same distinction the badge in the header draws, so the colour
+**The panel is gray while the submission is only queued, and blue once a Runner
+has it.** It is the same distinction the badge in the header draws, so the color
 alone tells you whether anything is happening yet.
 
 **A submission being judged says how long the Runner has had it.** *Running for*
@@ -107,7 +107,7 @@ per-test table is a per-test table:
 | Column | What is in it |
 |---|---|
 | **Test** | the test's number |
-| **Status** | `OK`, `WARNING`, `ERROR`, coloured accordingly |
+| **Status** | `OK`, `WARNING`, `ERROR`, colored accordingly |
 | **Time** | the processor time your program used, and the limit beside it |
 | **Memory** | the same, in MiB |
 | **Result** | the points for that test, against its maximum |
@@ -134,7 +134,7 @@ will never arrive is marked *Time limit*. Print the answer and return.
 The **Comments** column leads with the reason, in the same words every time, so
 a column of failures can be read straight down: *Wrong answer*, *Time limit*,
 *Memory limit*, *Output limit*, *Runtime error*, *Rule violation*, *Compilation
-error*. A reason this version of the interface does not recognise is not printed
+error*. A reason this version of the interface does not recognize is not printed
 raw; you get the judging program's note instead, which is where the detail is
 anyway.
 
@@ -191,7 +191,7 @@ accordion is the newest attempt's.
 <Callout type="warn" title="Judged, but not counted">
 An orange notice reading *This submission is not counted in the ranking. It still
 counts against your submission limit.* means a manager ruled that it counts
-towards no standing.
+toward no standing.
 </Callout>
 
 **The score above stays what it was.** An exclusion rules on what a submission

@@ -16,10 +16,10 @@ none.**
 A Runner polls the claim endpoint, which is simpler, survives a dropped
 connection with no reconnection logic, and **cannot deliver a job twice**.
 
-Reintroducing a socket would be an optimisation of *when* a Runner learns there
+Reintroducing a socket would be an optimization of *when* a Runner learns there
 is work, never of *how* it takes it. The Client has a socket; a Runner does not.
 
-**And that optimisation is already taken.** A `claim` the Server
+**And that optimization is already taken.** A `claim` the Server
 [holds open](/en/protocol/claiming) tells a Runner about work the instant it
 exists, with every reason above intact: one claim, one job, no second delivery,
 and no reconnection logic — a dropped long poll is a request to make again

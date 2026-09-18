@@ -48,7 +48,7 @@ export const TITLE_SUFFIX = "AlgoJudge Docs";
 /**
  * **The pages this application links from code rather than from a page.**
  *
- * `components/licence-note.tsx` sends a reader here for the licence split, and
+ * `components/license-note.tsx` sends a reader here for the license split, and
  * `scripts/check-links.mjs` reads every `.mdx` file - so this address is the one
  * internal link in the site that no page contains and nothing would notice
  * breaking. Naming it here is what lets the check reach it.
@@ -76,7 +76,7 @@ export const site: Record<Locale, { name: string; description: string }> = {
  *
  * `hreflang` takes BCP-47 with a hyphen; `og:locale` takes Facebook's
  * `language_TERRITORY` with an underscore, and a hyphen there is ignored rather
- * than reported. British English is the register the pages are written in.
+ * than reported. American English is the register the pages are written in.
  */
-export const hreflang: Record<Locale, string> = { en: "en-GB", pl: "pl-PL" };
-export const ogLocale: Record<Locale, string> = { en: "en_GB", pl: "pl_PL" };
+export const hreflang: Record<Locale, string> = { en: "en-US", pl: "pl-PL" };
+export const ogLocale: Record<Locale, string> = { en: "en_US", pl: "pl_PL" };

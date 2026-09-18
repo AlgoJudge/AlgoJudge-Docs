@@ -42,7 +42,7 @@ Three things an implementation has to get right:
 - **Your own request timeout must exceed the wait**, or an ordinary empty answer
   arrives as a failed request.
 
-Being told is an optimisation and **not a guarantee**. The Server may answer
+Being told is an optimization and **not a guarantee**. The Server may answer
 `204` at any moment, and a Runner that is never told finds the work on its next
 ask. Nothing about correctness rests on it.
 
@@ -350,7 +350,7 @@ job needs none of this.
 | The token names another Runner's lease | `runner.lease.foreign` | everywhere |
 | The lease has already been reclaimed | `runner.lease.stale` | everywhere |
 | The token is not a token | `runner.lease.malformed` | the two `report` calls only |
-| The job is not in a state that allows this — cancelled by a manager, superseded by a rejudge, or already back in the queue | `job.state` | everywhere |
+| The job is not in a state that allows this — canceled by a manager, superseded by a rejudge, or already back in the queue | `job.state` | everywhere |
 
 The third row is narrower than the others. A lease, release or progress call
 folds an unparseable token into `runner.lease.stale` — a token that cannot be a

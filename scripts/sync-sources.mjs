@@ -1,4 +1,4 @@
-// Fetches the artefacts other repositories own, pinned by `content-sources.json`.
+// Fetches the artifacts other repositories own, pinned by `content-sources.json`.
 //
 // **Nothing here is committed.** `.sources/` is build input that belongs to
 // another repository; a copy in this one would be a second place for it to be

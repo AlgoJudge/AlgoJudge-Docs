@@ -22,7 +22,7 @@ const BACKGROUND = { r: 0x11, g: 0x1c, b: 0x6b, alpha: 1 };
 const LOGO = "public/algojudge-dark.svg";
 const OUT = "public/og.png";
 
-// Rendered at about four times the target and scaled down - rasterising at card
+// Rendered at about four times the target and scaled down - rasterizing at card
 // size directly gives soft edges, and much above this the SVG exceeds sharp's
 // pixel limit rather than getting sharper.
 const wordmark = await sharp(LOGO, { density: 240 })
@@ -33,7 +33,7 @@ const wordmark = await sharp(LOGO, { density: 240 })
 const card = await sharp({
     create: { width: WIDTH, height: HEIGHT, channels: 4, background: BACKGROUND },
 })
-    .composite([{ input: wordmark, gravity: "centre" }])
+    .composite([{ input: wordmark, gravity: "center" }])
     .png({ compressionLevel: 9 })
     .toBuffer();
 

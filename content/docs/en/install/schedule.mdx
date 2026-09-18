@@ -73,24 +73,24 @@ replaces them instead of appending a duplicate.
 ### Anchored to this host's local time, not UTC
 
 04:00 means 04:00 to whoever operates the machine, which keeps the work inside
-the organisation's actual quiet hours rather than a fixed offset that drifts
+the organization's actual quiet hours rather than a fixed offset that drifts
 against them twice a year.
 
 - **The zone comes from `TZ` in `.env`**, which defaults to `Europe/Warsaw`.
   That is the key an operator sets; `install-cron.sh` renders it into the
   crontab's own `CRON_TZ` line, which is where cron reads it.
-- **`CRON_TZ` is honoured by Vixie cron and cronie and is not portable to every
+- **`CRON_TZ` is honored by Vixie cron and cronie and is not portable to every
   implementation.** `install-cron.sh` finds out by installing the real crontab
   and falling back without the line, with a warning, rather than silently
   scheduling against a different clock. It does not probe: `crontab <file>`
   replaces the whole crontab, so a one-line probe would destroy everything else
   on the host in order to find out.
-- **Accepted is not the same as honoured.** An implementation that ignores the
+- **Accepted is not the same as honored.** An implementation that ignores the
   line accepts it silently, and there is no way to check that without waiting
   until four in the morning. Confirm once that the first backup lands at 04:00
   local.
 - **04:00 and 06:00 are safe in the EU**, where the change happens at 01:00 UTC,
-  so neither hour is ever skipped or repeated. **This does not generalise** —
+  so neither hour is ever skipped or repeated. **This does not generalize** —
   some zones switch at midnight. Check your own before moving them.
 
 ### 06:00 here is not the Server's 06:00
@@ -118,7 +118,7 @@ warns on every run under `STORAGE_KIND=s3`, so that would have meant nightly mai
 nobody reads.
 
 Point `MAILTO` at somebody who reads it, or feed `/var/log/algojudge/*.log` into
-whatever your organisation already watches. Choosing a channel for you would be
+whatever your organization already watches. Choosing a channel for you would be
 inventing policy.
 </Callout>
 

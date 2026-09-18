@@ -113,7 +113,7 @@ npm install
 npm run build      # produces out/
 ```
 
-Node comes from `.nvmrc`. `npm run build` first fetches the artefacts other
+Node comes from `.nvmrc`. `npm run build` first fetches the artifacts other
 repositories own — today that is the Server's `openapi.json`, pinned in
 `content-sources.json` — into `.sources/`, and generates the REST reference from
 it into `content/docs/en/server/rest/`. **Neither is committed**: generated

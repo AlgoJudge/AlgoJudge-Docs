@@ -1,6 +1,6 @@
 ---
 title: What the Server is
-description: The one place persistent state lives, the one place authorisation happens, and the seven things it refuses to do.
+description: The one place persistent state lives, the one place authorization happens, and the seven things it refuses to do.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -56,7 +56,7 @@ somebody's desk, and the Server holds no list of addresses to keep correct.
 
 One socket per tab, at `/api/v1/ws`, authenticated by the same session cookie as
 everything else. It carries `{ "type": ..., "data": ... }` envelopes and nothing
-else: no replay, no cursor, no catch-up buffer, no acknowledgements, no
+else: no replay, no cursor, no catch-up buffer, no acknowledgments, no
 subscribe frames.
 
 A screen must be correct with the socket permanently down. See [Change
@@ -97,7 +97,7 @@ the local and temporary ones that have no provider to come from.
 
 With one exception — `ProblemShare`, which says who else may see a shared
 library problem — nothing in the schema lists who may touch a particular row.
-Authorisation is a set of permission strings on a [`Grant`](/en/server/concepts/grant)
+Authorization is a set of permission strings on a [`Grant`](/en/server/concepts/grant)
 that hangs off a **user**, not off a resource.
 
 ## Some numbers, and where they come from
@@ -106,10 +106,10 @@ Each is read off the released code rather than remembered.
 
 | | |
 |---|---|
-| **Nine hosted services** | the maintenance drainer, the lease reaper, the round scheduler, the deletion sweeper, the merge sweeper, the address sweeper, the file collector, the storage migrator, and the LTI module's grade synchroniser |
+| **Nine hosted services** | the maintenance drainer, the lease reaper, the round scheduler, the deletion sweeper, the merge sweeper, the address sweeper, the file collector, the storage migrator, and the LTI module's grade synchronizer |
 | **Thirty-three `DbSet`s** | on top of the framework's own identity context |
 | **Separate migration histories** | the application and the LTI module keep their own in one database. The application's begins at `version_0_1_0`, the squash every installation starts from |
-| **One event catalogue** | `events.json` is committed, so both sides of the socket can diff their names against it rather than against each other |
+| **One event catalog** | `events.json` is committed, so both sides of the socket can diff their names against it rather than against each other |
 
 **Every identifier is a UUIDv7** — time-ordered, so inserts append to an index
 instead of fragmenting it. The one exception is the user, which keeps the

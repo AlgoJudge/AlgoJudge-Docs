@@ -40,7 +40,7 @@ Setting a block from the date would put two writers on one field — a manager a
 the clock — and both ways they disagree are silent: unblocking would defeat the
 expiry, and moving the date would leave a stale block behind.
 
-## Deletion is anonymisation
+## Deletion is anonymization
 
 <Callout type="warn" title="A user row is never removed">
 [Submissions](/en/server/concepts/submission) and results name a user id and it
@@ -50,7 +50,7 @@ rather than showing a blank name and leaving a reader to guess.
 </Callout>
 
 An account merge follows the same rule: both accounts keep their rows, and the
-emptied one is anonymised when the undo window closes. `user:merge` is its own
+emptied one is anonymized when the undo window closes. `user:merge` is its own
 permission because it hands one person's submissions and points to somebody
 else.
 
@@ -75,7 +75,7 @@ resolved it.
 **Every session is closed and stripped, not only the open ones.** The rows stay,
 because what is deleted is the person and not the record that somebody signed
 in; the address and the user agent are cleared from all of them. An
-anonymisation that leaves personal data behind is not one.
+anonymization that leaves personal data behind is not one.
 
 **Submissions stay and their origin does not.** A submission is somebody's mark
 in a contest and survives erasure by design, so `IpAddress` and `DeviceId` are
@@ -110,7 +110,7 @@ One sign-in, which is neither a person nor a browser tab.
 |---|---|
 | `StartedAt`, `EndedAt` | `EndedAt` is set on sign-out, so history survives it |
 | `LastRequestAt`, `LastRequestPath` | an API path, not the screen somebody was looking at |
-| `IpAddress` | `inet`, normalised before it is stored |
+| `IpAddress` | `inet`, normalized before it is stored |
 | `UserAgent` | |
 | `DeviceId` | the name this browser gives itself, or null |
 | `ExpiresAt` | |

@@ -27,7 +27,7 @@ A heartbeat is still answered while the Server drains, and refused once it is
 `closed` — where the refusal is expected rather than worth a warning, because the
 Server has withdrawn and already knows.
 
-## Three levels, travelled in one direction
+## Three levels, traveled in one direction
 
 An installation can be taken out of service without being stopped, so that a
 database can be backed up or a machine shut down cleanly.
@@ -74,7 +74,7 @@ distinguishable from waiting for a Server that is never coming back.
 
 <Callout type="warn" title="Read `level` by comparison, never by parsing">
 It is a string. A level a newer Server invents must read as **"not open"** rather
-than as a parse failure — an implementation that deserialises it into a closed
+than as a parse failure — an implementation that deserializes it into a closed
 enumeration will treat an unfamiliar level as *the Server is broken*, which is the
 opposite of what it means.
 </Callout>
@@ -90,7 +90,7 @@ submission when it is got wrong.
 whatever restarts it and comes back harder, against a Server that is deliberately
 trying to be down.
 
-`Retry-After` is **advice**: honour it where it asks for **longer** than the
+`Retry-After` is **advice**: honor it where it asks for **longer** than the
 Runner's own backoff, and never let it shorten one. A proxy answering
 `Retry-After: 0` must not turn a retry into a spin.
 

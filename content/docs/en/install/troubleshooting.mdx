@@ -24,7 +24,7 @@ Server reached directly.
 
 ### It names a network you did not write
 
-You wrote a CIDR with host bits set — `172.28.0.5/24`. .NET normalises that to
+You wrote a CIDR with host bits set — `172.28.0.5/24`. .NET normalizes that to
 `172.28.0.0/24` without a word, which turns "one machine" into "a whole
 laboratory", so the Server refuses and names the address you should have
 written. `preflight.sh` catches it first.
@@ -309,7 +309,7 @@ once.
 **`the Server refused with 403: runner.nonce.unknown`** is a different fault with
 the same symptom, and it applies to both Runners: **this image is older than the
 Server it is registering against.** It appears only from the second start
-onwards, because the identity volume is what makes the Server recognise the key,
+onwards, because the identity volume is what makes the Server recognize the key,
 and a refused registration is not one a Runner retries. Pull both images from the
 same release rather than letting the moving tags drift — [Update and
 rollback](/en/install/update) says why they have to move together.

@@ -66,7 +66,7 @@ would need. Taken 2026-09-07 from Google Fonts —
 `github.com/rsms/inter` and `github.com/JetBrains/JetBrainsMono`. Both are under
 the **SIL Open Font License 1.1**, whose §2 wants the notice with every copy of
 the font software; the copy that reaches a reader is the built one, and `public/`
-is emitted verbatim, so the two licence texts live there.
+is emitted verbatim, so the two license texts live there.
 
 | File here | SHA-256 |
 |---|---|
@@ -84,7 +84,7 @@ sha256sum app/fonts/* public/OFL-*.txt
 **Take each subset file from the block its comment introduces, not the one it
 follows.** In Google's stylesheet the `/* latin */` comment sits **before** its
 `@font-face`, and pairing them the other way round hands every file its
-neighbour's name. Nothing about that is visible from a declaration: the family
+neighbor's name. Nothing about that is visible from a declaration: the family
 resolves, the file downloads, `document.fonts` reports it `loaded`, and every
 letter is drawn by a system font because the file holds none of them. It shipped
 here once, with the wordmark painted 8 glyphs in Times New Roman and 1 in Inter.

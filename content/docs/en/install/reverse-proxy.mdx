@@ -23,7 +23,7 @@ prefix that is only sometimes present is one every deployment has to get right o
 its own. Get it wrong and the Client asks the right host for the wrong path, and
 your reverse proxy answers with the application's own `index.html` instead of an
 error. A value written in either of the older shapes — ending in `/v1` or
-`/api/v1` — is normalised rather than refused.
+`/api/v1` — is normalized rather than refused.
 
 The event socket is `/api/v1/ws`, under the same prefix, so it needs no rule of
 its own beyond the upgrade headers and a read timeout longer than a quiet
@@ -76,7 +76,7 @@ own proxy, that default is wrong** — put your proxy's network there. Reached
 with no proxy at all, `none` is a complete answer.
 
 Write a **network** address, not a host one: `172.28.0.5/24` is refused at
-startup, by name, with the address it should have been. .NET normalises a CIDR
+startup, by name, with the address it should have been. .NET normalizes a CIDR
 with host bits set without a word, which would turn "one machine" into "a whole
 laboratory".
 

@@ -75,7 +75,7 @@ that gets them.
 **Tags live in `.env`. Digests live in `state/current.lock`.** The tag says what
 was asked for; the digest says what is running, and is what a rollback restores.
 
-Digests cannot live in the repository. This is a product many organisations
+Digests cannot live in the repository. This is a product many organizations
 deploy independently, and none of them can commit to it.
 
 The default `SERVER_TAG=0` is a **moving major** and carries no `v`: a release

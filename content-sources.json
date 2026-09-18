@@ -1,6 +1,6 @@
 {
   "$comment": [
-    "Artefacts other repositories own, pinned so that a build is reproducible and",
+    "Artifacts other repositories own, pinned so that a build is reproducible and",
     "so that a page can say which version of the Server it describes.",
     "",
     "The accepted decision of 2026-08-09 says the REST reference is generated from",

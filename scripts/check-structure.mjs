@@ -15,7 +15,7 @@
 // warning about destroying an account attached to downloading a file.
 //
 // **Not the text of a heading, and not the contents of a fence.** A sample value
-// inside a command is localised on purpose - `--keep end-of-semester` reads
+// inside a command is localized on purpose - `--keep end-of-semester` reads
 // `--keep koniec-semestru` - and refusing that would be refusing a translation
 // for being translated.
 import { readdir, readFile } from "node:fs/promises";

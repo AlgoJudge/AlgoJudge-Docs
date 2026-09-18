@@ -14,7 +14,7 @@ The same problem may be assigned several times within one activity with
 different settings, so an assignment points at exactly one series. Only the
 assignment's `Slug` is unique in an activity; the problem behind it is not.
 
-`ActivityId` is denormalised from the series so that the database can enforce
+`ActivityId` is denormalized from the series so that the database can enforce
 that uniqueness across the whole **activity** rather than within one series. A
 rule that spans two tables and is enforced only in a service is a rule two
 concurrent requests can both pass.

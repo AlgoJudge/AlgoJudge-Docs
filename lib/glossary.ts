@@ -42,7 +42,7 @@ export const GLOSSARY: Record<string, string> = {
  */
 export const TERMS = [
     // `expect` names the word the failure message should print, where it
-    // differs from the catalogue value: in prose the role reads *prowadzący*,
+    // differs from the catalog value: in prose the role reads *prowadzący*,
     // while the navigation item itself is *Zarządzanie*.
     { key: "Staff", english: /\bmanagers?\b/i, polish: /prowadząc|Zarządzanie/, expect: "prowadzący, or the panel's own name Zarządzanie" },
     { key: "Problem", english: /\bproblems?\b/i, polish: /zadani/i },
