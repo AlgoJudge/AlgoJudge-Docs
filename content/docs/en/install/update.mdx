@@ -176,7 +176,8 @@ is tidier than every Runner handing back what it has just been given.
 
 **The external Runner handles `SIGTERM` too**, and its grace is
 `EXTERNAL_RUNNER_STOP_GRACE` — sixty seconds, twice the sandboxing Runner's,
-because it hands back up to twenty pending submissions at one call each. What it
+though no longer because of a count: it hands its whole pending pool back in one
+request. What it
 loses when it is killed instead is not an evaluation but the list of submissions
 an archive has not answered for, and each of those is sent to that archive again
 when the job is requeued. [Maintenance](/en/install/maintenance) has the

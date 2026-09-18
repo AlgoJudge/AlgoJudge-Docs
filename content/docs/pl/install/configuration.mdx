@@ -2,7 +2,7 @@
 title: Wszystkie ustawienia w `.env`
 description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i dwa klucze, które domyślnej nie mają wcale.
 source: en/install/configuration.mdx
-sourceSha256: ef274911c5b63376ed5d7275665b84af0617c1b9e68ed1764e0a09820d97ed72
+sourceSha256: 7641d397e58cb30e402f0699bb68a8a775909ebc974046bb496b5dee050afbce
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -143,11 +143,13 @@ Czytaj tylko wtedy, gdy `external-runner` jest w `COMPOSE_PROFILES`. Zobacz
 | `EXTERNAL_RUNNER_LOG` | `info` | staje się `RUST_LOG` |
 | `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | dwa razy tyle co u Runnera oceniającego, bo jednym wywołaniem oddaje całą pulę zgłoszeń w toku — najwyżej tyle, ile wynosi `AJ_External__MaxPending`, domyślnie 100 |
 
-Jego dzierżawy ani odstępów odpytywania celowo nie udostępniamy: sprawdzają się
-nawzajem przy starcie, domyślne wartości obrazu spełniają wszystkie te warunki,
-a zmiana w dobrej wierze — łagodniejsze odpytywanie cudzego archiwum — jest
-właśnie tą, która to psuje. Dzierżawa, która mogłaby wygasnąć między dwoma
-odnowieniami, to zgłoszenie, które archiwum dostanie dwa razy.
+Jego dzierżawy ani odstępów odpytywania celowo nie udostępniamy: domyślne
+wartości obrazu są dobrane, a część z nich nadal sprawdza się nawzajem przy
+starcie.
+
+**Łagodniejsze odpytywanie jest bezpieczne.** Dzierżawy odnawia osobny licznik —
+co ćwierć dzierżawy przyznanej przez Server — więc rzadsze pytanie cudzego
+archiwum nie oznacza rzadszego odnawiania.
 
 ## Kopie zapasowe
 

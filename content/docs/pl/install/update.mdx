@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: 78bdb16a1676afe9e8014e9b8c438a116abdb0f3bbbfaf923f317bee17a40036
+sourceSha256: 6096c92fa50af083b6d181409dfb0db7d3c633c62a351f8ebe6c08a1fc5b58d8
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -182,8 +182,8 @@ chwilą dostał.
 
 **Zewnętrzny Runner też obsługuje `SIGTERM`**, a jego margines to
 `EXTERNAL_RUNNER_STOP_GRACE` — sześćdziesiąt sekund, dwa razy tyle co u Runnera
-oceniającego, bo oddaje do dwudziestu zgłoszeń w toku, po jednym wywołaniu na
-każde. Kiedy zamiast tego zostaje zabity, traci nie ocenianie w toku, tylko listę
+oceniającego, choć już nie z powodu liczby: całą pulę zgłoszeń w toku oddaje
+jednym żądaniem. Kiedy zamiast tego zostaje zabity, traci nie ocenianie w toku, tylko listę
 tego, na co archiwum jeszcze nie odpowiedziało — a każde takie zgłoszenie zostaje
 wysłane drugi raz, kiedy zlecenie wróci do kolejki. Rachunek jest w [Przerwie
 technicznej](/pl/install/maintenance).

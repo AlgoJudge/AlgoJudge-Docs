@@ -138,11 +138,12 @@ judge](/en/install/external-runner).
 | `EXTERNAL_RUNNER_LOG` | `info` | becomes `RUST_LOG` |
 | `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | twice the sandboxing Runner's, because it hands its whole pending pool back — up to `AJ_External__MaxPending`, 100 by default — in a single call |
 
-Its lease and its polling intervals are deliberately not offered: they check one
-another at startup, the image's defaults satisfy all of it, and the well-meant
-change — polling somebody else's service more gently — is the one that breaks it.
-A lease that could expire between two renewals is a submission the archive
-receives twice.
+Its lease and its polling intervals are deliberately not offered: the image's
+defaults are sound and a few of the values still check one another at startup.
+
+**Polling more gently is safe.** The leases are held on a timer of their own — a
+quarter of the lease the Server granted — so asking somebody else's archive less
+often does not hold the leases less often.
 
 ## Backups
 
