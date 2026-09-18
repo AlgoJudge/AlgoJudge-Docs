@@ -9,9 +9,9 @@ image this repository builds.
 
 ## Documentation
 
-The site this repository publishes is
-**[docs.algojudge.pl](https://docs.algojudge.pl/en/)** — five sections, each at
-`/{locale}/{section}/`:
+The full AlgoJudge documentation is available at [docs.algojudge.pl](https://docs.algojudge.pl/).
+
+This README contains repository-specific information about development, building, running, and contributing.
 
 | | |
 |---|---|
@@ -20,9 +20,6 @@ The site this repository publishes is
 | [`/en/server/`](https://docs.algojudge.pl/en/server/) | the model, the permission model, and the REST reference |
 | [`/en/runner/`](https://docs.algojudge.pl/en/runner/) | evaluation, isolation, languages and routing |
 | [`/en/protocol/`](https://docs.algojudge.pl/en/protocol/) | the contract between a Server and a Runner |
-
-`/install/` and `/client/` are also in Polish. Everything below is how the site
-is built rather than what it says.
 
 ## What is here, and what is not
 
@@ -189,11 +186,9 @@ operator stands up serve it too.
 
 ## Contributing
 
-Open an issue saying what you expected, what happened, and how to reproduce it.
-Or open a pull request against `main`: one subject per pull request, with a note
-on what changes and why.
-
-By contributing you agree that your work is licensed under the terms below.
+Read the [contributing guide](https://github.com/AlgoJudge/.github/blob/main/CONTRIBUTING.md)
+before you open a pull request. Report security vulnerabilities privately, as
+described in [SECURITY.md](SECURITY.md).
 
 ## License
 
