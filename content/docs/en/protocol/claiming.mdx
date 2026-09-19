@@ -194,7 +194,7 @@ closely. A duration is immune to skew; an instant is not.
 A Runner that dies holds a job nobody will finish. The Server's reaper returns it
 to the queue when the lease expires. Each delivery is counted, and past the cap —
 five deliveries in this Server — the job is **failed with a reason** rather than
-retried for ever, because retrying for ever is how one bad package stops an
+retried forever, because retrying forever is how one bad package stops an
 installation.
 
 So a job is queued, running on exactly one Runner, or finished — and it comes

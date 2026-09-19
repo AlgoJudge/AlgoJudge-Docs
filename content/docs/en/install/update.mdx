@@ -47,7 +47,7 @@ nothing is updated.
 ## What "something new" means
 
 Not the tag itself. `SERVER_TAG=0` points at a different image after every
-release, so "is the tag the same" would answer yes for ever. The script asks
+release, so "is the tag the same" would answer yes forever. The script asks
 Compose which image it **would** run for each service now, and compares that with
 the image id the container is actually running. Those two differing is exactly
 "something new".
@@ -187,7 +187,7 @@ that dump.
 
 **And the language images with the Server.** A Server and a Runner speak a
 protocol that changes between versions, and the tags this stack ships are moving
-majors pulled independently — so nothing stops `update.sh` taking a new Server
+majors pulled independently — so nothing stops `update.sh` from taking a new Server
 against a Runner image from last month. **A Runner too old for the Server it
 registers against is refused, and a refused registration is not retried**: the
 process exits, `restart: unless-stopped` turns that into a loop, and
@@ -256,7 +256,7 @@ there.
 </Callout>
 
 A clean drain is still `maintenance.sh on --wait-closed` on the **Server**
-first, which `update.sh` does: it stops new work reaching a Runner at all, which
+first, which `update.sh` does: it stops new work from reaching a Runner at all, which
 is tidier than every Runner handing back what it has just been given.
 
 **The external Runner handles `SIGTERM` too**, and its grace is

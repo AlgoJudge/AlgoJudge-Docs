@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
  * whole thing to render two links nobody reads.
  */
 export const metadata: Metadata = {
-    // A staging post, not a page. `/en/` and `/pl/` are what should be indexed,
+    // A way station, not a page. `/en/` and `/pl/` are what should be indexed,
     // and `app/sitemap.ts` lists them.
     robots: { index: false, follow: true },
 };

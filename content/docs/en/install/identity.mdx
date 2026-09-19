@@ -16,7 +16,7 @@ installation runs one.
 
 An institution that already runs an OIDC provider registers that one instead.
 AlgoJudge asks for discovery and a claim it can read, and everything from
-*Before you start* onwards is the same whatever answers.
+*Before you start* onward is the same whatever answers.
 
 AlgoJudge cannot tell them apart. It sees a plain OIDC provider in both cases,
 and there is no field, branch or discriminator anywhere in its model for which
@@ -165,7 +165,7 @@ screens are [External logins](/en/client/manager/logins).
    [The instance](/en/client/manager/instance). Without that the screen is a
    page with one button on it; with it the browser goes straight to the
    provider. `?admin=true` still reaches the local form, and a refused sign-in
-   still lands on the screen with the code below rather than being sent round
+   still lands on the screen with the code below rather than being sent around
    again.
 
 ### The fields
@@ -235,7 +235,7 @@ The order at every sign-in is: validate, resolve the mapping, apply the
 permission change, then decide whether to admit. It matters most in one case:
 **a known subject that maps to nothing under `deny` has its contribution
 withdrawn and is then refused.** A refusal that left yesterday's contribution in
-place would keep somebody staff for ever by the simple method of never signing in
+place would keep somebody staff forever by the simple method of never signing in
 again.
 
 A **disabled** provider is the opposite case and also deliberate: nothing is

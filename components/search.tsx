@@ -20,7 +20,7 @@ import { useMemo } from "react";
  * **The static client, because there is no server to ask.** `app/api/search/route.ts`
  * writes the index out at build time with `staticGET`; this fetches that file
  * once and searches it in the browser. The `locale` keeps a Polish reader out of
- * the English index and the other way round.
+ * the English index and the other way around.
  */
 export default function DocsSearchDialog(props: SharedProps) {
     const { locale } = useI18n();

@@ -46,7 +46,7 @@ run other things. Nothing in `gc.sh` runs unfiltered.
 **`VACUUM` and `REINDEX` are deliberately absent.** Different risk, different
 runtime — a `REINDEX` holds locks a contest would notice — and autovacuum
 already does the routine part. Putting them in a nightly job is its own decision,
-and nobody has taken it.
+and nobody has made it.
 
 `gc.sh` does not rotate the backup directory. Rotation belongs to the script that
 writes the dumps, and a directory nobody is adding to is not the thing to start

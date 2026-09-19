@@ -66,7 +66,7 @@ for (const section of sections) {
 
         const wrong = want.findIndex((one, index) => links[index] !== one);
         if (wrong !== -1) {
-            fail(where, "the repository and license links do not match lib/sections.ts, or are the wrong way round");
+            fail(where, "the repository and license links do not match lib/sections.ts, or are the wrong way around");
             console.error(`         meta.json      : ${links[wrong]}`);
             console.error(`         lib/sections.ts: ${want[wrong]}`);
             continue;

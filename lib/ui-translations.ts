@@ -4,7 +4,7 @@
  * Its translation keys are the English strings themselves, so an untranslated
  * key renders as English rather than as a missing-key marker — which is exactly
  * the failure the Client's own `check:i18n` exists to catch: it looks like a
- * translation nobody got round to rather than one nobody knows is missing.
+ * translation nobody got around to rather than one nobody knows is missing.
  *
  * A Polish page whose table of contents says *On this page* is a page that only
  * looks translated.

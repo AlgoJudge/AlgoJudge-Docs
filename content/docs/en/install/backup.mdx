@@ -91,7 +91,7 @@ It reports which arrangement is in force, every key with its dates, whether each
 is stored encrypted or plain, and **whether this Server can still read it** —
 which is also the only check that catches a certificate that was dropped instead
 of kept. Reading a key's descriptor is what decrypts it, so a key encrypted with
-a certificate nobody supplies any more fails exactly there. Without asking, the
+a certificate nobody supplies anymore fails exactly there. Without asking, the
 only symptom is everybody being signed out, after the fact.
 </Callout>
 
@@ -150,7 +150,7 @@ backup first. [Where the files go](/en/install/storage) is the whole of it.
 Two checks, because the cheap one does not prove what it looks like it proves.
 
 - **`pg_restore --list`** runs on every dump. A custom-format archive keeps its
-  table of contents at the front, so this succeeds on a file truncated half way
+  table of contents at the front, so this succeeds on a file truncated halfway
   through the data — it reads the header and stops. It is still worth running: it
   catches an empty file, a write that failed on the first block, and anything that
   is not a PostgreSQL archive at all.
@@ -165,7 +165,7 @@ is not one.
 
 The count policy answers *how far back can I go*; the size budget answers *how
 much disk will this cost*. A backup directory that fills the disk stops
-PostgreSQL writing, which turns a safety mechanism into the outage it was meant
+PostgreSQL from writing, which turns a safety mechanism into the outage it was meant
 to prevent.
 
 | Bound | Set by | |
@@ -194,7 +194,7 @@ simultaneously the newest daily, the newest of its week and the newest of its
 month. The exact number moves with where today falls in the week.
 
 **"Days on which a dump exists", not "the last N calendar days."** A host
-switched off for a fortnight would, under the calendar reading, come back with no
+switched off for two weeks would, under the calendar reading, come back with no
 daily history at all. Under this one it comes back holding its seven most recent
 dumps, merely spread over a longer span.
 
@@ -219,9 +219,9 @@ contest, the end of a term, and the moment before a large migration.
 
 **`--until` is mandatory and it is a review date, not a deletion date.** Nothing
 in `keep/` is ever removed automatically — deleting a copy somebody deliberately
-preserved is not a decision a cron job may take. What happens instead is that
+preserved is not a decision a cron job may make. What happens instead is that
 **every overdue hold is reported on every run**, so each deep copy stays a
-conscious, renewed decision. That is what stops named holds quietly
+conscious, renewed decision. That is what stops named holds from quietly
 reintroducing the deep history the size bound removed: a rotation reaching two
 months means nothing if an unreviewed hold from three years ago sits beside it.
 

@@ -82,7 +82,7 @@ whether to approve it — with the approval left exactly where it was.
 
 **The nonce is signed, not the request.** What is being established is only that
 the private key is present on the machine that is asking. Signing the body would
-need a canonical serialization every implementation agrees on for ever, and the
+need a canonical serialization every implementation agrees on forever, and the
 first day two of them disagreed no Runner could restart.
 </Callout>
 
@@ -123,7 +123,7 @@ Runner needs to handle is the waiting.
 **Waiting is not a fault, and there is no timeout.** A Runner that has registered
 and not been approved is refused a token, and the right response is to back off
 and ask again — for as long as it takes somebody to reach the panel. A process
-that exited because nobody had got to it yet would need something else watching
+that exited because nobody had gotten to it yet would need something else watching
 it.
 
 <Callout type="warn" title="There is no key rotation, and revocation is permanent">
@@ -148,8 +148,8 @@ POST /api/v1/runner/auth/token          { "fingerprint": "…", "nonce": "…", 
 The signature is **Ed25519 over the UTF-8 bytes of the nonce**, base64.
 
 The nonce is **single-use and short-lived** — two minutes in this Server — and
-both properties matter: without single use, a captured exchange is replayable for
-ever; without expiry, one captured today is usable next year.
+both properties matter: without single use, a captured exchange is replayable
+forever; without expiry, one captured today is usable next year.
 
 | Refusal | Code |
 |---|---|

@@ -116,7 +116,7 @@ docker compose up -d --wait
 
 or `make up`, which is those three.
 
-`preflight.sh` refuses with a sentence rather than half way up: an empty
+`preflight.sh` refuses with a sentence rather than halfway up: an empty
 password, a missing or short token, a CIDR with host bits, a relative work
 directory, a work directory a job container cannot read, cgroup v1 or an unknown
 cgroup driver, a `.env` that is tracked by Git.
@@ -165,7 +165,7 @@ and gets a 404. That is measured behavior, not a guess.
 
 **A new Runner registers and then waits.** It is not a fault and there is no
 timeout. Nothing is judged until an administrator approves it, which is what
-stops somebody attaching a machine of their own to your installation.
+stops somebody from attaching a machine of their own to your installation.
 
 In the panel: **Runners**, and approve each of the four that appeared. Their
 logs say `waiting: this Runner has not been approved yet` until you do, backing

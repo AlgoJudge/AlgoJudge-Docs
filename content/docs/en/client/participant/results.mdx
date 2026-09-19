@@ -50,8 +50,8 @@ While a submission is still being judged, the badge shows the state. Once it is
 done, the badge shows the **verdict** instead — the short label the Runner
 produced, such as `Accepted`.
 
-**The color comes from the score, never from the verdict text.** Full marks are
-green, some marks yellow, none red. A verdict is a string belonging to the
+**The color comes from the score, never from the verdict text.** A full score is
+green, a partial score yellow, none red. A verdict is a string belonging to the
 problem type, and matching on the word "Accepted" would work for one type and
 quietly mislead for another.
 
@@ -92,7 +92,7 @@ sent it. A submission still in the queue shows no number at all: nobody is
 working on it, so there is nothing to count.
 
 **It says how long, and no more.** How far through the tests the evaluation has
-got is not shown while it runs; the result arrives whole, when it is finished.
+gotten is not shown while it runs; the result arrives whole, when it is finished.
 
 The counter reads the clock on every tick instead of adding a second to itself,
 so a page left open in a background tab shows you the true elapsed time when you

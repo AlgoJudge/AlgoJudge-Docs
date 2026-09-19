@@ -98,7 +98,7 @@ that apart from a Runner that took the job and died judging it: it is written on
 the first lease-bearing call and cleared on every re-claim, and the reaper
 refunds only the claims where it is still null. Three of those are free, for the
 same reason three releases are — a row that throws after every commit would
-otherwise be refunded for ever and never reach the cap.
+otherwise be refunded forever and never reach the cap.
 
 <Callout type="warn" title="An infrastructure failure is not a wrong answer">
 A package whose checksum does not match lands in `FailureReason` and the job
