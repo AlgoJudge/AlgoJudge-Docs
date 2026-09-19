@@ -147,7 +147,7 @@ submissions sharing a core each accrue their own correctly, however long they
 wait for it. What does move is everything measured on the clock — and a run that
 spends its time waiting for a processor looks, from outside, exactly like one
 that has stopped computing. The sandbox stops such a run so that a genuinely
-wedged program cannot hold a Runner for ever, and a starved one reaches that stop
+wedged program cannot hold a Runner forever, and a starved one reaches that stop
 without ever having been slow. The verdict says `Time limit exceeded`.
 
 Measured 2026-09-03 on sixteen processors — eight physical cores — running
@@ -306,7 +306,7 @@ systemctl is-enabled docker
 | | What happens |
 |---|---|
 | A service that **hangs** rather than exits | Nothing restarts it: a restart policy acts on exit. A hung Runner's *job* is recovered by the Server's lease — it expires and the job returns to the queue — but the Runner stays hung until somebody looks |
-| A container **crash-looping** | It is restarted for ever, with the delay growing to a minute. Nothing escalates and nothing tells you. A flapping container is the first thing to look for when an installation is up but does nothing |
+| A container **crash-looping** | It is restarted forever, with the delay growing to a minute. Nothing escalates and nothing tells you. A flapping container is the first thing to look for when an installation is up but does nothing |
 | A **failed health check** | Nothing. In Compose a health check reports and does not restart; that is an orchestrator's behavior, not this one's |
 
 State survives a restart because the volumes are named. A Runner keeps its

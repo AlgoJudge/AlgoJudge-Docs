@@ -138,7 +138,7 @@ the window instead of throwing it away.
 On `SIGTERM` a Runner hands its job straight back to the queue, so nothing waits
 out a lease — but it is still work thrown away and redone. A clean drain is
 `maintenance.sh on --wait-closed` on the **Server** first, which stops new work
-reaching a Runner at all; see [Update and rollback](/en/install/update).
+from reaching a Runner at all; see [Update and rollback](/en/install/update).
 </Callout>
 
 ## What this deliberately does not do

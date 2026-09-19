@@ -21,7 +21,7 @@ A file belonging to another problem answers **404, not 403**. A file id is
 opaque, and a 403 would confirm the bytes exist.
 
 **That is a rule about file ids and only about them.** The job endpoints answer
-the other way round — a `404` for an id nobody issued, a `403` for a job another
+the other way around — a `404` for an id nobody issued, a `403` for a job another
 Runner holds — because a Runner has to be able to tell a reclaimed job from a
 Server that has forgotten it. [Claiming](/en/protocol/claiming) says why.
 </Callout>
@@ -112,7 +112,7 @@ The Server requires the job to be `Running` to accept an attachment, and
 reporting ends that.
 
 Report first and the attachment is refused, which means the log explaining a
-failure is the one thing that goes missing.
+failure is the one thing that gets lost.
 </Callout>
 
 ## What the contract does not carry

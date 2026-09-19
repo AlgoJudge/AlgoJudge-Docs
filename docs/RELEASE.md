@@ -79,7 +79,7 @@ is running it — see *After the tag*.
 Each section of this site is snapshotted when **its own** repository releases, so
 this repository is touched on more than one of those days.
 
-## The snapshot is cut on the day, or not at all
+## The snapshot is cut on release day, or not at all
 
 There is no backfill: no honest way exists to reconstruct later what a page said
 at a release, and a reconstruction is worse than an absence because it looks

@@ -113,7 +113,7 @@ decide any of them.
 
 Neither produces an error. Both produce an empty queue.
 
-<Callout type="warn" title="External judging ships off, and the Runner still needs approving">
+<Callout type="warn" title="External judging ships off, and the Runner still needs approval">
 **The installation's external judging switch is off by default.** That is a
 decision, not an accident of defaulting: sending somebody's submission to a third
 party is a thing an operator chooses. While it is off, no job from an external
@@ -178,7 +178,7 @@ may publish none, so this one is not lowered. A politeness limit a deployment ca
 silently disable is not a limit.
 
 Every submission is made under one robot account, and **every real submission
-stays on that account for ever**. That is a decision for whoever owns it.
+stays on that account forever**. That is a decision for whoever owns it.
 
 ## Two numbers checked against each other at start-up
 
@@ -267,8 +267,8 @@ allowlist of hosts the installation configures.
 
 A judge can fail to form an opinion — a submission error, or a problem it holds
 no tests for. **Neither is a verdict and neither is scored.** They are reported
-as infrastructure failures, and the Server refuses to score one, because marking
-somebody down for a third party's outage would be a lie about their solution.
+as infrastructure failures, and the Server refuses to score one, because penalizing
+somebody for a third party's outage would be a lie about their solution.
 
 A verdict the Runner does not recognize is treated as *not judged yet* rather
 than guessed at: an answer nobody has seen before is not evidence that a person

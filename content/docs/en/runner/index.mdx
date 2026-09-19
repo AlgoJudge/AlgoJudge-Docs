@@ -5,7 +5,7 @@ description: The machine that evaluates submissions, how it joins an installatio
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-A Runner is a machine that evaluates submissions. It takes a job, runs and marks
+A Runner is a machine that evaluates submissions. It takes a job, runs and judges
 it in isolation, and reports the result. It is the only part of AlgoJudge that
 executes code somebody else wrote.
 
@@ -15,14 +15,14 @@ particular.
 
 ## It opens every connection itself
 
-The Server never calls a Runner. Every request travels outwards: registration,
+The Server never calls a Runner. Every request travels outward: registration,
 the handshake, asking for work, renewing a lease, uploading a log, reporting a
 result, giving a job back.
 
 Two consequences worth having early:
 
 - **A Runner needs no inbound port and no address of its own.** It works from
-  behind a domestic router, from a laboratory behind NAT, from a laptop.
+  behind a home router, from a laboratory behind NAT, from a laptop.
 - **A Runner is not something an installation can reach out to.** Nothing can be
   pushed to it, and there is no way to ask it a question. What the manager panel
   shows about a Runner is what that Runner last reported.
@@ -45,7 +45,7 @@ The sequence is always the same:
 **Step 3 has no timeout, and waiting for it is not a fault.** A Runner that has
 registered and not yet been approved logs *"this Runner has not been approved
 yet"* and keeps asking, on the same backed-off, jittered interval it uses for an
-empty queue. It does not exit. A process that gave up because nobody had got to
+empty queue. It does not exit. A process that gave up because nobody had gotten to
 the panel yet would need something else watching it.
 
 Point a Runner at a Server that is not up yet and the same thing happens: it

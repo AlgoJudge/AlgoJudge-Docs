@@ -34,14 +34,14 @@ the Client performed alone would not be a refusal at all.
 | **upcoming** | withheld | no |
 | **open** | shown | yes |
 | **paused** | shown, unless the manager took them away as they paused | no |
-| **ended** | shown, for ever | no |
+| **ended** | shown, forever | no |
 
 <Mermaid chart={`
 flowchart LR
     upcoming["Upcoming<br/>nothing about it is disclosed"]
     open["Open<br/>readable, and accepting"]
     paused["Paused<br/>readable unless the manager hid it"]
-    ended["Ended<br/>readable for ever"]
+    ended["Ended<br/>readable forever"]
     upcoming -->|"its start passes"| open
     open -->|"a manager pauses it"| paused
     paused -->|"a manager resumes it"| open

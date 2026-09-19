@@ -52,7 +52,7 @@ Two known traps:
   `Submission` is *Zgłoszenie*, `Activity` is *Aktywność*.
 - **The interface's own Polish is in `lib/ui-translations.ts`**, and the same
   check verifies every key Fumadocs emits has one. Its keys *are* the English
-  strings, so a renamed key does not go missing — it silently renders in
+  strings, so a renamed key does not disappear — it silently renders in
   English.
 - Every Polish page records the fingerprint of the English source it was written
   from, in its front matter. `npm run check:translations` fails when the English
@@ -131,4 +131,4 @@ Creative Commons' own legal code, byte for byte — do not edit it.
 
 Two dependencies are held below the newest release on purpose, and `README.md`
 says which and why. Raising either without checking the other half of the
-toolchain will stop the linter running.
+toolchain will stop the linter from running.

@@ -47,7 +47,7 @@ Two different mechanisms, and the difference is worth holding:
 | Fields | What they do |
 |---|---|
 | `RankingFreezeAt`, `RankingRevealAt` | the freeze. Between these two instants the **Server withholds outcomes**, rather than the Client hiding them |
-| `RankingVisibleFrom`, `RankingVisibleTo` | whether there is a board at all for this round. Absent `From` means the round's own start; absent `To` means for ever |
+| `RankingVisibleFrom`, `RankingVisibleTo` | whether there is a board at all for this round. Absent `From` means the round's own start; absent `To` means forever |
 
 The freeze hides late results *within* a board; the window decides whether the
 board exists. The window is per round rather than per activity because an

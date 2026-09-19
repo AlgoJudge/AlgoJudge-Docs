@@ -122,7 +122,7 @@ command for grants, which is why the door is a restart rather than a command.
 In order of how often it is each one:
 
 1. **The Runner has not been approved.** Its log says `waiting: this Runner has
-   not been approved yet`, and it will say that for ever. Approve it in the panel
+   not been approved yet`, and it will say that forever. Approve it in the panel
    under **Runners**.
 2. **The sandbox images do not exist.** Compiled in, the Runner looks for
    `algojudge/lang-*:local`, which only a development host has. `compose.yaml`
@@ -309,7 +309,7 @@ once.
 **`the Server refused with 403: runner.nonce.unknown`** is a different fault with
 the same symptom, and it applies to both Runners: **this image is older than the
 Server it is registering against.** It appears only from the second start
-onwards, because the identity volume is what makes the Server recognize the key,
+on, because the identity volume is what makes the Server recognize the key,
 and a refused registration is not one a Runner retries. Pull both images from the
 same release rather than letting the moving tags drift — [Update and
 rollback](/en/install/update) says why they have to move together.
@@ -454,7 +454,7 @@ refuse to start.
 
 ## `docker compose ps` shows no health for a Runner
 
-**Both** Runners show an empty health column, for ever, and neither is a fault.
+**Both** Runners show an empty health column, forever, and neither is a fault.
 The Runner's image declares no health check, and the external Runner's cannot
 have one — it has no shell, no port and nothing to ask. `docker compose up
 --wait` therefore calls both ready as soon as they are running, which they are

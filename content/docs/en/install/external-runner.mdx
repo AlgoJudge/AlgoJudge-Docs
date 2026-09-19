@@ -80,7 +80,7 @@ It dials out twice — to the Server and to the archive — and accepts nothing.
   It runs nothing; it forwards.
 - **No health check**, and that is the image rather than an omission: it is
   `distroless/static`, with no shell and no port to ask. `docker compose ps`
-  shows an empty health column for it for ever, and `docker compose exec` does
+  shows an empty health column for it forever, and `docker compose exec` does
   not work on it at all.
 
 ```bash

@@ -1,6 +1,6 @@
 ---
 title: Isolation and the host
-description: What contains a submission, what the arrangement deliberately does not buy, and what a host must provide before it can mark anybody's work.
+description: What contains a submission, what the arrangement deliberately does not buy, and what a host must provide before it can judge anybody's work.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -51,7 +51,7 @@ leaking a process has not contained it.
 ## Three deadlines, and none of them is the limit
 
 A time limit is processor time, and a program that has stopped computing spends
-none — so it would sit there for ever. Three deadlines end it. Write `L` for the
+none — so it would sit there forever. Three deadlines end it. Write `L` for the
 problem's time limit. **None of the three is the time limit**: that is decided
 afterwards, on the measurement. Two of them do end the run as `Time limit
 exceeded`, and the notes beside them say which happened.
@@ -111,7 +111,7 @@ waiting, and there the verdict is wrong rather than merely slow.
 ### The fourth watches a channel, not a run
 
 Every pipe a judged run is read through is **opened under a bound of 30 seconds**,
-on the Runner's side. A blocking open of a pipe waits for a writer for ever, and
+on the Runner's side. A blocking open of a pipe waits for a writer forever, and
 a container that never started never writes — so without the bound one judge
 that failed to start held the job until somebody restarted the Runner.
 
@@ -187,7 +187,7 @@ Two consequences that are easy to get backwards:
   problem has no file at all: its input does not exist until an interactor
   decides what to send, so there the cost is inherent and is paid.
 - **The output is a pipe in every case**, which is where that objection stops
-  applying: nobody re-reads their own output. It is read once, forwards, and
+  applying: nobody re-reads their own output. It is read once, forward, and
   that is what lets a wrong answer be found at the first differing token and the
   program stopped there, rather than left to finish an answer nobody would look
   at.

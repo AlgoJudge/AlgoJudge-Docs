@@ -83,7 +83,7 @@ sha256sum app/fonts/* public/OFL-*.txt
 
 **Take each subset file from the block its comment introduces, not the one it
 follows.** In Google's stylesheet the `/* latin */` comment sits **before** its
-`@font-face`, and pairing them the other way round hands every file its
+`@font-face`, and pairing them the other way around hands every file its
 neighbor's name. Nothing about that is visible from a declaration: the family
 resolves, the file downloads, `document.fonts` reports it `loaded`, and every
 letter is drawn by a system font because the file holds none of them. It shipped
@@ -91,7 +91,7 @@ here once, with the wordmark painted 8 glyphs in Times New Roman and 1 in Inter.
 `npm run check:fonts` is what sees it — it asks the browser which face rendered
 each node rather than which one was asked for.
 
-The measured result, once the files are the right way round: "AlgoJudge" at
+The measured result, once the files are the right way around: "AlgoJudge" at
 font-size 41 is **215.509** user units here, against 215.52 recorded in
 `AlgoJudge-Client` and 215.500 on the Keycloak sign-in screen — the same face,
 the same metrics, on all three surfaces. The drawing's own canvas is 270.1 units

@@ -11,7 +11,7 @@ solution.
 
 **The statement is not in it.** It travels as a participant-scoped attachment,
 and the Runner — the one component that must never disclose it — never receives
-it. The package itself is the other way round: it is stored with Runner scope,
+it. The package itself is the other way around: it is stored with Runner scope,
 and a participant never receives that.
 
 The **Package** tab of a problem builds one. Nothing there uploads on its own; a
@@ -43,7 +43,7 @@ package.
 | `languages` | which toolchains may be submitted. Empty means the package does not say, which allows everything the Runner can build |
 | `overrideLimits` | per language, keyed by a family (`cpp`, `python`) or one toolchain (`pypy3`). Python is slower; this is where that is said |
 | `groups` | the scoring groups, their points, and optionally their own limits |
-| `checker` | absent means the `.out` files decide. It is handed the answer as the submission writes it, so it must read it once and forwards. With one, the `.out` files need not be there at all. **It does not stop the submission by finishing** — a program that keeps writing after the checker has seen enough runs into the output limit and is not accepted |
+| `checker` | absent means the `.out` files decide. It is handed the answer as the submission writes it, so it must read it once, front to back. With one, the `.out` files need not be there at all. **It does not stop the submission by finishing** — a program that keeps writing after the checker has seen enough runs into the output limit and is not accepted |
 | `interactor` | the problem is interactive: the submission is given no input file, and every byte it reads is one the interactor sent in answer to what it wrote. Stands **instead** of a checker, never beside one — attaching either in the Programs card disables the other. With one, **neither** test file is required |
 | `groups[].tests` | how many tests a group has, when you ship no files for them. Only an interactive problem may say it, and at most 26 — elsewhere the files are the count |
 | `modelSolution` | used to calibrate limits, never to judge |
@@ -102,7 +102,7 @@ submission was held to, not one recomputed per run.
 
 ## How a problem gets its tests and limits
 
-Two steps, and reading them the other way round is the mistake that costs a
+Two steps, and reading them the other way around is the mistake that costs a
 round.
 
 1. **The assignment's configuration is merged into the package**, member by

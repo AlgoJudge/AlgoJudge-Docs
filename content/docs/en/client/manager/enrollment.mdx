@@ -29,7 +29,7 @@ checkbox, and why the same rows appear under
    The grant **points at** it, so a later correction to that role reaches this
    person too;
 3. any **permissions of their own**, on top of the role. What the role gives is
-   shown ticked and locked; what you tick here is this one person's.
+   shown checked and locked; what you check here is this one person's.
 
 What the editor offers is what **you** hold in this activity, not what you hold
 across the installation. Nobody may grant a permission they do not hold
@@ -109,7 +109,7 @@ row actually holds — is [User](/en/server/concepts/user). The permissions
 those acts sit behind, `user:block` and `user:merge` among them, are listed in
 [Permissions](/en/server/permissions).
 
-Blocking stops somebody signing in at all — it ends their sessions and stops new
+Blocking stops somebody from signing in at all — it ends their sessions and stops new
 ones. What they may do once inside an activity is a grant, and the two are not
 substitutes: blocking is an installation-wide act and needs `user:block`, which
 is not in the shipped `manager` role.

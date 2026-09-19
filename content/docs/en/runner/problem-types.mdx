@@ -82,7 +82,7 @@ package that brings one replaces the middle of it, and the two sections below
 are those two wirings.
 
 **The output is a pipe and the input is a sealed file in memory**, and the
-asymmetry is deliberate: nobody re-reads their own output, so reading it forwards
+asymmetry is deliberate: nobody re-reads their own output, so reading it forward
 costs nothing and buys the early stop above — while a solution that reads its
 input twice would work on its author's machine and fail on a pipe. Neither is a
 mount, so a judged container holds no part of the package at all.
@@ -132,7 +132,7 @@ submission holding its question in an unflushed buffer makes an interactor
 refuse for want of anything to read, and *no processor time for 12 s* is the
 sentence that tells a participant they are stuck rather than slow.
 
-**This was the other way round until 2026-09-16**, and it was changed because it
+**This was the other way around until 2026-09-16**, and it was changed because it
 was never one answer: a judge's exit and the output cap are decided in the same
 loop, so the same submission was `Accepted` on an idle host and `Output limit
 exceeded` on a busy one — measured at 24% of runs under load. A verdict a
@@ -247,7 +247,7 @@ Three things about a trial are worth knowing:
 - **A trial is not a job.** It has no submission, no attempt and no problem
   version, and it produces **no verdict and no score** — reporting anything
   shaped like a result would invite a screen to render it as one.
-- **A Runner asks for a trial only when there is no marking to do.** A trial
+- **A Runner asks for a trial only when there is no grading to do.** A trial
   measures timings for somebody who asked; a job decides somebody's grade.
 - **Only `standard-io@1` is measured.** A trial of any other type is refused by
   name. A Runner that forwards work measures no trials at all, because "run this

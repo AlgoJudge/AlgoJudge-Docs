@@ -79,12 +79,12 @@ multiplier, so a round's total is read off the column rather than worked out.
 The Server rescales wherever it reports a number:
 `round(score / maxScore × MaxPoints)`.
 
-**Null keeps the Runner's own scale.** A package marking out of 70 reports out
+**Null keeps the Runner's own scale.** A package scoring out of 70 reports out
 of 70; the problem's own scoring is not replaced by a convention nobody chose.
 
 **Zero and negative are refused**, on both write paths, with
 `assignment.maxPoints.invalid`. Zero is not a problem worth nothing: it is a
-problem whose every number is `0 / 0`, which a board reads as full marks.
+problem whose every number is `0 / 0`, which a board reads as a full score.
 
 An ICPC board is unaffected either way — it counts solves and penalty minutes,
 and a point value has nowhere to land in it.
