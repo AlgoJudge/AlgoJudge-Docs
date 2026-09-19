@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 846966607f343520b72c9577133ececa20ce769bc73d2173d88996d8817b5545
+sourceSha256: 0fbc80cda4eea3791d161326cfbdecba2ded763140127017c3bb6f96bfc0ed5a
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -46,9 +46,23 @@ zaktualizowano, nie miała kompilatorów i każde zgłoszenie padało.
 ```bash
 git clone https://github.com/AlgoJudge/AlgoJudge-Ops.git /opt/algojudge-ops
 cd /opt/algojudge-ops
+git checkout "$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
 cp .env.example .env
 chmod 600 .env
 ```
+
+**Najnowsze wydanie, nie `main`.** Na `main` powstaje następne wydanie; nic
+z tego, co tam jest, nie zostało jeszcze opublikowane. `update.sh` trzyma się
+tej samej zasady: przełącza repozytorium wyłącznie z jednego wydania na nowsze.
+
+**Dalsza część tej strony opisuje `main`.** Pobrane wydanie ma własną wersję
+tych instrukcji: `docs/INSTALL.md` w repozytorium i tę stronę w wersji dla tego
+wydania — dla 0.1 to [Pierwsza instalacja](/pl/install/v0.1/first-install).
+`v0.1.0` wymaga trzeciej wartości, `RUNNER_WORK_DIR`, nie ma `scripts/pull.sh`,
+a jego `update.sh` jest starszy niż opisana wyżej zasada: wykonuje `git pull`,
+który na wydaniu kończy się tylko ostrzeżeniem. Taką instalację trzeba raz
+przełączyć ręcznie na następne wydanie, poleceniami `git fetch --tags`
+i `git checkout <tag>`.
 
 **Dwie wartości nie mają domyślnych** i bez nich stos nie wystartuje. Każdą
 generuj osobno: jeśli ta sama trafi w dwa miejsca, jeden wyciek kompromituje

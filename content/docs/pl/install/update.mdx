@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: c0fcf80c6c9277d3be1ff776822f1e9fb4d3395d3ae044f18bbb258761002d4a
+sourceSha256: ab869704da3a9e298a5270bd742b40dd7f8e590de2e95e714f9dec37606b6bc2
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -16,7 +16,12 @@ import { Mermaid } from "@/components/mermaid";
 
 ## Kolejność jest tu najważniejsza
 
-1. **`git pull`** — nowe pliki Compose i skrypty, nigdy nowe wersje obrazów.
+1. **Najnowsze wydanie repozytorium** — nowe pliki Compose i skrypty, nigdy nowe
+   wersje obrazów. Tylko tag `vX.Y.Z` i tylko do przodu, nigdy `main`: z wydania
+   na dowolne nowsze, a z gałęzi `main` wyłącznie na wydanie, które zawiera jej
+   bieżący commit. Samo przejście na nowe wydanie też jest „czymś nowym”:
+   podmiana stosuje jego pliki, nawet jeśli żaden obraz się nie zmienił,
+   a nieudana cofa repozytorium razem z obrazami.
 2. **`docker compose pull`** — najdłuższy krok, i **nie kosztuje przerwy**.
 3. **Nic nowego? Koniec.** Nic nie zostaje zamknięte.
 4. **Zrób kopię zapasową.**
@@ -27,7 +32,7 @@ import { Mermaid } from "@/components/mermaid";
 
 <Mermaid chart={`
 flowchart TD
-    pull["git pull, potem docker compose pull<br/>Bez przerwy: nic jeszcze nie jest zamknięte"]
+    pull["Najnowsze wydanie, potem docker compose pull<br/>Bez przerwy: nic jeszcze nie jest zamknięte"]
     pull --> changed{"Jest coś nowego?"}
     changed -->|"nie"| stop["Koniec. Nic nie zostało zamknięte"]
     changed -->|"tak"| backup["Kopia zapasowa. Nieudany zrzut zatrzymuje aktualizację"]
@@ -87,7 +92,9 @@ zostanie na `0`, dostanie przy następnej aktualizacji każde późniejsze wydan
 **Poniżej 1.0 to nie tylko poprawki.** Wersja minor może tam zmienić to, co
 robiła poprzednia, a `0` bierze także takie wydania. Kto chce wyłącznie
 poprawek, wpisuje `0.1`; kto chce decydować o każdej wersji — `0.1.0`.
-`latest` nie jest oferowany
+Tagu `latest` stos nie przewiduje: instalacja, która zmieniła wersję tylko
+dlatego, że ktoś pobrał obrazy, nie jest wdrożeniem.
+
 ## Aktualizacja instalacji, która trzyma katalogi na hoście
 
 Instalacja, w której Runnery trzymają pamięć podręczną i katalog roboczy
@@ -153,8 +160,6 @@ docker compose start runner-1 runner-2
 
 Najpierw zatrzymaj Runnery: dopóki działają, wolumen jest w użyciu i `volume rm`
 odmawia, zamiast zrobić to po połowie.
-
-— instalacja, która zmieniła wersję, bo ktoś zrobił pull, nie jest wdrożeniem.
 
 ## Wycofanie
 

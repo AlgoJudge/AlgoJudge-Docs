@@ -103,8 +103,9 @@ what it needs and what it cannot do for you.
 
 ## A Runner may live on another machine entirely
 
-Each Runner host clones the same repository and runs `COMPOSE_PROFILES=runner`
-with two values in its `.env`:
+Each Runner host clones the same repository, checks out the release the
+application host runs, and runs `COMPOSE_PROFILES=runner` with two values in its
+`.env`:
 
 ```ini
 SERVER_URL=https://your.domain

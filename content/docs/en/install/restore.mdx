@@ -82,9 +82,9 @@ strictly worse than a complete one with warnings. One of those lines being
 ## Rehearse it
 
 **A backup with no tested restore is a hypothesis.** The honest rehearsal is on
-a spare host: clone the repository, copy `.env` and one dump, `docker compose up
--d --wait`, `./scripts/restore.sh`, then sign in and look at something you
-recognize.
+a spare host: clone the repository, check out the release the installation
+runs, copy `.env` and one dump, `docker compose up -d --wait`,
+`./scripts/restore.sh`, then sign in and look at something you recognize.
 
 <Callout type="warn" title="The real test is the one that caught the silent no-op">
 **Change something first**, then restore, then check the change is gone. A

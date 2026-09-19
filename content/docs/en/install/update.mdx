@@ -14,7 +14,12 @@ import { Mermaid } from "@/components/mermaid";
 
 ## The order is the point
 
-1. **`git pull`** — new Compose files and scripts, never new image versions.
+1. **The newest release of the repository** — new Compose files and scripts,
+   never new image versions. Only a `vX.Y.Z` tag and only forward, never
+   `main`: from a release to any higher one, and from a checkout of `main` only
+   to a release cut from `main` after it. A move is itself something new: the
+   swap applies the new release's files even when no image moved, and a failed
+   swap takes the repository back with the images.
 2. **`docker compose pull`** — the longest step, and **it costs no downtime**.
 3. **Nothing new? Stop.** Nothing is closed.
 4. **Back up.**
@@ -25,7 +30,7 @@ import { Mermaid } from "@/components/mermaid";
 
 <Mermaid chart={`
 flowchart TD
-    pull["git pull, then docker compose pull<br/>No downtime: nothing is closed yet"]
+    pull["The newest release, then docker compose pull<br/>No downtime: nothing is closed yet"]
     pull --> changed{"Anything new?"}
     changed -->|"no"| stop["Stop. Nothing was closed"]
     changed -->|"yes"| backup["Back up. A failed dump stops the update"]
@@ -85,6 +90,9 @@ Staying on `0` takes every later one on the next update.
 **Below 1.0 that is more than fixes.** A minor is allowed to change what the one
 before it did, so `0` follows those too. An installation that wants only fixes
 writes `0.1`, and one that wants to decide every version writes `0.1.0`.
+`latest` is not offered — an installation that changed version because somebody
+pulled is not a deployment.
+
 ## Updating an installation that keeps host directories
 
 An installation whose Runners keep their cache and scratch in host directories
@@ -147,9 +155,6 @@ docker compose start runner-1 runner-2
 
 Stop the Runners first: the volume is in use while they are up, and `volume rm`
 refuses rather than half-doing it.
-
-`latest` is not offered — an installation that changed version because somebody
-pulled is not a deployment.
 
 ## Rollback
 
