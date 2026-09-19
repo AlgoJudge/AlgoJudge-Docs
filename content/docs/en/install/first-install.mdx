@@ -46,9 +46,22 @@ never updated had no toolchain and every submission failed.
 ```bash
 git clone https://github.com/AlgoJudge/AlgoJudge-Ops.git /opt/algojudge-ops
 cd /opt/algojudge-ops
+git checkout "$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
 cp .env.example .env
 chmod 600 .env
 ```
+
+**The newest release, not `main`.** `main` is where the next release is being
+written, and what it holds has not been released. `update.sh` keeps to the same
+rule: it moves the checkout only from a release to a newer one.
+
+**The rest of this page follows `main`.** The release you checked out has its
+own copy of these instructions: `docs/INSTALL.md` in the checkout, and this page
+in that release's version — for 0.1, [First install](/en/install/v0.1/first-install).
+`v0.1.0` asks for a third value, `RUNNER_WORK_DIR`, has no `scripts/pull.sh`,
+and its own `update.sh` predates the rule above: it runs `git pull`, which on a
+release checkout only warns. Move such an installation to the next release by
+hand once, with `git fetch --tags` and `git checkout <tag>`.
 
 **Two values have no default** and the stack will not start without them.
 Generate each separately — reusing one across two of these means one disclosure

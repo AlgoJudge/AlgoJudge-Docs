@@ -2,7 +2,7 @@
 title: Czym jest instalacja
 description: Dziewięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
 source: en/install/index.mdx
-sourceSha256: 694b6a28383245c498581a3a702047d33b3161e26087dc699b1ffc04f77e8ac5
+sourceSha256: 7f1920e6ad2de822192cc5178e5c475434b1cc4fa48029bd8ffc0ad6f1d09574
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -106,8 +106,9 @@ wymaga i czego za Ciebie nie zrobi.
 
 ## Runner może działać na zupełnie innej maszynie
 
-Każdy host z Runnerem klonuje to samo repozytorium i uruchamia
-`COMPOSE_PROFILES=runner` z dwiema wartościami w swoim `.env`:
+Każdy host z Runnerem klonuje to samo repozytorium, przełącza je na wydanie,
+na którym działa host aplikacji, i uruchamia `COMPOSE_PROFILES=runner` z dwiema
+wartościami w swoim `.env`:
 
 ```ini
 SERVER_URL=https://twoja.domena

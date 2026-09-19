@@ -2,7 +2,7 @@
 title: Odtwarzanie
 description: Jak wgrać zrzut z powrotem, co sprawdzamy, zanim cokolwiek ruszymy, i po co się to ćwiczy.
 source: en/install/restore.mdx
-sourceSha256: 79ab51185f3161bf7b6968008e1c267d8910525b53ccb80a9647ff6289c2327a
+sourceSha256: 4073a3d34232d7ec14c5c503d4823e28fb7955170fcd5271d48e4f59e9f9a8cb
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -91,9 +91,10 @@ jest.
 ## Przećwicz to
 
 **Kopia bez przetestowanego odtworzenia jest hipotezą.** Uczciwa próba wygląda
-tak, na zapasowym hoście: sklonuj repozytorium, skopiuj `.env` i jeden zrzut,
-`docker compose up -d --wait`, `./scripts/restore.sh`, a potem zaloguj się
-i zobacz coś, co rozpoznajesz.
+tak, na zapasowym hoście: sklonuj repozytorium, przełącz je na wydanie, na
+którym działa instalacja, skopiuj `.env` i jeden zrzut, `docker compose up -d
+--wait`, `./scripts/restore.sh`, a potem zaloguj się i zobacz coś, co
+rozpoznajesz.
 
 <Callout type="warn" title="Prawdziwy test to ten, który wyłapał odtwarzanie, które nic nie zrobiło">
 **Najpierw coś zmień**, potem odtwórz, potem sprawdź, że zmiana zniknęła.
