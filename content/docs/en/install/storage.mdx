@@ -90,8 +90,9 @@ the next run picks up where it stopped rather than starting again.
 
 ## Using something other than what we test against
 
-Two S3 implementations are exercised here: **RustFS**, which the development
-stack runs, and **SeaweedFS**, which is run by hand before a release.
+Two S3 implementations are exercised here: **RustFS 1.0.0**, which the
+development stack runs, and **SeaweedFS 4.47**, which is run by hand before a
+release.
 
 Anything else — MinIO, Ceph, a cloud provider — is **unknown rather than
 unsupported**, and the difference matters. The project keeps an S3 conformance
@@ -101,8 +102,11 @@ one nobody has run it against has simply never been checked. If you are about to
 put a contest on one, running that suite first is the cheapest thing you will do
 all week.
 
-One item in it cannot be run against either implementation available here: it
-writes a known string, turns on bucket-default encryption and looks for the
-string in the store's own files. SeaweedFS stores objects readably but refuses
-the encryption call; RustFS accepts the call and stores objects unreadably either
-way. Against an endpoint that supports both, it runs.
+One item in the suite does not run everywhere. It turns on bucket-default
+encryption and then asks the store what it did with the object: RustFS takes the
+configuration, goes on serving and reports `AES256`, so the item runs there.
+**SeaweedFS takes the configuration and then fails every write to that bucket**
+with an internal error, so the item skips rather than fails. That is worth
+knowing before you give a SeaweedFS bucket a default encryption rule — the
+bucket stops accepting files, and a write made before the rule was added
+succeeded, so nothing warns you at the moment you set it.
