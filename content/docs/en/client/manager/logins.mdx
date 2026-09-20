@@ -71,10 +71,12 @@ regardless. The second is checked as the rule is written.
 </Callout>
 
 A mapped grant is **rewritten at every sign-in**, and it links the roles the
-rules named — a claim matching several rules grants all of them. That cuts both
-ways: editing a role reaches those people at their *next sign-in* rather than at
-once, and editing their grant by hand does not reach them at all. The Grants list
-marks such a row with the provider it came from and refuses to edit it. See
+rules named — a claim matching several rules grants all of them. Editing one of
+those roles reaches its holders at once, like any other role. What waits for the
+next sign-in is *which* roles they are: a rule you change, or a group somebody is
+moved into at the directory, reaches them then. Editing their grant by hand does
+not reach them at all — the Grants list marks such a row with the provider it
+came from and refuses to edit it. See
 [Permissions and grants](/en/client/manager/permissions).
 
 ### The account-removal queue

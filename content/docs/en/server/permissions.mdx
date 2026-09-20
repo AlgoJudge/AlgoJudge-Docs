@@ -156,11 +156,13 @@ reaches only that activity, and nobody may put into a role a permission they do
 not themselves hold.
 </Callout>
 
-<Callout type="info" title="A provider's contribution reaches its holders later">
+<Callout type="info" title="A provider owns which roles its contribution links">
 An identity provider's [mapping rule](/en/server/identity) names roles, and the
-contribution it writes links them like any other grant. It is rewritten from
-those rules at **every sign-in**, so editing a role a rule names reaches those
-people at their next sign-in rather than immediately.
+contribution it writes links them like any other grant — so editing one of those
+roles reaches its holders at once, exactly as it does anywhere else. What the
+provider owns is **which** roles are linked: that set is rewritten from the rules
+at every sign-in, so editing a *rule*, or moving somebody between groups at the
+directory, reaches them the next time they sign in.
 </Callout>
 
 A role belongs either to the installation or to **one activity**. An activity's

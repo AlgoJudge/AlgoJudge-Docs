@@ -2,7 +2,7 @@
 title: Logowania zewnętrzne i platformy LTI
 description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
-sourceSha256: d509b082d118c1cae0989f89a0becb70babf5e184865b5a36c2ce6e4e5842c6f
+sourceSha256: 7da2ebfa392562a2c9003356a573452a0b29c45daceec0e8836c153e993d263e
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -72,11 +72,13 @@ niego obrany przy logowaniu. Drugiej pilnuje w chwili zapisu reguły.
 
 Nadanie z mapowania jest **przepisywane przy każdym logowaniu** i wiąże role,
 które wskazały reguły: claim może pasować do kilku reguł, a wkład jest sumą
-wszystkich ról, które one nazywają. To tnie w obie strony — gdy
-zmienisz rolę, dosięgniesz tych osób przy ich *następnym logowaniu*, a nie od
-razu, a gdy poprawisz ich nadanie ręcznie, nie dosięgniesz ich wcale. Lista Nadań
-oznacza taki wiersz dostawcą, od którego przyszedł, i nie pozwala go edytować.
-Zobacz [Uprawnienia i nadania](/pl/client/manager/permissions).
+wszystkich ról, które one nazywają. Zmiana samej roli dosięga jej posiadaczy od
+razu, tak samo jak wszędzie indziej. Na kolejne logowanie czeka to, **które**
+role są związane: zmieniona reguła albo przeniesienie kogoś do innej grupy w
+katalogu dosięgną go dopiero wtedy. Poprawka jego nadania zrobiona ręcznie nie
+dosięgnie go wcale — lista Nadań oznacza taki wiersz dostawcą, od którego
+przyszedł, i nie pozwala go edytować. Zobacz
+[Uprawnienia i nadania](/pl/client/manager/permissions).
 
 ### Kolejka usunięć kont
 
