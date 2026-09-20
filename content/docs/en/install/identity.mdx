@@ -157,8 +157,8 @@ screens are [External logins](/en/client/manager/logins).
    into the provider's own allowlist. AlgoJudge computes and returns that path;
    you do not invent it.
 2. **Write the mapping** — which of the directory's groups become which
-   role. Start with `deny`, which admits nobody the mapping does
-   not name.
+   roles. One group may be worth more than one. Start with `deny`, which admits
+   nobody the mapping does not name.
 3. **If the provider can report deletions**, set a back-channel secret and turn
    the channel on.
 4. **If nobody here signs in any other way**, point the sign-in screen at it, in
@@ -188,12 +188,15 @@ Two claim shapes are read, so an installation does not have to know which it
 has: several claims of the same name, and one claim holding a JSON array or
 object.
 
-A mapping rule is a claim **value** and a role **name**, matched
-by exact string equality. There are no patterns, because a wildcard in an
-allowlist is how an allowlist stops being one. Two guards are enforced and
-cannot be turned off: **`system:administrator` is unreachable through a
-mapping** in every configuration, and **nobody may map onto a permission they do
-not themselves hold**.
+A mapping rule is a claim **value** and the **roles** it grants. The value is
+matched by exact string equality — there are no patterns, because a wildcard in
+an allowlist is how an allowlist stops being one. The roles are chosen from a
+list and held by id, so **renaming a role breaks nothing**; renaming a *group at
+the provider* breaks every rule matching it, and that is the rename to be
+careful with. Two guards are enforced and cannot be turned off:
+**`system:administrator` is unreachable through a mapping** in every
+configuration, and **nobody may map onto a permission they do not themselves
+hold**.
 
 ### The secret is write-only
 

@@ -47,10 +47,16 @@ instance](/en/client/manager/instance).
 
 ### The mapping
 
-A mapping rule is a **value at the claim path** and the **role** it grants — one
-of the installation's, since a mapping is the installation's. That is the whole language: a dotted path and a value, never an
+A mapping rule is a **value at the claim path** and the **roles** it grants —
+the installation's, since a mapping is the installation's, and as many as you
+choose. That is the whole language: a dotted path and a value, never an
 expression — an expression in provider configuration is code executed against the
 contents of a token.
+
+You pick a role from a list rather than typing its name, and the rule remembers
+*which role* rather than what it was called. So renaming a role changes nothing
+here; renaming a **group at the provider** still breaks every rule that matches
+it, and both sides have to be edited within the same minute or nobody signs in.
 
 **When nothing matches** is your choice between refusing the sign-in and granting
 a default set. It applies both to a first sign-in and to somebody who has left
@@ -64,13 +70,12 @@ afterwards is refused as well, and a token carrying it is stripped at sign-in
 regardless. The second is checked as the rule is written.
 </Callout>
 
-A mapped grant is **rewritten at every sign-in**, and it is the one grant that
-still holds a copy rather than pointing at a role: a claim may match several
-rules, and the contribution is the union of every role they name. That cuts both
-ways — editing a role reaches those people at their *next sign-in* rather than
-at once, and editing their grant by hand does not reach them at all. The Grants list marks such a row with
-the provider it came from and refuses to edit it. See [Permissions and
-grants](/en/client/manager/permissions).
+A mapped grant is **rewritten at every sign-in**, and it links the roles the
+rules named — a claim matching several rules grants all of them. That cuts both
+ways: editing a role reaches those people at their *next sign-in* rather than at
+once, and editing their grant by hand does not reach them at all. The Grants list
+marks such a row with the provider it came from and refuses to edit it. See
+[Permissions and grants](/en/client/manager/permissions).
 
 ### The account-removal queue
 
@@ -99,6 +104,7 @@ are not settings a platform may confer on itself.
 |---|---|
 | Issuer, client id, deployment id | **cannot be changed afterwards**: every launch and every identity link hangs off them |
 | Key set, access token and authorization URLs | the platform's |
+| What a launch's roles grant | one row per LTI role — `Learner`, `Instructor`, a sub-role such as `Instructor#TeachingAssistant` — and what it is worth here: a role of the installation's, or **the set the activity enrolls participants or managers into**. A platform starts with the second kind, so an activity that chose its own roles is obeyed without anybody editing this |
 | Accept launches | the reversible switch. Removing a platform is refused while any course still has an activity from it |
 
 **There is no secret anywhere in this**, and its absence is not a gap: LTI
@@ -140,7 +146,12 @@ the same way [copying an activity](/en/client/manager/copying) does.
 refreshes on its own — and shows how many of them have an account here.
 Matching is by the username the platform sends; **an address is never used for
 it**, and a platform that sends no usernames matches nobody. Putting them into
-the activity marks each one provisional until they open it themselves.
+the activity marks each one provisional until they open it themselves, and gives
+each the roles this platform's rules say their course role is worth.
+
+**It adds and never takes away.** Somebody demoted at the platform keeps what
+they hold here, and a role you removed by hand is not put back by the next
+launch or the next roster read.
 
 ### Choosing from inside the course
 

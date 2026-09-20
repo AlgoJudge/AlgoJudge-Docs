@@ -2,7 +2,7 @@
 title: Logowania zewnętrzne i platformy LTI
 description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
-sourceSha256: 7da2b028be5da0fee7971254cee7ec69b48cbc21dedeba4f91d9e14cf8101ac8
+sourceSha256: d509b082d118c1cae0989f89a0becb70babf5e184865b5a36c2ce6e4e5842c6f
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -49,8 +49,13 @@ Jedno i drugie jest ustawieniem instalacji, a nie dostawcy:
 
 ### Mapowanie
 
-Reguła mapowania to **wartość ze ścieżki claimu** i **rola**, którą ona nadaje —
-jedna z ról instalacji, bo mapowanie należy do instalacji. To cały język: ścieżka po kropkach i wartość, nigdy wyrażenie —
+Reguła mapowania to **wartość ze ścieżki claimu** i **role**, które ona nadaje —
+role instalacji, bo mapowanie należy do instalacji, i dowolnie wiele naraz.
+
+Rolę wybierasz z listy, a nie wpisujesz jej nazwy, i reguła zapamiętuje samą
+rolę, a nie jej ówczesną nazwę. Zmiana nazwy roli niczego tu więc nie psuje;
+psuje to zmiana nazwy **grupy u dostawcy**, bo nazwę grupy reguła porównuje jako
+napis — i to tej zmiany trzeba pilnować. To cały język: ścieżka po kropkach i wartość, nigdy wyrażenie —
 wyrażenie w konfiguracji dostawcy jest kodem wykonywanym na zawartości tokenu.
 
 **Gdy nic nie pasuje** — wybierasz między odmową logowania a nadaniem zestawu
@@ -65,9 +70,9 @@ roli potem, też jest odrzucana, a token, który je niesie, i tak zostaje z
 niego obrany przy logowaniu. Drugiej pilnuje w chwili zapisu reguły.
 </Callout>
 
-Nadanie z mapowania jest **przepisywane przy każdym logowaniu** i jako jedyne
-nadal trzyma kopię, zamiast wskazywać na rolę: claim może pasować do kilku reguł,
-a wkład jest sumą wszystkich ról, które one nazywają. To tnie w obie strony — gdy
+Nadanie z mapowania jest **przepisywane przy każdym logowaniu** i wiąże role,
+które wskazały reguły: claim może pasować do kilku reguł, a wkład jest sumą
+wszystkich ról, które one nazywają. To tnie w obie strony — gdy
 zmienisz rolę, dosięgniesz tych osób przy ich *następnym logowaniu*, a nie od
 razu, a gdy poprawisz ich nadanie ręcznie, nie dosięgniesz ich wcale. Lista Nadań
 oznacza taki wiersz dostawcą, od którego przyszedł, i nie pozwala go edytować.
@@ -101,6 +106,7 @@ tożsamości. Tych dwóch rzeczy platforma nie nadaje sobie sama.
 |---|---|
 | Issuer, client id, identyfikator wdrożenia | **nie da się ich potem zmienić**: wisi na nich każde uruchomienie i każde powiązanie tożsamości |
 | Adresy zestawu kluczy publicznych, tokenu dostępowego i autoryzacji | należą do platformy |
+| Co nadają role z uruchomienia | po wierszu na rolę LTI — `Learner`, `Instructor`, podrola w rodzaju `Instructor#TeachingAssistant` — i to, ile jest tu warta: rola instalacji albo **zestaw, do którego aktywność zapisuje uczestników lub prowadzących**. Platforma zaczyna od tego drugiego, więc aktywność, która wybrała własne role, jest respektowana bez ruszania tych reguł |
 | Przyjmuj uruchomienia | odwracalny przełącznik. Platformy nie usuniesz, dopóki jakikolwiek kurs ma z niej aktywność |
 
 **Nie ma tu żadnego sekretu**, a jego brak nie jest luką: LTI uwierzytelnia
@@ -143,7 +149,11 @@ nie odświeża się samo — i pokazuje, ilu z nich ma konto tutaj. Dopasowuje p
 nazwie użytkownika przysyłanej przez platformę; **adres e-mail nigdy do tego nie
 służy**, a platforma, która nie wysyła nazw użytkowników, nie dopasuje nikogo.
 Gdy zapiszesz ich do aktywności, każdy dostaje powiązanie wstępne, dopóki sam jej
-nie otworzy.
+nie otworzy, oraz role, które reguły tej platformy wiążą z jego rolą w kursie.
+
+**Dopisuje i nigdy nie zabiera.** Kto został zdegradowany na platformie,
+zachowuje to, co ma tutaj, a roli zdjętej ręcznie nie przywróci ani kolejne
+uruchomienie, ani kolejne odczytanie listy uczestników.
 
 ### Wybór z poziomu kursu
 

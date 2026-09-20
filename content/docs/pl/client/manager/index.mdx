@@ -2,7 +2,7 @@
 title: Zarządzanie
 description: Trzynaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
 source: en/client/manager/index.mdx
-sourceSha256: 617d587a7ebd5f09127deeb5d5fe0b929524740326f30af1cd5ea3de7b0222a3
+sourceSha256: 3e9fbed53c295db2aaadac1e728879e2e79b794b7b54901ebe646c60b1110ee8
 ---
 
 Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
@@ -21,7 +21,7 @@ Obszar otworzy ci **którekolwiek jedno** z uprawnień w ostatniej kolumnie.
 |---|---|---|
 | [Użytkownicy](/pl/client/manager/enrollment) | Konta, hurtowe tworzenie loginów tymczasowych, blokowanie i notatki. | `user:read:all` |
 | [Nadania](/pl/client/manager/permissions) | Kto co może — w systemie i w każdej aktywności. | `grant:read:all` |
-| [Role](/pl/client/manager/permissions) | Zestawy, na które wskazuje nadanie. Zmiana jednej dociera do wszystkich, którzy ją mają. | `role:read`, `grant:update` |
+| [Role](/pl/client/manager/permissions) | Zestawy, które wiąże nadanie. Zmiana jednej dociera do wszystkich, którzy ją mają. | `role:read`, `role:manage:activity`, `grant:update` |
 | [Zadania](/pl/client/manager/problems) | Biblioteka: treści, załączniki, paczki i wersje. | `problem:read:own`, `problem:read:all` |
 | [Aktywności](/pl/client/manager/activities) | Zawody i kursy: serie, podpięcia zadań, terminy i zapisy. | `activity:create`, `activity:update`, `activity:archive` |
 | [Zgłoszenia](/pl/client/manager/submissions) | Wszystkie zgłoszenia, ich kod, próby oceny i ponowna ocena. | `submission:read:all` |
@@ -63,10 +63,12 @@ to, żeby prowadzący mógł wskazać osobę — sam obszar Użytkownicy pyta o 
 poziomie instalacji. Prowadzenie aktywności to co innego niż prowadzenie
 instalacji, w której ta aktywność działa.
 
-**Role były siódmym takim obszarem i już nie są.** `role:manage` ma zakres:
-trzymane w nadaniu na aktywność pisze role tej aktywności i nic więcej, więc
-manager poprawia uprawnienia własnych uczestników, nie sięgając wcale do ról
-instalacji.
+**Role leżą po obu stronach tej granicy.** Pisanie własnych ról aktywności to
+`role:manage:activity` — uprawnienie z nadania na tę aktywność, które niesie
+dostarczana rola `manager`; dzięki niemu prowadzący poprawia uprawnienia
+własnych uczestników. Pisanie ról instalacji to `role:manage`, uprawnienie
+systemowe i administratorskie: rolę wspólną dla instalacji widać z każdej
+aktywności, więc jej zmiana sięga całej instalacji.
 
 **Wydruki to obszar pomyślany tak, by dawać go osobno.** Nadanie, które niesie
 tylko `printout:manage`, otwiera właśnie jego i zamyka wszystkie pozostałe — tak

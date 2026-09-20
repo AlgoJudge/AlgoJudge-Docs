@@ -2,7 +2,7 @@
 title: Uprawnienia i nadania
 description: Jak zapisuje się prawa, jak się rozstrzygają i trzy reguły, które czynią model bezpiecznym.
 source: en/client/manager/permissions.mdx
-sourceSha256: f001014e6b8072745f2420ae27955d720a37446c4fa2bf0dc844d15bd1fa7663
+sourceSha256: 4a5995843c55aa15bdca0ddd5ef4c6386eeec50c1ce9b1acb876a7eed3f44bbc
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -106,8 +106,9 @@ nie jest ten sam zestaw co twoje prawa w całej instalacji.
 **`system:administrator` jest nieosiągalny przez mapowanie claimów.** Mapowanie
 decyduje, ile warta jest tu grupa z zewnętrznego katalogu, a katalog nigdy nie
 może wykreować administratora. Server pilnuje obu części: reguła mapowania nie może
-wskazać roli, która to uprawnienie zawiera, a do roli już zmapowanej nie
-da się go dopisać.
+wskazać roli, która to uprawnienie zawiera, do roli już zmapowanej nie da się go
+dopisać, a rola, która mimo wszystko je ma, jest przy logowaniu pomijana w
+całości.
 
 Ta sama reguła dotyczy mapowania co nadawania: nikt nie zmapuje na uprawnienie,
 którego sam nie ma.
@@ -121,14 +122,14 @@ pierwsze jest znowu zwykłym wierszem.
 
 ## Role
 
-Rola to nazwany zestaw uprawnień, a **nadanie na nią wskazuje**. Zmiana roli
-zmienia naraz uprawnienia wszystkich, którzy ją mają — także osób zapisanych
-dawno przed tą zmianą.
+Rola to nazwany zestaw uprawnień, a **nadanie wiąże role** — dowolnie wiele.
+Zmiana roli zmienia naraz uprawnienia wszystkich, którzy ją mają: także osób
+zapisanych dawno przed tą zmianą.
 
 <Callout type="warn" title="Zmiana dociera do wszystkich, którzy mają tę rolę">
 Właśnie dlatego z rolą trzeba obchodzić się uważnie, i ekran o tym mówi: edytor
 roli pokazuje przed zapisem, ilu nadań dotknie zmiana. Jeśli chodziło o jedną
-osobę, zmień jej nadanie — nadanie może mieć własne uprawnienia obok roli.
+osobę, zmień jej nadanie — nadanie może mieć własne uprawnienia obok ról.
 </Callout>
 
 Rola należy albo do **instalacji**, albo do **jednej aktywności**. Rolę
@@ -137,8 +138,9 @@ role instalacji należą do administratora. To pozwala poprawić uprawnienia
 własnych uczestników bez ruszania tego, co wolno uczestnikom w całej instalacji.
 
 **Do roli nie wpiszesz uprawnienia, którego sam nie masz.** Reguła, która zawsze
-rządziła nadawaniem, rządzi teraz pisaniem tego, na co nadanie wskazuje — z tego
-samego powodu.
+rządziła nadawaniem, rządzi też pisaniem tego, co nadanie wiąże — z tego samego
+powodu. Sprawdzane jest tylko to, co **dokładasz** — odebrania uprawnienia nikt
+nigdy nie odmówi.
 
 Obszar **Role** je wypisuje i oznacza te dostarczone z produktem jako wbudowane;
 tych nie usuniesz, bo po usunięciu jednej świeża instalacja nie miałaby od czego
@@ -166,7 +168,8 @@ aktywności: zmiana ustawień i archiwizacja, zapisywanie ludzi, biblioteka z za
 razem z kodem, przesądzanie, anulowanie i wykluczanie, cudze wyniki i logi,
 wszystkie pytania z odpowiadaniem i publikowaniem, ogłoszenia, kolejka wydruków,
 podgląd i zdejmowanie zamrożenia rankingu, konta tymczasowe, odczyt i zapis
-nadań oraz odczyt i zapis ról **tej aktywności**.
+nadań oraz odczyt i zapis ról **tej aktywności**. Pisanie ról instalacji należy
+do administratora i dostarczana rola `manager` tego nie obejmuje.
 
 Świadomie **nie ma** w nim: `activity:create`, `activity:delete`,
 `problem:read:all`, `problem:delete`, `problem:import:external`, tych kluczy
@@ -192,12 +195,12 @@ Dwa ekrany, jedna tabela pod spodem.
   aktywności i tam odbywają się zapisy.
 
 Nadanie decyduje też o tym, czy ktoś jest **prowadzącym**: Server wylicza to przy
-każdym zapisie z tego, co nadanie niesie — z roli i z własnych wpisów razem,
+każdym zapisie z tego, co nadanie niesie — z ról i z własnych wpisów razem,
 cokolwiek ponad osiem uprawnień uczestnika, z wyjątkiem `trial:run` — a
 prowadzących nie ma ani w liczbie uczestników, ani w rankingu.
 
-**Zmiana roli też to zmienia.** Dodanie uprawnienia prowadzącego do roli, do
-której zapisuje kurs, robi prowadzących ze wszystkich, którzy tę rolę mają, i
+**Zmiana roli też to zmienia.** Dodanie uprawnienia prowadzącego do jednej z
+ról, do których zapisuje kurs, robi prowadzących ze wszystkich, którzy ją mają, i
 wyprowadza ich z rankingu. Server przelicza tę flagę we wszystkich powiązanych
 nadaniach przy zapisie roli, więc tablica i licznik nigdy nie kłócą się z
 uprawnieniami.

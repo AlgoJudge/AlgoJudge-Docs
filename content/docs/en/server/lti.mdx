@@ -82,9 +82,12 @@ and then telling them the tool is misconfigured is the worse order.
 
 ## The platform record
 
-Eleven fields, and **three of them can never be changed**: the issuer, the client
-id and the deployment id. Every launch and every identity link hangs off that
-triple, so an attempt to move one is refused with `lti.platform.immutable`.
+Twelve fields, and **three of them can never be changed**: the issuer, the
+client id and the deployment id. Every launch and every identity link hangs off
+that triple, so an attempt to move one is refused with
+`lti.platform.immutable`.
+
+The twelfth is the platform's **role rules**, below.
 
 The four addresses — issuer, key set, token and login — must each be an
 absolute `https` URL, or `http` on loopback so a development stack can be
@@ -96,6 +99,28 @@ disabled is the guard rather than a default — a disabled provider is never giv
 a sign-in scheme or a callback address, so **nobody signs in through a platform**.
 It holds an empty secret rather than a random one, so *has a secret* answers
 *no*, which is true.
+
+### What a launch's roles are worth here
+
+A platform carries its own **role rules**, and they are the whole of how an LTI
+role becomes something here. One rule is an LTI role — `Learner`, `Instructor`,
+a sub-role such as `Instructor#TeachingAssistant` — and what it grants: a role of
+the installation's, named by id, or **the set the activity enrolls participants
+or managers into**. The second kind is a platform's alone: it resolves against
+the activity a launch names, and a sign-in happens in no activity.
+
+A platform starts with the rules the Server used to apply in code — `Learner` to
+the participants set, and `Instructor`, `ContentDeveloper` and `Mentor` to the
+managers set — so an installation that changes nothing behaves as it did.
+
+**Only the membership vocabulary is read.** A value outside
+`…/vocab/lis/v2/membership` is an institution or system role, not a course role,
+and is ignored: a lecturer enrolled as a student in a colleague's course is a
+student there. A sub-role is matched as itself first and as its parent second,
+so the more specific rule wins.
+
+`system:administrator` is unreachable here by the three guards the sign-in path
+uses, and a platform's own `Administrator` role is deliberately a participant.
 
 Deleting a platform is refused while any course still has an activity from it,
 and the refusal names the count.
@@ -208,8 +233,10 @@ A refusal reads *"This Server will not open a connection to …"*, as a page.
 ## What it deliberately does not do
 
 - **It never writes into a course.** The roster is read-only, permanently.
-- **A launch creates grants and never revokes one.** Somebody who leaves a course
-  keeps what they were given; withdrawing it is a person's decision.
+- **A launch adds roles and never removes one.** Somebody who leaves a course,
+  or is demoted at the platform, keeps what they were given here; withdrawing it
+  is a person's decision. A role a manager removed by hand is remembered as
+  removed and is never added back, so a correction outlives the next launch.
 - **It never revokes or clears a grade** at the platform.
 - **Nobody signs in through a platform**, per the disabled provider row above.
 - **The private key is never exposed**, and no shape in the API has a field for

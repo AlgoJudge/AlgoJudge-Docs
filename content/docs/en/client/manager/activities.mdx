@@ -137,7 +137,7 @@ Everything the activity is configured with:
 | Dates | start and end. Leave both empty and the activity spans its series: the earliest start and the latest end |
 | Modules | questions and announcements. A disabled module leaves the participant's sidebar entirely |
 | | whether the problems of a finished series stay readable — off, a finished round is over rather than secret |
-| Visibility and enrollment | who sees scores and the ranking, who may join, whether it is hidden from the list, whether a group's ranking row names its members, the join password and the link to hand out |
+| Visibility and enrollment | who sees scores and the ranking, who may join, whether it is hidden from the list, whether a group's ranking row names its members, the join password and the link to hand out, and **which roles joining hands out** — one list for participants and one for whoever runs it, empty meaning the installation's shipped role |
 | Which Runners judge this activity | the tags that decide which machines take its work — see [Runners](/en/client/manager/runners) |
 | Limits the Server enforces | maximum upload, files per submission, submissions per problem |
 
@@ -179,4 +179,4 @@ its history, which is what people come back for. Restore it to keep editing.
 **Deletion destroys everything in it** and is refused outright for an activity
 that has participants; the button says so instead of failing on the click. It
 also needs `activity:delete`, which is deliberately not in the shipped `manager`
-template.
+role.
