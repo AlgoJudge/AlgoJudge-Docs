@@ -116,8 +116,15 @@ managers set — so an installation that changes nothing behaves as it did.
 **Only the membership vocabulary is read.** A value outside
 `…/vocab/lis/v2/membership` is an institution or system role, not a course role,
 and is ignored: a lecturer enrolled as a student in a colleague's course is a
-student there. A sub-role is matched as itself first and as its parent second,
-so the more specific rule wins.
+student there.
+
+**A sub-role matches two values — itself and the role it is a sub-role of — and
+every rule matching either one applies.** There is no precedence: a rule for
+`Instructor#TeachingAssistant` *adds to* a rule for `Instructor` rather than
+replacing it, because what a launch grants is a union and a union has no
+ordering to decide. So an installation that wants its teaching assistants
+treated differently has to **take the broad rule away**; writing the narrow one
+beside it gives both.
 
 `system:administrator` is unreachable here by the three guards the sign-in path
 uses, and a platform's own `Administrator` role is deliberately a participant.
