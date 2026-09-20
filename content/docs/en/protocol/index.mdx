@@ -49,8 +49,8 @@ anonymous ────────> pendingApproval ────────> ap
 ```
 
 A Runner may register at any time and evaluates nothing until an **administrator**
-approves it — `runner:approve` is a global permission, and no manager template
-carries it. A **re-registration** — which is what every restart is — asks for a
+approves it — `runner:approve` is a global permission, and the shipped `manager`
+role does not carry it. A **re-registration** — which is what every restart is — asks for a
 challenge first and signs the nonce; the challenge endpoint does not itself
 require approval, so a Runner still waiting to be approved can restart like any
 other. **Revocation is permanent**: there is no rotation, so a leaked key means a

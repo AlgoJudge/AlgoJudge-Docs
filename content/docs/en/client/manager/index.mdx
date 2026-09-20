@@ -19,7 +19,7 @@ Holding **any one** of the permissions in the last column opens the area.
 |---|---|---|
 | [Users](/en/client/manager/enrollment) | Accounts, temporary logins in bulk, blocking and notes. | `user:read:all` |
 | [Grants](/en/client/manager/permissions) | Who may do what, in the system and in each activity. | `grant:read:all` |
-| [Roles](/en/client/manager/permissions) | The sets a grant points at. Editing one reaches everybody holding it. | `role:read`, `grant:update` |
+| [Roles](/en/client/manager/permissions) | The sets a grant links. Editing one reaches everybody holding it. | `role:read`, `role:manage:activity`, `grant:update` |
 | [Problems](/en/client/manager/problems) | The library: statements, attachments, packages and versions. | `problem:read:own`, `problem:read:all` |
 | [Activities](/en/client/manager/activities) | Contests and courses: series, assignments, times and enrollment. | `activity:create`, `activity:update`, `activity:archive` |
 | [Submissions](/en/client/manager/submissions) | Every submission, its source, its attempts and a rejudge. | `submission:read:all` |
@@ -60,10 +60,12 @@ not in the shipped `manager` role**, and `user:read:all` is there only so that a
 manager can name a person — the Users area itself asks for it at system scope.
 Running an activity is not running the installation it lives in.
 
-**Roles used to be a seventh, and is not anymore.** `role:manage` is scoped:
-held in an activity grant it writes that activity's roles and nothing else, so a
-manager may correct what their own participants hold without reaching the
-installation's roles at all.
+**Roles is on both sides of that line.** Writing an activity's own roles is
+`role:manage:activity`, held in the grant on that activity and carried by the
+shipped `manager` role — so a manager corrects what their own participants hold.
+Writing the installation's roles is `role:manage`, which is global and an
+administrator's: a role the installation shares is reachable from every
+activity, so writing one is an installation-wide act.
 
 **Printouts is the one written to be handed out on its own.** A grant carrying
 `printout:manage` and nothing else opens that area and refuses every other one,

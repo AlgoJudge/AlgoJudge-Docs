@@ -1,6 +1,6 @@
 ---
 title: Permissions
-description: The string form, the two scopes, the resolution rules, the three shipped roles, and all 54 keys.
+description: The string form, the two scopes, the resolution rules, the three shipped roles, and all 55 keys.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -50,12 +50,14 @@ In this order. The order is the decision.
    an activity, and submitting asks that separately.
 3. Otherwise the effective set is the **union**: every system contribution, plus
    the activity grant when one activity is asked about.
-4. **What one grant carries is itself a union** — the role it points at, and any
-   entries of its own beside it. Either half may be empty.
+4. **What one grant carries is itself a union** — every role it links, and any
+   entries of its own beside them. Either half may be empty, and a grant may
+   link as many roles as it is given.
 5. **There is no subtraction anywhere in the model.**
 6. **Nobody may grant, or map onto, a permission they do not themselves hold.**
    Enforced where a grant is written — and where a role is written, since a
-   grant points at one — never where it is read.
+   grant links one — never where it is read. It is applied to what a caller
+   **adds**: taking a permission away is never refused.
 
 <Mermaid chart={`
 flowchart TD
@@ -65,7 +67,7 @@ flowchart TD
     ov -->|no| adm{"system:administrator in any<br/>system contribution?"}
     adm -->|yes| bypass["Every permission check passes.<br/>Membership is asked separately"]
     adm -->|no| union["The union: every system contribution, plus<br/>the activity grant when one activity is asked about"]
-    union --> each["Each of those grants is<br/>its role plus its own entries"]
+    union --> each["Each of those grants is<br/>its roles plus its own entries"]
     each --> held{"Is the key in that set?"}
     held -->|yes| allowed["Allowed"]
     held -->|no| refused["Refused. Nothing subtracts,<br/>and there is nothing else to consult"]
@@ -138,13 +140,14 @@ manager's screen.
 
 ## The three shipped roles
 
-A grant **points at** a role. Editing one changes what everybody holding it may
-do, at once — including people enrolled long before the edit.
+A grant **links** roles — any number of them — and what it confers is their
+union together with its own entries. Editing a role changes what everybody
+holding it may do, at once, including people enrolled long before the edit.
 
-That is the opposite of what this page said until 2026-09-13, when a grant held
-a copy instead. What made it change was the cost being paid rather than
-predicted: a permission added by a new version reached nobody who already held a
-grant, and every installation had to re-issue them by hand.
+Several rather than one, because the two paths that decide what somebody holds
+both speak in sets: a claim may match several mapping rules, and a launch from a
+course platform may carry several roles. A union is commutative, so there is no
+ordering to decide and no precedence to explain.
 
 <Callout type="warn" title="An edit reaches everybody at once">
 This is a live link, so a role is worth treating as one. The panel shows how
@@ -153,18 +156,21 @@ reaches only that activity, and nobody may put into a role a permission they do
 not themselves hold.
 </Callout>
 
-<Callout type="info" title="One kind of grant still holds a copy">
-An identity provider's [mapping rule](/en/server/identity) names a role, and the
-contribution it writes is a copy — a claim may match several rules and the
-contribution is the union of every role they name, which one link cannot say. It
-is rewritten from those rules at **every sign-in**, so editing a role reaches
-those people at their next sign-in rather than immediately.
+<Callout type="info" title="A provider owns which roles its contribution links">
+An identity provider's [mapping rule](/en/server/identity) names roles, and the
+contribution it writes links them like any other grant — so editing one of those
+roles reaches its holders at once, exactly as it does anywhere else. What the
+provider owns is **which** roles are linked: that set is rewritten from the rules
+at every sign-in, so editing a *rule*, or moving somebody between groups at the
+directory, reaches them the next time they sign in.
 </Callout>
 
 A role belongs either to the installation or to **one activity**. An activity's
-role may only be granted inside it, and is written by whoever holds `role:manage`
-there — which is how a manager corrects what their own participants may do
-without touching what every participant in the installation may do.
+role may only be granted inside it, and is written by whoever holds
+`role:manage:activity` there — which is how a manager corrects what their own
+participants may do without touching what every participant in the installation
+may do. Writing the installation's roles is `role:manage`, which is global and
+an administrator's.
 
 ### `participant` — 8 keys
 
@@ -193,18 +199,21 @@ printout:manage
 ranking:read:unfrozen      ranking:unfreeze
 user:read:all              user:create:temporary
 grant:read:all             grant:update
-role:read                  role:manage
+role:read                  role:manage:activity
 ```
 
-The other seventeen are deliberately **not** included: `activity:create`,
+The other eighteen are deliberately **not** included: `activity:create`,
 `activity:delete`, `trial:run`, `problem:read:all`, `problem:delete`,
 `problem:import:external`, the `user:` keys that create and edit accounts, the
-four `runner:` keys, `instance:update`, `provider:manage` and
+four `runner:` keys, `instance:update`, `provider:manage`, `role:manage` and
 `system:administrator`.
 A manager runs an activity; they do not run the installation it lives in.
 
-`role:read` and `role:manage` are in the set, and they are scoped: held in an
-activity grant they reach that activity's roles and nothing else.
+`role:read` and `role:manage:activity` are in the set. The second is scoped:
+held in an activity grant it writes that activity's roles and nothing else.
+Writing the installation's roles is `role:manage`, which is global — a role the
+installation shares is reachable from every activity, so writing one is an
+installation-wide act.
 
 ### `admin` — 1 key
 
@@ -239,7 +248,7 @@ the moment somebody was allowed to time their own code.
 more likely to be a new one somebody has been given than an ordinary
 participant's, and guessing the other way would quietly put them in the ranking.
 
-## The catalog — 54 keys
+## The catalog — 55 keys
 
 ### Activity
 
@@ -388,17 +397,25 @@ arrive with ordinary account editing.
 | `grant:read:all` | both | see who holds what |
 | `grant:update` | both | change what someone holds |
 | `role:read` | both | see the roles — and so does `grant:update`, held anywhere |
-| `role:manage` | both | create, edit and delete roles, at the scope it is held |
+| `role:manage` | global | create, edit and delete **the installation's** roles |
+| `role:manage:activity` | both | create, edit and delete **one activity's** roles |
 
 `grant:update` is why "nobody may grant a permission they do not hold" exists.
 An activity manager needs it to run their own group, and without that rule it is
 the same as being able to make oneself an administrator. **The same rule governs
-writing a role**, because a grant points at one: nobody may put into a role a
+writing a role**, because a grant links one: nobody may put into a role a
 permission they do not themselves hold.
 
-`role:manage` is scoped, and the scope is the whole of what makes it safe to
-hand to a manager. Held at system scope it writes the installation's roles; held
-in an activity grant it writes that activity's, and nothing else.
+**Two keys, because they are two different powers.** A role the installation
+shares is reachable from every activity, so writing one is an installation-wide
+act: `role:manage` is global and an administrator's. A role belonging to one
+activity reaches that activity and nothing else, so its manager may write it:
+`role:manage:activity`, held in the grant on that activity.
+
+It was one key held at either scope until 2026-09-19, and that was an escalation
+rather than a convenience: a manager whose grant sat at system scope — which is
+what a directory group hands out — could edit the shipped roles, including
+emptying `admin`.
 
 **The role list answers to either key, held anywhere.** `GET /api/v1/roles`
 admits `role:read` **or** `grant:update` from any grant the caller holds —

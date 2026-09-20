@@ -104,8 +104,9 @@ which is not the same set as your rights across the installation.
 **`system:administrator` is unreachable through a claim mapping.** A mapping
 decides what an external directory's group is worth here, and a directory must
 never be able to mint an administrator. Both halves are guarded: a mapping rule
-cannot point at a role that carries it, and a role that is already mapped
-cannot have it added.
+cannot name a role that carries it, a role that is already mapped cannot have
+it added, and a role that carries it anyway is left out entirely when the
+mapping is used.
 
 The same rule applies to mapping as to granting: nobody may map onto a permission
 they do not themselves hold.
@@ -119,15 +120,15 @@ ordinary row again.
 
 ## Roles
 
-A role is a named set of permissions, and **a grant points at it**. Editing a
-role changes what everybody holding it may do, at once — including people
-enrolled long before the edit.
+A role is a named set of permissions, and **a grant links them** — as many as it
+is given. Editing a role changes what everybody holding it may do, at once,
+including people enrolled long before the edit.
 
 <Callout type="warn" title="An edit reaches everybody holding the role">
 This is the whole reason a role is worth being careful with, and the screen says
 so: the role editor shows how many grants the change would reach before you save
 it. If you meant to change one person, change their grant instead — a grant may
-carry permissions of its own beside its role.
+carry permissions of its own beside its roles.
 </Callout>
 
 A role belongs either to the **installation** or to **one activity**. An
@@ -138,7 +139,8 @@ participant in the installation may do.
 
 **You cannot put into a role a permission you do not hold yourself.** The rule
 that has always governed handing out a grant governs writing the thing a grant
-points at, for the same reason.
+links, for the same reason. It is applied to what you **add**: taking a
+permission out of a role is never refused.
 
 The **Roles** area lists them, and marks the ones that ship as built-in; those
 cannot be deleted, because removing one would leave a fresh installation nothing
@@ -168,11 +170,13 @@ submissions and their source, rejudging, canceling and excluding, everybody's
 results and logs, every question with answering and publishing, announcements,
 the printout queue, reading and lifting a ranking freeze, temporary accounts,
 reading and updating grants, and reading and writing **that activity's** roles.
+Writing the installation's roles is an administrator's, and the manager role
+does not carry it.
 
 Deliberately **not** in it: `activity:create`, `activity:delete`,
 `problem:read:all`, `problem:delete`, `problem:import:external`, the `user:`
 keys that create and edit accounts, `runner:*`, `instance:update`,
-`provider:manage` and `trial:run`. A manager runs an activity; they do not run
+`provider:manage`, `role:manage` and `trial:run`. A manager runs an activity; they do not run
 the installation.
 
 `user:read:all` **is** in it, so that a manager can name a person in the
@@ -194,11 +198,11 @@ Two screens, one table behind them.
   and is where enrollment happens.
 
 A grant is also what decides whether somebody is **staff**: the Server computes
-that on every write from what the grant carries — its role and its own entries
+that on every write from what the grant carries — its roles and its own entries
 together, anything beyond the participant eight with `trial:run` excepted — and
 staff are absent from the participant count and from the ranking.
 
-**A role edit can change that too.** Adding a staff permission to the role a
+**A role edit can change that too.** Adding a staff permission to a role a
 course enrolls into makes everybody holding it staff, and takes them out of the
 ranking. The Server recomputes the flag on every linked grant when a role is
 saved, so the board and the count never disagree with the permissions.

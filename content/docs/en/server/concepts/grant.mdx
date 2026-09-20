@@ -30,43 +30,43 @@ attached to a problem or a submission.
 | Field | Meaning |
 |---|---|
 | `UserId` | who holds it. Stays resolvable after the account is emptied, so a past participant keeps their place in an activity's history |
-| `RoleId` | the [role](/en/server/permissions) this grant points at, or null for a set held by hand |
-| `Permissions` | this grant's **own** entries, as a `jsonb` array of strings — additions on top of the role, or the whole set where there is none |
+| `Roles` | the [roles](/en/server/permissions) this grant links, as rows of its own. Each records who added it and when, and a role taken away by hand is kept as a tombstone rather than deleted |
+| `Permissions` | this grant's **own** entries, as a `jsonb` array of strings — additions on top of the roles, or the whole set where it links none |
 | `SourceProviderId` | where this contribution came from. **Null is the manual one**; anything else names the identity provider that asserted it |
 | `OverrideSystem` | this activity grant is authoritative inside its activity |
-| `IsSystem` | a membership that runs the activity rather than takes part in it |
-| `CopiedFromRoleName` | which role a *copied* set started from. Informational, not a reference, and null on anything that points at one |
+| `IsSystem` | a membership that runs the activity rather than takes part in it. **Derived** from what the grant carries |
+| `StaffByHand` | whether `IsSystem` is somebody's decision rather than something the permissions imply |
 | `GroupId` | the [group](/en/server/concepts/group) this person competes as, or null |
 | `State` | `Invited` or `Active` |
 | `GrantedByUserId` | who issued it |
 
-What somebody holds through one grant is **the role's permissions and the
-grant's own, unioned**. Giving one person one extra key does not cut them off
-from corrections to the role, which is why the two are separate fields rather
+What somebody holds through one grant is **every linked role's permissions and
+the grant's own, unioned**. Giving one person one extra key does not cut them
+off from corrections to a role, which is why the two are separate fields rather
 than one set.
 
-**A role is a live link.** Editing it changes what everybody pointing at it may
-do, at once — including people enrolled long before the edit. That is the
-opposite of what this page said until 2026-09-13, and the change was made
-because the old property had a bill: a permission added by a new version reached
-nobody who already held a grant, and `printout:request` is the key that arrived
-that way.
+**A grant may link as many roles as it is given.** Both paths that decide what
+somebody holds speak in sets — a claim may match several mapping rules, and a
+launch from a course platform may carry several roles — and a union is
+commutative, so there is no ordering to decide and no precedence to explain.
 
-Three things keep a live link survivable, and all three are enforced: a role
-belongs either to the installation or to **one activity**, nobody may put into a
-role a permission they do not themselves hold, and `IsSystem` is recomputed for
-every linked grant whenever the role is edited.
+**A role is a live link.** Editing it changes what everybody linking it may do,
+at once, including people enrolled long before the edit. Three things keep that
+survivable, and all three are enforced: a role belongs either to the
+installation or to **one activity**, nobody may put into a role a permission
+they do not themselves hold, and `IsSystem` is recomputed for every linked grant
+whenever the role is edited.
 
-A grant does not have to point at a role at all. One carrying `printout:manage`
-and nothing else is a complete, useful grant: it opens the print queue of that
-activity and refuses the rest of the panel.
+A grant need not link any role. One carrying `printout:manage` and nothing else
+is a complete, useful grant: it opens the print queue of that activity and
+refuses the rest of the panel.
 
-<Callout type="warn" title="A mapping rule's contribution is still a copy">
-Where a grant is written by an identity provider's mapping rule, it points at no
-role: a claim may match several rules and the contribution is the union of every
-role they name, which one link cannot express. It is re-derived from those rules
-at **every sign-in**, so editing a role reaches those people at their next
-sign-in rather than at once.
+<Callout type="info" title="A role taken away by hand stays away">
+A removed link is kept with the date it was removed rather than deleted, and
+nothing adds it back on its own. It exists for one case: a launch from a course
+platform adds the roles its rules name and never removes one, so without the
+tombstone a manager's correction would be undone at that person's next launch.
+Granting the role again by hand clears the mark.
 </Callout>
 
 An `Invited` grant confers nothing. It is an offer, and the user is not in the
@@ -85,8 +85,11 @@ sign-in and is not editable by hand**. Editing one would last until that person
 next signed in, which is worse than refusing: a change that silently reverts is
 a change nobody can trust.
 
-`SourceProviderId` is null at activity scope, always. Mapping into an activity
-belongs to the LTI work, whose purpose is to mirror a course binding.
+`SourceProviderId` is null at activity scope, always — and there is exactly one
+grant per person per activity, whoever wrote it. A launch from a course platform
+writes that one grant like anybody else, so a manager may edit and revoke it;
+what the platform asserted is recorded on the **roles** instead, which is how a
+screen says which of the two decided.
 
 ## `OverrideSystem`: standing down
 

@@ -2,7 +2,7 @@
 title: Tożsamość
 description: Dwa wspierane produkty OIDC, co ustawić po każdej ze stron i co mówi odrzucone logowanie.
 source: en/install/identity.mdx
-sourceSha256: 6ac54389f105e663429b1a65d95975debd4c4b0eac808aac596f8ba217b5937c
+sourceSha256: f7701689d436c2f10dd8db6ca67642c298b017fb5aedaef1bfa9060d2bb2c821
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -161,9 +161,9 @@ których się to robi, to
 1. **Zarejestruj dostawcę** i skopiuj **adres powrotny**, który pokazuje ekran,
    na listę dozwolonych u samego dostawcy. AlgoJudge tę ścieżkę wylicza i zwraca;
    nie wymyślasz jej.
-2. **Napisz mapowanie** — które grupy katalogu stają się którą rolą. Zacznij
-   od `deny`, które nie wpuszcza nikogo, kogo mapowanie nie
-   nazywa.
+2. **Napisz mapowanie** — które grupy katalogu stają się którymi rolami. Jedna
+   grupa może być warta więcej niż jedną. Zacznij od `deny`, które nie wpuszcza
+   nikogo, kogo mapowanie nie nazywa.
 3. **Jeśli dostawca umie zgłaszać usunięcia**, ustaw sekret kanału zwrotnego
    i włącz kanał.
 4. **Jeśli nikt tutaj nie loguje się inaczej**, wskaż go ekranowi logowania,
@@ -191,10 +191,12 @@ w konfiguracji dostawcy to kod wykonywany na zawartości tokenu. Czytamy dwa
 kształty claimu, żeby instalacja nie musiała wiedzieć, który ma u siebie: kilka
 claimów o tej samej nazwie albo jeden claim z tablicą lub obiektem JSON.
 
-Reguła mapowania to **wartość** claimu i **nazwa** roli,
-porównywane jako napisy, znak w znak. Nie ma wzorców, bo znak wieloznaczny na
-liście dozwolonych to sposób, w jaki lista dozwolonych przestaje nią być. Dwie
-zasady są egzekwowane i nie da się ich wyłączyć: **`system:administrator` jest
+Reguła mapowania to **wartość** claimu i **role**, które ona nadaje. Wartość
+porównuje się jako napis, znak w znak — nie ma wzorców, bo znak wieloznaczny na
+liście dozwolonych to sposób, w jaki lista dozwolonych przestaje nią być. Role
+wybiera się z listy i reguła trzyma ich identyfikatory, więc **zmiana nazwy roli
+niczego nie psuje**; psuje ją zmiana nazwy *grupy u dostawcy* — i to tej zmiany
+trzeba pilnować. Dwie zasady są egzekwowane i nie da się ich wyłączyć: **`system:administrator` jest
 nieosiągalny przez mapowanie** w każdej konfiguracji, a **nikt nie zmapuje
 uprawnienia, którego sam nie ma**.
 
