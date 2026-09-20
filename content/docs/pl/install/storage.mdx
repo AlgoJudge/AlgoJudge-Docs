@@ -2,7 +2,7 @@
 title: Gdzie trafiają pliki
 description: Trzy miejsca, w których instalacja może trzymać przesłane pliki, ile każde z nich kosztuje i jak przenieść to, co już leży, niczego nie tracąc.
 source: en/install/storage.mdx
-sourceSha256: 73bb4604233abe4c5527a0b35f7a20a22ade7dd06ccd0b9e6944dc4bb27a0298
+sourceSha256: 5be70151ec80e555b893ddb60774d8f026bdffc53021c8fc6d931cd24102f8a9
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -93,8 +93,8 @@ przebieg podejmuje pracę tam, gdzie stanęła, a nie od początku.
 
 ## Użycie czegoś innego niż to, na czym testujemy
 
-Sprawdzamy dwie implementacje S3: **RustFS**, którą uruchamia stos deweloperski,
-i **SeaweedFS**, uruchamianą ręcznie przed wydaniem.
+Sprawdzamy dwie implementacje S3: **RustFS 1.0.0**, którą uruchamia stos
+deweloperski, i **SeaweedFS 4.47**, uruchamianą ręcznie przed wydaniem.
 
 Cokolwiek innego — MinIO, Ceph, dostawca chmurowy — jest **nieznane, a nie
 niewspierane**, i ta różnica ma znaczenie. Utrzymujemy zestaw testów zgodności
@@ -104,9 +104,12 @@ której nikt ich nie uruchomił, po prostu nikt nie sprawdził. Jeśli masz zami
 postawić na niej zawody, uruchom ten zestaw najpierw — to kosztuje najmniej ze
 wszystkiego, co możesz w tej sprawie zrobić.
 
-Jednej pozycji z tego zestawu nie da się uruchomić na żadnej z dostępnych tu
-implementacji: zapisuje znany ciąg, włącza domyślne szyfrowanie kubełka i
-szuka tego ciągu w plikach samego magazynu. SeaweedFS trzyma obiekty czytelnie,
-ale odmawia wywołania szyfrowania; RustFS przyjmuje wywołanie i tak czy inaczej
-trzyma obiekty nieczytelnie. Na endpoincie, który obsługuje jedno i drugie, ta
-pozycja daje się uruchomić.
+Jednej pozycji z tego zestawu nie da się uruchomić wszędzie. Włącza ona
+domyślne szyfrowanie kubełka, a potem pyta magazyn, co zrobił z obiektem: RustFS
+przyjmuje konfigurację, działa dalej i zgłasza `AES256`, więc tam ta pozycja się
+wykonuje. **SeaweedFS przyjmuje konfigurację, po czym odrzuca każdy zapis do
+tego kubełka** z błędem wewnętrznym, więc pozycja jest pomijana, a nie zgłaszana
+jako błąd. Warto o tym wiedzieć, zanim włączysz kubełkowi SeaweedFS domyślne
+szyfrowanie — kubełek przestaje przyjmować pliki, a zapis wykonany przed
+dodaniem reguły kończy się powodzeniem, więc w chwili jej ustawienia nic nie
+zwróci ci uwagi.
