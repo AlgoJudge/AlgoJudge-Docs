@@ -14,10 +14,12 @@ import { Callout } from "fumadocs-ui/components/callout";
 Four things, and each one filtered to this installation:
 
 - **scratch older than `GC_TMP_RETENTION_DAYS`** (7 by default), swept from
-  inside a throwaway container per Runner, because each Runner's scratch is a
-  volume with no host path. A Runner killed mid-evaluation cannot clean up after
-  itself, and the job it was doing goes back on the queue by lease — so strays
-  are normal, not a defect;
+  inside a throwaway container — one for `runner-1` and one for `runner-2` —
+  because each Runner's scratch is a volume with no host path. The volume is read
+  off the running container rather than named, so it needs no guess about the
+  project name and a Runner this host does not run is skipped. A Runner killed
+  mid-evaluation cannot clean up after itself, and the job it was doing goes back
+  on the queue by lease — so strays are normal, not a defect;
 - **exited job containers** nothing will collect, found by the label the Runner
   puts on them — `algojudge.sandbox=1`, never by name, because a name filter
   matches a substring and would take somebody else's container with it. The

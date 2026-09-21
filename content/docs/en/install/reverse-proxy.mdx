@@ -72,13 +72,23 @@ state their own address; trusting only loopback records the proxy instead of the
 person.
 
 The default names the Compose network the bundled nginx sits on. **Behind your
-own proxy, that default is wrong** — put your proxy's network there. Reached
-with no proxy at all, `none` is a complete answer.
+own proxy, that default is wrong** — put your proxy's network there. **Emptying
+the line empties the list**: the default stands in for a line that is absent, not
+for a blank one.
 
 Write a **network** address, not a host one: `172.28.0.5/24` is refused at
 startup, by name, with the address it should have been. .NET normalizes a CIDR
 with host bits set without a word, which would turn "one machine" into "a whole
 laboratory".
+
+**`none` belongs to `TRUSTED_PROXY_PROXIES`, the line under it.** For a Server
+nothing sits in front of, write `TRUSTED_PROXY_PROXIES=none` and leave
+`TRUSTED_PROXY_NETWORKS` empty; the Server then stops reading `X-Forwarded-For`
+altogether. In the networks line the same word is read as a CIDR block and
+refused at startup, and `none` beside a network that is still named is refused
+too — the Server takes it only as the whole of what it has been told to trust.
+Both lines empty is refused as well, for the reason this rule opens with.
+`preflight.sh` reports each of the three before a start.
 
 ### 5. Send `X-Forwarded-Proto`
 

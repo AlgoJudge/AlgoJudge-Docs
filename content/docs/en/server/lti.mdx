@@ -94,11 +94,15 @@ absolute `https` URL, or `http` on loopback so a development stack can be
 registered. Anything else is refused by name.
 
 Registering a platform writes **two** rows: the platform, and an identity
-provider paired with it. That provider is created **disabled**, and its being
-disabled is the guard rather than a default — a disabled provider is never given
-a sign-in scheme or a callback address, so **nobody signs in through a platform**.
-It holds an empty secret rather than a random one, so *has a secret* answers
-*no*, which is true.
+provider paired with it. That provider is an **attribution** row — it names the
+source of a grant's roles and nothing else — so it is never listed among the
+identity providers, and nothing can enable or delete it there. Every provider
+read, write and delete answers only for the ones people sign in through.
+
+It is created **disabled** as well, and that is the second guard rather than a
+default: a disabled provider is never given a sign-in scheme or a callback
+address, so **nobody signs in through a platform**. It holds an empty secret
+rather than a random one, so *has a secret* answers *no*, which is true.
 
 ### What a launch's roles are worth here
 

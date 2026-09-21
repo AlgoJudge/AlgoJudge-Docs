@@ -145,7 +145,19 @@ permission out of a role is never refused.
 The **Roles** area lists them, and marks the ones that ship as built-in; those
 cannot be deleted, because removing one would leave a fresh installation nothing
 to grant from. Neither can a role somebody still holds — the refusal says how
-many.
+many — nor one an activity enrolls into, and that refusal names the activities.
+
+The administrator's own role is **fixed**: it cannot be edited at all. An empty
+permission set there would take the installation away from everybody linked to
+it in a single save, so who administers is changed by granting and revoking the
+role rather than by rewriting it. A role that is how the installation's last
+administrator holds `system:administrator` is defended the same way a last grant
+is.
+
+Where a provider's rules name a role, the row says so. Editing a role reaches
+everybody holding it at once — people whose grant a provider rewrites at sign-in
+included — so the providers on the row are the rest of who a change is about to
+reach.
 
 ### The three that ship
 

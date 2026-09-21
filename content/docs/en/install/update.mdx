@@ -34,9 +34,9 @@ flowchart TD
     pull --> changed{"Anything new?"}
     changed -->|"no"| stop["Stop. Nothing was closed"]
     changed -->|"yes"| backup["Back up. A failed dump stops the update"]
-    backup --> close["Close, and wait for the drain"]
+    backup --> close["Close, drain, and record what is<br/>being replaced in state/previous.lock"]
     close --> up["up -d, wait 120 s for healthy"]
-    up -->|"healthy"| lock["Record the digests in state/current.lock"]
+    up -->|"healthy"| lock["Record what is running in state/current.lock"]
     up -->|"not healthy"| roll["Roll back, and write the Server's<br/>last fifty lines to state/failed-update.log"]
     lock --> open["Reopen, and prune only this project's images"]
     roll --> shut["Left closed. The log and the pre-update dump are named"]
@@ -51,15 +51,15 @@ nothing is updated.
 
 ## What "something new" means
 
-Not the tag itself. `SERVER_TAG=0` points at a different image after every
-release, so "is the tag the same" would answer yes forever. The script asks
-Compose which image it **would** run for each service now, and compares that with
-the image id the container is actually running. Those two differing is exactly
-"something new".
+Not the tag itself. `SERVER_TAG=0.2` points at a different image after every
+release on that line, so "is the tag the same" would answer yes forever. The
+script asks Compose which image it **would** run for each service now, and
+compares that with the image id the container is actually running. Those two
+differing is exactly "something new".
 
 **Asked of Compose rather than of the container**, because the container knows
-only the reference it was created from — so an operator who pins `0.1.0` and
-later writes `0.1.1` would be told nothing had changed, while the image Compose
+only the reference it was created from — so an operator who pins `0.2.0` and
+later writes `0.2.1` would be told nothing had changed, while the image Compose
 had just pulled sat unused.
 
 <Callout type="info" title="The four language images are compared separately">
@@ -77,60 +77,74 @@ that gets them.
 
 ## Versions are tags; what is running is a digest
 
-**Tags live in `.env`. Digests live in `state/current.lock`.** The tag says what
-was asked for; the digest says what is running, and is what a rollback restores.
+**Tags live in `.env`. Digests live in two lock files.** The tag says what was
+asked for; the digests say what it resolved to. `state/current.lock` is written
+once an update is healthy and names what is running. `state/previous.lock` is
+written immediately before the swap and names what was replaced, which is what a
+rollback restores.
 
 Digests cannot live in the repository. This is a product many organizations
 deploy independently, and none of them can commit to it.
 
-The default `SERVER_TAG=0` is a **moving major** and carries no `v`: a release
-tagged `v0.4.2` publishes the image tags `0.4.2`, `0.4`, `0` and `latest`.
-Staying on `0` takes every later one on the next update.
+`.env.example` ships `SERVER_TAG=0.2` — **the minor line this stack is written
+for**, carrying no `v`. A release tagged `v0.2.1` publishes the image tags
+`0.2.1`, `0.2`, `0` and `latest`, so `0.2` takes every later patch on the next
+update and nothing else.
 
-**Below 1.0 that is more than fixes.** A minor is allowed to change what the one
-before it did, so `0` follows those too. An installation that wants only fixes
-writes `0.1`, and one that wants to decide every version writes `0.1.0`.
-`latest` is not offered — an installation that changed version because somebody
-pulled is not a deployment.
+**Not the moving major `0`.** Below 1.0 a minor is allowed to change what the
+one before it did — 0.2 is not compatible with 0.1 — so `0` would carry an
+installation across a break without asking. An installation that wants to decide
+every version writes `0.2.1`; a stack for 0.3 arrives as a new release of this
+repository, with whatever its upgrade needs. `latest` is not offered — an
+installation that changed version because somebody pulled is not a deployment.
 
-## Updating an installation that keeps host directories
+## Coming from the 0.1 line
 
-An installation whose Runners keep their cache and scratch in host directories
-moves to named volumes on the next update. Three things follow, and none of them
+**0.2 is not compatible with 0.1, and this checkout is the 0.2 line.** The four
+product tags are `0.2`, so an installation does not cross a minor by pulling: it
+crosses by being moved to a new release of this repository, which is where the
+upgrade a minor needs is written down.
+
+An installation made from `v0.1.0` carries that tag's `update.sh`, which
+predates the rule that an installation follows releases — it runs `git pull`,
+which on a release checkout only warns and leaves the files where they are. Move
+such an installation once, by hand:
+
+```bash
+git fetch --tags
+git checkout v0.2.0
+./scripts/preflight.sh
+./scripts/update.sh
+```
+
+It follows releases from there. Three things follow with it, and none of them
 loses anything a participant can see.
 
-**The package cache starts empty.** The first submission to each problem
-downloads the package and builds the checker it declares again — minutes, once,
-per problem. **Do not update on a contest morning** for that reason alone.
-
-**The old directories are left where they are.** Nothing removes them and
-nothing reads them either. `RUNNER_CACHE_DIR` and `RUNNER_WORK_DIR` become
-inert: take them out of `.env` once you are satisfied, and then the directories
-themselves.
+**The Runners' scratch moves from a host directory into a volume.** The 0.1 line
+set `RUNNER_WORK_DIR` and `RUNNER_CACHE_DIR`; there are no such settings here,
+and `preflight.sh` reports a setting nothing reads. The old directories are left
+where they are, read by nothing: take both keys out of `.env`, and then the
+directories themselves once you are satisfied.
 
 ```bash
 sudo rm -rf /srv/algojudge/runner-cache /srv/algojudge/runner-work
 ```
 
-**A daemon below Docker Engine 26 has to keep the directories**, and the update
-does not check that for you before it starts. A judge's container mounts a
-subdirectory of the shared cache volume, which is a `subpath` mount and arrived
-in Engine 26 / API 1.45. Run `./scripts/preflight.sh` first — it reports the
-daemon's API version against 1.45 — and copy the overlay before `up -d`:
+**The package cache starts empty.** The first submission to each problem
+downloads the package and builds the checker it declares again — minutes, once,
+per problem. **Do not update on a contest morning** for that reason alone.
 
-```bash
-cp compose.directories.yaml compose.override.yaml
-```
-
-The two paths are already in `.env`, so nothing else changes. That is a
-supported arrangement rather than a deprecated one: see [Where the Runners keep
-their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
+**The daemon has to be Docker Engine 26 or later** (Podman 5) on a host that
+runs Runners, and there is no arrangement that avoids it. A judge's container
+mounts a subdirectory of the shared cache volume, which is a `subpath` mount and
+arrived there; below it the Runner refuses to judge, and `preflight.sh` refuses
+first — it reports the daemon's API version against 1.45.
 
 <Callout type="warn" title="A volume left under that name is attached, not replaced">
-An installation that used a cache volume before it used host directories may
-still own one called `algojudge_runner-cache`, holding a layout no current
-Runner reads. The new cache volume has that same name, so Compose attaches the
-old one instead of making a fresh one. Remove it before the first start.
+An installation older than 2026-09-15 may still own a volume called
+`algojudge_runner-cache`, holding a layout no current Runner reads. The cache
+volume has that same name, so Compose attaches the old one instead of making a
+fresh one. Remove it before the first start.
 
 ```bash
 docker volume ls
@@ -138,10 +152,10 @@ docker volume rm algojudge_runner-cache
 ```
 </Callout>
 
-**And a rollback leaves the new cache behind, deliberately.** A Runner of the
-older generation keeps its entries under two-character shards at the top of the
-directory; a newer one keeps them under `packages/`, where the older code never
-looks. So the older Runner finds nothing, downloads again, and the two layouts
+**And a rollback past 0.1 leaves the new cache behind, deliberately.** A Runner
+of that generation keeps its entries under two-character shards at the top of
+the directory; a newer one keeps them under `packages/`, where the older code
+never looks. So the older Runner finds nothing, downloads again, and the two layouts
 sit side by side rather than one being handed to the other — which would have
 been every submission failing on a package that could not be opened. What is
 left is dead weight only the newer Runner can see, and an installation that
@@ -162,11 +176,12 @@ refuses rather than half-doing it.
 ./scripts/rollback.sh
 ```
 
-Restores exactly the images in `state/current.lock`, whatever the tags point at
-now, through an override written to `state/rollback.compose.yaml`. That includes
-the four language images: they go back as `AJ_Sandbox__Image__*` on each Runner,
-because putting an old Runner back beside today's sandboxes is the one
-combination the Runner is not tested in.
+Restores exactly the images in `state/previous.lock` — the ones the last update
+replaced — whatever the tags point at now, through an override written to
+`state/rollback.compose.yaml`. That includes the four language images: they go
+back as `AJ_Sandbox__Image__*` on each Runner, because putting an old Runner
+back beside today's sandboxes is the one combination the Runner is not tested
+in.
 
 <Callout type="warn" title="Bring the stack up with both files until the cause is fixed">
 The override is not read by a plain `docker compose up`, so a plain `up` puts the
@@ -178,7 +193,14 @@ docker compose -f compose.yaml -f state/rollback.compose.yaml up -d
 </Callout>
 
 There is nothing to roll back to on an installation that has never updated:
-`state/current.lock` is written by a **successful** update.
+`state/previous.lock` is written by `update.sh` immediately before it swaps the
+images. **`state/current.lock` is not a substitute** — it names what is running,
+so restoring it would change nothing, and the script says so rather than
+reporting a rollback that did nothing.
+
+**It goes back one update and no further.** An installation that has updated
+twice since the version it wants cannot reach it this way; those images are
+still in the registry, so the route there is a tag in `.env`.
 
 ### A rollback does not undo a migration
 
@@ -192,7 +214,7 @@ that dump.
 
 **And the language images with the Server.** A Server and a Runner speak a
 protocol that changes between versions, and the tags this stack ships are moving
-majors pulled independently — so nothing stops `update.sh` from taking a new Server
+tags pulled independently — so nothing stops `update.sh` from taking a new Server
 against a Runner image from last month. **A Runner too old for the Server it
 registers against is refused, and a refused registration is not retried**: the
 process exits, `restart: unless-stopped` turns that into a loop, and

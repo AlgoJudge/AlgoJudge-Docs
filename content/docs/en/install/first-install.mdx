@@ -11,6 +11,13 @@ endpoint that sets the administrator's password. The seeded `admin` account's
 password is twenty random characters that are never logged, never printed and
 never stored anywhere readable.
 
+**And not the development one.** `admin-token-development-only` — the value the
+product repositories' own development Compose files carry — is long enough to
+pass the length check and still closes `/admin`, so `preflight.sh` refuses it by
+name. With it set, `maintenance.sh` cannot open or close the installation
+either, which stops `backup.sh --quiesce`, `update.sh` and `restore.sh` at that
+step. Generate your own: `openssl rand -base64 36`.
+
 **An installation started without this token has no administrator anybody can
 sign in as, and the only fix is to drop the database and start again.**
 </Callout>
@@ -72,19 +79,20 @@ AJ_ADMIN_TOKEN=          # openssl rand -base64 36
 POSTGRES_PASSWORD=       # openssl rand -base64 36, a different one
 ```
 
-**There is no third, and nothing to create on disk.** `RUNNER_WORK_DIR` was one
-until 2026-09-16: the Runners now keep everything they download, prepare and
-work on in Docker volumes, which the daemon creates root-owned and mode 0755
-without being asked. That is exactly what they need — a Runner writes as root
-and every job container mounts the volume read-only and reads it as uid
-**65534**.
+**There is no third, and nothing to create on disk.** The Runners keep
+everything they download, prepare and work on in Docker volumes, which the
+daemon creates root-owned and mode 0755 without being asked. That is exactly
+what they need — a Runner writes as root and every job container mounts the
+volume read-only and reads it as uid **65534**. [Where the Runners keep their
+bytes](/en/install/configuration#where-the-runners-keep-their-bytes) has the two
+volumes and what each of them holds.
 
-If this host's Docker is older than **Engine 26** (Podman 5), see
-[Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes)
-before the first start: that installation keeps host directories instead, and
-`RUNNER_WORK_DIR` comes back with them.
+**This host's Docker has to be Engine 26** (Podman 5) **or later**, and there is
+no arrangement that avoids it: a judge's container mounts a subdirectory of the
+shared cache volume, which is a `subpath` mount and arrived there, and a Runner
+on an older daemon refuses to judge. `preflight.sh` refuses first.
 
-Two more worth reading before the first start:
+Three more worth reading before the first start:
 
 - **`TRUSTED_PROXY_NETWORKS`** decides whose word the Server takes for a
   visitor's address, and the Server refuses to start without it. It defaults to
@@ -95,6 +103,11 @@ Two more worth reading before the first start:
 - **`DOCKER_GID`** is the group that owns the daemon's socket, and `preflight.sh`
   tells you if yours is wrong. See [What the host
   needs](/en/install/requirements).
+- **`COMPOSE_PROJECT_NAME`** names this installation, and empty means
+  `algojudge`. Compose puts it in front of every container, network and volume,
+  and the Runners' cache and scratch carry it too — so two installations on one
+  host that both leave it empty share the Runners' scratch as well as the
+  database. Give each its own name before the first `up`.
 
 ## 2. A certificate
 
@@ -130,20 +143,30 @@ docker compose up -d --wait
 or `make up`, which is those three.
 
 `preflight.sh` refuses with a sentence rather than halfway up: an empty
-password, a missing or short token, a CIDR with host bits, a relative work
-directory, a work directory a job container cannot read, cgroup v1 or an unknown
-cgroup driver, a `.env` that is tracked by Git.
+password, a missing, short or well-known token, a CIDR with host bits, a daemon
+too old for the Runners' cache, a cpuset naming a processor this host does not
+have, more lanes than the host has processors, cgroup v1 or an unknown cgroup
+driver, a `.env` that is tracked by Git.
+
+**Two of those refusals are about processors, and both of them keep a stack from
+half-starting.** A cpuset naming a processor the host does not have is refused
+by the daemon at create — `Requested CPUs are not available` — so
+`up -d --wait` would stop with part of the stack running. And a Runner that
+cannot give every lane a processor of its own refuses to start, which
+`restart: unless-stopped` turns into a loop; both cpusets ship empty, which is
+every processor the host has, so there `RUNNER_TESTS_AT_ONCE` is measured
+against the host's own count.
 
 **`pull.sh` fetches several gigabytes on a host that runs Runners** and takes
 minutes. That is the compiler toolchain, and it is normal. It is also the step
 Compose cannot do for you, because the four language images are not services.
 
-**The `runner` profile starts two Runners**, `runner-1` and `runner-2`;
-`runner-extra` adds `runner-3` and `runner-4` on a host with the processors to
-carry them. Each of them judges as many of one submission's tests at once as
+**The `runner` profile starts `runner-1` and `runner-2`, and that is the whole
+fleet.** Each of them judges as many of one submission's tests at once as
 `RUNNER_TESTS_AT_ONCE` says, one lane each, so what has to fit the host is the
 lanes rather than the Runners: more lanes than physical cores does not judge
-faster and does stop judging accurately — [What the host
+faster and does stop judging accurately. A host with capacity to spare widens
+the two rather than gaining a third — [What the host
 needs](/en/install/requirements) has the table.
 
 ## 4. The administrator
@@ -180,7 +203,7 @@ and gets a 404. That is measured behavior, not a guess.
 timeout. Nothing is judged until an administrator approves it, which is what
 stops somebody from attaching a machine of their own to your installation.
 
-In the panel: **Runners**, and approve each of the four that appeared. Their
+In the panel: **Runners**, and approve each of the two that appeared. Their
 logs say `waiting: this Runner has not been approved yet` until you do, backing
 off between attempts because a room of Runners registered together would
 otherwise ask in one burst for as long as it takes somebody to reach the panel.

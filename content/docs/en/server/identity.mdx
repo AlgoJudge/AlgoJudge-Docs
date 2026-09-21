@@ -140,12 +140,12 @@ Registering or editing one refuses at the write instead, and names why:
 the second on creation only; `provider.claimPath.invalid`;
 `provider.unmappedBehavior.unknown`, `provider.defaultRole.required` and
 `provider.defaultRole.unknown`; `provider.deletionSecret.required` for a channel
-enabled without one; eight `provider.rule.*` for a rule with no claim value, no
+enabled without one; nine `provider.rule.*` for a rule with no claim value, no
 target, a target a sign-in provider may not use, a value and target named twice,
 a role not named where one is required, a role unknown, a role belonging to an
-activity, and a role carrying `system:administrator` or permissions its author
-does not hold; and `provider.linked`, which refuses to delete a provider people
-still sign in through.
+activity, a role carrying `system:administrator`, and a role carrying
+permissions its author does not hold; and `provider.linked`, which refuses to
+delete a provider people still sign in through.
 
 ## The provider row
 
