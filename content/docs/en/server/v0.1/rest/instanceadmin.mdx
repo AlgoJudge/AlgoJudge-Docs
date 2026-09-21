@@ -3,7 +3,7 @@ title: Instance Admin
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/instance","method":"put"},{"path":"/instance/access-keys","method":"get"},{"path":"/instance/access-keys/{name}","method":"put"},{"path":"/instance/access-keys/{name}/value","method":"get"},{"path":"/instance/redirects","method":"get"},{"path":"/instance/external-content","method":"get"},{"path":"/instance/external-content","method":"put"},{"path":"/instance/logo","method":"put"},{"path":"/instance/theme","method":"delete"},{"path":"/instance/theme","method":"put"},{"path":"/instance/fonts","method":"get"},{"path":"/instance/fonts","method":"post"},{"path":"/instance/fonts/{name}","method":"delete"},{"path":"/instance/documents/{kind}","method":"get"},{"path":"/instance/documents/{kind}","method":"post"},{"path":"/instance/documents/{kind}","method":"delete"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/instance","method":"put"},{"path":"/instance/access-keys","method":"get"},{"path":"/instance/access-keys/{name}","method":"put"},{"path":"/instance/access-keys/{name}/value","method":"get"},{"path":"/instance/redirects","method":"get"},{"path":"/instance/external-content","method":"get"},{"path":"/instance/external-content","method":"put"},{"path":"/instance/logo","method":"put"},{"path":"/instance/theme","method":"delete"},{"path":"/instance/theme","method":"put"},{"path":"/instance/fonts","method":"get"},{"path":"/instance/fonts","method":"post"},{"path":"/instance/fonts/{name}","method":"delete"},{"path":"/instance/documents/{kind}","method":"get"},{"path":"/instance/documents/{kind}","method":"post"},{"path":"/instance/documents/{kind}","method":"delete"}]} showTitle />
     </>
   );
 }

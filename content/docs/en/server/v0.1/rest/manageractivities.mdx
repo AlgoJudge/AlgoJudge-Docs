@@ -3,7 +3,7 @@ title: Manager Activities
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/manager/activities","method":"get"},{"path":"/manager/activities/summary","method":"get"},{"path":"/manager/activities/{idOrSlug}","method":"get"},{"path":"/manager/activities/{idOrSlug}/series","method":"get"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/manager/activities","method":"get"},{"path":"/manager/activities/summary","method":"get"},{"path":"/manager/activities/{idOrSlug}","method":"get"},{"path":"/manager/activities/{idOrSlug}/series","method":"get"}]} showTitle />
     </>
   );
 }

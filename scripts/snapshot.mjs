@@ -36,6 +36,13 @@ if (chosen.length === 0) {
     process.exit(1);
 }
 
+// The document every generated REST page names, and the one this snapshot's
+// copies will name instead. `sync-sources.mjs` writes `.sources/<key>.json` for
+// every key in the manifest, so pinning the key is the whole of providing it.
+const SHARED_DOCUMENT = ".sources/openapi.json";
+const versionedDocument = `.sources/openapi-${version}.json`;
+let pinTheDocument = false;
+
 const exists = (path) => stat(path).then(() => true, () => false);
 
 /** Which version directories a section already has, newest last. */
@@ -102,12 +109,34 @@ for (const section of chosen) {
 
             let text = await readFile(path, "utf8");
 
+            // **A frozen REST reference has to read a frozen document.** Every
+            // generated page names `.sources/openapi.json`, which
+            // `sync-sources.mjs` fills from whatever `content-sources.json` pins
+            // *now* - so a copy left as it is documents the current Server under
+            // an older version's address, and the next release's re-pin fails the
+            // build outright on a path the older Server served and this one does
+            // not. Give the snapshot a document of its own, pinned beside the
+            // current one below.
+            if (text.includes(SHARED_DOCUMENT)) {
+                text = text.replaceAll(SHARED_DOCUMENT, versionedDocument);
+                pinTheDocument = true;
+            }
+
             // **Links have to move with the pages.** A snapshot whose links point
             // back at the version-less path documents one version and sends the
             // reader to another - which is the exact failure archiving exists to
             // prevent.
+            //
+            // **A link that already names a version is left alone.** Once more
+            // than one release exists, a live page may point at an older one on
+            // purpose - "for 0.1, First install" - and prefixing that link gives
+            // `/install/v0.2/v0.1/first-install`, which nothing serves. Only a
+            // version-less link belongs to the version being cut.
             for (const other of i18nConfig.languages) {
-                text = text.replaceAll(`/${other}/${section.slug}/`, `/${other}/${section.slug}/${version}/`);
+                text = text.replaceAll(
+                    new RegExp(`/${other}/${section.slug}/(?!v\\d)`, "g"),
+                    `/${other}/${section.slug}/${version}/`,
+                );
                 text = text.replaceAll(`(/${other}/${section.slug})`, `(/${other}/${section.slug}/${version})`);
             }
 
@@ -126,6 +155,24 @@ for (const section of chosen) {
             await writeFile(into, text);
             copied += 1;
         }
+    }
+}
+
+// **The snapshot's document is pinned beside the current one**, cloned from it:
+// at the moment a version is cut, what the site documents *is* that release, so
+// the current pin and the snapshot's are the same bytes under two names. Written
+// here rather than left to whoever cuts the next version, because without it the
+// build fails — and it fails naming a missing path rather than a missing pin.
+if (pinTheDocument) {
+    const manifest = JSON.parse(await readFile("content-sources.json", "utf8"));
+    const key = `openapi-${version}`;
+
+    if (manifest[key]) {
+        console.log(`  --   ${key} is already pinned, left alone`);
+    } else {
+        manifest[key] = { ...manifest.openapi };
+        await writeFile("content-sources.json", JSON.stringify(manifest, null, 2) + "\n");
+        console.log(`  ok   ${key} pinned at ${manifest[key].ref}, cloned from the current pin`);
     }
 }
 

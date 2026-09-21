@@ -3,7 +3,7 @@ title: Problem Admin
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/problems/{id}","method":"get"},{"path":"/problems/{id}","method":"delete"},{"path":"/problems/{id}","method":"put"},{"path":"/problems/{id}/archived","method":"post"},{"path":"/problems/{id}/duplicate","method":"post"},{"path":"/problems/{id}/visibility","method":"post"},{"path":"/problems/{problemId}/versions","method":"get"},{"path":"/problems/{problemId}/versions/{versionId}/content","method":"get"},{"path":"/problems/{problemId}/versions/{versionId}/package","method":"get"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/problems/{id}","method":"get"},{"path":"/problems/{id}","method":"delete"},{"path":"/problems/{id}","method":"put"},{"path":"/problems/{id}/archived","method":"post"},{"path":"/problems/{id}/duplicate","method":"post"},{"path":"/problems/{id}/visibility","method":"post"},{"path":"/problems/{problemId}/versions","method":"get"},{"path":"/problems/{problemId}/versions/{versionId}/content","method":"get"},{"path":"/problems/{problemId}/versions/{versionId}/package","method":"get"}]} showTitle />
     </>
   );
 }

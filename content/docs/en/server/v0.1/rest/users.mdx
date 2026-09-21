@@ -3,7 +3,7 @@ title: Users
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/users","method":"get"},{"path":"/users","method":"post"},{"path":"/users/managed","method":"get"},{"path":"/users/temporary","method":"post"},{"path":"/users/{id}","method":"put"},{"path":"/users/{id}/blocked","method":"post"},{"path":"/users/{id}/merge-preview","method":"post"},{"path":"/users/{id}/merge","method":"post"},{"path":"/users/merges/{mergeId}/undo","method":"post"},{"path":"/users/{id}/approve","method":"post"},{"path":"/users/{id}/password","method":"post"},{"path":"/users/{userId}/sessions","method":"get"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/users","method":"get"},{"path":"/users","method":"post"},{"path":"/users/managed","method":"get"},{"path":"/users/temporary","method":"post"},{"path":"/users/{id}","method":"put"},{"path":"/users/{id}/blocked","method":"post"},{"path":"/users/{id}/merge-preview","method":"post"},{"path":"/users/{id}/merge","method":"post"},{"path":"/users/merges/{mergeId}/undo","method":"post"},{"path":"/users/{id}/approve","method":"post"},{"path":"/users/{id}/password","method":"post"},{"path":"/users/{userId}/sessions","method":"get"}]} showTitle />
     </>
   );
 }
