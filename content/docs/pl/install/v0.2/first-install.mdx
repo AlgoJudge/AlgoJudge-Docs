@@ -1,0 +1,265 @@
+---
+title: Pierwsza instalacja
+description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
+source: en/install/v0.2/first-install.mdx
+sourceSha256: 3fd14377e8be0f0079cea6125a6e5b28feaeb6f9ae3ba8a84b857a2ddb082fe4
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+<Callout type="warn" title="Ustaw AJ_ADMIN_TOKEN przed pierwszym `up`">
+Dopóki ta wartość jest pusta, `/api/v1/admin/**` jest zamknięte — a to obejmuje
+endpoint, który ustawia hasło administratora. Hasło konta `admin`, zakładanego
+przy pierwszym starcie, to dwadzieścia losowych znaków, które nigdy nie
+trafiają do logu, na ekran ani w żadne czytelne miejsce.
+
+**I nie ten deweloperski.** `admin-token-development-only` — wartość, którą noszą
+deweloperskie pliki Compose w repozytoriach produktowych — jest dość długa, żeby
+przejść kontrolę długości, a mimo to zamyka `/admin`, więc `preflight.sh`
+odmawia i wskazuje ją z nazwy. Przy tej wartości `maintenance.sh` nie zamknie
+też instalacji ani jej nie otworzy, a to zatrzymuje na tym kroku
+`backup.sh --quiesce`, `update.sh` i `restore.sh`. Wygeneruj własny:
+`openssl rand -base64 36`.
+
+**Instalacja uruchomiona bez tego tokenu nie ma administratora, na którego konto
+ktokolwiek mógłby wejść, a jedyne wyjście to skasować bazę i zacząć od nowa.**
+</Callout>
+
+## Obrazy, i dlaczego nowy może się nie pobrać
+
+Osiem pakietów — `algojudge-server`, `algojudge-client`, `algojudge-runner`,
+`lang-gcc`, `lang-clang`, `lang-python`, `lang-pypy` i
+`algojudge-external-runner` — jest **opublikowanych i publicznych**. `docker
+compose pull` nie wymaga logowania do rejestru, z żadnej maszyny.
+
+Pakiet GHCR utworzony pierwszym pushem jest jednak **prywatny** i żaden workflow
+tego nie zmieni: ktoś z dostępem do pakietów organizacji przestawia go raz na
+publiczny. Warto o tym wiedzieć, bo wraca z każdym nowym obrazem, a objawem jest
+`denied` przy `docker compose pull` w skądinąd poprawnej instalacji.
+
+<Callout type="info" title="Cztery obrazy językowe nie są usługami">
+`docker compose pull` pobiera sześć z ośmiu. `lang-gcc`, `lang-clang`,
+`lang-python` i `lang-pypy` to wartości przekazywane Runnerowi, a nie usługi,
+więc Compose ich nie dotyka. **Pobiera je `scripts/pull.sh`**, uruchamiany przez
+`make up`; `scripts/update.sh` robi to samo przy aktualizacji. Runner pobiera je
+także sam przy starcie i bez nich się nie zarejestruje.
+
+Pominięcie tego kroku było całą przyczyną realnej awarii: do 2026-09-16 nic na
+ścieżce instalacji ich nie pobierało, więc instalacja, której nigdy nie
+zaktualizowano, nie miała kompilatorów i każde zgłoszenie padało.
+</Callout>
+
+## 1. Klon i konfiguracja
+
+```bash
+git clone https://github.com/AlgoJudge/AlgoJudge-Ops.git /opt/algojudge-ops
+cd /opt/algojudge-ops
+git checkout "$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
+cp .env.example .env
+chmod 600 .env
+```
+
+**Najnowsze wydanie, nie `main`.** Na `main` powstaje następne wydanie; nic
+z tego, co tam jest, nie zostało jeszcze opublikowane. `update.sh` trzyma się
+tej samej zasady: przełącza repozytorium wyłącznie z jednego wydania na nowsze.
+
+**Dalsza część tej strony opisuje `main`.** Pobrane wydanie ma własną wersję
+tych instrukcji: `docs/INSTALL.md` w repozytorium i tę stronę w wersji dla tego
+wydania — dla 0.1 to [Pierwsza instalacja](/pl/install/v0.1/first-install).
+`v0.1.0` wymaga trzeciej wartości, `RUNNER_WORK_DIR`, nie ma `scripts/pull.sh`,
+a jego `update.sh` jest starszy niż opisana wyżej zasada: wykonuje `git pull`,
+który na wydaniu kończy się tylko ostrzeżeniem. Taką instalację trzeba raz
+przełączyć ręcznie na następne wydanie, poleceniami `git fetch --tags`
+i `git checkout <tag>`.
+
+**Dwie wartości nie mają domyślnych** i bez nich stos nie wystartuje. Każdą
+generuj osobno: jeśli ta sama trafi w dwa miejsca, jeden wyciek kompromituje
+oba.
+
+```ini
+AJ_ADMIN_TOKEN=          # openssl rand -base64 36
+POSTGRES_PASSWORD=       # openssl rand -base64 36, inny
+```
+
+**Trzeciej nie ma i nie ma też nic do założenia na dysku.** Runnery trzymają
+wszystko, co pobierają, przygotowują i nad czym pracują, w wolumenach Dockera.
+Demon zakłada je sam, z właścicielem root i prawami 0755, a dokładnie tego
+trzeba: Runner zapisuje jako root, a każdy kontener zadania montuje wolumen
+tylko do odczytu i czyta go jako uid **65534**. Oba wolumeny i to, co każdy
+z nich mieści, opisuje
+[Gdzie Runnery trzymają swoje bajty](/pl/install/v0.2/configuration#where-the-runners-keep-their-bytes).
+
+**Docker na tym hoście musi być w wersji Engine 26** (albo Podman 5) **lub
+nowszej** i nie ma układu, który by to obchodził: kontener sędziego montuje
+podkatalog wspólnego wolumenu pamięci podręcznej, czyli montowanie `subpath`,
+które pojawiło się właśnie wtedy, a Runner na starszym demonie odmawia
+oceniania. `preflight.sh` odmawia jeszcze wcześniej.
+
+Jeszcze trzy wartości warto przeczytać przed pierwszym startem:
+
+- **`TRUSTED_PROXY_NETWORKS`** decyduje, czyim informacjom o adresie
+  odwiedzającego Server ma wierzyć, a bez tego Server nie wystartuje. Domyślnie
+  wskazuje sieć Compose, w której stoi dołączony nginx. Musi to być adres
+  **sieci**: `172.28.0.5/24` odrzucamy przy starcie, podając nazwę zmiennej
+  i adres, który powinien się tam znaleźć. Za własnym proxy wpisz sieć tego
+  proxy; jeśli proxy nie ma w ogóle, `none` jest pełną odpowiedzią.
+- **`DOCKER_GID`** to grupa, do której należy gniazdo demona; `preflight.sh`
+  powie, jeśli u Ciebie jest zła. Patrz [Czego wymaga
+  host](/pl/install/v0.2/requirements).
+- **`COMPOSE_PROJECT_NAME`** nazywa tę instalację, a puste pole znaczy
+  `algojudge`. Compose stawia tę nazwę przed każdym kontenerem, siecią
+  i wolumenem, a noszą ją też pamięć podręczna i katalogi robocze Runnerów —
+  więc dwie instalacje na jednym hoście, które zostawią to pole puste, dzielą
+  nie tylko bazę, ale i te katalogi. Każdej nadaj własną nazwę przed pierwszym
+  `up`.
+
+## 2. Certyfikat
+
+Umieść `fullchain.pem` i `privkey.pem` w `certs/`. Montujemy je tylko do
+odczytu; nic tutaj nie wystawia certyfikatu, a odnawianiem zajmuje się nadal to,
+czego już używasz.
+
+`/.well-known/acme-challenge/` jest serwowane na **obu** portach, więc wyzwanie
+HTTP-01 nigdy nie zostanie przekierowane. Po odnowieniu:
+
+```bash
+docker compose exec nginx nginx -s reload
+```
+
+Jeśli nie masz certyfikatu, a chcesz tylko rzucić okiem:
+
+```bash
+./scripts/render-tls.sh twoja.domena
+```
+
+**Samopodpisany, i każda przeglądarka to powie.** Jest po to, żeby pierwszy
+start dał działającą instancję z ostrzeżeniem, a nie nginx, który nie wstaje,
+i błąd, którego nikt nie powiąże z brakującym certyfikatem. Skrypt odmawia nadpisania
+certyfikatu, który już tam leży.
+
+## 3. Start
+
+```bash
+./scripts/preflight.sh
+./scripts/pull.sh
+docker compose up -d --wait
+```
+
+albo `make up`, czyli te trzy naraz.
+
+`preflight.sh` odmawia od razu i jednym zdaniem, zamiast w połowie podnoszenia
+stosu: puste hasło, token brakujący, zbyt krótki albo powszechnie znany, CIDR
+z bitami hosta, demon zbyt stary dla pamięci podręcznej Runnerów, cpuset
+wskazujący procesor, którego ten host nie ma, więcej torów niż procesorów na
+hoście, cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git.
+
+**Dwie z tych odmów dotyczą procesorów i obie chronią przed stosem, który
+wstanie tylko w połowie.** Cpuset wskazujący procesor, którego host nie ma,
+demon odrzuca już przy tworzeniu kontenera — `Requested CPUs are not
+available` — więc `up -d --wait` stanąłby z częścią stosu w ruchu. A Runner,
+który nie ma jak dać każdemu torowi osobnego procesora, odmawia startu, co
+`restart: unless-stopped` zamienia w pętlę. Oba cpusety dostarczamy puste, czyli
+obejmujące wszystkie procesory hosta, więc `RUNNER_TESTS_AT_ONCE` porównujemy
+tam z liczbą procesorów całej maszyny.
+
+**`pull.sh` na hoście z Runnerami pobiera kilka gigabajtów** i trwa minuty. To
+są kompilatory i tak ma być. To również ten krok, którego Compose nie zrobi za
+Ciebie, bo cztery obrazy językowe nie są usługami.
+
+**Profil `runner` uruchamia `runner-1` i `runner-2` — i to jest cała flota.**
+Każdy z nich ocenia równocześnie tyle testów jednego zgłoszenia, ile mówi
+`RUNNER_TESTS_AT_ONCE`, po jednym teście na tor — więc do maszyny dopasowuje się
+tory, a nie Runnery: więcej torów niż rdzeni fizycznych nie przyspiesza
+oceniania, a psuje jego rzetelność. Host, któremu zostaje zapas mocy, poszerza
+te dwa, zamiast dokładać trzeci — tabelę ma [Czego wymaga
+host](/pl/install/v0.2/requirements).
+
+## 4. Administrator
+
+```bash
+docker compose exec -it server aj-admin password
+```
+
+Potem zaloguj się na `https://twoja.domena/` jako **`admin`**.
+
+Narzędzie prosi o hasło bez wyświetlania go i **nigdy nie przyjmuje go jako
+argumentu** — argumenty widzi przez `ps` każdy inny proces, a do tego lądują
+w historii powłoki. W skrypcie narzędzie czyta pierwszą linię standardowego
+wejścia:
+
+```bash
+printf '%s' "$NEW_PASSWORD" | docker compose exec -T server aj-admin password
+```
+
+Obowiązuje polityka haseł, minimum dwanaście znaków, a **odmowa niczego nie
+zmienia** — stare hasło dalej działa, więc literówka nie zostawi instalacji bez
+wejścia. Komenda zdejmuje też blokadę konta: dziesięć nietrafionych prób to
+zwykle właśnie to, co poprzedza sięgnięcie po nią.
+
+`aj-admin` działa wewnątrz kontenera Servera i czyta token ze środowiska tego
+kontenera, więc token nigdy nie trafia do Twojej historii powłoki. To jedyna
+wspierana droga do powierzchni operatora: `/api/v1/admin/**` odpowiada na
+własnym interfejsie pętli zwrotnej Servera, a żądanie przez nginx — **albo przez
+opublikowane `127.0.0.1:8080`** — dociera jako brama mostka i dostaje 404. To
+zachowanie zmierzone, nie domysł.
+
+## 5. Zatwierdź Runnery
+
+**Nowy Runner rejestruje się i czeka.** To nie jest usterka i nie ma limitu
+czasu. Nic nie zostanie ocenione, dopóki administrator go nie zatwierdzi — i to
+właśnie powstrzymuje kogoś przed podpięciem własnej maszyny do Twojej
+instalacji.
+
+W panelu: **Runnery**, i zatwierdź każdy z dwóch, które się pojawiły. Dopóki
+tego nie zrobisz, ich logi powtarzają `waiting: this Runner has not been approved
+yet`, za każdym razem z dłuższą przerwą — bo cała pracownia Runnerów
+zarejestrowanych naraz zasypywałaby inaczej Server jedną falą pytań przez cały
+czas, którego ktoś potrzebuje, żeby dojść do panelu. Niezatwierdzony Runner po
+prostu stoi bezczynnie, a kolejkę niosą pozostałe, więc zapomniane zatwierdzenie
+wygląda na wolną instalację, a nie na błąd.
+
+Potem wyślij coś i zobacz, jak dostaje werdykt. **Dopóki to się raz nie
+wydarzy, nie wiadomo, czy instalacja działa.**
+
+## 6. Opcjonalnie: harmonogram
+
+```bash
+./scripts/install-cron.sh --print     # co by zainstalował
+./scripts/install-cron.sh
+```
+
+Nic nie planuje się samo. Co skrypt instaluje, a co celowo zostawia
+zakomentowane, opisuje [Praca rutynowa i harmonogram](/pl/install/v0.2/schedule).
+
+## Praca na obrazach zbudowanych lokalnie
+
+**Tak się tego stosu normalnie nie uruchamia** — od tego są obrazy
+opublikowane, które pobierze każdy. To jest sposób na pracę z kodem, który
+**nie jest wydany**: ze zmianą w repozytorium produktowym albo z poprawką w
+drodze do pull requesta. Zbuduj ją, otaguj tam, gdzie stałby obraz opublikowany,
+a `compose.yaml` zadziała bez zmian. **Ścieżkę po `-f` liczy się
+względem katalogu, w którym stoisz, a nie względem kontekstu budowania** — linia
+Servera jako jedyna zawiera ścieżkę, więc to ją warto sprawdzić.
+
+Buduj od nowa, zamiast sięgać po tag, który już masz: te obrazy są przypięte
+ruchomym tagiem, więc stary lokalny `:0` jest po cichu tym, co zbudowałeś
+miesiąc temu.
+
+```bash
+docker build -f AlgoJudge-Server/AlgoJudge.Server/Dockerfile -t ghcr.io/algojudge/algojudge-server:0 AlgoJudge-Server
+docker build -t ghcr.io/algojudge/algojudge-client:0 AlgoJudge-Client
+docker build -t ghcr.io/algojudge/algojudge-runner:0 AlgoJudge-Runner
+# Kontekstem jest `images`, nie `images/$lang`: wszystkie cztery budują w nim
+# pośrednika pomiarowego z `images/shim`, więc musi się w nim znaleźć.
+for lang in gcc clang python pypy; do
+    docker build -t "ghcr.io/algojudge/lang-$lang:0" \
+        -f "AlgoJudge-Runner/images/$lang/Dockerfile" AlgoJudge-Runner/images
+done
+
+# Tylko dla profilu sędziego zewnętrznego.
+docker build -t ghcr.io/algojudge/algojudge-external-runner:0 AlgoJudge-External-Runner
+```
+
+`update.sh` wciąż potrzebuje rejestru, z którego pobiera. Aktualizację
+i wycofanie ćwiczymy bez opublikowanego rejestru na lokalnym `registry:2`,
+z `REGISTRY=localhost:5000/algojudge`.

@@ -3,7 +3,7 @@ title: Permission Templates
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/permission-templates","method":"get"},{"path":"/permission-templates","method":"post"},{"path":"/permission-templates/{id}","method":"delete"},{"path":"/permission-templates/{id}","method":"put"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/permission-templates","method":"get"},{"path":"/permission-templates","method":"post"},{"path":"/permission-templates/{id}","method":"delete"},{"path":"/permission-templates/{id}","method":"put"}]} showTitle />
     </>
   );
 }

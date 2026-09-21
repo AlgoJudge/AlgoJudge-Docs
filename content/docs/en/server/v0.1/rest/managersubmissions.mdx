@@ -3,7 +3,7 @@ title: Manager Submissions
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/submissions","method":"get"},{"path":"/submissions/{id}","method":"get"},{"path":"/submissions/{id}/rejudge","method":"post"},{"path":"/submissions/{submissionId}/attempts/{attemptId}/cancel","method":"post"},{"path":"/submissions/{id}/excluded","method":"post"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/submissions","method":"get"},{"path":"/submissions/{id}","method":"get"},{"path":"/submissions/{id}/rejudge","method":"post"},{"path":"/submissions/{submissionId}/attempts/{attemptId}/cancel","method":"post"},{"path":"/submissions/{id}/excluded","method":"post"}]} showTitle />
     </>
   );
 }

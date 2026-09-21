@@ -1,0 +1,218 @@
+---
+title: Uprawnienia i nadania
+description: Jak zapisuje się prawa, jak się rozstrzygają i trzy reguły, które czynią model bezpiecznym.
+source: en/client/v0.2/manager/permissions.mdx
+sourceSha256: bcb4ccdae6b17832db472fca526fc669455e5957623437eeca0ff4b2a2bdf5da
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+import { Mermaid } from "@/components/mermaid";
+
+## Postać
+
+Uprawnienie jest napisem:
+
+```
+resource:operation[:qualifier]
+```
+
+`submission:read:all`, `activity:enroll`, `problem:read:own`. Kwalifikator jest
+częścią operacji, a nie osobnym sprawdzeniem własności — *own* i *all* to dwa
+różne uprawnienia, a nie jedno uprawnienie liczone względem predykatu.
+
+**Nadanie** trzyma ich zestaw i jest zawężone dokładnie do jednego z dwojga:
+
+- do **całej instalacji**, gdzie obowiązuje w każdej aktywności;
+- do **jednej aktywności**, gdzie jest zarazem członkostwem. Zobacz
+  [Zapisy](/pl/client/v0.2/manager/enrollment).
+
+Ten sam napis znaczy w obu zakresach to samo. Zmienia się jego zasięg.
+
+## Jak się rozstrzygają
+
+W tej kolejności:
+
+1. **Nadanie w aktywności z flagą nadpisania jest całą odpowiedzią wewnątrz tej
+   aktywności.** Nic innego tam nie obowiązuje — nawet `system:administrator`.
+2. W przeciwnym razie `system:administrator`, trzymany w dowolnym wkładzie
+   systemowym, omija każde sprawdzenie uprawnień.
+3. W przeciwnym razie zestaw efektywny jest **sumą**: wszystkich wkładów
+   systemowych plus nadania w aktywności, gdy pytanie dotyczy jednej aktywności.
+
+<Mermaid chart={`
+flowchart TD
+    q(["Czy ta osoba może zrobić X?"])
+    q --> scope{"Czy pytanie dotyczy<br/>jednej aktywności?"}
+    scope -->|nie| adm
+    scope -->|tak| ovr{"Czy jej tamtejsze nadanie<br/>ma flagę nadpisania?"}
+    ovr -->|tak| whole["To nadanie jest całą odpowiedzią.<br/>Nic innego tam nie obowiązuje, nawet system:administrator"]
+    ovr -->|nie| adm{"Czy któryś wkład systemowy<br/>ma system:administrator?"}
+    adm -->|tak| bypass["Wolno: to omija każde sprawdzenie uprawnień.<br/>Członkostwo uprawnieniem nie jest, więc wysłanie<br/>rozwiązania nadal wymaga nadania w aktywności"]
+    adm -->|nie| union["Suma wszystkich wkładów systemowych<br/>plus nadanie w aktywności, gdy pytanie dotyczy jednej"]
+`} />
+
+**Reguła 2 omija uprawnienia, a członkostwo uprawnieniem nie jest.** Wysłanie
+rozwiązania wymaga aktywnego nadania w samej aktywności, więc administrator,
+który ma tylko nadanie systemowe, dostaje tam odmowę jak każdy inny — a nadanie
+w aktywności to właśnie bycie w niej zapisanym.
+
+<Callout type="warn" title="W tym modelu nigdzie nie ma odejmowania">
+Zakres systemowy jest sumą wkładów i tylko przyrasta. Nadanie w aktywności albo
+nadpisuje go w całości, albo się do niego dokłada. Nie zapiszesz *prowadzący bez
+tego jednego uprawnienia* jako odjęcia — powiesz to mniejszym zestawem albo
+nadpisaniem.
+</Callout>
+
+### Zakres systemowy to kilka wierszy
+
+W zakresie systemowym osoba ma po jednym wkładzie na źródło: **jeden nadany
+ręcznie plus po jednym na każdego powiązanego dostawcę tożsamości**. Lista
+oznacza wkład zarządzany dostawcą, od którego przyszedł.
+
+Wkład zarządzany jest **przepisywany z mapowania dostawcy przy każdym logowaniu i
+nie da się go edytować ręcznie**. Poprawka trzymałaby się do następnego logowania
+tej osoby, a zmiana, która po cichu się cofa, jest gorsza niż odmowa. Zmień
+zamiast tego mapowanie dostawcy — zobacz [Logowania
+zewnętrzne](/pl/client/v0.2/manager/logins).
+
+### Flaga nadpisania
+
+Na nadaniu w aktywności: *to nadanie jest całą odpowiedzią wewnątrz aktywności*.
+Tak mówi się „prowadzący wszędzie, poza tymi zawodami, w których startuję”.
+
+Zanim ją ustawisz, weź pod uwagę dwie konsekwencje:
+
+- **Komuś, kto ma uprawnienia systemowe, obniżysz nią prawa w tej aktywności.**
+  Okno ostrzega o tym w chwili czynności, bo inaczej pierwszym objawem będzie
+  prowadzący, któremu po cichu zniknął ekran.
+- **Może uwięzić swojego właściciela.** Wewnątrz tej aktywności jest on tym, co
+  mówi nadanie — zwykle uczestnikiem bez `grant:update` — więc żeby wyczyścić
+  flagę, potrzeba innego prowadzącego tej aktywności albo administratora.
+
+Praw administratora nadal nie da się przyciąć od dołu: flagę na nadaniu
+administratora mógł ustawić tylko administrator.
+
+## Trzy reguły, których pilnuje Server i których nie da się wyłączyć
+
+**Nikt nie nada uprawnienia, którego sam nie ma.** Bez tego model jest ozdobą —
+każdy, kto mógłby edytować nadanie, wpisałby do niego `system:administrator`.
+Edytor oferuje tylko to, co masz, a Server odmawia reszty niezależnie od tego, co
+zrobił ekran.
+
+Wewnątrz aktywności „to, co masz” znaczy **to, co masz w tej aktywności**, a to
+nie jest ten sam zestaw co twoje prawa w całej instalacji.
+
+**`system:administrator` jest nieosiągalny przez mapowanie claimów.** Mapowanie
+decyduje, ile warta jest tu grupa z zewnętrznego katalogu, a katalog nigdy nie
+może wykreować administratora. Server pilnuje obu części: reguła mapowania nie może
+wskazać roli, która to uprawnienie zawiera, do roli już zmapowanej nie da się go
+dopisać, a rola, która mimo wszystko je ma, jest przy logowaniu pomijana w
+całości.
+
+Ta sama reguła dotyczy mapowania co nadawania: nikt nie zmapuje na uprawnienie,
+którego sam nie ma.
+
+**Instalacja nie zostanie bez administratora.** Cofnięcie jedynego aktywnego
+nadania systemowego, które trzyma `system:administrator`, przepisanie go bez
+tego uprawnienia i przestawienie tego wiersza w stan zaproszenia to ta sama
+czynność w trzech postaciach — Server odmawia za każdym razem. Najpierw nadaj to
+uprawnienie komuś innemu; gdy tylko ma je drugie aktywne nadanie systemowe,
+pierwsze jest znowu zwykłym wierszem.
+
+## Role
+
+Rola to nazwany zestaw uprawnień, a **nadanie wiąże role** — dowolnie wiele.
+Zmiana roli zmienia naraz uprawnienia wszystkich, którzy ją mają: także osób
+zapisanych dawno przed tą zmianą.
+
+<Callout type="warn" title="Zmiana dociera do wszystkich, którzy mają tę rolę">
+Właśnie dlatego z rolą trzeba obchodzić się uważnie, i ekran o tym mówi: edytor
+roli pokazuje przed zapisem, ilu nadań dotknie zmiana. Jeśli chodziło o jedną
+osobę, zmień jej nadanie — nadanie może mieć własne uprawnienia obok ról.
+</Callout>
+
+Rola należy albo do **instalacji**, albo do **jednej aktywności**. Rolę
+aktywności można nadać tylko w niej i pisze ją ten, kto tę aktywność prowadzi;
+role instalacji należą do administratora. To pozwala poprawić uprawnienia
+własnych uczestników bez ruszania tego, co wolno uczestnikom w całej instalacji.
+
+**Do roli nie wpiszesz uprawnienia, którego sam nie masz.** Reguła, która zawsze
+rządziła nadawaniem, rządzi też pisaniem tego, co nadanie wiąże — z tego samego
+powodu. Sprawdzane jest tylko to, co **dokładasz** — odebrania uprawnienia nikt
+nigdy nie odmówi.
+
+Obszar **Role** je wypisuje i oznacza te dostarczone z produktem jako wbudowane;
+tych nie usuniesz, bo po usunięciu jednej świeża instalacja nie miałaby od czego
+zacząć nadania. Nie usuniesz też roli, którą ktoś nadal ma — odmowa mówi, ile
+osób — ani takiej, którą daje zapisanie się do aktywności; ta odmowa wymienia
+aktywności.
+
+Rola administratora jest **niezmienna**: w ogóle nie da się jej edytować. Puste
+uprawnienia w niej odebrałyby instalację wszystkim powiązanym z nią osobom w
+jednym zapisie, więc o tym, kto administruje, decyduje nadawanie i odbieranie
+roli, a nie jej przepisywanie. Roli, przez którą ostatni administrator
+instalacji ma `system:administrator`, broni ta sama zasada co ostatniego nadania.
+
+Jeżeli reguły dostawcy wskazują rolę, wiersz to pokazuje. Edycja roli dociera od
+razu do wszystkich, którzy ją mają — także do osób, których nadanie dostawca
+przepisuje przy logowaniu — więc dostawcy wypisani w wierszu mówią, kogo jeszcze
+zmiana zaraz obejmie.
+
+### Trzy dostarczane
+
+**`participant`** — osiem uprawnień, i dokładnie tyle ma zwykły uczestnik:
+
+```
+activity:read
+submission:read:own
+submission:create
+result:read:own
+question:read:own
+question:create
+ranking:read
+printout:request
+```
+
+**`manager`** — wszystko, co ma uczestnik, plus to, co potrzebne do prowadzenia
+aktywności: zmiana ustawień i archiwizacja, zapisywanie ludzi, biblioteka z zadaniami
+(`read:own`, `create`, `update`, `share`, `archive`, `attach`), cudze zgłoszenia
+razem z kodem, przesądzanie, anulowanie i wykluczanie, cudze wyniki i logi,
+wszystkie pytania z odpowiadaniem i publikowaniem, ogłoszenia, kolejka wydruków,
+podgląd i zdejmowanie zamrożenia rankingu, konta tymczasowe, odczyt i zapis
+nadań oraz odczyt i zapis ról **tej aktywności**. Pisanie ról instalacji należy
+do administratora i dostarczana rola `manager` tego nie obejmuje.
+
+Świadomie **nie ma** w nim: `role:manage`, `activity:create`, `activity:delete`,
+`problem:read:all`, `problem:delete`, `problem:import:external`, tych kluczy
+`user:`, które tworzą i edytują konta, `runner:*`, `instance:update`,
+`provider:manage` ani `trial:run`. Manager prowadzi aktywność; nie prowadzi
+instalacji.
+
+`user:read:all` **jest** w nim — po to, żeby prowadzący mógł wskazać osobę przy
+zapisach i nadaniach. Obszar Użytkownicy nadal pyta o nie na poziomie całej
+instalacji, więc posiadanie go tutaj nie otwiera żadnej listy kont.
+
+**`admin`** — jeden wpis, `system:administrator`. Jeden, bo omija resztę:
+administrator z listą pojedynczych uprawnień to administrator, któremu można po
+cichu coś zabrać, a przed taką niespodzianką model jest zbudowany.
+
+## Gdzie edytuje się nadania
+
+Dwa ekrany, jedna tabela pod spodem.
+
+- Obszar **Nadania** wypisuje wszystkie nadania w instalacji, z filtrem po
+  zakresie i po aktywności, i tam robi się nadanie systemowe.
+- Zakładka **Uczestnicy** w aktywności to te same wiersze zawężone do tej
+  aktywności i tam odbywają się zapisy.
+
+Nadanie decyduje też o tym, czy ktoś jest **prowadzącym**: Server wylicza to przy
+każdym zapisie z tego, co nadanie niesie — z ról i z własnych wpisów razem,
+cokolwiek ponad osiem uprawnień uczestnika, z wyjątkiem `trial:run` — a
+prowadzących nie ma ani w liczbie uczestników, ani w rankingu.
+
+**Zmiana roli też to zmienia.** Dodanie uprawnienia prowadzącego do jednej z
+ról, do których zapisuje kurs, robi prowadzących ze wszystkich, którzy ją mają, i
+wyprowadza ich z rankingu. Server przelicza tę flagę we wszystkich powiązanych
+nadaniach przy zapisie roli, więc tablica i licznik nigdy nie kłócą się z
+uprawnieniami.

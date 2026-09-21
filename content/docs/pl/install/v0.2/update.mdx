@@ -1,0 +1,319 @@
+---
+title: Aktualizacja i wycofanie
+description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
+source: en/install/v0.2/update.mdx
+sourceSha256: 5a86da1a927cfb00eb148f4eb41dd08f697ba64a57708a9e395270e00021c6d3
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+```bash
+./scripts/update.sh
+./scripts/update.sh --dry-run
+./scripts/update.sh --no-git
+```
+
+## Kolejność jest tu najważniejsza
+
+1. **Najnowsze wydanie repozytorium** — nowe pliki Compose i skrypty, nigdy nowe
+   wersje obrazów. Tylko tag `vX.Y.Z` i tylko do przodu, nigdy `main`: z wydania
+   na dowolne nowsze, a z gałęzi `main` wyłącznie na wydanie, które zawiera jej
+   bieżący commit. Samo przejście na nowe wydanie też jest „czymś nowym”:
+   podmiana stosuje jego pliki, nawet jeśli żaden obraz się nie zmienił,
+   a nieudana cofa repozytorium razem z obrazami.
+2. **`docker compose pull`** — najdłuższy krok, i **nie kosztuje przerwy**.
+3. **Nic nowego? Koniec.** Nic nie zostaje zamknięte.
+4. **Zrób kopię zapasową.**
+5. **Zamknij i poczekaj na drenowanie.**
+6. **`up -d`, poczekaj, aż stos będzie zdrowy.**
+7. Zdrowy: zapisz digesty. Niezdrowy: wycofaj.
+8. **Otwórz z powrotem** i usuń tylko te obrazy, które należą do tego projektu.
+
+<Mermaid chart={`
+flowchart TD
+    pull["Najnowsze wydanie, potem docker compose pull<br/>Bez przerwy: nic jeszcze nie jest zamknięte"]
+    pull --> changed{"Jest coś nowego?"}
+    changed -->|"nie"| stop["Koniec. Nic nie zostało zamknięte"]
+    changed -->|"tak"| backup["Kopia zapasowa. Nieudany zrzut zatrzymuje aktualizację"]
+    backup --> close["Zamknij, przeczekaj drenowanie i zapisz, co<br/>zostaje zastąpione, w state/previous.lock"]
+    close --> up["up -d, czekaj 120 s na zdrowy stos"]
+    up -->|"zdrowy"| lock["Zapisz to, co działa, w state/current.lock"]
+    up -->|"niezdrowy"| roll["Wycofaj i zapisz ostatnie pięćdziesiąt<br/>linii logu Servera do state/failed-update.log"]
+    lock --> open["Otwórz z powrotem i usuń obrazy tylko tego projektu"]
+    roll --> shut["Zostaje zamknięta. Log i zrzut sprzed aktualizacji są nazwane"]
+`} />
+
+Przerwa to kroki od 5 do 7 — zmierzone na około **osiemnaście sekund** na małej
+instalacji, w większości drenowanie.
+
+Krok 4 nie jest opcjonalny i skrypt go nie pominie: aktualizacja bez kopii przed
+nią nie jest aktualizacją, którą ten skrypt zrobi. Jeśli kopia przed aktualizacją
+zawiedzie, nic nie zostaje zaktualizowane.
+
+## Co znaczy „coś nowego”
+
+Nie sam tag. `SERVER_TAG=0.2` wskazuje po każdym wydaniu z tej linii inny obraz,
+więc „czy tag jest ten sam” odpowiadałoby „tak” w nieskończoność. Skrypt pyta
+Compose, jaki obraz uruchomiłby **teraz** dla każdej usługi, i zestawia go
+z identyfikatorem obrazu, na którym kontener naprawdę działa. Różnica między nimi
+to dokładnie „coś nowego”.
+
+**Pytany jest Compose, a nie kontener**, bo kontener zna wyłącznie referencję,
+z której powstał — więc operator, który przypiął `0.2.0`, a później wpisał
+`0.2.1`, usłyszałby, że nic się nie zmieniło, podczas gdy pobrany przed chwilą
+obraz leżałby nieużywany.
+
+<Callout type="info" title="Cztery obrazy językowe porównuje się osobno">
+`lang-gcc`, `lang-clang`, `lang-python` i `lang-pypy` nie są usługami, więc
+`docker compose pull` nigdy ich nie pobiera i żadne porównanie usług ich nie
+widzi. Aktualizacja pobiera wszystkie cztery po nazwie i zestawia je z tym, co
+zapisał `state/current.lock`; nowy obraz liczy się jako „coś nowego”.
+
+Runner przyjmuje podmieniony obraz **bez odtwarzania kontenera**: to, co o nim
+pamięta, jest zapisane pod **identyfikatorem** obrazu, a pobrany obraz ma inny
+identyfikator. Kontener i tak tu powstaje na nowo, i to się przydaje z innego
+powodu — Runner pobiera swoje obrazy przy starcie, więc restart jest też tym,
+co je przynosi.
+</Callout>
+
+## Wersje to tagi; to, co działa, to digest
+
+**Tagi leżą w `.env`. Digesty leżą w dwóch plikach blokad.** Tag mówi, o co
+poproszono; digesty mówią, na jakie obrazy ostatecznie wskazał.
+`state/current.lock` powstaje, kiedy aktualizacja okaże się zdrowa, i nazywa to,
+co działa. `state/previous.lock` powstaje tuż przed podmianą i nazywa to, co
+zostało zastąpione — i to jego przywraca wycofanie.
+
+Digesty nie mogą leżeć w repozytorium. To produkt, który wiele organizacji
+wdraża niezależnie, i żadna z nich nie może do niego commitować.
+
+W `.env.example` stoi `SERVER_TAG=0.2` — **linia minor, dla której napisano ten
+stos**, bez `v`. Wydanie otagowane `v0.2.1` publikuje tagi obrazów `0.2.1`,
+`0.2`, `0` i `latest`, więc `0.2` bierze przy następnej aktualizacji każdą
+kolejną poprawkę z tej linii i nic poza tym.
+
+**Nie ruchoma wersja główna `0`.** Poniżej 1.0 wersja minor może zmienić to, co
+robiła poprzednia — 0.2 nie jest zgodne z 0.1 — więc `0` przeprowadziłby
+instalację przez taką zmianę, nie pytając o zgodę. Kto chce decydować o każdej
+wersji, wpisuje `0.2.1`; stos dla 0.3 przyjdzie jako nowe wydanie tego
+repozytorium, razem z tym, czego wymaga przejście na nie. Tagu `latest` stos nie
+przewiduje: instalacja, która zmieniła wersję tylko dlatego, że ktoś pobrał
+obrazy, nie jest wdrożeniem.
+
+## Przejście z linii 0.1
+
+**0.2 nie jest zgodne z 0.1, a to repozytorium jest linią 0.2.** Cztery tagi
+produktowe to `0.2`, więc instalacja nie przekracza granicy wersji minor przez
+samo pobranie obrazów: przekracza ją wtedy, gdy przestawisz ją na nowe wydanie
+tego repozytorium — bo to właśnie tam zapisano, czego taka zmiana wymaga.
+
+Instalacja postawiona z `v0.1.0` ma `update.sh` z tamtego tagu, starszy niż
+zasada, że instalacja podąża za wydaniami: wykonuje `git pull`, który na wydaniu
+kończy się samym ostrzeżeniem i zostawia pliki, jak były. Taką instalację trzeba
+raz przestawić ręcznie:
+
+```bash
+git fetch --tags
+git checkout v0.2.0
+./scripts/preflight.sh
+./scripts/update.sh
+```
+
+Dalej podąża za wydaniami już sama. Wynikają z tego trzy rzeczy i żadna nie gubi
+niczego, co uczestnik mógłby zobaczyć.
+
+**Katalog roboczy Runnerów przenosi się z katalogu na hoście do wolumenu.**
+Linia 0.1 ustawiała `RUNNER_WORK_DIR` i `RUNNER_CACHE_DIR`; tutaj takich ustawień
+nie ma, a `preflight.sh` zgłasza ustawienie, którego nic nie czyta. Stare
+katalogi zostają tam, gdzie były, i nikt do nich nie zagląda: usuń z `.env` oba
+klucze, a kiedy nabierzesz pewności — także same katalogi.
+
+```bash
+sudo rm -rf /srv/algojudge/runner-cache /srv/algojudge/runner-work
+```
+
+**Pamięć podręczna paczek startuje pusta.** Pierwsze zgłoszenie do każdego
+zadania na nowo pobiera paczkę i buduje zadeklarowany w niej checker — minuty,
+raz, na zadanie. **Nie aktualizuj w poranek zawodów** choćby z tego jednego
+powodu.
+
+**Demon na hoście z Runnerami musi być w wersji Docker Engine 26 lub nowszej**
+(albo Podman 5) i nie ma układu, który by to obchodził. Kontener sędziego
+montuje podkatalog wspólnego wolumenu pamięci podręcznej, czyli montowanie
+`subpath`, które pojawiło się właśnie wtedy; na starszym demonie Runner odmawia
+oceniania, a `preflight.sh` odmawia jeszcze wcześniej — pokazuje wersję API
+demona wobec 1.45.
+
+<Callout type="warn" title="Wolumen zostawiony pod tą nazwą zostaje podłączony, a nie zastąpiony">
+Instalacja starsza niż 2026-09-15 może wciąż mieć wolumen o nazwie
+`algojudge_runner-cache` z układem, którego żaden dzisiejszy Runner nie czyta.
+Wolumen pamięci podręcznej nazywa się tak samo, więc Compose podłącza ten stary,
+zamiast utworzyć świeży. Usuń go przed pierwszym startem.
+
+```bash
+docker volume ls
+docker volume rm algojudge_runner-cache
+```
+</Callout>
+
+**A wycofanie na linię 0.1 zostawia nową pamięć podręczną w spokoju, i to
+celowo.** Runner tamtej generacji trzyma swoje wpisy w dwuznakowych katalogach
+u góry, nowszy — pod `packages/`, gdzie starszy kod nigdy nie zagląda. Starszy Runner nie
+znajduje więc nic, pobiera od nowa, i oba układy leżą obok siebie, zamiast żeby
+jeden trafił w ręce drugiego — a to oznaczałoby każde zgłoszenie upadające na
+paczce, której nie da się otworzyć. Zostaje martwy ciężar, który widzi tylko
+nowszy Runner; instalacja, która zostaje wycofana na stałe, może opróżnić pamięć
+podręczną za cenę jednego pobrania.
+
+```bash
+docker compose stop runner-1 runner-2
+docker volume rm algojudge_runner-cache
+docker compose start runner-1 runner-2
+```
+
+Najpierw zatrzymaj Runnery: dopóki działają, wolumen jest w użyciu i `volume rm`
+odmawia, zamiast zrobić to po połowie.
+
+## Wycofanie
+
+```bash
+./scripts/rollback.sh
+```
+
+Przywraca dokładnie te obrazy, które są w `state/previous.lock` — te, które
+zastąpiła ostatnia aktualizacja — niezależnie od tego, na co wskazują dziś tagi,
+przez nakładkę zapisaną do `state/rollback.compose.yaml`. Dotyczy to także
+czterech obrazów językowych:
+wracają jako `AJ_Sandbox__Image__*` przy każdym Runnerze, bo stary Runner obok
+dzisiejszych sandboksów to jedyne zestawienie, w którym Runnera się nie testuje.
+
+<Callout type="warn" title="Do czasu usunięcia przyczyny podnoś stos z obu plików">
+Zwykłe `docker compose up` nie czyta nakładki, więc wstawia nowe obrazy
+z powrotem.
+
+```bash
+docker compose -f compose.yaml -f state/rollback.compose.yaml up -d
+```
+</Callout>
+
+Instalacja, która nigdy się nie aktualizowała, nie ma dokąd wracać:
+`state/previous.lock` zapisuje `update.sh` tuż przed podmianą obrazów.
+**`state/current.lock` nie jest zamiennikiem** — nazywa to, co działa, więc jego
+przywrócenie niczego by nie zmieniło, i skrypt mówi to wprost, zamiast zgłosić
+wycofanie, po którym nic się nie dzieje.
+
+**Cofa o jedną aktualizację i ani kroku dalej.** Instalacja, która od
+interesującej ją wersji zaktualizowała się dwa razy, tą drogą do niej nie wróci;
+tamte obrazy wciąż są w rejestrze, więc prowadzi do nich tag w `.env`.
+
+### Wycofanie nie cofa migracji
+
+Jeśli aktualizacja przesunęła schemat, `state/last-migration` to zapisuje,
+a `rollback.sh` tego nie przemilczy. Starszy Server wobec nowszego schematu nie
+wystartuje, a jedyna droga powrotu to odtworzyć zrzut zrobiony bezpośrednio
+przed — **a to gubi wszystko, co zapisano od tamtej pory**. Skrypt nazywa ten
+zrzut.
+
+## Aktualizuj wszystkie hosty w tym samym oknie
+
+**A obrazy językowe razem z Serverem.** Server i Runner rozmawiają protokołem,
+który zmienia się między wersjami, a tagi, które dostarcza ten stos, to tagi
+ruchome, pobierane niezależnie — nic więc nie powstrzyma `update.sh` przed
+postawieniem nowego Servera obok obrazu Runnera sprzed miesiąca. **Runner zbyt
+stary wobec Servera, u którego się rejestruje, dostaje odmowę, a odmowy
+rejestracji się nie ponawia**: proces kończy pracę, `restart: unless-stopped`
+zamienia to w pętlę, a `preflight.sh` tego nie zobaczy, bo z konfiguracją
+wszystko jest w porządku. W logu stoi `the Server refused with 403:
+runner.nonce.unknown`.
+
+Najdotkliwiej dotyczy to układu [T2](/pl/install/v0.2), gdzie Runnery stoją na
+własnych hostach. Te hosty mają własny `update.sh`, a ten, którego nie
+zaktualizowano razem z resztą, cichnie dopiero **przy kolejnym restarcie** — czyli
+w sposób, którego nikt nie zauważy aż do zawodów.
+
+## Server zbyt stary dla zewnętrznego Runnera
+
+Kierunek opisany wyżej ma swoje odbicie. Zewnętrzny Runner odnawia dzierżawy
+i oddaje pracę **zbiorczo**, więc sprawdza to, zanim cokolwiek weźmie: wysyła
+puste odnowienie, a Server, który odpowiada na nie `404`, to Server, u którego
+ten Runner nie utrzyma dzierżawy.
+
+Mówi o tym i kończy pracę, nazywając trasę —
+`this Server does not serve POST runner/jobs/leases` — i dalej: że ten Server
+jest starszy niż trasy dzierżaw zbiorczych, których ten Runner potrzebuje, więc
+albo zaktualizuj Server, albo uruchom Runnera z wydania, które do niego pasuje.
+
+**Kontener, który nie wstaje, to lepsza połowa tej sytuacji.** Dowiedzieć się
+później znaczy: pula dzierżaw po cichu wygasa za procesem, który wygląda zdrowo,
+a każde zgłoszenie z tej puli trafia do archiwum drugi raz, kiedy jego zlecenie
+wróci do kolejki.
+
+Sprawdzenie odbywa się po zatwierdzeniu Runnera, więc ten, który wciąż na
+zatwierdzenie czeka, pisze o zatwierdzeniu. Cokolwiek innego niż `404` — Server
+nieosiągalny, przerwa techniczna — nie należy do tego sprawdzenia: Runner
+ostrzega, idzie dalej i przeczekuje to tak jak zawsze.
+
+## Runner w trakcie aktualizacji
+
+**Po `SIGTERM` Runner oddaje swoje zlecenie.** Zatrzymuje ocenianie, mówi
+Serverowi, że zlecenie jest wolne, sprząta uruchomione przez siebie kontenery
+i kończy pracę. Inny Runner może wziąć to zlecenie **w tej samej chwili**, a nie
+dopiero po dziesięciu minutach, gdy wygaśnie dzierżawa — i doręczenie nie liczy
+się zgłoszeniu do puli prób, więc operator restartujący flotę nie zużywa prób
+uczestnika.
+
+**Trzy razy, a potem już się liczy.** Trzy pierwsze oddania są darmowe, tak samo
+jak doręczenie, o którym nikt się nigdy nie odezwał; każde następne zabiera jedną
+z pięciu prób, bo dalej Runner w pętli restartów pod nadzorcą i operator
+restartujący flotę wyglądają tak samo i rozróżnia je tylko licznik.
+
+Praca już wykonana na tym zgłoszeniu idzie do kosza i robi ją od nowa ten, kto
+weźmie zlecenie następny. Zmienia się tylko to, że dzieje się to w sekundach,
+a nie w dziesięć minut.
+
+`RUNNER_STOP_GRACE` jest właśnie na te wywołania i `30s` to z zapasem
+wystarczająco na kilka żądań HTTP i usunięcie paru kontenerów. **Skrócenie go
+poniżej tego, ile one trwają, zamienia zatrzymanie z powrotem w zabicie**,
+a zabity Runner zostawia swoje zlecenie dzierżawie. Przy domyślnych dla Compose
+300s `docker compose down` spędza za to pięć minut w ciszy: zmierzone na tym
+stosie, **302 s wobec 32 s**.
+
+<Callout type="warn" title="O tym, jaki limit naprawdę trzyma kontener, decydują dwie rzeczy">
+**Docker zapisuje ten limit na kontenerze w chwili jego utworzenia**, więc `down`
+odczekuje starą wartość, dopóki kontenery nie zostaną utworzone na nowo —
+przy pierwszym `up` po pobraniu obrazów albo przez `up --force-recreate`.
+`docker inspect -f '{{.Config.StopTimeout}}'` mówi, którą wartość trzyma dany
+kontener.
+
+**O samej wartości decyduje Twój `.env`**, a nie wartość zapasowa
+z `compose.yaml`. Zmieniaj ją tam.
+</Callout>
+
+Czyste drenowanie to nadal `maintenance.sh on --wait-closed` najpierw na
+**Serverze** — i tak właśnie robi `update.sh`: wtedy do Runnera w ogóle nie
+trafia nowa praca, co jest schludniejsze niż każdy Runner oddający to, co przed
+chwilą dostał.
+
+**Zewnętrzny Runner też obsługuje `SIGTERM`**, a jego margines to
+`EXTERNAL_RUNNER_STOP_GRACE` — sześćdziesiąt sekund, dwa razy tyle co u Runnera
+oceniającego, choć już nie z powodu liczby: całą pulę zgłoszeń w toku oddaje
+jednym żądaniem. Kiedy zamiast tego zostaje zabity, traci nie ocenianie w toku, tylko listę
+tego, na co archiwum jeszcze nie odpowiedziało — a każde takie zgłoszenie zostaje
+wysłane drugi raz, kiedy zlecenie wróci do kolejki. Rachunek jest w [Przerwie
+technicznej](/pl/install/v0.2/maintenance).
+
+## Gdy zawiodą obie połowy
+
+Jeśli nowe obrazy nie wstaną zdrowe w 120 sekund, skrypt sam się wycofuje
+i zapisuje ostatnie pięćdziesiąt linii logu Servera do
+`state/failed-update.log`. Jeśli wycofanie też zawiedzie, skrypt przestaje
+próbować: instalacja zostaje zamknięta, a log i zrzut sprzed aktualizacji są
+nazwane. To nie jest coś, co skrypt powinien powtarzać.
+
+## Aktualizacja nie jest za Ciebie zaplanowana
+
+`cron/algojudge.cron` dostarcza wpis aktualizacji **zakomentowany**. Odkomentuj
+go dopiero wtedy, gdy raz odtworzyłeś kopię i wiesz, że działa — automatyczna
+aktualizacja z nieprzetestowaną kopią za plecami to nocna okazja do utraty
+instalacji.

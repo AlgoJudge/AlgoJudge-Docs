@@ -1,0 +1,514 @@
+---
+title: When something does not work
+description: The failure modes that have actually happened, most of which look like a different problem than they are.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## The Server will not start
+
+### `The database has N pending migration(s)`
+
+The schema is behind the image and this Server has not been told it may fix
+that. Set `MIGRATE_ON_START=true` in `.env` — **after taking a backup** — or
+apply the migrations yourself before starting.
+
+This is also what a **fresh** installation says if the switch is off: an empty
+database has every migration pending.
+
+### It exits complaining about `Forwarded`
+
+`TRUSTED_PROXY_NETWORKS` is unset. The Server refuses to start without being told
+whose word to take for a visitor's address. `none` is a complete answer for a
+Server reached directly.
+
+### It names a network you did not write
+
+You wrote a CIDR with host bits set — `172.28.0.5/24`. .NET normalizes that to
+`172.28.0.0/24` without a word, which turns "one machine" into "a whole
+laboratory", so the Server refuses and names the address you should have
+written. `preflight.sh` catches it first.
+
+### `No storage is configured`
+
+`STORAGE_KIND` is empty or misspelled. It is `postgres`, `filesystem` or `s3`.
+
+### It names a storage setting that is empty
+
+`filesystem` needs `STORAGE_PATH`; `s3` needs `STORAGE_ENDPOINT`,
+`STORAGE_BUCKET`, `STORAGE_ACCESS_KEY` and `STORAGE_SECRET_KEY`, all four. The
+Server refuses at startup naming the one it wanted, and `preflight.sh` refuses
+before that. None of them is read while `STORAGE_KIND` is `postgres`, which is
+why they ship empty.
+
+## The API answers 404 and you are sure the path is right
+
+**`/health` is not the health endpoint. `/api/v1/health` is.**
+
+Every installation serves the API at `/api/v1`, and the Server answers **404 at
+the bare root on purpose** — so that a Client pointed at the wrong path is
+corrected rather than answered. A monitor written against `/health` reports the
+installation down while it is serving perfectly.
+
+<Callout type="warn" title="Through the bundled nginx it is worse">
+`/health` is not a 404 there. `location /` proxies to the Client, which serves
+`index.html` for any unknown path, so `curl https://your.domain/health` returns
+**200 and an HTML page**. That is the application's router, not the API.
+</Callout>
+
+## `/admin` answers 404 with the right token
+
+It is supposed to. `/api/v1/admin/**` needs the request to arrive on the
+Server's **own loopback interface**, and:
+
+- through nginx it arrives as the bridge gateway — 404;
+- through the published `127.0.0.1:8080` it **also** arrives as the bridge
+  gateway, because that is what a published port does — 404.
+
+Every refusal is the same 404, deliberately, so nothing distinguishes a wrong
+token from a wrong route. Not 403: a 403 would confirm the endpoint is there and
+that the caller got one of the two halves right.
+
+The way in:
+
+```bash
+docker compose exec -T server aj-admin status
+```
+
+If that says `AJ_Admin__Token is not set in this container`, the token was empty
+when the container started. Set it in `.env` and recreate the Server.
+
+**A second message closes the surface for a different reason.** The Server's own
+start-up log carries it:
+
+```text
+AJ_Admin__Token is the well-known development token, so /admin is closed.
+```
+
+That is an installation running the value the development stack ships,
+`admin-token-development-only`, which is published and therefore no token at
+all. Put a secret of your own in `.env` and recreate the Server.
+
+`preflight.sh` refuses that value by name, so a stack brought up with `make up`
+never reaches the message. Naming it is the only way to catch it: it is long
+enough to pass the length check. And what it costs is more than the password —
+`scripts/maintenance.sh` can neither open nor close an installation whose
+`/admin` is shut, which stops `backup.sh --quiesce`, `update.sh` and
+`restore.sh` at that step.
+
+## Nobody can administer the installation
+
+**Restart the Server.** At every start it looks for an active installation-wide
+grant carrying `system:administrator` — anybody's, not only the seeded
+account's — and where the installation has none, it gives the `admin` account
+the `admin` role back:
+
+```bash
+docker compose restart server
+```
+
+The log then says `Nobody administered this installation, so admin has been
+granted system:administrator again. Its password is unchanged`. That last clause
+is the whole of the caveat: **a restart returns the rights, not the password.**
+If nobody knows that either, set one with `aj-admin password`.
+
+**A grant somebody made by hand is never rewritten.** Where `admin` already holds
+an installation-wide grant of its own that does not administer — trimmed to a
+shorter list, or set to *invited* — the row is left alone and the log says
+`grant system:administrator by hand` instead. That is the one case a restart does
+not repair.
+
+Reaching this state at all now takes a database older than the refusal, or one
+edited directly: taking the installation's last `system:administrator` away —
+revoking the grant, rewriting it without the key, or demoting it to *invited* —
+is answered 403 with the code `grant.administrator.last`. `aj-admin` has no
+command for grants, which is why the door is a restart rather than a command.
+
+## Nothing is being judged
+
+In order of how often it is each one:
+
+1. **The Runner has not been approved.** Its log says `waiting: this Runner has
+   not been approved yet`, and it will say that forever. Approve it in the panel
+   under **Runners**.
+2. **The sandbox images do not exist.** Compiled in, the Runner looks for
+   `algojudge/lang-*:local`, which only a development host has. `compose.yaml`
+   sets all four `AJ_Sandbox__Image__*` variables from `REGISTRY` and
+   `RUNNER_TAG`; if you overrode them, check `docker images`.
+3. **The daemon is older than Docker Engine 26.** A package is unpacked into
+   the volume the Runners share, and each judged container mounts its
+   subdirectory out of there — a `subpath` mount, which arrived in Engine 26 /
+   API 1.45 (April 2024) and in Podman 5. The Runner **refuses to judge** and
+   says so rather than judging against nothing. `./scripts/preflight.sh`
+   refuses it before a submission does, and
+   `docker version --format '{{.Server.APIVersion}}'` is the number. Update the
+   daemon; there is no arrangement below that floor.
+4. **The cache volume is not the one the Runner was told about.** Each Runner is
+   handed a volume name to ask the daemon for, and exits at start when the
+   daemon holds no such volume — so this is a Runner that never registers rather
+   than one judging badly. The two commands under *A checker fails on every
+   submission* below print what it was given and what the daemon holds.
+5. **Tags.** A Runner with `RUNNER_TAGS` set is out of the general pool, and work
+   with no tags goes to the general pool. Empty means the general pool on both
+   sides. **Tags are read once, at the first registration** — changing the
+   variable later does nothing, and re-registering is what changes them.
+
+## Every job fails with `carries no /usr/local/bin/aj-shim`
+
+The Runner says it of one of the four language images, and means it: `aj-shim` is
+what makes a judged run measurable, so an image from before it existed cannot
+judge anything.
+
+**The host has an old copy**, and `docker compose pull` cannot replace it: the
+language images are values the Runner is handed, not services, so Compose never
+touches them.
+
+```bash
+./scripts/pull.sh
+docker compose restart runner-1              # every runner-N you run
+```
+
+<Callout type="info" title="Restarting is the simple answer and is never wrong">
+A Runner fetches its language images at start, so a restart is also what gets
+them.
+
+Fetching by hand works too: a running Runner takes up a replaced image without a
+restart, because what it remembers about an image is filed under that image's
+**id**, and a fetched image has a different id.
+
+*This page said the opposite until 2026-09-16 — that a restart was required
+because a Runner probes each image once and remembers the answer for the life of
+the process. That was measured, and was true of a Runner that filed what it
+remembered under the image's **name**. The keying has since changed.*
+</Callout>
+
+**A Runner from 2026-09-16 or later does not meet this at all**: it fetches all
+four at start, unconditionally, and exits rather than registering if it cannot.
+`make up` and `scripts/update.sh` fetch them too, so the images are usually
+already right by the time it looks.
+
+## Every job fails with `predates the input arriving as a descriptor`
+
+The same cause as the entry above and the same fix: pull the four images, then
+restart every Runner. A test's input is not mounted into the container — the
+Runner holds it in memory and hands the shim the descriptor over a socket — so a
+shim from before that would open the socket as though it were a file and report a
+run that measured nothing. The Runner refuses the run instead, which is a
+sentence an operator can act on.
+
+## A test fails with `nothing opened the run's output channel`
+
+```text
+test 03: nothing opened the run's output channel within 30s
+```
+
+**The container that should have judged the test did not start.** The Runner
+waits thirty seconds for something to open the run's output, then says so rather
+than reporting an empty answer — which would be a wrong answer pinned on a
+submission that never ran. It is an infrastructure failure, so the job is queued
+again rather than failed, until its deliveries run out.
+
+The daemon's own message about the container it could not start is above this
+line in the Runner's log, and usually names the cause outright:
+
+```bash
+docker compose logs runner-1 | tail -40
+```
+
+Two causes, commonest first:
+
+1. **A language image will not start on this host.** `docker images` says
+   whether all four are there; a container that dies at `OCI runtime create
+   failed` never opens anything.
+2. **The scratch cannot hold a named pipe.** A channel is a FIFO and a Unix
+   socket rather than bytes, so a filesystem that makes neither fails here. A
+   `tmpfs:` entry on the runner service is the usual way into this: it is
+   private to the Runner's own mount namespace, and the daemon makes an empty
+   directory of its own instead.
+
+<Callout type="warn" title="On Docker Desktop the cache has no good home under /var">
+`/var` inside its virtual machine is mounted `noexec`, so a checker built into a
+cache there cannot be executed and its container dies at start — and that is one
+of the ways a test arrives here. Put the cache in a named volume, which is what
+this stack ships.
+</Callout>
+
+**A checker or interactor whose own channel nobody opened reads differently**: it
+comes back as a **broken checker**, not with the sentence above. Same cause, and
+the entry below is where to start.
+
+## A checker fails on every submission, or judges against nothing
+
+Submissions to a problem whose package brings a checker come back as
+infrastructure failures, often worded as though the author's checker did not
+build.
+
+**The cache is not the one the Runner writes to.** A package is unpacked and
+its checker built once, in the cache, and a judge's container mounts both — so
+the daemon has to reach the same bytes the Runner prepared.
+
+The cache is the volume `algojudge_runner-cache` and the daemon reaches it by
+name, which leaves nothing to get wrong; this entry is then almost always a
+Runner pointed somewhere else by hand.
+
+**Both Runner images are distroless**, so `docker compose exec` has no `env` and
+no shell to run it with. Read the container from outside instead:
+
+```bash
+docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$(docker compose ps -q runner-1)" | grep AJ_Cache__
+docker volume inspect algojudge_runner-cache
+```
+
+A Runner started against a cache it cannot see refuses to **start** and says so,
+naming `AJ_Cache__Volume`, so this entry is the narrower case: a cache that
+exists and is not the one the Runner writes to.
+
+## Nothing **external** is being judged
+
+A different list, because the ordinary causes are not the causes here. The first
+two are on [An external judge](/en/install/v0.2/external-runner) and leave the queue
+empty with the container looking healthy: **external judging is off for this
+installation**, and **the external Runner has not been approved**.
+
+The other three:
+
+1. **The problem was not created as an external one.** It has to be typed for the
+   archive and marked external; a locally typed problem is never offered to a
+   forwarding Runner.
+2. **The version's `props` does not name the archive's problem number.** That is
+   refused by name, before anything leaves this installation.
+3. **Tags**, exactly as for any Runner, and read once at the first registration.
+
+## A Runner restarts every few seconds
+
+`restart: unless-stopped` turns any refusal at startup into a loop, and
+`preflight.sh` cannot see most of these because nothing is wrong with the
+configuration. Read the log:
+
+```bash
+docker compose logs external-runner | tail -20
+docker compose logs runner-1 | tail -5
+```
+
+**The account at the judging system is empty or wrong.** The external Runner
+refuses while reading its configuration — before the identity key, before
+registration — and names the setting. `preflight.sh` refuses ahead of it when the
+profile is on, so a stack brought up through the scripts never gets this far. A
+leading or trailing space in the password is **not** the cause: it is passed
+through exactly as written, deliberately, because trimming one broke a sign-in
+once.
+
+**`the Server refused with 403: runner.nonce.unknown`** is a different fault with
+the same symptom, and it applies to both Runners: **this image is older than the
+Server it is registering against.** It appears only from the second start
+on, because the identity volume is what makes the Server recognize the key,
+and a refused registration is not one a Runner retries. Pull both images from the
+same release rather than letting the moving tags drift — [Update and
+rollback](/en/install/v0.2/update) says why they have to move together.
+
+**`AJ_Runner__TestsAtOnce` named in the refusal** is the sandboxing Runner's
+own: it will not start with more lanes than its cpuset has processors. Two traps
+sit in it.
+
+**The width is one value for every Runner.** `RUNNER_TESTS_AT_ONCE` reaches both
+services from the same anchor, so one narrow `RUNNER_2_CPUSET` is a loop on
+`runner-2` while `runner-1` judges perfectly — read the log of the one that is
+looping, not of the one that works.
+
+**A Runner with no cpuset reads the whole machine**, and both cpusets ship
+empty. Leaving the set empty does not make the check lenient: a width of four on
+a machine with two processors is refused whether the set is narrow or absent.
+`preflight.sh` gets to both answers before anything starts: it refuses a width
+above this host's processor count, and, for every cpuset that is written, counts
+the processors in it against the width.
+
+**A named poll or lease setting** is the fourth: a Runner checks its intervals
+against one another before it does anything. None of these can be reached with
+the values this stack ships; they are what a `.env` of your own can produce.
+`AJ_Poll__WaitSeconds` above 300 is refused because 300 is the Server's own
+ceiling, and a Runner tells a held claim from an immediate answer by how long it
+took — so it would read every held claim as an empty one. To poll less often, the
+setting is `AJ_Poll__MaxSeconds`.
+
+**The external Runner renews the leases it holds on a timer of its own**, a
+quarter of the lease the Server granted, so how often it asks the archive says
+nothing about whether a lease expires. What it refuses at start is a lease that
+does not outlast `AJ_External__PendingTimeoutSeconds`, a lease above the
+Server's ceiling of 3600 seconds, and `AJ_Poll__WaitSeconds` above 300.
+
+## `Requested CPUs are not available`
+
+The daemon refuses to create a container whose `cpuset` names a processor the
+host does not have, so this one stops `docker compose up -d --wait` with part of
+the stack running instead of leaving a Runner in a restart loop.
+
+Both cpusets ship empty, which is every processor the host has, so the set is
+one somebody wrote. `lscpu -p=CPU,CORE` lists the processors that exist, and
+`preflight.sh` names the ones a `RUNNER_n_CPUSET` asks for and the host does not
+have, per Runner, before anything starts.
+
+## The archive says the account does not exist
+
+Check the username at the archive itself — it is the same one a person signs in
+with. The lookup refuses a user id of `0` by name, because the archive answers
+`0` for a username it does not know and `0` parses as a number: before that
+refusal existed, every poll silently returned nothing.
+
+## `Permission denied (os error 13)` in the Runner
+
+**Two different causes produce this one sentence**, and it names neither: it
+comes from deep inside an HTTP client or the sandbox layer, with no path and no
+number in it. `preflight.sh` checks both.
+
+**One: the daemon's socket.** `DOCKER_GID` does not match the group that owns it.
+
+```bash
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g' /var/run/docker.sock
+```
+
+On Docker Desktop that is `0`; on a Linux host it is the `docker` group.
+`preflight.sh` runs exactly this and warns if they disagree — asked of a
+container rather than of your shell, because under Docker Desktop and WSL the
+socket this shell can see is not the one the daemon serves. Since the runner
+service runs as root this is only a cause where `compose.yaml` has been edited
+to drop that, and then the Runner fails at **startup** and never reaches a
+job.
+
+**Two: a job container cannot read the scratch**, which the volumes make
+unlikely — the daemon creates one root-owned and mode 0755, and that is already
+right. The Runner writes a submission's files there as root, and every job
+container mounts the directory read-only and reads it as uid **65534**. A volume
+replaced by hand can fail that second half, so the socket works perfectly, the
+Runner registers, claims a job — and every single one fails at once, which is
+how to tell the two apart.
+
+```bash
+docker volume inspect -f '{{.Mountpoint}}' algojudge_runner-1-work
+```
+
+**The cache has the same two halves**, for the same reason: the Runner unpacks
+each package there as root and a judge's container reads it back as 65534.
+`scripts/preflight.sh` probes both, writing as root and reading back as 65534.
+
+## Every job fails, and the Runner said something about cgroups
+
+A time limit is decided on **processor time**, read from a cgroup the sandbox is
+started under. A Runner that cannot read one refuses to judge without it, so this
+is a startup message rather than a per-job one:
+
+```bash
+docker compose logs runner-1 | head -40
+```
+
+| What it says | What to do |
+|---|---|
+| cgroup version 1 | the host boots a hybrid hierarchy. Add `systemd.unified_cgroup_hierarchy=1` to the kernel command line and reboot |
+| a cgroup driver it knows neither of | `docker info --format '{{.CgroupDriver}}'` must print `cgroupfs` or `systemd`. Anything else means cgroups are off |
+| it cannot read the hierarchy | `compose.yaml` has been edited: the `/sys/fs/cgroup` mount, `cgroup: host`, or `user: "0:0"` on the runner service is missing |
+
+**Both cgroup drivers work, and neither needs the daemon reconfigured.** A
+`native.cgroupdriver` line in `/etc/docker/daemon.json` does no harm and buys
+nothing.
+
+## The verdicts are right but no memory is reported
+
+Only on a host using the **`systemd`** cgroup driver, and the Runner says so at
+`ERROR` on every start. One slice serves every run in a lane there, so a peak is
+taken by resetting `memory.peak` — a kernel interface that arrived in **Linux
+6.12**, which excludes Ubuntu 24.04 and includes Debian 13. A time limit is
+processor time, so every verdict stands, and a judged submission's own peak is
+unaffected: that one is read from a cgroup made fresh for the run. What is
+missing is the peak of the runs that are nobody's submission — a build, a
+checker, an interactor.
+
+```bash
+uname -r
+```
+
+On an older kernel, either accept it or give the daemon the `cgroupfs` driver,
+where every peak comes from a fresh cgroup and needs nothing past Linux 5.19:
+
+```json
+// /etc/docker/daemon.json
+{ "exec-opts": ["native.cgroupdriver=cgroupfs"] }
+```
+
+## nginx will not start
+
+Run the same test CI runs:
+
+```bash
+docker run --rm --add-host server:127.0.0.1 --add-host client:127.0.0.1 \
+  -v "$PWD/nginx/algojudge.conf:/etc/nginx/conf.d/default.conf:ro" \
+  -v "$PWD/nginx/snippets:/etc/nginx/snippets:ro" \
+  -v "$PWD/certs:/etc/nginx/certs:ro" \
+  nginx:1.30-alpine nginx -t
+```
+
+`--add-host` is needed because **nginx resolves every upstream while parsing**,
+so outside the Compose network it fails with `host not found in upstream
+"server:8080"` on a configuration that is perfectly correct.
+
+Two real ones seen here: a **duplicate `proxy_read_timeout`**, because `include`
+puts a directive in the including block and nginx refuses duplicates outright
+rather than overriding; and a missing certificate, because `certs/` was empty.
+
+## PostgreSQL will not start after an upgrade
+
+**18 moved where the data lives.** `PGDATA` is `/var/lib/postgresql/18/docker`
+and the volume belongs one level up at `/var/lib/postgresql`. Every guide written
+before 18 says `/var/lib/postgresql/data`, and mounting that makes the container
+refuse to start.
+
+`compose.yaml` gets it right. The major is pinned on purpose — an unpinned
+`postgres:latest` rolling over to 18 is how this was found.
+
+## `docker compose ps` shows no health for a Runner
+
+**Both** Runners show an empty health column, forever, and neither is a fault.
+The Runner's image declares no health check, and the external Runner's cannot
+have one — it has no shell, no port and nothing to ask. `docker compose up
+--wait` therefore calls both ready as soon as they are running, which they are
+even while one of them is failing to sign in. Read their logs instead.
+
+## The stack is up but the browser shows nothing
+
+- **A certificate warning** is expected if you ran `render-tls.sh`: it is
+  self-signed.
+- **A blank page and 404s for `/assets/…`**: the Client image was replaced
+  without the Server, or a proxy is caching `index.html`. It is served
+  `no-store` for exactly this.
+- **The maintenance page**: the Server is in a window. Run
+  `./scripts/maintenance.sh status`, and `off` if it should not be.
+
+## A script says another one is running
+
+```
+another AlgoJudge maintenance script is running (pid 1234, lock: …/state/algojudge.lock.d)
+```
+
+If pid 1234 is genuinely running, wait. If it is not, the next run takes the lock
+over by itself and says so — a lock is never permanently stuck. To clear one by
+hand, remove `state/algojudge.lock.d`.
+
+## The backup is not a complete backup
+
+`backup.sh` warns on every run when `STORAGE_KIND` is not `postgres`, and the
+`.meta` beside each dump records it as `coverage=INCOMPLETE`. Restoring such a
+dump alone gives an installation whose rows point at bytes that are not there —
+which presents as a **503 on every download, with nothing naming the cause**.
+
+## A restore appeared to work and changed nothing
+
+Read `state/restore.log`.
+
+This exact failure happened while the deployment repository was being written: a
+Compose invocation failed, its one-line error was reported as a `pg_restore`
+warning, and the restore **did nothing at all** while every check afterwards
+passed on data that had never been touched at all.
+
+`restore.sh` takes the identity of every table before and compares it after:
+`--clean --if-exists` gives every restored table a new one, and a restore that
+did nothing leaves the old ones where they were. But the real test is the one
+that caught it: **change something first**, then restore, then check the change
+is gone.

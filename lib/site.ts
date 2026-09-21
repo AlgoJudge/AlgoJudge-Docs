@@ -22,7 +22,8 @@ export const HOMEPAGE = "https://algojudge.pl/";
  * `released` was `null` until 2026-09-08, which was the honest state while no
  * product repository carried a `v*` tag. Five of them do now, and
  * `npm run snapshot -- v0.1` cut the directories that day — 188 files across
- * all five sections — so this names a version that exists.
+ * all five sections — so this names a version that exists. The five tagged
+ * `v0.2.0` on 2026-09-20 and 2026-09-21, and `v0.2` was cut on the second.
  *
  * The accepted decision of 2026-08-09 says a version directory is created on
  * release day and never retroactively. **So this value and the directories move
@@ -31,7 +32,7 @@ export const HOMEPAGE = "https://algojudge.pl/";
  * released site left at `null` says *unreleased* on all 266 of them.
  */
 export const documented: { released: string | null; label: Record<Locale, string> } = {
-    released: "0.1",
+    released: "0.2",
     // **Unreachable while `released` is set**, and kept for the next line that
     // has not been cut yet. Short enough to sit on one line beside the name:
     // "przed wydaniem" wrapped and pushed the title onto two.

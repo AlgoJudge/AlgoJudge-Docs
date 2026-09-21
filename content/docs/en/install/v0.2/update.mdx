@@ -1,0 +1,311 @@
+---
+title: Update and rollback
+description: Pull first, close late, and the one thing a rollback cannot undo.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+```bash
+./scripts/update.sh
+./scripts/update.sh --dry-run
+./scripts/update.sh --no-git
+```
+
+## The order is the point
+
+1. **The newest release of the repository** — new Compose files and scripts,
+   never new image versions. Only a `vX.Y.Z` tag and only forward, never
+   `main`: from a release to any higher one, and from a checkout of `main` only
+   to a release cut from `main` after it. A move is itself something new: the
+   swap applies the new release's files even when no image moved, and a failed
+   swap takes the repository back with the images.
+2. **`docker compose pull`** — the longest step, and **it costs no downtime**.
+3. **Nothing new? Stop.** Nothing is closed.
+4. **Back up.**
+5. **Close, and wait for the drain.**
+6. **`up -d`, wait for healthy.**
+7. Healthy: record the digests. Not healthy: roll back.
+8. **Reopen**, and prune only this project's images.
+
+<Mermaid chart={`
+flowchart TD
+    pull["The newest release, then docker compose pull<br/>No downtime: nothing is closed yet"]
+    pull --> changed{"Anything new?"}
+    changed -->|"no"| stop["Stop. Nothing was closed"]
+    changed -->|"yes"| backup["Back up. A failed dump stops the update"]
+    backup --> close["Close, drain, and record what is<br/>being replaced in state/previous.lock"]
+    close --> up["up -d, wait 120 s for healthy"]
+    up -->|"healthy"| lock["Record what is running in state/current.lock"]
+    up -->|"not healthy"| roll["Roll back, and write the Server's<br/>last fifty lines to state/failed-update.log"]
+    lock --> open["Reopen, and prune only this project's images"]
+    roll --> shut["Left closed. The log and the pre-update dump are named"]
+`} />
+
+The outage is steps 5 to 7 — measured at about **eighteen seconds** on a small
+installation, most of it the drain.
+
+Step 4 is not optional and the script will not skip it: an update with no backup
+in front of it is not one this script will do. If the pre-update dump fails,
+nothing is updated.
+
+## What "something new" means
+
+Not the tag itself. `SERVER_TAG=0.2` points at a different image after every
+release on that line, so "is the tag the same" would answer yes forever. The
+script asks Compose which image it **would** run for each service now, and
+compares that with the image id the container is actually running. Those two
+differing is exactly "something new".
+
+**Asked of Compose rather than of the container**, because the container knows
+only the reference it was created from — so an operator who pins `0.2.0` and
+later writes `0.2.1` would be told nothing had changed, while the image Compose
+had just pulled sat unused.
+
+<Callout type="info" title="The four language images are compared separately">
+`lang-gcc`, `lang-clang`, `lang-python` and `lang-pypy` are not services, so
+`docker compose pull` never fetches them and no service comparison can see them.
+The update pulls all four by name and compares them against what
+`state/current.lock` recorded, and a new one counts as "something new".
+
+A Runner takes a replacement up **without being recreated**: what it remembers
+about an image is filed under the image's id, and a fetched image has a
+different id. It is recreated here anyway, and that is worth keeping for its own
+reason — a Runner fetches its images at start, so a restart is also the thing
+that gets them.
+</Callout>
+
+## Versions are tags; what is running is a digest
+
+**Tags live in `.env`. Digests live in two lock files.** The tag says what was
+asked for; the digests say what it resolved to. `state/current.lock` is written
+once an update is healthy and names what is running. `state/previous.lock` is
+written immediately before the swap and names what was replaced, which is what a
+rollback restores.
+
+Digests cannot live in the repository. This is a product many organizations
+deploy independently, and none of them can commit to it.
+
+`.env.example` ships `SERVER_TAG=0.2` — **the minor line this stack is written
+for**, carrying no `v`. A release tagged `v0.2.1` publishes the image tags
+`0.2.1`, `0.2`, `0` and `latest`, so `0.2` takes every later patch on the next
+update and nothing else.
+
+**Not the moving major `0`.** Below 1.0 a minor is allowed to change what the
+one before it did — 0.2 is not compatible with 0.1 — so `0` would carry an
+installation across a break without asking. An installation that wants to decide
+every version writes `0.2.1`; a stack for 0.3 arrives as a new release of this
+repository, with whatever its upgrade needs. `latest` is not offered — an
+installation that changed version because somebody pulled is not a deployment.
+
+## Coming from the 0.1 line
+
+**0.2 is not compatible with 0.1, and this checkout is the 0.2 line.** The four
+product tags are `0.2`, so an installation does not cross a minor by pulling: it
+crosses by being moved to a new release of this repository, which is where the
+upgrade a minor needs is written down.
+
+An installation made from `v0.1.0` carries that tag's `update.sh`, which
+predates the rule that an installation follows releases — it runs `git pull`,
+which on a release checkout only warns and leaves the files where they are. Move
+such an installation once, by hand:
+
+```bash
+git fetch --tags
+git checkout v0.2.0
+./scripts/preflight.sh
+./scripts/update.sh
+```
+
+It follows releases from there. Three things follow with it, and none of them
+loses anything a participant can see.
+
+**The Runners' scratch moves from a host directory into a volume.** The 0.1 line
+set `RUNNER_WORK_DIR` and `RUNNER_CACHE_DIR`; there are no such settings here,
+and `preflight.sh` reports a setting nothing reads. The old directories are left
+where they are, read by nothing: take both keys out of `.env`, and then the
+directories themselves once you are satisfied.
+
+```bash
+sudo rm -rf /srv/algojudge/runner-cache /srv/algojudge/runner-work
+```
+
+**The package cache starts empty.** The first submission to each problem
+downloads the package and builds the checker it declares again — minutes, once,
+per problem. **Do not update on a contest morning** for that reason alone.
+
+**The daemon has to be Docker Engine 26 or later** (Podman 5) on a host that
+runs Runners, and there is no arrangement that avoids it. A judge's container
+mounts a subdirectory of the shared cache volume, which is a `subpath` mount and
+arrived there; below it the Runner refuses to judge, and `preflight.sh` refuses
+first — it reports the daemon's API version against 1.45.
+
+<Callout type="warn" title="A volume left under that name is attached, not replaced">
+An installation older than 2026-09-15 may still own a volume called
+`algojudge_runner-cache`, holding a layout no current Runner reads. The cache
+volume has that same name, so Compose attaches the old one instead of making a
+fresh one. Remove it before the first start.
+
+```bash
+docker volume ls
+docker volume rm algojudge_runner-cache
+```
+</Callout>
+
+**And a rollback past 0.1 leaves the new cache behind, deliberately.** A Runner
+of that generation keeps its entries under two-character shards at the top of
+the directory; a newer one keeps them under `packages/`, where the older code
+never looks. So the older Runner finds nothing, downloads again, and the two layouts
+sit side by side rather than one being handed to the other — which would have
+been every submission failing on a package that could not be opened. What is
+left is dead weight only the newer Runner can see, and an installation that
+stays rolled back can empty the cache for the price of a download.
+
+```bash
+docker compose stop runner-1 runner-2
+docker volume rm algojudge_runner-cache
+docker compose start runner-1 runner-2
+```
+
+Stop the Runners first: the volume is in use while they are up, and `volume rm`
+refuses rather than half-doing it.
+
+## Rollback
+
+```bash
+./scripts/rollback.sh
+```
+
+Restores exactly the images in `state/previous.lock` — the ones the last update
+replaced — whatever the tags point at now, through an override written to
+`state/rollback.compose.yaml`. That includes the four language images: they go
+back as `AJ_Sandbox__Image__*` on each Runner, because putting an old Runner
+back beside today's sandboxes is the one combination the Runner is not tested
+in.
+
+<Callout type="warn" title="Bring the stack up with both files until the cause is fixed">
+The override is not read by a plain `docker compose up`, so a plain `up` puts the
+new images straight back.
+
+```bash
+docker compose -f compose.yaml -f state/rollback.compose.yaml up -d
+```
+</Callout>
+
+There is nothing to roll back to on an installation that has never updated:
+`state/previous.lock` is written by `update.sh` immediately before it swaps the
+images. **`state/current.lock` is not a substitute** — it names what is running,
+so restoring it would change nothing, and the script says so rather than
+reporting a rollback that did nothing.
+
+**It goes back one update and no further.** An installation that has updated
+twice since the version it wants cannot reach it this way; those images are
+still in the registry, so the route there is a tag in `.env`.
+
+### A rollback does not undo a migration
+
+If the update moved the schema, `state/last-migration` records it and
+`rollback.sh` refuses to be quiet about it. An older Server against a newer
+schema does not start, and the only way back is restoring the dump taken
+immediately before — **which loses everything written since**. The script names
+that dump.
+
+## Update every host in the same window
+
+**And the language images with the Server.** A Server and a Runner speak a
+protocol that changes between versions, and the tags this stack ships are moving
+tags pulled independently — so nothing stops `update.sh` from taking a new Server
+against a Runner image from last month. **A Runner too old for the Server it
+registers against is refused, and a refused registration is not retried**: the
+process exits, `restart: unless-stopped` turns that into a loop, and
+`preflight.sh` cannot see it because nothing is wrong with the configuration.
+The log line is `the Server refused with 403: runner.nonce.unknown`.
+
+This bites hardest on [T2](/en/install/v0.2), where the Runners are on hosts of their
+own. Those hosts have their own `update.sh`, and one that is not updated in step
+goes quiet on its **next restart** rather than immediately — the shape of failure
+nobody notices until a contest.
+
+## A Server too old for the external Runner
+
+The direction above has a mirror. The external Runner renews its leases and
+gives work back **in batches**, so it checks before it claims anything: it sends
+an empty renewal, and a Server that answers `404` to that is one this Runner
+cannot hold a lease against.
+
+It says so and stops, naming the route —
+`this Server does not serve POST runner/jobs/leases` — and goes on: that Server
+is older than the batch lease routes this Runner needs, so either update the
+Server, or run a Runner from the release that matches it.
+
+**A container that will not start is the better half of this.** Finding out
+later means a pool of leases quietly expiring behind a process that looks
+healthy, and every submission in that pool sent to the archive a second time
+when its job is requeued.
+
+The check runs after the Runner has been approved, so one still waiting for
+approval says that instead. Anything other than a `404` — an unreachable Server,
+a maintenance window — is not this check's to decide: the Runner warns, carries
+on, and waits it out as it always does.
+
+## The Runner during an update
+
+**On `SIGTERM` a Runner gives its job back.** It stops the evaluation it is
+running, tells the Server the job is free, clears the containers it had started
+and exits. Another Runner can claim that job **that instant** rather than when
+the lease expires ten minutes later, and the delivery is not counted against the
+submission — an operator restarting a fleet does not spend a participant's
+attempts.
+
+**Three times, and then it does.** A give-back is free for the first three, as is
+a delivery nobody was ever heard from about; past that each costs one of the
+five, because beyond that a Runner crash-looping under a supervisor and an
+operator restarting a fleet look alike and only the count separates them.
+
+The work already done on that submission is thrown away and redone by whoever
+takes it next. What changes is that it happens in seconds rather than in ten
+minutes.
+
+`RUNNER_STOP_GRACE` is what those calls need, and `30s` is generous for a handful
+of HTTP requests and a few container removals. **Shortening it below what they
+take turns a stop back into a kill**, and a killed Runner leaves its job to the
+lease. At the Compose default of 300s a `docker compose down` spends five minutes
+in silence instead: measured on this stack, **302 s against 32 s**.
+
+<Callout type="warn" title="Two things decide which timeout a container actually holds">
+**Docker records the timeout when the container is created**, so `down` waits
+the old value until the containers are recreated — the next `up` after a pull,
+or `up --force-recreate`. `docker inspect -f '{{.Config.StopTimeout}}'` says
+which one a container holds.
+
+**And your `.env` decides the value**, not `compose.yaml`'s fallback. Change it
+there.
+</Callout>
+
+A clean drain is still `maintenance.sh on --wait-closed` on the **Server**
+first, which `update.sh` does: it stops new work from reaching a Runner at all, which
+is tidier than every Runner handing back what it has just been given.
+
+**The external Runner handles `SIGTERM` too**, and its grace is
+`EXTERNAL_RUNNER_STOP_GRACE` — sixty seconds, twice the sandboxing Runner's,
+though no longer because of a count: it hands its whole pending pool back in one
+request. What it
+loses when it is killed instead is not an evaluation but the list of submissions
+an archive has not answered for, and each of those is sent to that archive again
+when the job is requeued. [Maintenance](/en/install/v0.2/maintenance) has the
+arithmetic.
+
+## If both halves fail
+
+If the new images do not come up healthy within 120 seconds, the script rolls
+back on its own and writes the Server's last fifty log lines to
+`state/failed-update.log`. If the rollback also fails it stops trying: the
+installation is left closed, and the log and the pre-update dump are named.
+That is not something a script should keep attempting.
+
+## The update is not scheduled for you
+
+`cron/algojudge.cron` ships the update entry **commented out**. Uncomment it
+only once you have restored a backup at least once and know it works — an
+automatic update with an untested backup behind it is a nightly opportunity to
+lose an installation.

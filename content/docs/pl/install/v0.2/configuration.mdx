@@ -1,0 +1,278 @@
+---
+title: Wszystkie ustawienia w `.env`
+description: Cała konfiguracja instalacji w jednej tabeli, wartości domyślne i dwa klucze, które domyślnej nie mają wcale.
+source: en/install/v0.2/configuration.mdx
+sourceSha256: 4ad29be2924cceb1fef99623aa1e7116280de48a306b9d19eea872df27b6dd1a
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Instalację konfiguruje jeden plik: `.env`, obok `compose.yaml`. **Żaden plik
+Compose nie jest edytowany w żadnym ze wspieranych układów.**
+
+Sąsiednie strony tłumaczą ustawienia w kolejności, w jakiej się je napotyka. Ta
+jest referencją: wszystkie klucze w jednym miejscu, żeby dało się sprawdzić
+wartość znalezioną w cudzym `.env`.
+
+<Callout type="warn" title="Dwa klucze nie mają wartości domyślnej i bez nich stos nie wstanie">
+`AJ_ADMIN_TOKEN` i `POSTGRES_PASSWORD`. Compose odmawia startu, zamiast
+podstawić pusty łańcuch, i jest to zamierzone: token administratora, który po
+cichu zrobiłby się pusty, zostawiłby zamknięte `/admin` — a razem z nim jedyną
+drogę do ustawienia hasła administratora.
+</Callout>
+
+## Co działa i skąd
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `COMPOSE_PROFILES` | `edge,app,data,runner` | które usługi działają. Zobacz [cztery układy](/pl/install/v0.2). `external-runner` jest dodatkiem do każdego z nich, a nie osobnym układem, i zostaje poza domyślnym zestawem, bo wymaga konta w zewnętrznym systemie oceniającym. **`runner` uruchamia `runner-1` i `runner-2` i na tym kończy się flota** |
+| `COMPOSE_PROJECT_NAME` | `algojudge` | jak nazywa się ta instalacja. Compose dokleja ją z przodu do każdego kontenera, sieci i wolumenu — `algojudge_pgdata`, `algojudge_runner-cache` — i pod taką pełną nazwą każdy Runner dostaje swój katalog roboczy oraz pamięć podręczną. **Dwie instalacje na jednym hoście, które obie zostawią to puste, dzielą to wszystko ze sobą**, katalogi robocze Runnerów włącznie |
+| `TZ` | `Europe/Warsaw` | kotwiczy [pracę z harmonogramu](/pl/install/v0.2/schedule) w zegarze operatora i nic poza tym: kontenery logują w UTC, i to właśnie sprawia, że logi dwóch maszyn dają się porównywać |
+| `REGISTRY` | `ghcr.io/algojudge` | skąd pobierane są obrazy |
+| `SERVER_TAG` | `0.2` | **wersja minor**, pod którą napisano ten stos, bez `v`. Wydanie oznaczone `v0.2.1` publikuje tagi obrazów `0.2.1`, `0.2`, `0` i `latest`, więc `0.2` bierze przy najbliższej [aktualizacji](/pl/install/v0.2/update) każdą późniejszą poprawkę i nic poza tym. **Nie ruchomy major `0`**: poniżej 1.0 kolejny minor może zmienić to, co robił poprzedni — 0.2 nie jest zgodne z 0.1 — więc `0` przeprowadziłby instalację przez taką zmianę, nie pytając. `latest` nie jest udostępniany w ogóle, z tego samego powodu w mocniejszej postaci: instalacja nie może zmienić wersji dlatego, że ktoś pobrał obrazy. Ta kopia repozytorium to linia 0.2, a stos pod 0.3 przyjdzie jako nowe wydanie AlgoJudge-Ops, razem z tym, czego wymaga jego aktualizacja |
+| `CLIENT_TAG` | `0.2` | |
+| `RUNNER_TAG` | `0.2` | Runner **oraz** jego cztery obrazy `lang-*`, budowane i wydawane razem z nim |
+| `EXTERNAL_RUNNER_TAG` | `0.2` | własne repozytorium, więc i własny tag |
+| `POSTGRES_TAG` | `18` | major przypięty celowo — 18 przeniósł katalog danych |
+| `NGINX_TAG` | `1.30-alpine` | stabilna linia nginksa: parzysty numer pomocniczy oznacza linię stabilną, nieparzysty — mainline. **O tagu obrazu bazowego świadczy data ostatniego zbudowania, a nie to, że się pobiera** |
+| `LOG_MAX_SIZE` | `20m` | log każdego kontenera, ograniczany przez sam stos, a nie przez Twojego demona. `docker compose logs` pokaże tylko to, co zostało zachowane, więc podnieś obie wartości przed długimi zawodami, które zamierzasz potem diagnozować |
+| `LOG_MAX_FILES` | `5` | dockerowy sterownik `local`, który kompresuje to, co zrotuje. **Kolektor czytający `*-json.log` wprost z systemu plików hosta tego nie odczyta**; wtedy odpowiedzią jest przywrócenie `json-file` w `compose.yaml` |
+
+## Baza danych
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `POSTGRES_DB` | `algojudge` | |
+| `POSTGRES_USER` | `algojudge` | |
+| `POSTGRES_PASSWORD` | **wymagane** | |
+| `MIGRATE_ON_START` | `true` | staje się `AJ_Database__MigrateOnStart` Servera, które samo z siebie jest `false`. Ops je włącza, bo [najpierw robi kopię](/pl/install/v0.2/backup) |
+
+## Sieć
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `HTTP_PORT` | `80` | co publikuje dołączony nginx |
+| `HTTPS_PORT` | `443` | |
+| `SERVER_PORT` | `8080` | publikowany wyłącznie na pętli zwrotnej |
+| `CLIENT_PORT` | `8082` | publikowany wyłącznie na pętli zwrotnej |
+| `API_BASE_URL` | `/` | adres Servera tak, jak sięga do niego **przeglądarka**. `/`, gdy jeden origin obsługuje obie połowy. Dwa originy muszą być **tą samą witryną** — jedna domena rejestrowalna, jeden schemat — inaczej nikt się nie zaloguje. Zobacz [Własne reverse proxy](/pl/install/v0.2/reverse-proxy) |
+| `APP_BASE_URL` | puste | jego odbicie lustrzane: adres **aplikacji** tak, jak sięga do niej przeglądarka. Puste jest właściwe przy jednym originie. Przy dwóch pozostawienie go pustym kończy logowanie federacyjne na gołym `/activities`, rozwiniętym względem originu API |
+| `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | czyjemu słowu wierzyć w sprawie adresu odwiedzającego, i to jako **sieć**, a nie pojedynczy adres: `172.28.0.5/24` jest odrzucane przy starcie, z nazwy, razem z adresem, który powinien tam stać. **Opróżnienie tej linii opróżnia listę** — wartość domyślna zastępuje linię brakującą, a nie pustą |
+| `TRUSTED_PROXY_PROXIES` | puste | pojedyncze adresy zamiast sieci i **jedyne miejsce, w którym `none` ma sens**. Gdy przed Serverem nie stoi nic, wpisz tu `none` i zostaw `TRUSTED_PROXY_NETWORKS` puste, a Server przestanie czytać `X-Forwarded-For`. `none` w linii z sieciami jest tam czytane jako blok CIDR i odrzucane; `none` tutaj obok podanej sieci też jest odrzucane, bo Server bierze je wyłącznie wtedy, gdy jest całością tego, czemu kazano mu ufać |
+| `EDGE_SUBNET` | `172.28.0.0/24` | sieć Compose, w której stoi dołączony nginx |
+| `SERVER_STOP_GRACE` | `40s` | tyle, żeby Server zdążył odpowiedzieć na trzymane pobrania pracy. Podnieś razem z `AJ_Poll__WaitSeconds`, jeśli je podnosisz |
+| `SERVER_LOG` | `Warning` | **nie `Information`**: na tym poziomie Server loguje każde wykonane zapytanie SQL, zmierzone na 91–98% wszystkiego, co zapisuje stos oceniający — ponad gigabajt przy zawodach z trzema tysiącami zgłoszeń, na dysku samej bazy |
+
+**`EDGE_SUBNET` i `TRUSTED_PROXY_NETWORKS` muszą się zgadzać.** Domyślna para
+się zgadza. Zmiana jednego bez drugiego oznacza, że Server przestaje wierzyć
+proxy stojącemu przed nim, i każdy odwiedzający jest zapisywany jako przychodzący
+z tego proxy.
+
+**Jeden z dwóch kluczy od zaufanych proxy musi coś nazywać.** Gdy oba są puste,
+Server odmawia startu: wiara każdemu, kto przyśle `X-Forwarded-For`, pozwala
+odwiedzającemu podać własny adres, a wiara nikomu zapisuje proxy zamiast
+człowieka.
+
+## Przechowywanie i powierzchnia operatora
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `STORAGE_KIND` | `postgres` | `postgres`, `filesystem` albo `s3`. **Tylko przy `postgres` zrzut bazy jest całym stanem instalacji** |
+| `STORAGE_PATH` | `/var/lib/algojudge/objects` | tylko przy `filesystem`, na własnym wolumenie. Kopia musi go obejmować razem z bazą |
+| `STORAGE_ENDPOINT` | puste | tylko przy `s3`, a te cztery klucze są wymagane razem |
+| `STORAGE_BUCKET` | puste | |
+| `STORAGE_ACCESS_KEY` | puste | |
+| `STORAGE_SECRET_KEY` | puste | |
+| `AJ_ADMIN_TOKEN` | **wymagane** | staje się `AJ_Admin__Token`. Ustaw przed pierwszym startem |
+
+## Reszta ustawień Servera
+
+Ustawienia, które instalacja rzadko ma powód ruszać. Każde z nich stoi w
+`.env.example` puste albo zakomentowane, czyli na własnej wartości domyślnej
+obrazu, a środkowa kolumna mówi, jaka ona jest. Server czyta znacznie więcej niż
+to wszystko; całość jest na stronie
+[Konfiguracja Servera](/pl/server/configuration).
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `MAINTENANCE_FORCE_AFTER` | `300` | ile sekund `draining` czeka, aż Runner skończy, zanim mimo to przejdzie w `closed`. **Podnieś to ponad `AJ_External__PendingTimeoutSeconds` — domyślnie 900 — przed przerwą, która zrestartuje Runnera zewnętrznego**, bo inaczej wygaszanie zrezygnuje z pracy, na którą archiwum dopiero miało odpowiedzieć. Zobacz [Przerwa techniczna](/pl/install/v0.2/maintenance) |
+| `MAX_REQUEST_BYTES` | `134217728` | 128 MiB, czyli sufit dla paczki. **nginx ma własny limit**, `client_max_body_size` w `nginx/algojudge.conf`, a podniesienie jednego bez drugiego kończy się odrzuceniem na niższym z nich |
+| `RETENTION_SESSION_ORIGIN_DAYS` | `30` | przez ile dni adres jest trzymany przy sesji |
+| `RETENTION_SUBMISSION_ORIGIN_DAYS` | `365` | i przy zgłoszeniu |
+| `EVENTS_SEND_TIMEOUT` | `5` | ile sekund Server czeka, żeby podać zdarzenie podłączonej przeglądarce |
+| `FILES_COLLECT_AT_HOUR_UTC` | `6` | godzina UTC, o której zbierane są pliki, do których nic już nie sięga |
+| `STORAGE_MIGRATION_START_HOUR_UTC` | `2` | godzina UTC, od której [migracja plików](/pl/install/v0.2/storage) może ruszyć. Czeka też na opróżnienie kolejki oceniania i na zamknięcie każdej rundy |
+| `STORAGE_MIGRATION_BUDGET_MINUTES` | `30` | ile minut pracuje jeden przebieg, zanim stanie i wróci w następnym oknie. Granica nic nie kosztuje: postęp jest zapisany na samych plikach, więc następny przebieg podejmuje pracę tam, gdzie poprzedni stanął |
+| `STORAGE_MIGRATION_GRACE_MINUTES` | `60` | ile minut stara kopia pliku leży jeszcze po tym, jak jego wiersz zaczął wskazywać nowy magazyn — żeby ten, kto odczytał ten wiersz chwilę wcześniej, wciąż znalazł bajty |
+| `STORAGE_SPOOL_PATH` | katalog w systemowym katalogu tymczasowym | gdzie przesyłany plik jest odkładany, zanim jego długość stanie się znana. W kontenerze wartość domyślna leży w warstwie samego obrazu; przy dużych paczkach wskaż wolumen |
+| `DATA_PROTECTION_KIND` | `database` | czym chroniony jest pęk kluczy, którymi szyfrowane są ciasteczka sesji |
+| `UVA_EXPLORER_ORIGIN` | nasza własna przeglądarka zadań | skąd serwowana jest przeglądarka zadań dla integracji z UVa |
+
+## Runner
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `RUNNER_NAME_PREFIX` | `runner` | pod tym rejestruje się każdy z nich: to plus `-1` albo `-2`. **Drugi host z własnymi Runnerami potrzebuje innego przedrostka**, inaczej panel pokaże dwa wiersze o tej samej nazwie |
+| `RUNNER_1_CPUSET`, `RUNNER_2_CPUSET` | puste | z których procesorów może korzystać każdy Runner. **Oba są puste, czyli obejmują wszystkie procesory hosta.** Para wpisana na sztywno oznaczałaby instalację, która nie wstanie na żadnej mniejszej maszynie: cpuset nazywający procesor, którego host nie ma, jest odrzucany przez demona przy tworzeniu kontenera — `Requested CPUs are not available` — a `up -d --wait` staje wtedy z połową stosu już uruchomioną. `preflight.sh` porównuje każdą listę z hostem i odmawia wcześniej. Podział, który warto zrobić, to **jeden Runner na grupę rdzeni i jeden tor na rdzeń w tej grupie** — ile torów, mówi `RUNNER_TESTS_AT_ONCE` niżej. Procesor na tor to dolna granica, poniżej której Runner odmawia startu; rdzeń na tor to tyle, ile tor naprawdę potrzebuje, a różnicę zmierzono na 196 ms czasu procesora na test wobec 318 ms — dość, by poprawne rozwiązania przekroczyły swój limit. Runner czyta topologię przy starcie i ostrzega, raz na każdy tor, który dostał wątek zamiast rdzenia. Każdy zbiór jest cięty na tory w takiej kolejności, w jakiej go zapisano, więc odczytaj ją z maszyny, zamiast przepisywać przykład: `thread_siblings_list` mówi `0-1` na jednym hoście, a `0,8` na innym. Patrz [Czego wymaga host](/pl/install/v0.2/requirements) |
+| `RUNNER_TESTS_AT_ONCE` | `2` | ile testów **jednego zgłoszenia** Runner ocenia równocześnie, po jednym na tor. Skraca to oczekiwanie na pojedyncze zgłoszenie, a nie podnosi przepustowości: uczestnik czeka na najwolniejszy test, a nie na sumę wszystkich. **Jeśli torów jest więcej niż procesorów w cpusecie danego Runnera, Runner odmawia startu** i wymienia obie wartości, a `restart: unless-stopped` zamienia to w pętlę — limit czasu jest czasem procesora, a dwa oceniane przebiegi dzielące jeden procesor zużywają go więcej na tę samą pracę, więc poprawne rozwiązania wracałyby jako zbyt wolne, a werdykt nie mówiłby dlaczego. Przy pustym cpusecie dolną granicą jest liczba procesorów hosta, co sprawdza `preflight.sh`. Tor kosztuje też pamięć: dwa przy zadaniach na 256 MiB to około 670 MiB na Runnera, jeszcze bez wejść, a cztery około 1,3 GiB. W `.env.example` stoi `2`; własna wartość domyślna obrazu to `1` |
+| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | co ten Runner oferuje do oceny. Wartość, która nie nazywa niczego — zabłąkany przecinek — jest odrzucana przy starcie |
+| `RUNNER_TAGS` | puste | pule. **Czytane wyłącznie przy pierwszej rejestracji**; nazwanie puli zabiera Runnera z kolejki ogólnej |
+| `RUNNER_STOP_GRACE` | `30s` | ile Docker czeka, zanim zabije Runnera. Po `SIGTERM` Runner oddaje swoje zlecenie, żeby inny wziął je od razu; **skrócenie tego poniżej czasu, jakiego potrzebują te wywołania, zamienia zatrzymanie w zabicie**, a zabity Runner zostawia zlecenie dzierżawie. Patrz [Aktualizacja i wycofanie](/pl/install/v0.2/update) |
+| `RUNNER_LOG` | `info` | staje się `RUST_LOG` |
+| `DOCKER_GID` | `999` | grupa właściciela gniazda demona. `0` na Docker Desktop. Nic od niej nie zależy — usługa działa jako root — ale `preflight.sh` ostrzega, gdy jest zła |
+| `SERVER_URL` | `http://server:8080` | tylko dla hosta bez kontenera `server`; `/api/v1` jest dopisywane |
+
+Podział wzorcowy, na ośmiu procesorach, które są czterema rdzeniami po dwa
+wątki — dwa Runnery, po dwa tory każdy, rdzeń na tor:
+
+```ini
+RUNNER_1_CPUSET=0,1,2,3
+RUNNER_2_CPUSET=4,5,6,7
+RUNNER_TESTS_AT_ONCE=2
+```
+
+Te pary są rdzeniami tylko tam, gdzie partnerem cpu0 jest cpu1. Wszystkie
+wymienia `lscpu -p=CPU,CORE`, a tam, gdzie partnerem jest cpu8, dwa tory po
+rdzeniu to `RUNNER_1_CPUSET=0,8,1,9`.
+
+## Gdzie Runnery trzymają swoje bajty [#where-the-runners-keep-their-bytes]
+
+Nic tego nie konfiguruje i o to właśnie chodzi. Każdy Runner dostaje
+wolumeny Dockera i nie ma żadnej ścieżki na hoście do nazwania, założenia ani
+nadania mu uprawnień:
+
+| Wolumen | |
+|---|---|
+| `algojudge_runner-cache` | każda paczka, którą Runnery pobrały, rozpakowały i której checker skompilowały, **wspólny dla wszystkich** pod blokadą, ograniczony przez Runnera do 10 GiB |
+| `algojudge_runner-N-work` | katalog roboczy jednego Runnera, jedno zgłoszenie naraz, **nigdy wspólny**. Wygasła dzierżawa bywa wydana ponownie, gdy pierwszy Runner jeszcze pracuje, więc jeden katalog na dwa oznaczałby, że jeden kasuje robotę drugiego |
+
+Pamięć podręczną warto zachować. `docker compose down -v` usuwa ją razem z
+resztą i wtedy pierwsze zgłoszenie do każdej paczki pobiera i kompiluje od nowa
+— to minuty czasu uczestnika, a nie utrata danych.
+
+<Callout type="warn" title="Host, który uruchamia Runnery, potrzebuje Dockera Engine 26 albo Podmana 5">
+Kontener sędziego montuje **podkatalog** wspólnego wolumenu z pamięcią
+podręczną, a to montowanie `subpath` — pojawiło się w Engine 26 / API 1.45
+(kwiecień 2024). **Dla starszego demona nie ma żadnego układu zastępczego.** Na
+takim Runner odmawia oceniania, zamiast oceniać na pustym katalogu, a
+`scripts/preflight.sh` mówi o tym, zanim cokolwiek wstanie: *zaktualizuj
+demona.*
+</Callout>
+
+## Reszta ustawień Runnera
+
+Pusta wartość oznacza tu wartość domyślną samego obrazu, a Runner czyta pustą
+zmienną jak nieustawioną — więc linia zostawiona zakomentowana niczego nie
+zmienia.
+
+<Callout type="warn" title="Obejście pomiaru włącza dowolna wartość, w tym false">
+`RUNNER_ALLOW_UNMEASURED` i `RUNNER_ALLOW_CGROUP_V1` to **jeden przełącznik pod
+dwiema nazwami**, z czego druga jest starsza. Runner sprawdza, czy zmienna jest
+ustawiona, a nie co w niej stoi, więc `RUNNER_ALLOW_UNMEASURED=false` czyta się
+jako *pozwól*. Jedyny sposób, żeby go nie włączyć, to zostawić linię pustą albo
+zakomentowaną.
+
+Pozwala on **wstać**, a nie oceniać. Runner, który nie potrafi
+odczytać czasu procesora z cgroup, zarejestruje się, odpowie na protokół, a
+potem każde przejęte zlecenie zakończy awarią infrastruktury — wyglądając przy
+tym w panelu Zarządzanie dokładnie tak jak Runner, który działa. Mówi o tym
+wyłącznie jego własny log, na poziomie `ERROR`, przy każdym starcie. Całość jest
+na stronie [Czego wymaga host](/pl/install/v0.2/requirements).
+</Callout>
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `RUNNER_CACHE_MAX_BYTES` | `10737418240` | 10 GiB — tyle może zająć wspólna pamięć podręczna paczek, zanim Runnery zaczną usuwać najstarsze. Wyłącznie bajty |
+| `RUNNER_LEASE_SECONDS` | `600` | na ile sekund Runner bierze dzierżawę przejętego zlecenia |
+| `RUNNER_HEARTBEAT_SECONDS` | `60` | co ile sekund Runner daje znać, że żyje |
+| `RUNNER_POLL_MIN_SECONDS` | `1` | najkrótszy odstęp między pytaniami do Servera |
+| `RUNNER_POLL_MAX_SECONDS` | `30` | i najdłuższy, gdy od dawna nic nie wraca |
+| `RUNNER_POLL_WAIT_SECONDS` | `25` | jak długo Server może trzymać pobranie pracy otwarte. Musi zmieścić się pod sufitem Servera, czyli 300 — Runner, który poprosi o więcej, odmawia startu, zamiast dać się przyciąć — oraz pod `SERVER_STOP_GRACE` |
+| `RUNNER_KEY_PATH` | w wolumenie tożsamości | gdzie Runner trzyma klucz, którym się zarejestrował; tam jest jego miejsce |
+| `RUNNER_CGROUP_ROOT` | znajdowana przez obraz | cgroup, pod którą Runner prowadzi pomiar |
+| `RUNNER_ALLOW_UNMEASURED` | nieustawione | start na hoście, na którym ten Runner nie umie mierzyć — i tylko start. Zobacz ostrzeżenie wyżej |
+| `RUNNER_ALLOW_CGROUP_V1` | nieustawione | starsza nazwa wiersza wyżej, nadal czytana |
+
+## Runner zewnętrzny
+
+Czytaj tylko wtedy, gdy `external-runner` jest w `COMPOSE_PROFILES`. Zobacz
+[Zewnętrzny sędzia](/pl/install/v0.2/external-runner).
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `EXTERNAL_JUDGE_USERNAME` | **wymagane z profilem** | konto w archiwum. Każde przekazane zgłoszenie idzie z niego i na nim zostaje |
+| `EXTERNAL_JUDGE_PASSWORD` | **wymagane z profilem** | odmawia tego `preflight.sh`, a nie `compose.yaml`: Compose interpoluje cały plik, zanim zastosuje profile, więc oznaczenie tego klucza jako wymaganego zepsułoby każdy układ, który tej usługi nie uruchamia |
+| `EXTERNAL_JUDGE` | `uva` | które archiwum. Jeden proces obsługuje jednego sędziego; drugi to druga usługa. Nierozpoznana nazwa jest odrzucana przy starcie, a nie zastępowana domyślną |
+| `EXTERNAL_RUNNER_NAME` | `external-runner-1` | cała nazwa, nie przedrostek: to jeden Runner, z własną tożsamością i własnym zatwierdzeniem |
+| `EXTERNAL_PROBLEM_TYPES` | puste | puste deklaruje własny typ archiwum. Literówka daje tu ciszę, a nie błąd |
+| `EXTERNAL_RUNNER_TAGS` | puste | pule, czytane wyłącznie przy pierwszej rejestracji |
+| `EXTERNAL_RUNNER_LOG` | `info` | staje się `RUST_LOG` |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | dwa razy tyle co u Runnera oceniającego, bo jednym wywołaniem oddaje całą pulę zgłoszeń w toku, a to wywołanie idzie do Servera, który bywa zdalny, obciążony albo za proxy. Zatrzymanie, które się w tym nie mieści, jest zabiciem: nie oddaje niczego i zostawia każde trzymane zlecenie, aż wygaśnie mu dzierżawa |
+
+Co ten Runner kosztuje archiwum i co kosztuje nasz własny Server. Odstęp między
+dwoma zgłoszeniami jest ustawieniem grzecznościowym; pula jest sufitem, a nie
+tempem.
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `EXTERNAL_SUBMIT_MIN_INTERVAL` | `1` | ile sekund dzieli dwa zgłoszenia do archiwum |
+| `EXTERNAL_MAX_PENDING` | `100` | ile przekazanych zgłoszeń może być naraz w toku |
+| `EXTERNAL_PENDING_TIMEOUT` | `900` | po ilu sekundach jedno z nich zostaje porzucone |
+| `EXTERNAL_POLL_MIN_SECONDS` | `20` | co ile archiwum jest pytane o werdykt. **20 jest zarazem dolną granicą, poniżej której obraz odmawia** |
+| `EXTERNAL_POLL_MAX_SECONDS` | `60` | i do ilu sekund to pytanie zwalnia |
+| `EXTERNAL_POLL_ESCALATE_AFTER` | `120` | po ilu sekundach zaczyna zwalniać |
+| `EXTERNAL_LONG_POLL` | wyłączone | strumień archiwum na żywo, który budzi tego Runnera, zamiast żeby sam pytał |
+| `EXTERNAL_JUDGE_BASE_URL` | własny sędziego | gdzie stoi archiwum — dla sędziego, któremu trzeba to podać, zamiast żeby sam znalazł |
+| `EXTERNAL_JUDGE_API_BASE_URL` | własny sędziego | i gdzie stoi jego API |
+| `EXTERNAL_JUDGE_USER_ID` | ustalany z nazwy konta | numeryczny identyfikator tego konta w archiwum |
+| `EXTERNAL_CACHE_MAX_BYTES` | `268435456` | 256 MiB, własna pamięć podręczna tego Runnera |
+| `EXTERNAL_LEASE_SECONDS` | `1200` | na ile sekund bierze dzierżawę przejętego zlecenia — dwa razy tyle co Runner oceniający, bo archiwum odpowiada we własnym tempie |
+| `EXTERNAL_SERVER_POLL_MIN_SECONDS` | `1` | trzy odstępy wobec **naszego** Servera, nie archiwum |
+| `EXTERNAL_SERVER_POLL_MAX_SECONDS` | `30` | |
+| `EXTERNAL_SERVER_POLL_WAIT_SECONDS` | `25` | |
+
+**Łagodniejsze odpytywanie jest bezpieczne.** Dzierżawy odnawia osobny licznik —
+co ćwierć dzierżawy przyznanej przez Server — więc rzadsze pytanie cudzego
+archiwum nie oznacza rzadszego odnawiania.
+
+## Kopie zapasowe
+
+W całości opisane na stronie [Kopie zapasowe](/pl/install/v0.2/backup); tutaj jest
+sama lista kluczy.
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `BACKUP_DIR` | `./backups` | |
+| `BACKUP_PRESET` | `standard` | `minimal`, `standard` albo `extended` |
+| `BACKUP_KEEP_DAILY` | z presetu | nadpisuje jego jedną część |
+| `BACKUP_KEEP_WEEKLY` | z presetu | |
+| `BACKUP_KEEP_MONTHLY` | z presetu | |
+| `BACKUP_MIN_KEEP` | `2` | nigdy nieusuwane, cokolwiek mówi budżet rozmiaru |
+| `BACKUP_MAX_TOTAL_GB` | wpisywane przez `preflight.sh` | 25% systemu plików, nigdy więcej niż 50% |
+| `BACKUP_FREE_SPACE_RESERVE_GB` | `10` | margines pozostawiany wolny po zrzucie |
+| `BACKUP_VERIFY_FULL` | `false` | odczytuje każdy blok z powrotem. Kosztuje pełną dekompresję przy każdej kopii |
+
+## Sprzątanie
+
+| Klucz | Domyślnie | |
+|---|---|---|
+| `GC_TMP_RETENTION_DAYS` | `7` | ile dni musi mieć niczyj katalog roboczy, zanim zostanie zebrany z wolumenu roboczego każdego Runnera |
+| `GC_PRUNE_IMAGES` | `true` | usuwa nieużywane obrazy tego projektu. Wyłącznie tego projektu |
+
+## Czego nie ma w `.env`
+
+Część ustawień jest wpisana w `compose.yaml`, bo instalacja nie ma powodu ich
+zmieniać: środowisko, w jakim działa Server, domyślny identyfikator
+przechowywania, miejsce podmontowania prekonfiguracji, własna ścieżka robocza
+Runnera wewnątrz jego kontenera oraz cztery obrazy językowe, budowane z
+`REGISTRY` i `RUNNER_TAG`.
+
+**Dwa ustawienia Servera są listami, a lista nie może być tutaj kluczem.**
+`Cors:AllowedOrigins` i `Problems:ReservedSlugPrefixes` wiążą się po jednym
+indeksie naraz — `__0`, `__1` — a pojedynczy pusty wpis daje listę z pustym
+łańcuchem, a nie listę pustą. Idą więc do `compose.override.yaml`, który
+pokazuje strona [Własne reverse proxy](/pl/install/v0.2/reverse-proxy).
+
+Server czyta znacznie więcej niż powyższe klucze — całość jest na stronie
+[Konfiguracja Servera](/pl/server/configuration). Ops ustawia to, czego wymaga
+instalacja, a resztę zostawia na domyślnych wartościach Servera.

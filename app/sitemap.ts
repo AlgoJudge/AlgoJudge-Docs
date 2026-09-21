@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { i18nConfig } from "@/lib/i18n";
 import { hreflang, SITE_URL } from "@/lib/site";
 import { source } from "@/lib/source";
-import { archiveState } from "@/lib/versions";
+import { archiveState, isSectionRoot, newestVersion } from "@/lib/versions";
 
 // Under `output: "export"` a metadata route has to say it is static; there is no
 // request to derive anything from.
@@ -26,6 +26,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         for (const page of source.getPages(locale)) {
             if (!page.path.startsWith(`${locale}/`)) continue;
             if (await archiveState(page.slugs)) continue;
+
+            // **A section root is a redirect, not a page.** `deploy/redirects.conf`
+            // sends `/en/install/` to the newest version, so listing it asks a
+            // crawler to fetch an address that bounces.
+            if (isSectionRoot(page.slugs)) continue;
+
+            // **The newest version's pages are the version-less ones**, which is
+            // where their canonical points. Listing both put the same text in
+            // twice and left the crawler to choose, which is where Search
+            // Console's *Alternative page with proper canonical tag* came from.
+            // The version root stays: its version-less form is the redirect above.
+            if ((await newestVersion(page.slugs))?.unversioned) continue;
 
             const languages = Object.fromEntries(
                 i18nConfig.languages

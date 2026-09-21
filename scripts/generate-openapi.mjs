@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 import { generateFiles } from "fumadocs-openapi";
 
-import { openapi } from "../lib/openapi.ts";
+import { openapiCurrent } from "../lib/openapi.ts";
 
 const OUT = "content/docs/en/server/rest";
 
@@ -20,7 +20,7 @@ const OUT = "content/docs/en/server/rest";
 await rm(OUT, { recursive: true, force: true });
 
 await generateFiles({
-    input: openapi,
+    input: openapiCurrent,
     output: OUT,
     per: "tag",
     groupBy: "tag",

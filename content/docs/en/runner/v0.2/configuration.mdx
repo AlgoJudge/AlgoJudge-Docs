@@ -1,0 +1,328 @@
+---
+title: Configuration
+description: Every environment variable a Runner reads, with its default, and the ones that fail in ways nothing else warns about.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A Runner is configured entirely by environment variables. There is no
+configuration file and no command line.
+
+Every variable is prefixed `AJ_`, with `__` between sections — the same
+convention the Server reads, so one Compose file does not have to spell the two
+services differently.
+
+## The Server
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Server__BaseUrl` | **required** | The Server's API root, **including `/api/v1`** |
+
+The prefix is checked at start: a base URL with no `/api/` is refused by name
+rather than discovered as a wall of `404`s. The Server's path guard answers those
+with an empty body, so there would be nothing to read.
+
+## Identity and capabilities
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Runner__Name` | `$HOSTNAME`, else `algojudge-runner` | The name shown in the manager panel |
+| `AJ_Runner__KeyPath` | `/var/lib/algojudge-runner/identity.key` | The Ed25519 key. Generated on first start; put it on a volume |
+| `AJ_Runner__ProblemTypes` | `standard-io@1` | Comma-separated. What this Runner offers to evaluate |
+| `AJ_Runner__Tags` | empty | Comma-separated pools. **A seed, honored at the first registration only** — see [Tags and routing](/en/runner/v0.2/routing) |
+
+`AJ_Runner__ProblemTypes` is how a Runner that should also take `output-only@1`
+work is told to: `standard-io@1,output-only@1`. Which types a Runner advertises
+is configuration, not code.
+
+The default in that table is the **binary's**, for a process started with the
+variable unset. `AlgoJudge-Ops` ships `RUNNER_PROBLEM_TYPES=standard-io@1,output-only@1`,
+so an installation's Runners declare both — which is why a queue that looks stuck
+is diagnosed against the value the service actually has and not against this
+column.
+
+## Tests judged at once
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Runner__TestsAtOnce` | `1` | How many of **one submission's** tests this Runner judges at the same time |
+
+One is test after test, however many processors the Runner was given. Above one
+it buys latency on a single submission rather than throughput: that submission's
+tests are spread, and the participant waits for the slowest of them instead of
+for the sum. `AlgoJudge-Ops` sets it as `RUNNER_TESTS_AT_ONCE`.
+
+A **lane** is one place a test is judged — a piece of the processors the Runner
+was given, plus a measurement home of its own that
+[Isolation](/en/runner/v0.2/isolation) describes. The Runner cuts its set into one
+lane per test **in the order the list is written**: thread siblings are `0,1` on
+one host and `0,8` on another, so that order is the operator's information and
+not ours to sort. Given the whole machine the Runner pins nothing at any width,
+and the host's scheduler places the tests.
+
+**A test's checker or interactor runs in the same lane as the test it judges**,
+so the two that talk to each other are confined together. The two builds are in
+no lane at all — the submission's compile and the build of the package's own
+judge each get the whole of what the Runner was given.
+
+**More lanes than the Runner has processors and it refuses to start**, naming
+`AJ_Runner__TestsAtOnce` and the set it read. A time limit is processor time, and
+two judged runs sharing one processor spend more of it for the same work — so
+what the refusal prevents is correct solutions reported as too slow, with nothing
+in the verdict saying why.
+
+**A processor is the floor; a lane wants a core.** A lane holds three things at
+once — the judged run, the judge reading it, and the shim measuring it — and one
+thread of a core is not enough processor for three. Measured on 2026-09-15, one
+submission of 72 tests alone on an idle host: **196 ms of processor time a test
+in lanes of a whole core against 318 ms in lanes of one thread**, which put 610
+of 864 tests over a limit none of them reached at the wider setting. Per
+submission the two arrangements answer in the same time, so the narrow one buys
+throughput and pays for it in the verdicts.
+
+The Runner reads `thread_siblings_list` at start and **says so, once per lane
+that holds a thread whose sibling went elsewhere**. A warning and not a refusal:
+a host may publish no topology, or have no siblings to give, and the arrangement
+still judges — it is charged more for it.
+
+**Two lanes on the two threads of one core have the same problem, and that half
+is not checked.** The refusal counts processors; whether they are separate cores
+is the operator's to arrange, and
+[What the host needs](/en/install/requirements) says how.
+
+A lane multiplies what the Runner holds: one judged container at the problem's
+memory limit plus 64 MiB, one checker or interactor container at 256 MiB, and one
+sealed copy of the test's input in the Runner's own memory. Four lanes on 256 MiB
+problems is about 1.3 GiB per Runner before inputs.
+
+**Trials are untouched by the width.** A package's limits are derived one test at
+a time whatever it says, because a limit inflated by contention this Runner
+inflicted on itself would be written into the package and paid by every
+submission to that problem afterwards.
+
+**And a submission's result does not depend on it either.** Outcomes are sorted
+back into test order before scoring, so the verdict, the score and the order of
+the table a participant reads are the same at every width.
+
+## Polling and the lease
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Poll__WaitSeconds` | `25` | How long the **Server** may hold a claim open on an empty queue. `0` asks for none |
+| `AJ_Poll__MinSeconds` | `1` | Shortest wait after an empty queue |
+| `AJ_Poll__MaxSeconds` | `30` | Longest wait. The backoff is jittered |
+| `AJ_Heartbeat__Seconds` | `60` | How often an **idle** Runner says it is alive |
+| `AJ_Lease__RequestSeconds` | `600` | How long a claim asks to hold a job for |
+
+**`AJ_Poll__WaitSeconds` makes the two below matter only after a failure.** On
+an empty queue the Server holds the request rather than answering it, so the
+wait *is* the interval, and a submission starts being judged as soon as it
+exists instead of at the next poll. See [Claiming](/en/protocol/claiming) for
+what the Server does with it.
+
+What bounds it in practice is not this product but whatever sits between the
+Runner and the Server — an Azure Application Gateway ends a silent request at
+20 s, a stock nginx or an AWS ALB at 60 s, Cloudflare at 125 s. Twenty-five
+clears all but the first. Raise it on a path you own; lower it, or set `0`,
+behind a proxy you do not control.
+
+**Three hundred is a ceiling, and above it the Runner refuses to start.** That
+is the longest a Server will hold a claim, and asking for more is worse than
+being ignored: the Runner tells a held claim from an immediate answer by how
+long it took, so one asking for nine hundred would read the Server's three
+hundred as no wait at all and sleep the interval below after every claim — the
+deafness the held claim exists to remove, restored by a setting and visible in
+no log.
+
+`AJ_Lease__RequestSeconds` is a **request**. The Server clamps it to
+`[60, 3600]` and answers with the deadline it actually granted, which is the
+authoritative one. The lease is renewed automatically while work is in progress,
+on a timer at a quarter of the granted lease — three renewals fit inside every
+lease, so two may fail in a row with the deadline still ahead.
+
+The heartbeat is sent only when the Runner has nothing to do. A Runner holding a
+job is renewing its lease instead, which says the same thing more precisely.
+
+## Storage
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Cache__Path` | `/var/cache/algojudge-runner` | The package cache, as **this process** sees it |
+| `AJ_Cache__Volume` | unset | The **named volume** mounted at `AJ_Cache__Path`. Set it and the daemon is given the volume by name, and each package travels into a judged container as a `subpath` of it |
+| `AJ_Cache__HostPath` | the value of `AJ_Cache__Path` | The same directory as the **container runtime's daemon** sees it. Ignored where `AJ_Cache__Volume` is set |
+| `AJ_Cache__MaxBytes` | `10737418240` (10 GiB) | Cache ceiling |
+| `AJ_Work__Path` | `/var/lib/algojudge-runner/work` | Scratch, as **this process** sees it |
+| `AJ_Work__Volume` | unset | The **named volume** mounted at `AJ_Work__Path`, as above. **Never one shared between two Runners**: an expired lease can be re-issued while the first is still working, and a scratch is emptied by whoever claims the job |
+| `AJ_Work__HostPath` | the value of `AJ_Work__Path` | Scratch, as the **container runtime's daemon** sees it. Ignored where `AJ_Work__Volume` is set |
+| `AJ_Pipes__Path` | unset | Where a judged run's channels are made, when the work directory cannot hold them. Unset leaves them in the job's own scratch |
+| `AJ_Pipes__Volume` | unset | The **named volume** mounted at `AJ_Pipes__Path`, as above |
+| `AJ_Pipes__HostPath` | the value of `AJ_Pipes__Path` | The same directory as the **daemon** sees it. Ignored where `AJ_Pipes__Volume` is set |
+
+The package cache is the only state a Runner keeps besides its key. Losing it
+costs a re-download, nothing more.
+
+**An entry holds more than the download.** Each package sits in a directory of
+its own with the archive, the tests unpacked out of it and the checker or
+interactor it declares already compiled — prepared once for every submission to
+that problem rather than per submission, under a lock several Runners sharing
+the directory can all see. The ceiling counts all three, so the same number of
+bytes holds fewer packages than it would have held archives.
+
+**The cache has to be on a filesystem that supports `flock` and an atomic
+rename.** That is what "prepared once" rests on. Before a Runner unpacks
+anything it takes an `flock` on a file under the cache's own `locks/`, and it
+publishes the result by renaming a directory into place — so several Runners
+sharing the cache prepare one package between them instead of all preparing it
+into the same directory.
+
+Every ordinary filesystem does both. A named volume does, and so does a Docker
+Desktop bind of a Windows directory — measured 2026-09-15. The shipped default
+is a named volume, so this is a warning for a cache pointed somewhere else by
+hand: a network mount, or anything exotic.
+
+**Nothing tests it at start**, and the two ways it goes wrong are not alike. A
+filesystem that refuses the lock fails the preparation by name, at the first
+submission to a problem. One that grants the lock only on the host that took it
+grants it to two Runners at once, and both then unpack into one entry believing
+they are alone — no message, and a package assembled out of two.
+
+**A volume is named, a directory is resolved, and the Runner needs exactly one
+of the two.** A judge's container is given the unpacked package and the program
+built from it, and the **daemon** is what has to reach them. Name a volume in
+`AJ_Cache__Volume` and it reaches it by name, each package traveling in as a
+`subpath` of that volume; leave it unset and `AJ_Cache__HostPath` has to be a
+path the daemon can open. Either way the Runner writes a marker at start and
+reads it back through a throwaway container, and refuses to judge if it cannot
+see it.
+
+<Callout type="warn" title="A volume needs Docker Engine 26 or Podman 5">
+Mounting a **subdirectory** of a volume is `subpath`, which arrived in Engine
+26 / API 1.45 (April 2024). The Runner checks at start and refuses rather than
+judging against an empty directory, and it refuses a volume that does not exist
+rather than letting the daemon bring an empty one into being. Below that floor,
+use the host paths.
+</Callout>
+
+The pipes pair is not about space: a judged run's channels hold no bytes at all,
+so what they need is a filesystem that can *make* a named pipe and a Unix
+socket. A `tmpfs:` entry on the Runner's own service will not do: that is
+private to the Runner's mount namespace, and the daemon would make an empty
+directory instead, which is the failure the callout below describes.
+
+<Callout type="warn" title="AJ_Work__HostPath is the path the Docker daemon can open, not the path the Runner sees">
+A bind mount is resolved by the container runtime's **daemon**. When the Runner
+is itself in a container, the path it sees is not a path the daemon can open —
+and a path the daemon cannot open produces an **empty directory** rather than an
+error.
+
+The failure that follows is silent and looks like nothing at all: a checker
+reads an empty `/in`, or does not build because its source was not there.
+
+Where the Runner is **not** containerized the two paths are the same and both can
+be left alone. Where it is, `AJ_Work__HostPath` must name the host directory that
+is bind-mounted at `AJ_Work__Path`, and `AJ_Cache__HostPath` the one at
+`AJ_Cache__Path`.
+
+**None of this applies to a volume.** `AJ_Work__Volume` and `AJ_Cache__Volume`
+are names the daemon already knows, so there is no second spelling to keep in
+step and no path to get wrong. That is why the Compose stack sets them: see
+[Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
+</Callout>
+
+## The sandbox and the language images
+
+| Variable | Default | |
+|---|---|---|
+| `AJ_Sandbox__AllowUnmeasured` | unset | Start anyway on a host this Runner cannot measure on — and **only start**: every job it claims then fails |
+| `AJ_Sandbox__AllowCgroupV1` | unset | The old name for the row above, still read |
+| `AJ_Sandbox__CgroupRoot` | `/sys/fs/cgroup` | Where the cgroup filesystem is mounted. Must be absolute; empty is treated as unset |
+| `AJ_Sandbox__Image__Gcc` | `algojudge/lang-gcc:local` | |
+| `AJ_Sandbox__Image__Clang` | `algojudge/lang-clang:local` | |
+| `AJ_Sandbox__Image__Python` | `algojudge/lang-python:local` | |
+| `AJ_Sandbox__Image__Pypy` | `algojudge/lang-pypy:local` | |
+| `AJ_Sandbox__Image__Cpp` | — | The old name for `AJ_Sandbox__Image__Gcc`, still read. The new name wins where both are set |
+
+Each image is independent: anything left unset keeps its compiled-in default, so
+an operator republishing one image says so in one line. The defaults are what a
+development stack builds locally, so **a deployment names all four explicitly**.
+
+```ini
+AJ_Sandbox__Image__Gcc=ghcr.io/algojudge/lang-gcc:0.2.0
+AJ_Sandbox__Image__Clang=ghcr.io/algojudge/lang-clang:0.2.0
+AJ_Sandbox__Image__Python=ghcr.io/algojudge/lang-python:0.2.0
+AJ_Sandbox__Image__Pypy=ghcr.io/algojudge/lang-pypy:0.2.0
+```
+
+Pin the same version as the Runner unless there is a reason not to: that pairing
+is what the release was tested as. [Languages](/en/runner/v0.2/languages) says why the
+compiler version is a thing to pin rather than a thing that moves.
+
+<Callout type="warn" title="AJ_Sandbox__AllowUnmeasured is on whenever it holds any value at all">
+It is read as *set or not set*, not as a boolean. Any non-empty value turns it
+on — including `AJ_Sandbox__AllowUnmeasured=false`, which reads as *allow*. The
+same is true of `AJ_Sandbox__AllowCgroupV1`, which is the old name for it.
+
+To turn it off, remove the variable or leave it empty.
+
+It exists for a development machine whose Docker still reports v1, and it shouts
+at `ERROR` on every start: *"STARTING BELOW SPECIFICATION"*. Times and memory
+reported beside a verdict on such a host are not to be trusted.
+[Isolation](/en/runner/v0.2/isolation) says why.
+</Callout>
+
+## The variables that are not ours
+
+These are read by the libraries the Runner is built on rather than by its own
+configuration. They carry no `AJ_` prefix, and the Runner never validates them.
+
+| Variable | |
+|---|---|
+| `RUST_LOG` | The log filter, in the usual `tracing` grammar. Unset, the Runner logs at `info`; a malformed filter falls back to `info` rather than refusing to start |
+| `DOCKER_HOST` | Where the container runtime's socket is. **Only a `unix://…` value is honored** — anything else is ignored in silence, and the Runner goes on using the local default |
+| `NO_COLOR` | Set to anything to drop the color from the log output |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` | The usual proxy configuration. A proxy URL may carry a credential, and one written here **appears in the process listing** |
+
+<Callout type="warn" title="Two variables to leave alone">
+Neither is ours, both are read by a library, and each breaks the Runner in a way
+that looks like something else.
+
+**`REQUEST_METHOD`** — any value, an empty one included, makes the HTTP client
+believe it is running as CGI, and it then **discards the whole proxy
+configuration, HTTPS included**.
+
+**`TOKIO_WORKER_THREADS`** — an empty value, or `0`, panics inside the async
+runtime before anything of ours runs.
+</Callout>
+
+## Three ways a configuration fails
+
+**A malformed number panics at start.** Every numeric variable above is parsed
+strictly, and `AJ_Poll__MaxSeconds=3O` — a letter O for a zero — stops the
+process with a message naming the key and the value. There is deliberately no
+fallback to the default: an operator whose setting did nothing would otherwise
+never learn it.
+
+**A wrong `AJ_Work__HostPath` does not fail at all.** It is the opposite case and
+the reason the callout above exists. A wrong `AJ_Work__Volume` does fail, at
+start and by name: the Runner asks the daemon for the volume and refuses when
+there is no such thing, rather than letting `docker run -v` create an empty one
+under that name.
+
+**And two settings are accepted and then quietly do the wrong thing.** The poll
+interval is advisory rather than checked, so an `AJ_Poll__MaxSeconds` below
+`AJ_Poll__MinSeconds` is silently raised to meet it instead of being refused. And
+a typo in `AJ_Runner__ProblemTypes` is accepted at start-up — the Runner declares
+the misspelled type, is handed nothing that matches it, and looks exactly like a
+Runner nobody has any work for.
+
+A value naming **no** type at all is a different case and is refused by name: a
+lone comma, or a trailing one from a paste, leaves the list empty, and an empty
+list matches no problem in the installation. That Runner would register, be
+approved, heartbeat, show as connected and be handed nothing for as long as it
+ran.
+
+*An empty `AJ_Sandbox__CgroupRoot` is not one of them: it is treated as unset,
+and a relative value is refused by name.*
+
+Everything else that can be wrong shows up as a queue that never drains. When
+that happens, read [Tags and routing](/en/runner/v0.2/routing) first.

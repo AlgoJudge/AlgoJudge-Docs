@@ -132,8 +132,8 @@ Then, still on that day:
 - [ ] `npm run lint`, `npm run typecheck`, `npm run build`. All three pass on
       `release/0.1.0` as of 2026-09-07; the build produced 262 static pages.
 - [ ] `check:links`, `check:versions`, `check:translations`, `check:structure`,
-      `check:glossary`, `check:section-links`, `check:no-playground` — the seven
-      CI runs. All seven pass as of 2026-09-07.
+      `check:glossary`, `check:section-links`, `check:no-playground`,
+      `check:sitemap` — the eight CI runs. All eight pass as of 2026-09-21.
 - [ ] **Run `check:glossary` from the workspace, not from a bare clone.** It
       compares `lib/glossary.ts` against
       `../AlgoJudge-Client/public/locales/pl/translation.json` only when that

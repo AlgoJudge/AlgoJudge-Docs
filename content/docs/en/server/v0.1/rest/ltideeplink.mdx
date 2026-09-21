@@ -3,7 +3,7 @@ title: Lti Deep Link
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/lti/deep-link/{code}","method":"get"},{"path":"/lti/deep-link/{code}/response","method":"post"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/lti/deep-link/{code}","method":"get"},{"path":"/lti/deep-link/{code}/response","method":"post"}]} showTitle />
     </>
   );
 }

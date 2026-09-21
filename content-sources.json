@@ -13,9 +13,25 @@
   "openapi": {
     "repository": "AlgoJudge/AlgoJudge-Server",
     "path": "openapi.json",
+    "ref": "v0.2.0",
+    "refKind": "tag",
+    "refDate": "2026-09-20",
+    "sha256": "793eb42a76a8c214ba7329a14af0fa4549a197a39addf319c808918c6ceed335"
+  },
+  "openapi-v0.1": {
+    "repository": "AlgoJudge/AlgoJudge-Server",
+    "path": "openapi.json",
     "ref": "v0.1.0",
     "refKind": "tag",
     "refDate": "2026-09-07",
     "sha256": "79f61ee5fd5590785a43495fc48bbf48bfeb8d1cacd5453022c45290547111cd"
+  },
+  "openapi-v0.2": {
+    "repository": "AlgoJudge/AlgoJudge-Server",
+    "path": "openapi.json",
+    "ref": "v0.2.0",
+    "refKind": "tag",
+    "refDate": "2026-09-20",
+    "sha256": "793eb42a76a8c214ba7329a14af0fa4549a197a39addf319c808918c6ceed335"
   }
 }

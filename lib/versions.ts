@@ -52,3 +52,46 @@ export async function archiveState(slug: readonly string[] | undefined): Promise
 
     return { version: second, newest, section };
 }
+
+/**
+ * **A page of the newest version, which is the same text as the version-less
+ * address.**
+ *
+ * `archiveState` answers only for a *superseded* version. This one answers for
+ * the current one, and it exists because `/en/install/backup` and
+ * `/en/install/v0.2/backup` are one page at two addresses: both readable, both
+ * in the sitemap, each declaring itself canonical. A crawler then picks for
+ * itself, which is what *Alternative page with proper canonical tag* means in
+ * Search Console.
+ *
+ * **The version-less address is the canonical one**, because it is the one that
+ * survives a release: an installation upgrades, a bookmark does not, and an
+ * index rebuilt from scratch every minor release never settles.
+ *
+ * `unversioned` is `null` for a section root. `/en/install/` is a redirect to
+ * the newest version rather than a page, so pointing `/en/install/v0.2/` at it
+ * would name an address that bounces straight back.
+ */
+export async function newestVersion(
+    slug: readonly string[] | undefined,
+): Promise<{ section: string; version: string; unversioned: string[] | null } | null> {
+    if (!slug || slug.length < 2) return null;
+
+    const [section, second] = slug;
+    if (!sections.some((s) => s.slug === section)) return null;
+    if (!VERSION.test(second)) return null;
+
+    const versions = await read();
+    if (versions?.[section]?.newest !== second) return null;
+
+    return {
+        section,
+        version: second,
+        unversioned: slug.length > 2 ? [section, ...slug.slice(2)] : null,
+    };
+}
+
+/** Whether this slug is a section's own root — an address nginx redirects. */
+export function isSectionRoot(slug: readonly string[] | undefined): boolean {
+    return slug?.length === 1 && sections.some((s) => s.slug === slug[0]);
+}

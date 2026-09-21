@@ -3,7 +3,7 @@ title: Lti Platforms
 full: true
 _openapi:
   preload:
-    - .sources/openapi.json
+    - .sources/openapi-v0.1.json
   toc: []
   structuredData:
     headings: []
@@ -19,7 +19,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document=".sources/openapi.json" webhooks={[]} operations={[{"path":"/lti/platforms","method":"get"},{"path":"/lti/platforms","method":"post"},{"path":"/lti/platforms/{id}","method":"get"},{"path":"/lti/platforms/{id}","method":"delete"},{"path":"/lti/platforms/{id}","method":"put"},{"path":"/lti/platforms/{id}/registration","method":"get"}]} showTitle />
+      <Comp document=".sources/openapi-v0.1.json" webhooks={[]} operations={[{"path":"/lti/platforms","method":"get"},{"path":"/lti/platforms","method":"post"},{"path":"/lti/platforms/{id}","method":"get"},{"path":"/lti/platforms/{id}","method":"delete"},{"path":"/lti/platforms/{id}","method":"put"},{"path":"/lti/platforms/{id}/registration","method":"get"}]} showTitle />
     </>
   );
 }
