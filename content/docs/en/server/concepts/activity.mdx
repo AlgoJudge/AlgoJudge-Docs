@@ -50,9 +50,17 @@ submissions participants may still want to look back at, which is why
 
 | Field | Meaning |
 |---|---|
+| `EnrollmentRoles` | the roles this activity's enrollments link to, in two slots: one for somebody taking part, one for somebody running it. A slot holds **several** roles, and an empty one means the installation's built-in `participant` or `manager` |
 | `JoinPolicy` | `Closed`, `Password` or `Open`. These are the three answers to **self**-enrollment; a manager may always enroll somebody by hand, which is what a grant is |
 | `JoinPassword` | the join code under `Password` |
 | `Unlisted` | hidden from the activity list of anybody not enrolled — reachable by its address and nothing else. Independent of the policy |
+
+Both slots are read by self-enrollment, by the grant an activity's creator is
+given, by a bulk of temporary accounts, and by an LTI rule aimed at a slot rather
+than at a named role. Only an installation's role or one of this activity's own
+may be named, and that is checked where they are written rather than by the
+foreign key. Without the slots an activity's own role could be created and never
+reach anybody: every automatic enrollment would land on the installation-wide one.
 
 `JoinPassword` is a join code, not a credential. It authenticates nobody and
 belongs to the activity rather than to a person, so it is neither an end-user

@@ -1,6 +1,6 @@
 ---
 title: What an installation is
-description: Nine services, four arrangements, and one Compose file that chooses between them.
+description: Seven services, four arrangements, and one Compose file that chooses between them.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -15,18 +15,21 @@ pulled by tag from GHCR, which is what makes an update `docker compose pull` and
 a rollback a digest. The Compose files that build from source live in the
 product repositories and are labeled as development there; they are not this.
 
-<Callout type="info" title="`0` is the tag an installation asks for">
+<Callout type="info" title="`0.2` is the tag an installation asks for">
 The eight images are published and public: `docker compose pull` needs no
-registry login, from anywhere. What `.env.example` asks for is `0` — the
-**moving major**, which every 0.x release moves, breaking changes included.
-[Update and rollback](/en/install/update) says what that costs and how to pin a
-version instead.
+registry login, from anywhere. What `.env.example` asks for is `0.2` — the
+**minor line this stack is written for**, which takes every later patch on that
+line and nothing else. **Not the moving major `0`**: below 1.0 a minor may
+change what the one before it did, so `0` would carry an installation across a
+break without asking. [Update and rollback](/en/install/update) says how to pin
+a version more tightly still.
 </Callout>
 
 ## The services
 
-Nine services, and eight profile names — the Server and the Client each carry two,
-which is what lets one half be brought up without the other.
+Seven services under seven profile names. The Server and the Client carry two
+each, which is what lets one half be brought up without the other; the two
+Runners share one.
 
 | Service | Profiles | What it is |
 |---|---|---|
@@ -34,16 +37,16 @@ which is what lets one half be brought up without the other.
 | `server` | `app`, `server` | the API at `/api/v1`, published on `127.0.0.1:8080` |
 | `client` | `app`, `client` | the browser application, published on `127.0.0.1:8082` |
 | `nginx` | `edge` | TLS, one origin for both halves, ports 80 and 443 |
-| `runner-1`, `runner-2` | `runner` | one image, two identities. Each evaluates one submission at a time in sibling containers, several of that submission's tests at once |
-| `runner-3`, `runner-4` | `runner-extra` | two more of the same, for a host with the processors to carry them |
+| `runner-1`, `runner-2` | `runner` | one image, two identities, and **the whole fleet**. Each evaluates one submission at a time in sibling containers, several of that submission's tests at once |
 | `external-runner` | `external-runner` | forwards them to an outside archive instead. **Not in the default set** — see [An external judge](/en/install/external-runner) |
 
 **What has to fit the host is lanes, not Runners.** A Runner judges as many of
 one submission's tests at once as `RUNNER_TESTS_AT_ONCE` says — one lane each —
-and a lane is one core's worth of work, so two Runners of two lanes ask of the
-host exactly what four Runners of one ask. More lanes than physical cores does
-not judge faster and does stop judging accurately. [What the host
-needs](/en/install/requirements) has the table.
+and a lane is one core's worth of work, so widening a Runner asks of the host
+exactly what adding one would. More lanes than physical cores does not judge
+faster and does stop judging accurately, which is why a host with capacity to
+spare raises `RUNNER_TESTS_AT_ONCE` rather than gaining a third Runner. [What
+the host needs](/en/install/requirements) has the table.
 
 Three Compose networks carry them, so that the database is not reachable from
 the edge and evaluation traffic is separable from HTTP:
@@ -58,7 +61,7 @@ flowchart LR
         postgres["postgres"]
     end
     subgraph runnernet["runner"]
-        r["runner-1 … runner-4"]
+        r["runner-1, runner-2"]
         ext["external-runner"]
     end
     server["server"]
@@ -94,12 +97,11 @@ them.
 | **T3** | `app,data` | [your own reverse proxy](/en/install/reverse-proxy) in front |
 | — | `client,server,data` | one half at a time, for debugging and staged updates |
 
-**`external-runner` and `runner-extra` are additions to any of them, not further
-arrangements.** `runner-extra` starts `runner-3` and `runner-4` beside the two
-`runner` starts. Add `external-runner` beside `runner`, or give it a machine of
-its own; it is outside the default set because it signs in to an outside archive
-under an account there — [An external judge](/en/install/external-runner) says
-what it needs and what it cannot do for you.
+**`external-runner` is an addition to any of them, not a further arrangement.**
+Add it beside `runner`, or give it a machine of its own; it is outside the
+default set because it signs in to an outside archive under an account there —
+[An external judge](/en/install/external-runner) says what it needs and what it
+cannot do for you.
 
 ## A Runner may live on another machine entirely
 
@@ -112,13 +114,13 @@ SERVER_URL=https://your.domain
 RUNNER_NAME_PREFIX=lab-a       # different on every host
 ```
 
-**That host needs Docker Engine 26 or later**, and disk where Docker keeps its
-volumes: the Runners' cache and scratch live on the machine that judges, not on
-the application host. A lab machine below that engine keeps host directories
-instead — see
+**That host needs Docker Engine 26 or later** (Podman 5), and disk where Docker
+keeps its volumes: the Runners' cache and scratch live on the machine that
+judges, not on the application host. Below that engine a Runner refuses to
+judge, and there is no arrangement that avoids it — see
 [Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
 
-The prefix names each Runner on the host — `lab-a-1` to `lab-a-4` — and **has to
+The prefix names each Runner on the host — `lab-a-1` and `lab-a-2` — and **has to
 differ per host**, or two machines' Runners appear in the panel under one set of
 names.
 
@@ -128,7 +130,7 @@ on the Server in `compose.yaml`, deliberately, because on a Runner-only host
 there is no Server service to depend on — it retries its own connection instead.
 
 Each Runner registers separately and each needs its own approval, so a
-four-Runner host is four approvals.
+two-Runner host is two approvals.
 
 <Callout type="warn" title="T2 is the recommended arrangement for a public installation">
 Access to the Docker socket is equivalent to root on the host, and the Runner

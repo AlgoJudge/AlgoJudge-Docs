@@ -2,7 +2,7 @@
 title: Logowania zewnętrzne i platformy LTI
 description: Komu ta instalacja ufa, że poświadczy tożsamość, i ile wart jest token od takiego dostawcy.
 source: en/client/manager/logins.mdx
-sourceSha256: 7da2ebfa392562a2c9003356a573452a0b29c45daceec0e8836c153e993d263e
+sourceSha256: a2066034e44fd20cd98accb0a95fd7458d8d0b5c4ccfffc0627d858c83d39f54
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -59,8 +59,9 @@ napis — i to tej zmiany trzeba pilnować. To cały język: ścieżka po kropka
 wyrażenie w konfiguracji dostawcy jest kodem wykonywanym na zawartości tokenu.
 
 **Gdy nic nie pasuje** — wybierasz między odmową logowania a nadaniem zestawu
-domyślnego. Dotyczy zarówno pierwszego logowania, jak i kogoś, kto wypadł z
-grupy.
+domyślnego. Zestaw to dowolna liczba ról, wybranych z tej samej listy co w
+regule i zapamiętanych tak samo — po identyfikatorze. Dotyczy zarówno pierwszego
+logowania, jak i kogoś, kto wypadł z grupy.
 
 <Callout type="warn" title="Dwie reguły są egzekwowane i nie da się ich wyłączyć">
 `system:administrator` nigdy nie może zostać nadany przez claim, a nikt nie

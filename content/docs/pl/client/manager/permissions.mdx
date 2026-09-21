@@ -2,7 +2,7 @@
 title: Uprawnienia i nadania
 description: Jak zapisuje się prawa, jak się rozstrzygają i trzy reguły, które czynią model bezpiecznym.
 source: en/client/manager/permissions.mdx
-sourceSha256: 4a5995843c55aa15bdca0ddd5ef4c6386eeec50c1ce9b1acb876a7eed3f44bbc
+sourceSha256: 7237e1f7b8499cd7af1684355fa4629167044f6339b60bcfb196d7acb056c0ad
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -145,7 +145,19 @@ nigdy nie odmówi.
 Obszar **Role** je wypisuje i oznacza te dostarczone z produktem jako wbudowane;
 tych nie usuniesz, bo po usunięciu jednej świeża instalacja nie miałaby od czego
 zacząć nadania. Nie usuniesz też roli, którą ktoś nadal ma — odmowa mówi, ile
-osób.
+osób — ani takiej, którą daje zapisanie się do aktywności; ta odmowa wymienia
+aktywności.
+
+Rola administratora jest **niezmienna**: w ogóle nie da się jej edytować. Puste
+uprawnienia w niej odebrałyby instalację wszystkim powiązanym z nią osobom w
+jednym zapisie, więc o tym, kto administruje, decyduje nadawanie i odbieranie
+roli, a nie jej przepisywanie. Roli, przez którą ostatni administrator
+instalacji ma `system:administrator`, broni ta sama zasada co ostatniego nadania.
+
+Jeżeli reguły dostawcy wskazują rolę, wiersz to pokazuje. Edycja roli dociera od
+razu do wszystkich, którzy ją mają — także do osób, których nadanie dostawca
+przepisuje przy logowaniu — więc dostawcy wypisani w wierszu mówią, kogo jeszcze
+zmiana zaraz obejmie.
 
 ### Trzy dostarczane
 

@@ -470,6 +470,13 @@ administers nothing. All three answer 403 with the code
 `grant.administrator.last`, and the message says to grant it to somebody else
 first.
 
+The role a grant links is defended the same way. Taking `system:administrator`
+out of the role that is how the last administrator holds it, or deleting that
+role, answers `role.administrator.last` and names the role. The shipped
+administrator role is fixed outright and answers `role.builtIn.fixed`: an empty
+permission set there would take the installation away from everybody linked to
+it in one save, so it is granted and revoked rather than rewritten.
+
 The question is asked about the row rather than the person: a second
 administrator anywhere in the installation makes every one of those acts legal
 again, including on the row that was refused a moment earlier.

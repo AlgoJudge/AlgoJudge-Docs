@@ -45,7 +45,7 @@ somebody reading `WrongAnswer` in a list is not told whose opinion it is.
 | Trials | measures them | refuses them |
 | Container runtime socket | required | **not held at all** |
 | State it keeps | the identity key and a package cache | the identity key and a source cache |
-| Jobs held at once | one | up to `AJ_External__MaxPending`, 20 by default |
+| Jobs held at once | one | up to `AJ_External__MaxPending`, 100 by default |
 | What a stop costs | the work already done | the work already done, **and one duplicate submission per job** |
 
 Because it starts nothing, it needs no socket, no cgroups and no scratch
@@ -161,7 +161,7 @@ Two values are secrets and have no defaults.
 | `AJ_External__PollEscalateAfterSeconds` | `120` | how long the oldest outstanding submission waits before the interval goes from the one to the other |
 | `AJ_External__SubmitMinIntervalSeconds` | `5` | |
 | `AJ_External__PendingTimeoutSeconds` | `900` | how long to wait for the judge |
-| `AJ_External__MaxPending` | `20` | submissions in flight. Zero is refused |
+| `AJ_External__MaxPending` | `100` | submissions in flight. Zero is refused |
 | `AJ_External__LongPollEnabled` | `false` | how often the judge is asked for answers: on, a flat `AJ_External__PollMaxSeconds`; off, the escalating pair above. **It does not turn the live stream on or off** — see below |
 | `AJ_Cache__Path` | `/var/cache/algojudge-external-runner` | where a submission's source is cached on its way to the judge |
 | `AJ_Cache__MaxBytes` | `268435456` (256 MiB) | the cache ceiling. Plain bytes only |

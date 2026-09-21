@@ -2,7 +2,7 @@
 title: Odtwarzanie
 description: Jak wgrać zrzut z powrotem, co sprawdzamy, zanim cokolwiek ruszymy, i po co się to ćwiczy.
 source: en/install/restore.mdx
-sourceSha256: 4073a3d34232d7ec14c5c503d4823e28fb7955170fcd5271d48e4f59e9f9a8cb
+sourceSha256: 1db26c5139022b39f9255a137b6e9e5a65c0427da818ab4a08898043a1632188
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -30,10 +30,11 @@ Plik `.meta` leżący obok zrzutu:
 - **czy zrzut obejmował pliki.** Zrzut z `coverage=INCOMPLETE` odtwarza się do
   instalacji, której wiersze wskazują na bajty, których nie ma; odtwórz magazyn
   plików z tego samego okna.
-- **jaki schemat zawiera.**
+- **jakie migracje zawiera**, w obu łańcuchach: schematu aplikacji i schematu
+  LTI.
 
 Bez pliku `.meta` obok nie da się sprawdzić niczego — ani sumy kontrolnej, ani
-schematu, ani zakresu — i skrypt to mówi. Jeśli mimo to ruszysz dalej, jest to
+schematów, ani zakresu — i skrypt to mówi. Jeśli mimo to ruszysz dalej, jest to
 Twoja decyzja.
 
 ## Schemat to krok, który potrafi ugryźć
@@ -41,6 +42,12 @@ Twoja decyzja.
 Starszy zrzut pod nowszym Serverem **nie jest błędem**. Przy
 `MIGRATE_ON_START=true` Server przy najbliższym starcie doprowadza odtworzony
 schemat do przodu, czego zwykle chce ten, kto odtwarza kopię sprzed tygodnia.
+
+**Porównywane są oba łańcuchy, bo migrują osobno.** Schemat aplikacji i schemat
+LTI mają własne tabele migracji, więc porównanie samego pierwszego
+przemilczałoby wydanie, które ruszyło tylko drugi. Skrypt ostrzega osobno dla
+każdego łańcucha: nazywa ten, który się różni, i wypisuje zawartość zrzutu obok
+tego, co jest uruchomione.
 
 **Działa to w jedną stronę**, a dowiadujesz się o tym przed, nie po. Jeśli
 zamierzałeś wrócić także do starszego Servera, ustaw najpierw `SERVER_TAG` na

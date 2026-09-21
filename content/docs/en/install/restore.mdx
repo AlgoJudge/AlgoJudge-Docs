@@ -28,16 +28,23 @@ The `.meta` file beside the dump:
 - **whether the dump covered the files.** A `coverage=INCOMPLETE` dump restores
   to an installation whose rows point at bytes that are not there; restore the
   file store from the same window too.
-- **which schema it holds.**
+- **which migrations it holds**, in both chains: the application schema and the
+  LTI one.
 
 With no `.meta` beside it, nothing can be checked — not the checksum, not the
-schema, not the coverage — and the script says so. Continuing is a decision.
+schemas, not the coverage — and the script says so. Continuing is a decision.
 
 ## The schema is the step that bites
 
 An older dump under a newer Server is **not an error**. With
 `MIGRATE_ON_START=true` the Server brings the restored schema forward on its
 next start, which is usually what somebody restoring last week's backup wants.
+
+**Both chains are compared, because they migrate separately.** The application
+schema and the LTI one each keep a migrations table of their own, and a release
+that moved only the second would otherwise pass unremarked. The script warns per
+chain, naming the one that differs and printing what the dump holds against what
+is running.
 
 **It is one-way**, and you are told before rather than after. If you meant to go
 back to an older Server as well, set `SERVER_TAG` to its version first.

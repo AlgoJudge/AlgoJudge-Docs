@@ -2,7 +2,7 @@
 title: Kiedy coś nie działa
 description: Awarie, które naprawdę się zdarzyły, a większość z nich wygląda na inny problem, niż jest.
 source: en/install/troubleshooting.mdx
-sourceSha256: b86f27a046f0d4660c661cdc6a5ee9b0e4a841acc124d22ee141cd1d107af2ba
+sourceSha256: ebd8aeb1616da31c51c220d42399cd508be3cbe3ec87be570fd82d470abef7fe
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -93,6 +93,13 @@ To instalacja z wartością, którą dostarcza stos deweloperski,
 `admin-token-development-only` — jest opublikowana, więc nie jest żadnym tokenem.
 Wpisz do `.env` własny sekret i odtwórz Server.
 
+`preflight.sh` odrzuca dokładnie tę wartość, więc stos podnoszony przez
+`make up` nigdy nie dochodzi do tego komunikatu. Wymienienie jej wprost to
+jedyny sposób, żeby ją wyłapać: jest dość długa, żeby przejść kontrolę długości.
+Konsekwencje sięgają zresztą dalej niż samo hasło: `scripts/maintenance.sh` nie
+potrafi ani otworzyć, ani zamknąć instalacji, której `/admin` jest zamknięty, co
+zatrzymuje na tym kroku `backup.sh --quiesce`, `update.sh` i `restore.sh`.
+
 ## Nikt nie może administrować instalacją
 
 **Zrestartuj Server.** Przy każdym starcie sprawdza on, czy w instalacji jest
@@ -138,17 +145,16 @@ Od najczęstszej przyczyny:
    wspólnym wolumenie Runnerów, a każdy kontener sędziego montuje stamtąd jej
    podkatalog — montowaniem `subpath`, które pojawiło się w Engine 26 / API
    1.45 (kwiecień 2024) i w Podmanie 5. Runner **odmawia oceniania** i mówi o
-   tym, zamiast oceniać na niczym. `./scripts/preflight.sh` zgłasza to
-   wcześniej niż pierwsze zgłoszenie, a
-   `docker version --format '{{.Server.APIVersion}}'` podaje tę liczbę. Albo
-   zaktualizuj demona, albo zostań przy katalogach na hoście — patrz
-   [Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
-4. **`RUNNER_WORK_DIR` jest zły**, co jest przyczyną tylko tam, gdzie ta
-   nakładka jest w użyciu. To najpaskudniejszy przypadek, bo zawodzi *po
-   cichu*: demon Dockera dostaje tę ścieżkę wprost, a ścieżka, której nie
-   potrafi otworzyć, daje **pusty katalog**, a nie błąd. Każde zlecenie działa
-   wtedy na niczym. Musi być **bezwzględna** i musi być ścieżką, którą potrafi
-   otworzyć demon, a nie tylko Twoja powłoka.
+   tym, zamiast oceniać na niczym. `./scripts/preflight.sh` odmawia wcześniej
+   niż pierwsze zgłoszenie, a
+   `docker version --format '{{.Server.APIVersion}}'` podaje tę liczbę.
+   Zaktualizuj demona; poniżej tego progu nie ma rozwiązania zastępczego.
+4. **Wolumen pamięci podręcznej nie jest tym, o którym powiedziano Runnerowi.**
+   Każdy Runner dostaje nazwę wolumenu, o który ma poprosić demona, i kończy
+   pracę przy starcie, gdy demon takiego wolumenu nie ma — jest to więc Runner,
+   który nigdy się nie rejestruje, a nie taki, który źle ocenia. Dwa polecenia
+   z wpisu *Checker zawodzi na każdym zgłoszeniu* poniżej wypisują to, co Runner
+   dostał, i to, czym dysponuje demon.
 5. **Tagi.** Runner z ustawionym `RUNNER_TAGS` wypada z puli ogólnej, a praca bez
    tagów idzie do puli ogólnej. Puste znaczy pulę ogólną po obu stronach. **Tagi
    są czytane raz, przy pierwszej rejestracji** — późniejsza zmiana zmiennej nie
@@ -215,18 +221,12 @@ Runnera linię wyżej i zwykle nazywa przyczynę wprost:
 docker compose logs runner-1 | tail -40
 ```
 
-Trzy przyczyny, od najczęstszej:
+Dwie przyczyny, od najczęstszej:
 
 1. **Obraz językowy nie startuje na tym hoście.** `docker images` pokazuje, czy
    wszystkie cztery są na miejscu; kontener, który ginie na `OCI runtime create
    failed`, nie otworzy niczego.
-2. **Katalog roboczy nie jest tym, który widzi demon** — przyczyna możliwa
-   wyłącznie tam, gdzie w użyciu są katalogi na hoście. Kanały przebiegu
-   powstają w katalogu roboczym zlecenia i są montowane do kontenera, a ścieżka,
-   której demon nie potrafi otworzyć, daje **pusty katalog**, a nie błąd — więc
-   w środku nie ma potoku, który shim mógłby otworzyć. `RUNNER_WORK_DIR` musi
-   być bezwzględny i otwieralny przez demona, nie tylko przez Twoją powłokę.
-3. **Katalog roboczy nie potrafi trzymać nazwanego potoku.** Kanał to FIFO
+2. **Katalog roboczy nie potrafi trzymać nazwanego potoku.** Kanał to FIFO
    i gniazdo uniksowe, a nie bajty, więc system plików, który nie tworzy ani
    jednego, ani drugiego, kończy się tutaj. Zwykłą drogą do tego jest wpis
    `tmpfs:` przy usłudze runnera: należy on do przestrzeni montowań samego
@@ -253,29 +253,22 @@ rozpakowywana, a jej checker budowany raz, w pamięci podręcznej, i kontener
 sędziego montuje jedno i drugie — więc demon musi sięgnąć po dokładnie te
 bajty, które przygotował Runner.
 
-Domyślnie pamięć podręczna to wolumen `algojudge_runner-cache`, do którego demon
-sięga po nazwie, więc nie ma tu czego pomylić; ten wpis dotyczy wtedy prawie
-zawsze Runnera wskazanego ręcznie gdzie indziej:
+Pamięcią podręczną jest wolumen `algojudge_runner-cache`, do którego demon sięga
+po nazwie, więc nie ma tu czego pomylić; ten wpis dotyczy wtedy prawie zawsze
+Runnera wskazanego ręcznie gdzie indziej.
+
+**Oba obrazy Runnerów są distroless**, więc `docker compose exec` nie ma ani
+`env`, ani powłoki, w której dałoby się je uruchomić. Odczytaj kontener
+z zewnątrz:
 
 ```bash
-docker compose exec runner-1 env | grep AJ_Cache__
+docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$(docker compose ps -q runner-1)" | grep AJ_Cache__
 docker volume inspect algojudge_runner-cache
 ```
 
-**Tam, gdzie w użyciu są katalogi na hoście**, jest to ścieżka i zwykłą
-przyczyną jest ścieżka, której demon nie potrafi otworzyć. Musi istnieć na
-hoście i być czytelna dla uid **65534**, dokładnie tak jak katalog roboczy.
-
-```bash
-sudo mkdir -p /srv/algojudge/runner-cache
-sudo chmod 755 /srv/algojudge/runner-cache
-./scripts/preflight.sh
-```
-
-Runner, który w ogóle nie widzi swojej pamięci podręcznej, odmawia oceniania i
-mówi o `AJ_Cache__HostPath` albo `AJ_Cache__Volume`. Ten wpis dotyczy przypadku
-węższego: pamięć podręczna istnieje, ale nie jest tą, do której Runner
-zapisuje.
+Runner, który w ogóle nie widzi swojej pamięci podręcznej, odmawia **startu** i
+mówi o `AJ_Cache__Volume`. Ten wpis dotyczy przypadku węższego: pamięć podręczna
+istnieje, ale nie jest tą, do której Runner zapisuje.
 
 ## Nic **zewnętrznego** nie jest oceniane
 
@@ -325,13 +318,16 @@ wystartuje z większą liczbą torów, niż jego zbiór ma procesorów. Kryją s
 pułapki.
 
 **Szerokość to jedna wartość dla wszystkich Runnerów.** `RUNNER_TESTS_AT_ONCE`
-trafia do wszystkich czterech usług z tej samej kotwicy, więc jeden wąski
-`RUNNER_2_CPUSET` to pętla na `runner-2`, podczas gdy `runner-1` ocenia bez
-zarzutu — czytaj log tego, który się zapętlił, a nie tego, który działa.
+trafia do obu usług z tej samej kotwicy, więc jeden wąski `RUNNER_2_CPUSET` to
+pętla na `runner-2`, podczas gdy `runner-1` ocenia bez zarzutu — czytaj log
+tego, który się zapętlił, a nie tego, który działa.
 
-**Runner bez cpusetu czyta całą maszynę.** Zostawienie pustego zbioru nie
-rozluźnia sprawdzenia: szerokość cztery na maszynie o dwóch procesorach zostanie
-odrzucona, czy zbiór jest wąski, czy go nie ma.
+**Runner bez cpusetu czyta całą maszynę**, a oba zbiory dostarczamy puste.
+Zostawienie pustego zbioru nie rozluźnia sprawdzenia: szerokość cztery na
+maszynie o dwóch procesorach zostanie odrzucona, czy zbiór jest wąski, czy go
+nie ma. `preflight.sh` dochodzi do obu odpowiedzi, zanim cokolwiek wystartuje:
+odmawia szerokości większej niż liczba procesorów hosta, a w każdym zapisanym
+cpusecie liczy procesory i zestawia je z szerokością.
 
 **Nazwane ustawienie odpytywania albo dzierżawy** to czwarta przyczyna: Runner
 sprawdza swoje odstępy nawzajem, zanim cokolwiek zrobi. Żadnej z nich nie da się
@@ -340,6 +336,24 @@ osiągnąć wartościami, które dostarcza ten stos — biorą się z własnego 
 Servera, a Runner odróżnia trzymane pobranie pracy od natychmiastowej odpowiedzi
 po czasie, jaki minął — czytałby więc każde trzymane jako puste. Żeby odpytywać
 rzadziej, służy `AJ_Poll__MaxSeconds`.
+
+**Zewnętrzny Runner odnawia trzymane dzierżawy na własnym zegarze**, co ćwiartkę
+dzierżawy przyznanej przez Server, więc z tego, jak często pyta archiwum, nie
+wynika nic o tym, czy dzierżawa wygaśnie. Przy starcie odmawia dzierżawy, która
+nie przeżywa `AJ_External__PendingTimeoutSeconds`, dzierżawy powyżej sufitu
+Servera wynoszącego 3600 sekund oraz `AJ_Poll__WaitSeconds` powyżej 300.
+
+## `Requested CPUs are not available`
+
+Demon odmawia utworzenia kontenera, którego `cpuset` nazywa procesor
+nieistniejący na tym hoście, więc ta przyczyna zatrzymuje
+`docker compose up -d --wait` z częścią stosu w ruchu, zamiast zostawić Runnera
+w pętli restartów.
+
+Oba cpusety dostarczamy puste, co oznacza wszystkie procesory hosta, więc taki
+zbiór ktoś zapisał ręcznie. `lscpu -p=CPU,CORE` wypisuje procesory, które
+istnieją, a `preflight.sh` nazywa te, o które prosi `RUNNER_n_CPUSET`, a których
+host nie ma — osobno dla każdego Runnera, zanim cokolwiek wystartuje.
 
 ## Archiwum twierdzi, że takie konto nie istnieje
 
@@ -369,23 +383,23 @@ jest tym, które obsługuje demon. Usługa Runnera działa jako root, więc jest
 przyczyną tylko tam, gdzie ktoś usunął to z `compose.yaml` — wtedy Runner
 zawodzi przy **starcie** i nigdy nie bierze żadnego zlecenia.
 
-**Druga: kontener zadania nie potrafi odczytać `RUNNER_WORK_DIR`** — co jest
-przyczyną tylko tam, gdzie w użyciu są katalogi na hoście: wolumen demon zakłada
-z właścicielem root i prawami 0755, a to jest już poprawne. Runner zapisuje tam
-pliki zgłoszenia jako root, a każdy kontener zadania montuje ten katalog tylko
-do odczytu i czyta go jako uid **65534**. Katalog ręcznie zamknięty
-przed innymi przechodzi próbę Runnera i nie przechodzi próby zadania, więc
-gniazdo działa bez zarzutu, Runner rejestruje się, bierze zlecenie — i każde bez
-wyjątku zawodzi natychmiast, co właśnie odróżnia te dwie przyczyny.
+**Druga: kontener zadania nie potrafi odczytać przestrzeni roboczej** — co przy
+wolumenach jest mało prawdopodobne: demon zakłada wolumen z właścicielem root
+i prawami 0755, a to jest już poprawne. Runner zapisuje tam pliki zgłoszenia
+jako root, a każdy kontener zadania montuje ten katalog tylko do odczytu i czyta
+go jako uid **65534**. Wolumen podmieniony ręcznie potrafi nie spełnić tej
+drugiej połowy, więc gniazdo działa bez zarzutu, Runner rejestruje się, bierze
+zlecenie — i każde bez wyjątku zawodzi natychmiast, co właśnie odróżnia te dwie
+przyczyny.
 
 ```bash
-sudo chmod 755 /srv/algojudge/runner-work
+docker volume inspect -f '{{.Mountpoint}}' algojudge_runner-1-work
 ```
 
 **Pamięć podręczna ma te same dwie połowy**, z tego samego powodu: Runner
 rozpakowuje tam każdą paczkę jako root, a kontener sędziego czyta ją jako 65534.
-`sudo chmod 755 /srv/algojudge/runner-cache`, a `scripts/preflight.sh` sprawdza
-obie.
+`scripts/preflight.sh` sprawdza obie — zapisując jako root i odczytując z
+powrotem jako 65534.
 
 ## Każde zlecenie zawodzi, a Runner napisał coś o cgroup
 

@@ -1,8 +1,8 @@
 ---
 title: Czym jest instalacja
-description: Dziewięć usług, cztery układy i jeden plik Compose, który wybiera między nimi.
+description: Siedem usług, cztery układy i jeden plik Compose, który wybiera między nimi.
 source: en/install/index.mdx
-sourceSha256: 7f1920e6ad2de822192cc5178e5c475434b1cc4fa48029bd8ffc0ad6f1d09574
+sourceSha256: 0cdb2f50751ca6807daccb70193069c6b4bc56c360906e0a3e02ebbd15afee59
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -18,18 +18,20 @@ compose pull`, a wycofanie do wskazania digestu. Pliki Compose, które budują z
 źródeł, leżą w repozytoriach produktowych i są tam oznaczone jako deweloperskie;
 to co innego.
 
-<Callout type="info" title="Instalacja prosi o tag `0`">
+<Callout type="info" title="Instalacja prosi o tag `0.2`">
 Osiem obrazów jest opublikowanych i publicznych: `docker compose pull` nie
-wymaga logowania do rejestru, z żadnej maszyny. W `.env.example` stoi `0` —
-**ruchoma wersja główna**, którą przesuwa każde wydanie 0.x, razem ze zmianami
-niezgodnymi wstecz. [Aktualizacja i wycofanie](/pl/install/update) mówi, co to
-kosztuje i jak zamiast tego przypiąć konkretną wersję.
+wymaga logowania do rejestru, z żadnej maszyny. W `.env.example` stoi `0.2` —
+**linia minor, dla której napisano ten stos**. Bierze z niej każdą kolejną
+poprawkę i nic poza tym. **Nie ruchoma wersja główna `0`**: poniżej 1.0 wersja
+minor może zmienić to, co robiła poprzednia, więc `0` przeprowadziłby instalację
+przez taką zmianę, nie pytając o zgodę. [Aktualizacja
+i wycofanie](/pl/install/update) mówi, jak przypiąć konkretną wersję.
 </Callout>
 
 ## Usługi
 
-Dziewięć usług i osiem nazw profili — Server i Client mają po dwie, dzięki czemu
-można podnieść jedną połowę bez drugiej.
+Siedem usług pod siedmioma nazwami profili. Server i Client mają po dwie, dzięki
+czemu można podnieść jedną połowę bez drugiej; oba Runnery dzielą jeden profil.
 
 | Usługa | Profile | Czym jest |
 |---|---|---|
@@ -37,16 +39,16 @@ można podnieść jedną połowę bez drugiej.
 | `server` | `app`, `server` | API pod `/api/v1`, publikowane na `127.0.0.1:8080` |
 | `client` | `app`, `client` | aplikacja w przeglądarce, publikowana na `127.0.0.1:8082` |
 | `nginx` | `edge` | TLS, jeden origin dla obu połówek, porty 80 i 443 |
-| `runner-1`, `runner-2` | `runner` | jeden obraz, dwie tożsamości. Każdy ocenia jedno zgłoszenie naraz, w kontenerach siostrzanych, a kilka jego testów równocześnie |
-| `runner-3`, `runner-4` | `runner-extra` | jeszcze dwa takie same, dla hosta, który ma na nie procesory |
+| `runner-1`, `runner-2` | `runner` | jeden obraz, dwie tożsamości i **cała flota**. Każdy ocenia jedno zgłoszenie naraz, w kontenerach siostrzanych, a kilka jego testów równocześnie |
 | `external-runner` | `external-runner` | zamiast oceniać, przekazuje je do zewnętrznego archiwum. **Nie ma go w domyślnym zestawie** — patrz [Zewnętrzny sędzia](/pl/install/external-runner) |
 
 **Do maszyny dopasowuje się tory, a nie Runnery.** Runner ocenia równocześnie
 tyle testów jednego zgłoszenia, ile mówi `RUNNER_TESTS_AT_ONCE` — każdy na
-własnym torze — a jeden tor to praca za jeden rdzeń, więc dwa Runnery po dwa tory
-wymagają od maszyny dokładnie tyle, co cztery po jednym. Więcej torów niż rdzeni
-fizycznych nie przyspiesza oceniania, a psuje jego rzetelność. Tabelę znajdziesz
-w [Czego wymaga host](/pl/install/requirements).
+własnym torze — a jeden tor to praca za jeden rdzeń, więc poszerzenie Runnera
+wymaga od maszyny tyle samo, co dołożenie kolejnego. Więcej torów niż rdzeni
+fizycznych nie przyspiesza oceniania, a psuje jego rzetelność — i dlatego host,
+któremu zostaje zapas mocy, podnosi `RUNNER_TESTS_AT_ONCE`, zamiast dokładać
+trzeci Runner. Tabelę znajdziesz w [Czego wymaga host](/pl/install/requirements).
 
 Niosą je trzy sieci Compose, żeby baza nie była osiągalna z krawędzi, a ruch
 oceniania dał się oddzielić od HTTP:
@@ -61,7 +63,7 @@ flowchart LR
         postgres["postgres"]
     end
     subgraph runnernet["runner"]
-        r["runner-1 … runner-4"]
+        r["runner-1, runner-2"]
         ext["external-runner"]
     end
     server["server"]
@@ -97,12 +99,11 @@ Compose.
 | **T3** | `app,data` | [własne reverse proxy](/pl/install/reverse-proxy) z przodu |
 | — | `client,server,data` | po jednej połowie, do debugowania i etapowych aktualizacji |
 
-**`external-runner` i `runner-extra` to dodatki do każdego z nich, a nie kolejne
-układy.** `runner-extra` uruchamia `runner-3` i `runner-4` obok tych dwóch, które
-stawia `runner`. `external-runner` dopisz obok `runner` albo daj mu osobną
-maszynę; nie ma go w zestawie domyślnym, bo loguje się do zewnętrznego archiwum
-na tamtejsze konto — [Zewnętrzny sędzia](/pl/install/external-runner) mówi, czego
-wymaga i czego za Ciebie nie zrobi.
+**`external-runner` to dodatek do każdego z nich, a nie kolejny układ.** Dopisz
+go obok `runner` albo daj mu osobną maszynę; nie ma go w zestawie domyślnym, bo
+loguje się do zewnętrznego archiwum na tamtejsze konto — [Zewnętrzny
+sędzia](/pl/install/external-runner) mówi, czego wymaga i czego za Ciebie nie
+zrobi.
 
 ## Runner może działać na zupełnie innej maszynie
 
@@ -115,13 +116,13 @@ SERVER_URL=https://twoja.domena
 RUNNER_NAME_PREFIX=lab-a       # inny na każdym hoście
 ```
 
-**Taki host potrzebuje Dockera Engine 26 lub nowszego** i miejsca tam, gdzie
-Docker trzyma wolumeny: pamięć podręczna i katalogi robocze Runnerów leżą na
-maszynie, która ocenia, a nie na hoście aplikacji. Maszyna w pracowni ze
-starszym silnikiem zostaje przy katalogach na hoście — patrz
+**Taki host potrzebuje Dockera Engine 26 lub nowszego** (albo Podmana 5)
+i miejsca tam, gdzie Docker trzyma wolumeny: pamięć podręczna i katalogi robocze
+Runnerów leżą na maszynie, która ocenia, a nie na hoście aplikacji. Na starszym
+silniku Runner odmawia oceniania i nie ma układu, który by to obchodził — patrz
 [Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
 
-Przedrostek nazywa każdy Runner na hoście — `lab-a-1` do `lab-a-4` — i **musi się
+Przedrostek nazywa każdy Runner na hoście — `lab-a-1` i `lab-a-2` — i **musi się
 różnić między hostami**, inaczej Runnery z dwóch maszyn pojawią się w panelu pod
 tymi samymi nazwami.
 
@@ -131,7 +132,7 @@ ma `depends_on` na Server: na hoście z samym Runnerem nie ma usługi Server, na
 której można by polegać — Runner sam ponawia próby połączenia.
 
 Każdy Runner rejestruje się osobno i każdy wymaga osobnego zatwierdzenia, więc
-host z czterema Runnerami to cztery zatwierdzenia.
+host z dwoma Runnerami to dwa zatwierdzenia.
 
 <Callout type="warn" title="Dla instalacji publicznej zalecany jest układ T2">
 Dostęp do gniazda Dockera daje na hoście uprawnienia roota, a Runner potrzebuje

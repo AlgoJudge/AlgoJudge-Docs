@@ -89,6 +89,13 @@ That is an installation running the value the development stack ships,
 `admin-token-development-only`, which is published and therefore no token at
 all. Put a secret of your own in `.env` and recreate the Server.
 
+`preflight.sh` refuses that value by name, so a stack brought up with `make up`
+never reaches the message. Naming it is the only way to catch it: it is long
+enough to pass the length check. And what it costs is more than the password —
+`scripts/maintenance.sh` can neither open nor close an installation whose
+`/admin` is shut, which stops `backup.sh --quiesce`, `update.sh` and
+`restore.sh` at that step.
+
 ## Nobody can administer the installation
 
 **Restart the Server.** At every start it looks for an active installation-wide
@@ -133,16 +140,14 @@ In order of how often it is each one:
    subdirectory out of there — a `subpath` mount, which arrived in Engine 26 /
    API 1.45 (April 2024) and in Podman 5. The Runner **refuses to judge** and
    says so rather than judging against nothing. `./scripts/preflight.sh`
-   reports it before a submission does, and
-   `docker version --format '{{.Server.APIVersion}}'` is the number. Either
-   update the daemon, or keep host directories — see
-   [Where the Runners keep their bytes](/en/install/configuration#where-the-runners-keep-their-bytes).
-4. **`RUNNER_WORK_DIR` is wrong**, which is a cause only where that overlay is
-   in use. This is the nastiest one, because it fails *silently*: the Docker
-   daemon is handed this path directly, and a path it cannot open produces an
-   **empty directory** rather than an error. Every job then runs against
-   nothing. It must be **absolute**, and it must be a path the daemon — not
-   only your shell — can open.
+   refuses it before a submission does, and
+   `docker version --format '{{.Server.APIVersion}}'` is the number. Update the
+   daemon; there is no arrangement below that floor.
+4. **The cache volume is not the one the Runner was told about.** Each Runner is
+   handed a volume name to ask the daemon for, and exits at start when the
+   daemon holds no such volume — so this is a Runner that never registers rather
+   than one judging badly. The two commands under *A checker fails on every
+   submission* below print what it was given and what the daemon holds.
 5. **Tags.** A Runner with `RUNNER_TAGS` set is out of the general pool, and work
    with no tags goes to the general pool. Empty means the general pool on both
    sides. **Tags are read once, at the first registration** — changing the
@@ -210,18 +215,12 @@ line in the Runner's log, and usually names the cause outright:
 docker compose logs runner-1 | tail -40
 ```
 
-Three causes, commonest first:
+Two causes, commonest first:
 
 1. **A language image will not start on this host.** `docker images` says
    whether all four are there; a container that dies at `OCI runtime create
    failed` never opens anything.
-2. **The work directory is not the one the daemon sees**, which is a cause only
-   where host directories are in use. A run's channels are made in the job's
-   scratch and bind-mounted into the container, and a path the daemon cannot
-   open produces an **empty directory** rather than an error — so there is no
-   pipe inside for the shim to open. `RUNNER_WORK_DIR` must be absolute and
-   openable by the daemon, not only by your shell.
-3. **The scratch cannot hold a named pipe.** A channel is a FIFO and a Unix
+2. **The scratch cannot hold a named pipe.** A channel is a FIFO and a Unix
    socket rather than bytes, so a filesystem that makes neither fails here. A
    `tmpfs:` entry on the runner service is the usual way into this: it is
    private to the Runner's own mount namespace, and the daemon makes an empty
@@ -248,28 +247,21 @@ build.
 its checker built once, in the cache, and a judge's container mounts both — so
 the daemon has to reach the same bytes the Runner prepared.
 
-By default the cache is the volume `algojudge_runner-cache`, reached by name,
-which leaves nothing to get wrong; this entry is then almost always a Runner
-pointed somewhere else by hand:
+The cache is the volume `algojudge_runner-cache` and the daemon reaches it by
+name, which leaves nothing to get wrong; this entry is then almost always a
+Runner pointed somewhere else by hand.
+
+**Both Runner images are distroless**, so `docker compose exec` has no `env` and
+no shell to run it with. Read the container from outside instead:
 
 ```bash
-docker compose exec runner-1 env | grep AJ_Cache__
+docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$(docker compose ps -q runner-1)" | grep AJ_Cache__
 docker volume inspect algojudge_runner-cache
 ```
 
-**Where host directories are in use** it is a path, and a path the daemon
-cannot open is the ordinary cause. It has to exist on the host and be readable
-by uid **65534**, exactly as the work directory is.
-
-```bash
-sudo mkdir -p /srv/algojudge/runner-cache
-sudo chmod 755 /srv/algojudge/runner-cache
-./scripts/preflight.sh
-```
-
-A Runner that cannot see its cache at all refuses to start judging and says so,
-naming `AJ_Cache__HostPath` or `AJ_Cache__Volume`, so this entry is the
-narrower case: a cache that exists and is not the one the Runner writes to.
+A Runner started against a cache it cannot see refuses to **start** and says so,
+naming `AJ_Cache__Volume`, so this entry is the narrower case: a cache that
+exists and is not the one the Runner writes to.
 
 ## Nothing **external** is being judged
 
@@ -318,14 +310,17 @@ rollback](/en/install/update) says why they have to move together.
 own: it will not start with more lanes than its cpuset has processors. Two traps
 sit in it.
 
-**The width is one value for every Runner.** `RUNNER_TESTS_AT_ONCE` reaches all
-four services from the same anchor, so one narrow `RUNNER_2_CPUSET` is a loop on
+**The width is one value for every Runner.** `RUNNER_TESTS_AT_ONCE` reaches both
+services from the same anchor, so one narrow `RUNNER_2_CPUSET` is a loop on
 `runner-2` while `runner-1` judges perfectly — read the log of the one that is
 looping, not of the one that works.
 
-**A Runner with no cpuset reads the whole machine.** Leaving the set empty does
-not make the check lenient: a width of four on a machine with two processors is
-refused whether the set is narrow or absent.
+**A Runner with no cpuset reads the whole machine**, and both cpusets ship
+empty. Leaving the set empty does not make the check lenient: a width of four on
+a machine with two processors is refused whether the set is narrow or absent.
+`preflight.sh` gets to both answers before anything starts: it refuses a width
+above this host's processor count, and, for every cpuset that is written, counts
+the processors in it against the width.
 
 **A named poll or lease setting** is the fourth: a Runner checks its intervals
 against one another before it does anything. None of these can be reached with
@@ -334,6 +329,23 @@ the values this stack ships; they are what a `.env` of your own can produce.
 ceiling, and a Runner tells a held claim from an immediate answer by how long it
 took — so it would read every held claim as an empty one. To poll less often, the
 setting is `AJ_Poll__MaxSeconds`.
+
+**The external Runner renews the leases it holds on a timer of its own**, a
+quarter of the lease the Server granted, so how often it asks the archive says
+nothing about whether a lease expires. What it refuses at start is a lease that
+does not outlast `AJ_External__PendingTimeoutSeconds`, a lease above the
+Server's ceiling of 3600 seconds, and `AJ_Poll__WaitSeconds` above 300.
+
+## `Requested CPUs are not available`
+
+The daemon refuses to create a container whose `cpuset` names a processor the
+host does not have, so this one stops `docker compose up -d --wait` with part of
+the stack running instead of leaving a Runner in a restart loop.
+
+Both cpusets ship empty, which is every processor the host has, so the set is
+one somebody wrote. `lscpu -p=CPU,CORE` lists the processors that exist, and
+`preflight.sh` names the ones a `RUNNER_n_CPUSET` asks for and the host does not
+have, per Runner, before anything starts.
 
 ## The archive says the account does not exist
 
@@ -362,22 +374,21 @@ service runs as root this is only a cause where `compose.yaml` has been edited
 to drop that, and then the Runner fails at **startup** and never reaches a
 job.
 
-**Two: a job container cannot read `RUNNER_WORK_DIR`**, which is a cause only
-where host directories are in use — the daemon creates a volume root-owned and
-mode 0755, and that is already right. The Runner writes a submission's files
-there as root, and every job container mounts the directory read-only and reads
-it as uid **65534**. A directory locked down by hand passes for the Runner and
-fails for the job, so the socket works perfectly, the Runner registers, claims
-a job — and every single one fails at once, which is how to tell the two
-apart.
+**Two: a job container cannot read the scratch**, which the volumes make
+unlikely — the daemon creates one root-owned and mode 0755, and that is already
+right. The Runner writes a submission's files there as root, and every job
+container mounts the directory read-only and reads it as uid **65534**. A volume
+replaced by hand can fail that second half, so the socket works perfectly, the
+Runner registers, claims a job — and every single one fails at once, which is
+how to tell the two apart.
 
 ```bash
-sudo chmod 755 /srv/algojudge/runner-work
+docker volume inspect -f '{{.Mountpoint}}' algojudge_runner-1-work
 ```
 
 **The cache has the same two halves**, for the same reason: the Runner unpacks
-each package there as root and a judge's container reads it back as 65534. `sudo
-chmod 755 /srv/algojudge/runner-cache`, and `scripts/preflight.sh` probes both.
+each package there as root and a judge's container reads it back as 65534.
+`scripts/preflight.sh` probes both, writing as root and reading back as 65534.
 
 ## Every job fails, and the Runner said something about cgroups
 
