@@ -2,9 +2,10 @@
 
 For whoever cuts the release. A reader of the site wants the site.
 
-The five product repositories carry `v0.1.0` and their eight images are public.
-This site carries `v0.1.0`, its image is published, and `docs.algojudge.pl`
-serves it.
+The five product repositories carry `v0.2.0` and their eight images are public.
+This site carries `v0.2.0` and its image is published. **Nothing pulls that
+image on a schedule**, so `docs.algojudge.pl` serves whatever version whoever
+deploys it last pulled — see *The site has to be served from the new image*.
 
 ## This site has no single version
 
@@ -43,9 +44,10 @@ as usage.
 
 `.github/workflows/release.yml`, added 2026-09-08, triggers `on: push: tags:
 ['v*']` and does what Server, Client, Runner and External-Runner each do: refuse
-a tag that is not on `main`, build the image, prove it serves, and push it as
-`0.1.0`, `0.1`, `0` and `latest`. **`AlgoJudge-Ops` is now the only repository of
-the six with no release workflow**, and it needs none — it publishes no image.
+a tag that is not on `main`, build the image, prove it serves, and push it under
+the version, its minor, its major and `latest`. **`AlgoJudge-Ops` is now the
+only repository of the six with no release workflow**, and it needs none — it
+publishes no image.
 
 Until 2026-09-08 the image here was built and pushed by whoever deployed the
 site. That was the one step of this runbook a person could get wrong in silence,
@@ -130,7 +132,8 @@ Then, still on that day:
 ## Before publishing
 
 - [ ] `npm run lint`, `npm run typecheck`, `npm run build`. All three pass on
-      `release/0.1.0` as of 2026-09-07; the build produced 262 static pages.
+      `release/0.2.0` as of 2026-09-21; the build produced 786 static pages —
+      from 526 before `v0.2` was cut, because a snapshot is pages of its own.
 - [ ] `check:links`, `check:versions`, `check:translations`, `check:structure`,
       `check:glossary`, `check:section-links`, `check:no-playground`,
       `check:sitemap` — the eight CI runs. All eight pass as of 2026-09-21.
@@ -154,34 +157,42 @@ Then, still on that day:
       `../AlgoJudge-Client/node_modules`** (`CLIENT_DIR` overrides the
       location), so that repository has to be checked out beside this one with
       its dependencies installed; Playwright closes the browser it starts.
-      Checked 2026-09-07 against `out/` served exactly that way: 16 assertions,
+      Checked 2026-09-21 against `out/` served exactly that way: 16 assertions,
       all passing, both locales.
 
       It asks Chrome which faces painted each page, which is the only way a
       wrong subset shows up — the stylesheet and `document.fonts` both report
       success for it.
 - [ ] **`content-sources.json` is pinned at the commit that was released**, not
-      at whatever `main` was. Today it pins Server commit `e01247c1` of
-      2026-09-04, which is on the Server's `main` and `release/0.1.0` but is not
-      their tip. On release day set `ref` to the Server's tag, `refKind` to
-      `tag`, `refDate` to that day, and recompute `sha256`:
+      at whatever `main` was. On release day set `ref` to the Server's tag,
+      `refKind` to `tag`, `refDate` to that day, and recompute `sha256`:
 
       ```bash
-      curl -sSL https://raw.githubusercontent.com/AlgoJudge/AlgoJudge-Server/v0.1.0/openapi.json | sha256sum
+      curl -sSL https://raw.githubusercontent.com/AlgoJudge/AlgoJudge-Server/v0.2.0/openapi.json | sha256sum
       rm -rf .sources && npm run build
       ```
+
+      **Do this before cutting the snapshot, not after.** A snapshot freezes the
+      generated `rest/` tree, so a version cut against the previous pin documents
+      the previous release's API surface under the new version's address, for
+      good. The checklist order here is the order to read it in, not the order to
+      run it in.
 
       The `rm -rf` is not optional if you want the download exercised: a cached
       file whose hash already matches is left alone and never touched the
       network. **Only `repository`, `path`, `ref` and `sha256` are read** —
       `scripts/sync-sources.mjs` never looks at `refKind` or `refDate`, so a
       wrong value there fails nothing and misleads whoever reads it next.
-      Checked 2026-09-07 by deleting the cache: the pin fetched from GitHub and
-      the checksum matched.
+      Checked 2026-09-21 by deleting the cache: all three pins fetched from
+      GitHub and every checksum matched. **There is a pin per released version**
+      — `openapi`, `openapi-v0.1`, `openapi-v0.2` — because a snapshot's REST
+      pages read a document of their own; `scripts/snapshot.mjs` adds the pin
+      when it cuts a version.
 - [ ] **Every image this repository pins is a tag somebody still builds**, read
       by the date it was last built rather than by whether `docker pull` works.
       See *The two images this repository pins*.
-- [ ] **The image builds and serves.** Checked 2026-09-08:
+- [ ] **The image builds and serves.** Checked 2026-09-21 by CI on the commit
+      this tag names:
       `docker build -t algojudge-docs:ci .` succeeds, and the run CI does
       afterwards passes — `/healthz`, `/en/`, `/pl/`, `/en/install/`,
       `/pl/install/`, `/en/server/rest/` and both search endpoints answer 200,
@@ -189,21 +200,24 @@ Then, still on that day:
       `/` negotiates: `Accept-Language: pl` to `/pl/`, anything else and an
       absent header to `/en/`.
 - [ ] **The tag pushes it, and nobody does it by hand.** `release.yml` builds
-      the image, runs the serve check above against it, and pushes `0.1.0`,
-      `0.1`, `0` and `latest`. So **pushing the tag is the act that publishes**;
+      the image, runs the serve check above against it, and pushes the version,
+      its minor, its major and `latest`. So **pushing the tag is the act that
+      publishes**;
       there is nothing left to do afterwards and nothing to remember. Watch the
       run rather than assuming it: the build reaches the network for
       `openapi.json`, and a pin that has stopped resolving fails there.
 - [ ] **`.env.example` and `compose.yaml` name the same image tag, and it is a
       version rather than `latest`.** Both say
-      `ghcr.io/algojudge/algojudge-docs:0.1.0`, and the three keys match in both
+      `ghcr.io/algojudge/algojudge-docs:0.2.0`, and the three keys match in both
       directions — `DOCS_IMAGE`, `DOCS_BIND`, `DOCS_PORT`, with the same
       defaults, and nothing in the code reads an environment variable either
-      file does not name. Checked 2026-09-07.
+      file does not name. Checked 2026-09-21. **Both literals are the release's
+      own step**: nothing fails when they are left behind, and they name the
+      image an operator would pull.
 - [ ] **No `.env` is committed.** `git ls-files | grep env` returns
       `.env.example` alone, and none exists in the working tree; `.gitignore`
       excludes `.env*` bar the example and `.dockerignore` does the same for the
-      build context. Checked 2026-09-07.
+      build context. Checked 2026-09-21.
 - [ ] **`/install/` still matches `AlgoJudge-Ops`.** That section is written from
       `docs/` there, nothing checks the two against each other, and the gap is
       invisible while every check is green. Comparing `.env.example` key by key
@@ -266,10 +280,17 @@ three repositories rather than one.
 
 **Node is the Active LTS line at release, never a maintenance one.** 24 is
 Krypton and is Active LTS today; it stops being so on 2026-10-20, which is inside
-the 0.1 line's likely life. Three places move together and CI reads one of them:
-`.nvmrc`, the `Dockerfile`, and `node-version-file` in the workflow.
+the 0.2 line's likely life — so the line moves under this release rather than at
+it, and the raise is the next release's decision. Three places move together and
+CI reads one of them: `.nvmrc`, the `Dockerfile`, and `node-version-file` in the
+workflow. Read 2026-09-21: all three say 24, and `node:24-alpine` was last built
+2026-09-18.
 
-## Tools and dependencies, checked 2026-09-08
+## Tools and dependencies, checked 2026-09-08 and re-read 2026-09-21
+
+Re-read on 2026-09-21 for `v0.2.0`: `npm audit` reports **0 vulnerabilities**,
+and the two holds below are still the reason they were. The lockfile did not
+move for this release.
 
 Run `npm outdated` and `npm audit` **read-only**. The lockfile must not move: no
 `npm install`, no `npm update`, no `npm audit fix`.
@@ -295,8 +316,9 @@ Run `npm outdated` and `npm audit` **read-only**. The lockfile must not move: no
   `@types/react-dom` to 19.2.7. `README.md`'s claim that everything outside the
   two holds is the current release is true again.
 - **The nginx base was raised on 2026-09-08**, from `1.29-alpine` — last built
-  2026-04-17 — to `1.30-alpine`, built 2026-09-03. See *The two images this
-  repository pins*, which is the check that found it.
+  2026-04-17 — to `1.30-alpine`. See *The two images this repository pins*,
+  which is the check that found it. Read 2026-09-21, `1.30-alpine` was last
+  built 2026-09-18, so the branch is still being built.
 
 ## After the tag
 
