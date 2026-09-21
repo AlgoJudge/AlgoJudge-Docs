@@ -2,7 +2,7 @@
 title: Czego wymaga host
 description: Docker z Compose v2.15.0, a tam gdzie oceniają Runnery — Engine 26; cgroup v2, polecenia coreutils używane przez skrypty oraz dysk na kopie i wolumeny.
 source: en/install/requirements.mdx
-sourceSha256: 5d9bbbfdb065981db7c9fd50234fe463183690aea8fadc9a84c52cdd0c532762
+sourceSha256: ced5dabc290161d9b5cd33f93139a0454fbc15c9c09af4be3df8aa5e644abc42
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -28,11 +28,10 @@ wyrazić, więc Runner odmawia oceniania, zamiast oceniać na pustym katalogu.
 docker version --format '{{.Server.APIVersion}}'    # 1.45 albo wyżej
 ```
 
-**Instalacja poniżej tego progu nadal jest wspierana.** Zostaje przy katalogach
-na hoście, których stos używał do 2026-09-16 — patrz
-[Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
-Nic innego w stosie nie potrzebuje wersji 26, więc hosta aplikacji bez Runnerów
-to nie dotyczy.
+**Poniżej tego progu nie ma rozwiązania zastępczego.** `preflight.sh` odmawia na
+hoście, który miałby uruchamiać Runnery przy starszym demonie, zamiast zostawiać
+to do odkrycia pierwszemu zgłoszeniu. Nic innego w stosie nie potrzebuje wersji
+26, więc hosta aplikacji bez Runnerów to nie dotyczy.
 
 ## cgroup v2, obowiązkowo
 
@@ -164,22 +163,22 @@ limitach** — w tym rozwiązania, o których wiadomo, że są poprawne.
 Górna granica jest więc regułą o poprawności, a nie o przepustowości, i rdzenie
 liczone niżej muszą być rdzeniami, na których nie ma nic innego:
 
-| Rdzenie fizyczne | Tory |
+| Rdzenie fizyczne | `RUNNER_TESTS_AT_ONCE` |
 |---|---|
 | 4 | 2 |
-| 8 | 4 |
+| 8 | **2** |
 | 16 | 8 |
 
-**Tory, a nie Runnery, bo to nie jest ta sama liczba.** Profil `runner`
-uruchamia dwa Runnery, a `runner-extra` dokłada pozostałe dwa, więc środkowy
-wiersz to równie dobrze dwa Runnery po dwa tory, co cztery po jednym. Wybór
-między nimi to wybór między liczbą zgłoszeń ocenianych równocześnie a czasem
-odpowiedzi na każde z nich; nie jest to decyzja o rozmiarze maszyny.
+**Zawsze dwa Runnery, każdy na połowie maszyny** — w kolumnie stoi więc liczba
+torów jednego Runnera, a cała flota ma ich dwa razy tyle. Profil `runner`
+uruchamia `runner-1` i `runner-2`, i trzeciego nie ma: host z zapasem mocy
+poszerza te dwa, zamiast dokładać kolejny.
 
 Ile jest rdzeni, powie `lscpu`: *Core(s) per socket* razy *Socket(s)*, co **nie**
 jest liczbą procesorów, gdy rdzeń niesie dwa wątki. Żeby mieć mniej torów,
-zmniejsz `RUNNER_TESTS_AT_ONCE` albo nie dopisuj `runner-extra` do
-`COMPOSE_PROFILES`.
+zmniejsz `RUNNER_TESTS_AT_ONCE`; żeby zamiast dwóch Runnerów mieć jednego, usuń
+`runner-2` z `compose.yaml` i wyczyść `RUNNER_2_CPUSET` — `preflight.sh` zestawia
+cpuset z szerokością niezależnie od tego, czy czyta go jeszcze jakaś usługa.
 
 | Składnik | Rdzenie | Pamięć | Uwagi |
 |---|---|---|---|
@@ -194,14 +193,14 @@ zmniejsz `RUNNER_TESTS_AT_ONCE` albo nie dopisuj `runner-extra` do
 Te 0,6 GiB na tor to proces samego Runnera i największy kontener, jaki ten tor
 utrzyma. **Tor trzyma jeden kontener oceniany, z limitem pamięci zadania
 powiększonym o 64 MiB, a obok niego program weryfikujący albo interaktor na
-256 MiB** — cztery tory przy zadaniach na 256 MiB to około 1,3 GiB na Runnera,
-jeszcze bez wejść. Budowania stoją poza torami, jedno naraz, ograniczone do
-512 MiB, i 0,6 GiB na tor wystarcza na jedno i na drugie.
+256 MiB** — dwa tory przy zadaniach na 256 MiB to około **670 MiB** na Runnera,
+jeszcze bez wejść, a cztery około 1,3 GiB. Budowania stoją poza torami, jedno
+naraz, ograniczone do 512 MiB, i 0,6 GiB na tor wystarcza na jedno i na drugie.
 
 ### Przykład: cztery tory
 
 Jeden Client, jeden Server, jeden External Runner i cztery tory oceniania — dwa
-Runnery po dwa albo cztery po jednym:
+Runnery, każdy o szerokości dwóch torów:
 
 | | Rdzenie | Pamięć |
 |---|---|---|
@@ -263,7 +262,8 @@ kosztem liczby, na której opiera się werdykt. Zapisz pary bliźniacze obok
 siebie, żeby cięcie wypadło między nimi — `0,8,1,9,2,10,3,11` przy czterech
 torach to cztery tory po jednym rdzeniu tam, gdzie partnerem cpu0 jest cpu8.
 `AlgoJudge-Ops` udostępnia obie połowy
-jako `RUNNER_1_CPUSET` i kolejne oraz jako `RUNNER_TESTS_AT_ONCE`, a Runner,
+jako `RUNNER_1_CPUSET` i `RUNNER_2_CPUSET` oraz jako `RUNNER_TESTS_AT_ONCE` —
+oba cpusety dostarczamy puste — a Runner,
 który dostał więcej torów niż procesorów w swoim zbiorze, odmawia startu. Zbiór
 jest cięty na tory **w takiej kolejności, w jakiej go zapisano**, więc odczytaj
 pary z maszyny, zamiast je przepisywać: `thread_siblings_list` mówi `0-1` na
@@ -349,8 +349,7 @@ jedno zgłoszenie naraz.
 docker system df -v | grep runner
 ```
 
-Na maszynie, której `/var` jest mały, a `/srv` nie, albo przenieś katalog
-danych Dockera, albo zostań przy katalogach na hoście, jak wyżej.
+Na maszynie, której `/var` jest mały, przenieś katalog danych Dockera.
 
 ## Dysk na kopie, najlepiej nie ten od bazy
 

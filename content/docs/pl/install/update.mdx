@@ -2,7 +2,7 @@
 title: Aktualizacja i wycofanie
 description: Najpierw pobierz, zamykaj późno, i to jedno, czego wycofanie nie cofa.
 source: en/install/update.mdx
-sourceSha256: ab869704da3a9e298a5270bd742b40dd7f8e590de2e95e714f9dec37606b6bc2
+sourceSha256: 6b9235b1d4fbf1ddfb20e900741a51406ab75b4c74d56e97f08b3478fc8823eb
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -36,9 +36,9 @@ flowchart TD
     pull --> changed{"Jest coś nowego?"}
     changed -->|"nie"| stop["Koniec. Nic nie zostało zamknięte"]
     changed -->|"tak"| backup["Kopia zapasowa. Nieudany zrzut zatrzymuje aktualizację"]
-    backup --> close["Zamknij i poczekaj na drenowanie"]
+    backup --> close["Zamknij, przeczekaj drenowanie i zapisz, co<br/>zostaje zastąpione, w state/previous.lock"]
     close --> up["up -d, czekaj 120 s na zdrowy stos"]
-    up -->|"zdrowy"| lock["Zapisz digesty w state/current.lock"]
+    up -->|"zdrowy"| lock["Zapisz to, co działa, w state/current.lock"]
     up -->|"niezdrowy"| roll["Wycofaj i zapisz ostatnie pięćdziesiąt<br/>linii logu Servera do state/failed-update.log"]
     lock --> open["Otwórz z powrotem i usuń obrazy tylko tego projektu"]
     roll --> shut["Zostaje zamknięta. Log i zrzut sprzed aktualizacji są nazwane"]
@@ -53,15 +53,15 @@ zawiedzie, nic nie zostaje zaktualizowane.
 
 ## Co znaczy „coś nowego”
 
-Nie sam tag. `SERVER_TAG=0` wskazuje po każdym wydaniu inny obraz, więc „czy tag
-jest ten sam” odpowiadałoby „tak” w nieskończoność. Skrypt pyta Compose, jaki
-obraz uruchomiłby **teraz** dla każdej usługi, i zestawia go z identyfikatorem
-obrazu, na którym kontener naprawdę działa. Różnica między nimi to dokładnie
-„coś nowego”.
+Nie sam tag. `SERVER_TAG=0.2` wskazuje po każdym wydaniu z tej linii inny obraz,
+więc „czy tag jest ten sam” odpowiadałoby „tak” w nieskończoność. Skrypt pyta
+Compose, jaki obraz uruchomiłby **teraz** dla każdej usługi, i zestawia go
+z identyfikatorem obrazu, na którym kontener naprawdę działa. Różnica między nimi
+to dokładnie „coś nowego”.
 
 **Pytany jest Compose, a nie kontener**, bo kontener zna wyłącznie referencję,
-z której powstał — więc operator, który przypiął `0.1.0`, a później wpisał
-`0.1.1`, usłyszałby, że nic się nie zmieniło, podczas gdy pobrany przed chwilą
+z której powstał — więc operator, który przypiął `0.2.0`, a później wpisał
+`0.2.1`, usłyszałby, że nic się nie zmieniło, podczas gdy pobrany przed chwilą
 obraz leżałby nieużywany.
 
 <Callout type="info" title="Cztery obrazy językowe porównuje się osobno">
@@ -79,63 +79,77 @@ co je przynosi.
 
 ## Wersje to tagi; to, co działa, to digest
 
-**Tagi leżą w `.env`. Digesty leżą w `state/current.lock`.** Tag mówi, o co
-poproszono; digest mówi, co działa, i to jego przywraca wycofanie.
+**Tagi leżą w `.env`. Digesty leżą w dwóch plikach blokad.** Tag mówi, o co
+poproszono; digesty mówią, na jakie obrazy ostatecznie wskazał.
+`state/current.lock` powstaje, kiedy aktualizacja okaże się zdrowa, i nazywa to,
+co działa. `state/previous.lock` powstaje tuż przed podmianą i nazywa to, co
+zostało zastąpione — i to jego przywraca wycofanie.
 
 Digesty nie mogą leżeć w repozytorium. To produkt, który wiele organizacji
 wdraża niezależnie, i żadna z nich nie może do niego commitować.
 
-Domyślny `SERVER_TAG=0` to **ruchoma wersja główna** i nie ma w nim `v`: wydanie
-otagowane `v0.4.2` publikuje tagi obrazów `0.4.2`, `0.4`, `0` i `latest`. Kto
-zostanie na `0`, dostanie przy następnej aktualizacji każde późniejsze wydanie.
+W `.env.example` stoi `SERVER_TAG=0.2` — **linia minor, dla której napisano ten
+stos**, bez `v`. Wydanie otagowane `v0.2.1` publikuje tagi obrazów `0.2.1`,
+`0.2`, `0` i `latest`, więc `0.2` bierze przy następnej aktualizacji każdą
+kolejną poprawkę z tej linii i nic poza tym.
 
-**Poniżej 1.0 to nie tylko poprawki.** Wersja minor może tam zmienić to, co
-robiła poprzednia, a `0` bierze także takie wydania. Kto chce wyłącznie
-poprawek, wpisuje `0.1`; kto chce decydować o każdej wersji — `0.1.0`.
-Tagu `latest` stos nie przewiduje: instalacja, która zmieniła wersję tylko
-dlatego, że ktoś pobrał obrazy, nie jest wdrożeniem.
+**Nie ruchoma wersja główna `0`.** Poniżej 1.0 wersja minor może zmienić to, co
+robiła poprzednia — 0.2 nie jest zgodne z 0.1 — więc `0` przeprowadziłby
+instalację przez taką zmianę, nie pytając o zgodę. Kto chce decydować o każdej
+wersji, wpisuje `0.2.1`; stos dla 0.3 przyjdzie jako nowe wydanie tego
+repozytorium, razem z tym, czego wymaga przejście na nie. Tagu `latest` stos nie
+przewiduje: instalacja, która zmieniła wersję tylko dlatego, że ktoś pobrał
+obrazy, nie jest wdrożeniem.
 
-## Aktualizacja instalacji, która trzyma katalogi na hoście
+## Przejście z linii 0.1
 
-Instalacja, w której Runnery trzymają pamięć podręczną i katalog roboczy
-w katalogach na hoście, przy najbliższej aktualizacji przenosi je do nazwanych
-wolumenów. Wynikają z tego trzy rzeczy i żadna nie gubi niczego, co uczestnik
-mógłby zobaczyć.
+**0.2 nie jest zgodne z 0.1, a to repozytorium jest linią 0.2.** Cztery tagi
+produktowe to `0.2`, więc instalacja nie przekracza granicy wersji minor przez
+samo pobranie obrazów: przekracza ją wtedy, gdy przestawisz ją na nowe wydanie
+tego repozytorium — bo to właśnie tam zapisano, czego taka zmiana wymaga.
+
+Instalacja postawiona z `v0.1.0` ma `update.sh` z tamtego tagu, starszy niż
+zasada, że instalacja podąża za wydaniami: wykonuje `git pull`, który na wydaniu
+kończy się samym ostrzeżeniem i zostawia pliki, jak były. Taką instalację trzeba
+raz przestawić ręcznie:
+
+```bash
+git fetch --tags
+git checkout v0.2.0
+./scripts/preflight.sh
+./scripts/update.sh
+```
+
+Dalej podąża za wydaniami już sama. Wynikają z tego trzy rzeczy i żadna nie gubi
+niczego, co uczestnik mógłby zobaczyć.
+
+**Katalog roboczy Runnerów przenosi się z katalogu na hoście do wolumenu.**
+Linia 0.1 ustawiała `RUNNER_WORK_DIR` i `RUNNER_CACHE_DIR`; tutaj takich ustawień
+nie ma, a `preflight.sh` zgłasza ustawienie, którego nic nie czyta. Stare
+katalogi zostają tam, gdzie były, i nikt do nich nie zagląda: usuń z `.env` oba
+klucze, a kiedy nabierzesz pewności — także same katalogi.
+
+```bash
+sudo rm -rf /srv/algojudge/runner-cache /srv/algojudge/runner-work
+```
 
 **Pamięć podręczna paczek startuje pusta.** Pierwsze zgłoszenie do każdego
 zadania na nowo pobiera paczkę i buduje zadeklarowany w niej checker — minuty,
 raz, na zadanie. **Nie aktualizuj w poranek zawodów** choćby z tego jednego
 powodu.
 
-**Stare katalogi zostają tam, gdzie były.** Nic ich nie usuwa i nic ich też nie
-czyta. `RUNNER_CACHE_DIR` i `RUNNER_WORK_DIR` przestają na cokolwiek wpływać:
-usuń je z `.env`, kiedy nabierzesz pewności, a potem same katalogi.
-
-```bash
-sudo rm -rf /srv/algojudge/runner-cache /srv/algojudge/runner-work
-```
-
-**Demon starszy niż Docker Engine 26 musi zostać przy katalogach**, a
-aktualizacja nie sprawdzi tego za Ciebie, zanim ruszy. Kontener sędziego montuje
-podkatalog wspólnego wolumenu pamięci podręcznej, czyli montowanie `subpath`,
-które pojawiło się w Engine 26 / API 1.45. Najpierw uruchom
-`./scripts/preflight.sh` — pokazuje wersję API demona wobec 1.45 — a przed `up
--d` skopiuj nakładkę:
-
-```bash
-cp compose.directories.yaml compose.override.yaml
-```
-
-Obie ścieżki są już w `.env`, więc nic więcej się nie zmienia. To układ
-wspierany, a nie wycofywany: patrz [Gdzie Runnery trzymają swoje
-bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
+**Demon na hoście z Runnerami musi być w wersji Docker Engine 26 lub nowszej**
+(albo Podman 5) i nie ma układu, który by to obchodził. Kontener sędziego
+montuje podkatalog wspólnego wolumenu pamięci podręcznej, czyli montowanie
+`subpath`, które pojawiło się właśnie wtedy; na starszym demonie Runner odmawia
+oceniania, a `preflight.sh` odmawia jeszcze wcześniej — pokazuje wersję API
+demona wobec 1.45.
 
 <Callout type="warn" title="Wolumen zostawiony pod tą nazwą zostaje podłączony, a nie zastąpiony">
-Instalacja, która używała wolumenu pamięci podręcznej, zanim przeszła na
-katalogi na hoście, może wciąż mieć wolumen o nazwie `algojudge_runner-cache`
-z układem, którego żaden dzisiejszy Runner nie czyta. Nowy wolumen nazywa się
-tak samo, więc Compose podłącza ten stary, zamiast utworzyć świeży. Usuń go
-przed pierwszym startem.
+Instalacja starsza niż 2026-09-15 może wciąż mieć wolumen o nazwie
+`algojudge_runner-cache` z układem, którego żaden dzisiejszy Runner nie czyta.
+Wolumen pamięci podręcznej nazywa się tak samo, więc Compose podłącza ten stary,
+zamiast utworzyć świeży. Usuń go przed pierwszym startem.
 
 ```bash
 docker volume ls
@@ -143,9 +157,9 @@ docker volume rm algojudge_runner-cache
 ```
 </Callout>
 
-**A wycofanie zostawia nową pamięć podręczną w spokoju, i to celowo.** Runner
-starszej generacji trzyma swoje wpisy w dwuznakowych katalogach u góry,
-nowszy — pod `packages/`, gdzie starszy kod nigdy nie zagląda. Starszy Runner nie
+**A wycofanie na linię 0.1 zostawia nową pamięć podręczną w spokoju, i to
+celowo.** Runner tamtej generacji trzyma swoje wpisy w dwuznakowych katalogach
+u góry, nowszy — pod `packages/`, gdzie starszy kod nigdy nie zagląda. Starszy Runner nie
 znajduje więc nic, pobiera od nowa, i oba układy leżą obok siebie, zamiast żeby
 jeden trafił w ręce drugiego — a to oznaczałoby każde zgłoszenie upadające na
 paczce, której nie da się otworzyć. Zostaje martwy ciężar, który widzi tylko
@@ -167,9 +181,10 @@ odmawia, zamiast zrobić to po połowie.
 ./scripts/rollback.sh
 ```
 
-Przywraca dokładnie te obrazy, które są w `state/current.lock`, niezależnie od
-tego, na co wskazują dziś tagi, przez nakładkę zapisaną do
-`state/rollback.compose.yaml`. Dotyczy to także czterech obrazów językowych:
+Przywraca dokładnie te obrazy, które są w `state/previous.lock` — te, które
+zastąpiła ostatnia aktualizacja — niezależnie od tego, na co wskazują dziś tagi,
+przez nakładkę zapisaną do `state/rollback.compose.yaml`. Dotyczy to także
+czterech obrazów językowych:
 wracają jako `AJ_Sandbox__Image__*` przy każdym Runnerze, bo stary Runner obok
 dzisiejszych sandboksów to jedyne zestawienie, w którym Runnera się nie testuje.
 
@@ -183,7 +198,14 @@ docker compose -f compose.yaml -f state/rollback.compose.yaml up -d
 </Callout>
 
 Instalacja, która nigdy się nie aktualizowała, nie ma dokąd wracać:
-`state/current.lock` zapisuje **udana** aktualizacja.
+`state/previous.lock` zapisuje `update.sh` tuż przed podmianą obrazów.
+**`state/current.lock` nie jest zamiennikiem** — nazywa to, co działa, więc jego
+przywrócenie niczego by nie zmieniło, i skrypt mówi to wprost, zamiast zgłosić
+wycofanie, po którym nic się nie dzieje.
+
+**Cofa o jedną aktualizację i ani kroku dalej.** Instalacja, która od
+interesującej ją wersji zaktualizowała się dwa razy, tą drogą do niej nie wróci;
+tamte obrazy wciąż są w rejestrze, więc prowadzi do nich tag w `.env`.
 
 ### Wycofanie nie cofa migracji
 
@@ -196,8 +218,8 @@ zrzut.
 ## Aktualizuj wszystkie hosty w tym samym oknie
 
 **A obrazy językowe razem z Serverem.** Server i Runner rozmawiają protokołem,
-który zmienia się między wersjami, a tagi, które dostarcza ten stos, to ruchome
-wersje główne pobierane niezależnie — nic więc nie powstrzyma `update.sh` przed
+który zmienia się między wersjami, a tagi, które dostarcza ten stos, to tagi
+ruchome, pobierane niezależnie — nic więc nie powstrzyma `update.sh` przed
 postawieniem nowego Servera obok obrazu Runnera sprzed miesiąca. **Runner zbyt
 stary wobec Servera, u którego się rejestruje, dostaje odmowę, a odmowy
 rejestracji się nie ponawia**: proces kończy pracę, `restart: unless-stopped`

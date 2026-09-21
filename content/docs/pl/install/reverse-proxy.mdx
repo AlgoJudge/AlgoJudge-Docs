@@ -2,7 +2,7 @@
 title: Własne reverse proxy
 description: Pięć reguł, gdy stawiasz instalację za proxy, które już prowadzisz.
 source: en/install/reverse-proxy.mdx
-sourceSha256: c160117bdc5d2e28fb1debcd181b8105259a17963f4f910000f5ad4e8d3c7e38
+sourceSha256: 35423552fd8518f73a19e82b3800e1c12c0037de7a0aeb60525b79b6a8bea5d0
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -74,13 +74,24 @@ odwiedzający sam poda swój adres; jeśli tylko pętli zwrotnej, zapisze się p
 zamiast człowieka.
 
 Domyślna wartość nazywa sieć Compose, w której stoi dołączony nginx. **Za
-własnym proxy ta domyślna jest zła** — wpisz tam sieć swojego proxy. Jeśli proxy
-nie ma w ogóle, `none` jest pełną odpowiedzią.
+własnym proxy ta domyślna jest zła** — wpisz tam sieć swojego proxy.
+**Opróżnienie tej linii opróżnia listę**: wartość domyślna zastępuje linię,
+której nie ma, a nie linię pustą.
 
 Wpisz adres **sieci**, nie hosta: `172.28.0.5/24` odrzucamy przy starcie,
 podając nazwę zmiennej i adres, który powinien się tam znaleźć. .NET normalizuje
 CIDR z bitami hosta bez słowa, co zamieniłoby „jedną maszynę” w „całą
 pracownię”.
+
+**`none` należy do `TRUSTED_PROXY_PROXIES`, czyli do linii poniżej.** Jeśli
+przed Serverem nie stoi nic, wpisz `TRUSTED_PROXY_PROXIES=none` i zostaw
+`TRUSTED_PROXY_NETWORKS` puste — Server przestanie wtedy w ogóle czytać
+`X-Forwarded-For`. W linii sieci to samo słowo jest czytane jako blok CIDR
+i odrzucane przy starcie, a `none` obok sieci, która nadal jest wymieniona,
+zostaje odrzucone tak samo: Server przyjmuje je wyłącznie jako całość tego,
+czemu kazano mu ufać. Obie linie puste też są odrzucane, z powodu podanego na
+początku tej reguły. `preflight.sh` zgłasza każdy z tych trzech przypadków przed
+startem.
 
 ### 5. Wysyłaj `X-Forwarded-Proto`
 

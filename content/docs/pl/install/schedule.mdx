@@ -2,7 +2,7 @@
 title: Praca rutynowa i harmonogram
 description: Sprzątanie, sugerowany crontab, zegar, na którym działa, i to, o czym nikt nikogo nie powiadomi.
 source: en/install/schedule.mdx
-sourceSha256: e99bbb9041d47c99dedca4a4c5054b58b560e28ff75da62ddab7b634d7a87c02
+sourceSha256: eab4cfdb968b19c508dcd94d161085729ed8fdc40af83a418202a7f69c3e2198
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -16,10 +16,13 @@ import { Callout } from "fumadocs-ui/components/callout";
 Cztery rodzaje śmieci, każdy zawężony do tej instalacji:
 
 - **przestrzeń robocza starsza niż `GC_TMP_RETENTION_DAYS`** (domyślnie 7),
-  sprzątana z wnętrza jednorazowego kontenera osobno dla każdego Runnera, bo
-  przestrzeń robocza każdego z nich to wolumen bez ścieżki na hoście. Runner
-  zabity w trakcie oceniania nie posprząta po sobie, a zlecenie, które robił,
-  wraca do kolejki przez dzierżawę — więc pozostałości są normalne, a nie usterką;
+  sprzątana z wnętrza jednorazowego kontenera — jednego dla `runner-1` i jednego
+  dla `runner-2` — bo przestrzeń robocza każdego z nich to wolumen bez ścieżki
+  na hoście. Nazwa wolumenu jest odczytywana z działającego kontenera, a nie
+  wpisana, więc nie trzeba zgadywać nazwy projektu, a Runner, którego ten host
+  nie uruchamia, zostaje pominięty. Runner zabity w trakcie oceniania nie
+  posprząta po sobie, a zlecenie, które robił, wraca do kolejki przez
+  dzierżawę — więc pozostałości są normalne, a nie usterką;
 - **zakończone kontenery zadań**, których nic nie zbierze, znajdowane po
   etykiecie, którą nadaje im Runner — `algojudge.sandbox=1`, nigdy po nazwie,
   bo filtr nazwy dopasowuje fragment i zabrałby ze sobą cudzy kontener. Runner

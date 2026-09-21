@@ -2,7 +2,7 @@
 title: Pierwsza instalacja
 description: Od pustego katalogu do instalacji, która ocenia zgłoszenie.
 source: en/install/first-install.mdx
-sourceSha256: 0fbc80cda4eea3791d161326cfbdecba2ded763140127017c3bb6f96bfc0ed5a
+sourceSha256: 54caeb3c8e537c534fdaf93a951696219ed6e2fa7915a580709efe4670e33870
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -12,6 +12,14 @@ Dopóki ta wartość jest pusta, `/api/v1/admin/**` jest zamknięte — a to obe
 endpoint, który ustawia hasło administratora. Hasło konta `admin`, zakładanego
 przy pierwszym starcie, to dwadzieścia losowych znaków, które nigdy nie
 trafiają do logu, na ekran ani w żadne czytelne miejsce.
+
+**I nie ten deweloperski.** `admin-token-development-only` — wartość, którą noszą
+deweloperskie pliki Compose w repozytoriach produktowych — jest dość długa, żeby
+przejść kontrolę długości, a mimo to zamyka `/admin`, więc `preflight.sh`
+odmawia i wskazuje ją z nazwy. Przy tej wartości `maintenance.sh` nie zamknie
+też instalacji ani jej nie otworzy, a to zatrzymuje na tym kroku
+`backup.sh --quiesce`, `update.sh` i `restore.sh`. Wygeneruj własny:
+`openssl rand -base64 36`.
 
 **Instalacja uruchomiona bez tego tokenu nie ma administratora, na którego konto
 ktokolwiek mógłby wejść, a jedyne wyjście to skasować bazę i zacząć od nowa.**
@@ -73,20 +81,21 @@ AJ_ADMIN_TOKEN=          # openssl rand -base64 36
 POSTGRES_PASSWORD=       # openssl rand -base64 36, inny
 ```
 
-**Trzeciej nie ma i nie ma też nic do założenia na dysku.** Do 2026-09-16 był
-nią `RUNNER_WORK_DIR`; dziś Runnery trzymają wszystko, co pobierają,
-przygotowują i nad czym pracują, w wolumenach Dockera. Demon zakłada je sam,
-z właścicielem root i prawami 0755, a dokładnie tego trzeba: Runner zapisuje
-jako root, a każdy kontener zadania montuje wolumen tylko do odczytu i czyta go
-jako uid **65534**.
+**Trzeciej nie ma i nie ma też nic do założenia na dysku.** Runnery trzymają
+wszystko, co pobierają, przygotowują i nad czym pracują, w wolumenach Dockera.
+Demon zakłada je sam, z właścicielem root i prawami 0755, a dokładnie tego
+trzeba: Runner zapisuje jako root, a każdy kontener zadania montuje wolumen
+tylko do odczytu i czyta go jako uid **65534**. Oba wolumeny i to, co każdy
+z nich mieści, opisuje
+[Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes).
 
-Jeśli Docker na tym hoście jest starszy niż **Engine 26** (albo Podman 5),
-zajrzyj przed pierwszym uruchomieniem do
-[Gdzie Runnery trzymają swoje bajty](/pl/install/configuration#where-the-runners-keep-their-bytes):
-taka instalacja zostaje przy katalogach na hoście, a razem z nimi wraca
-`RUNNER_WORK_DIR`.
+**Docker na tym hoście musi być w wersji Engine 26** (albo Podman 5) **lub
+nowszej** i nie ma układu, który by to obchodził: kontener sędziego montuje
+podkatalog wspólnego wolumenu pamięci podręcznej, czyli montowanie `subpath`,
+które pojawiło się właśnie wtedy, a Runner na starszym demonie odmawia
+oceniania. `preflight.sh` odmawia jeszcze wcześniej.
 
-Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
+Jeszcze trzy wartości warto przeczytać przed pierwszym startem:
 
 - **`TRUSTED_PROXY_NETWORKS`** decyduje, czyim informacjom o adresie
   odwiedzającego Server ma wierzyć, a bez tego Server nie wystartuje. Domyślnie
@@ -97,6 +106,12 @@ Jeszcze dwie wartości warto przeczytać przed pierwszym startem:
 - **`DOCKER_GID`** to grupa, do której należy gniazdo demona; `preflight.sh`
   powie, jeśli u Ciebie jest zła. Patrz [Czego wymaga
   host](/pl/install/requirements).
+- **`COMPOSE_PROJECT_NAME`** nazywa tę instalację, a puste pole znaczy
+  `algojudge`. Compose stawia tę nazwę przed każdym kontenerem, siecią
+  i wolumenem, a noszą ją też pamięć podręczna i katalogi robocze Runnerów —
+  więc dwie instalacje na jednym hoście, które zostawią to pole puste, dzielą
+  nie tylko bazę, ale i te katalogi. Każdej nadaj własną nazwę przed pierwszym
+  `up`.
 
 ## 2. Certyfikat
 
@@ -133,20 +148,30 @@ docker compose up -d --wait
 albo `make up`, czyli te trzy naraz.
 
 `preflight.sh` odmawia od razu i jednym zdaniem, zamiast w połowie podnoszenia
-stosu: puste hasło, brakujący lub zbyt krótki token, CIDR z bitami hosta,
-względny katalog pracy, katalog pracy, którego kontener zadania nie przeczyta,
-cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git.
+stosu: puste hasło, token brakujący, zbyt krótki albo powszechnie znany, CIDR
+z bitami hosta, demon zbyt stary dla pamięci podręcznej Runnerów, cpuset
+wskazujący procesor, którego ten host nie ma, więcej torów niż procesorów na
+hoście, cgroup v1 albo nieznany sterownik cgroup, `.env` śledzony przez Git.
+
+**Dwie z tych odmów dotyczą procesorów i obie chronią przed stosem, który
+wstanie tylko w połowie.** Cpuset wskazujący procesor, którego host nie ma,
+demon odrzuca już przy tworzeniu kontenera — `Requested CPUs are not
+available` — więc `up -d --wait` stanąłby z częścią stosu w ruchu. A Runner,
+który nie ma jak dać każdemu torowi osobnego procesora, odmawia startu, co
+`restart: unless-stopped` zamienia w pętlę. Oba cpusety dostarczamy puste, czyli
+obejmujące wszystkie procesory hosta, więc `RUNNER_TESTS_AT_ONCE` porównujemy
+tam z liczbą procesorów całej maszyny.
 
 **`pull.sh` na hoście z Runnerami pobiera kilka gigabajtów** i trwa minuty. To
 są kompilatory i tak ma być. To również ten krok, którego Compose nie zrobi za
 Ciebie, bo cztery obrazy językowe nie są usługami.
 
-**Profil `runner` uruchamia dwa Runnery**, `runner-1` i `runner-2`;
-`runner-extra` dokłada `runner-3` i `runner-4` na hoście, który ma na nie
-procesory. Każdy z nich ocenia równocześnie tyle testów jednego zgłoszenia,
-ile mówi `RUNNER_TESTS_AT_ONCE`, po jednym teście na tor — więc do maszyny
-dopasowuje się tory, a nie Runnery: więcej torów niż rdzeni fizycznych nie
-przyspiesza oceniania, a psuje jego rzetelność. Tabelę ma [Czego wymaga
+**Profil `runner` uruchamia `runner-1` i `runner-2` — i to jest cała flota.**
+Każdy z nich ocenia równocześnie tyle testów jednego zgłoszenia, ile mówi
+`RUNNER_TESTS_AT_ONCE`, po jednym teście na tor — więc do maszyny dopasowuje się
+tory, a nie Runnery: więcej torów niż rdzeni fizycznych nie przyspiesza
+oceniania, a psuje jego rzetelność. Host, któremu zostaje zapas mocy, poszerza
+te dwa, zamiast dokładać trzeci — tabelę ma [Czego wymaga
 host](/pl/install/requirements).
 
 ## 4. Administrator
@@ -185,7 +210,7 @@ czasu. Nic nie zostanie ocenione, dopóki administrator go nie zatwierdzi — i 
 właśnie powstrzymuje kogoś przed podpięciem własnej maszyny do Twojej
 instalacji.
 
-W panelu: **Runnery**, i zatwierdź każdy z czterech, które się pojawiły. Dopóki
+W panelu: **Runnery**, i zatwierdź każdy z dwóch, które się pojawiły. Dopóki
 tego nie zrobisz, ich logi powtarzają `waiting: this Runner has not been approved
 yet`, za każdym razem z dłuższą przerwą — bo cała pracownia Runnerów
 zarejestrowanych naraz zasypywałaby inaczej Server jedną falą pytań przez cały
