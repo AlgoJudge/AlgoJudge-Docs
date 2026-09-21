@@ -64,6 +64,11 @@ jobs:
       - name: The site contacts no installation
         run: npm run check:no-playground
 
+      # Reads `out/` too, and it is the only check that reads the built site
+      # rather than `content/docs`.
+      - name: The sitemap offers what the site serves
+        run: npm run check:sitemap
+
   image:
     name: The image builds and serves the site
     runs-on: ubuntu-latest

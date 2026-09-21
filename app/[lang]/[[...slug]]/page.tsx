@@ -14,7 +14,7 @@ import { i18nConfig, type Locale } from "@/lib/i18n";
 import { hreflang, ogLocale, OG_IMAGE, site, SITE_NAME } from "@/lib/site";
 import { loadSchemas, narrow, type OperationRef } from "@/lib/openapi-preload";
 import { sectionIndex } from "@/lib/sections";
-import { archiveState } from "@/lib/versions";
+import { archiveState, newestVersion } from "@/lib/versions";
 import { source } from "@/lib/source";
 
 type Params = { lang: string; slug?: string[] };
@@ -115,7 +115,25 @@ export async function generateMetadata(props: { params: Promise<Params> }): Prom
         ? (lang as Locale)
         : i18nConfig.defaultLanguage;
     const description = page.data.description ?? site[locale].description;
-    const path = `/${lang}${slug?.length ? `/${slug.join("/")}` : ""}`;
+
+    // **The canonical address, and it is not always this page's own.**
+    //
+    // Two fixes to what Search Console was reporting on 2026-09-21, both of them
+    // about the same 181 pages:
+    //
+    // 1. **It carries the trailing slash.** `trailingSlash: true` makes that the
+    //    canonical form and the sitemap writes it, but Next leaves a path alone
+    //    once a segment contains a dot — and every versioned segment does, so
+    //    `/en/install/v0.2/backup` declared a canonical that redirects to
+    //    `/en/install/v0.2/backup/`. `app/sitemap.ts` already refused to do
+    //    that; this did it on every versioned page.
+    // 2. **The newest version points at the version-less address**, which is the
+    //    same text and the address that survives the next release.
+    const canonicalSlug = (await newestVersion(slug))?.unversioned ?? slug;
+    const localized = (other: string) =>
+        `/${other}${canonicalSlug?.length ? `/${canonicalSlug.join("/")}` : ""}/`.replace(/\/+$/, "/");
+
+    const canonical = localized(lang);
 
     // **A language alternate is only offered where the page really exists.**
     // Every English page resolves under `/pl/` through the fallback, so
@@ -134,7 +152,7 @@ export async function generateMetadata(props: { params: Promise<Params> }): Prom
             type: "article",
             title: page.data.title,
             description,
-            url: path,
+            url: canonical,
             siteName: site[locale].name,
             locale: ogLocale[locale],
             images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: SITE_NAME }],
@@ -148,15 +166,12 @@ export async function generateMetadata(props: { params: Promise<Params> }): Prom
         alternates: duplicate
             ? undefined
             : {
-                  canonical: path,
+                  canonical,
                   languages: {
                       ...Object.fromEntries(
-                          alternates.map((other) => [
-                              hreflang[other],
-                              `/${other}${slug?.length ? `/${slug.join("/")}` : ""}`,
-                          ]),
+                          alternates.map((other) => [hreflang[other], localized(other)]),
                       ),
-                      "x-default": `/${i18nConfig.defaultLanguage}${slug?.length ? `/${slug.join("/")}` : ""}`,
+                      "x-default": localized(i18nConfig.defaultLanguage),
                   },
               },
         ...(duplicate ? { robots: { index: false, follow: true } } : {}),

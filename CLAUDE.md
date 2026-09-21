@@ -114,8 +114,12 @@ is `sha256`, never `hash`; in prose, SHA-256.
 npm run lint && npm run typecheck && npm run build
 npm run check:links && npm run check:versions
 npm run check:translations && npm run check:structure && npm run check:glossary
-npm run check:section-links && npm run check:no-playground
+npm run check:section-links && npm run check:no-playground && npm run check:sitemap
 ```
+
+The last two read `out/`, so they follow the build. `check:sitemap` is the only
+one that reads the built site rather than `content/docs`, which is why three
+defects it now catches survived every other check.
 
 **A new check is not trusted until it has been shown to fail.** Break the thing
 it is meant to catch, watch it go red, put it back.
