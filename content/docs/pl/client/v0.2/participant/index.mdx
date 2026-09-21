@@ -1,0 +1,94 @@
+---
+title: Dla uczestnika
+description: Jak się zalogować, wejść do aktywności, wysłać rozwiązanie i przeczytać, co wróciło.
+source: en/client/v0.2/participant/index.mdx
+sourceSha256: 6aae9667cd286807781c2af76aac253b78d9548bcee80bc3e818b5340f674088
+---
+
+Jesteś tu po to, żeby wziąć udział w zawodach albo w zajęciach, a nie żeby je
+prowadzić. Te strony opisują dokładnie te ekrany, które możesz otworzyć.
+
+## Na szybko
+
+| Chcesz | Przeczytaj |
+|---|---|
+| w ogóle wejść | [Logowanie](/pl/client/v0.2/participant/signing-in) |
+| otworzyć aktywność z poziomu swojego kursu | [Wejście z kursu](/pl/client/v0.2/participant/arriving-from-a-course) |
+| znaleźć swoje zawody albo zajęcia, albo się zapisać | [Aktywności](/pl/client/v0.2/participant/activities) |
+| przeczytać regulamin, jeżeli organizator go opublikował | [Regulamin](/pl/client/v0.2/participant/rules) |
+| wiedzieć, dlaczego seria nic nie pokazuje | [Rundy, tygodnie i zajęcia](/pl/client/v0.2/participant/series) |
+| przeczytać zadanie albo sprawdzić, dlaczego przycisk wysyłki jest wyszarzony | [Zadania](/pl/client/v0.2/participant/problems) |
+| wysłać rozwiązanie | [Wysyłanie rozwiązania](/pl/client/v0.2/participant/submitting) |
+| sprawdzić, co się z nim stało | [Co się stało z moim zgłoszeniem](/pl/client/v0.2/participant/results) |
+| odzyskać swój kod albo poprawić go i wysłać ponownie | [Kod źródłowy](/pl/client/v0.2/participant/source-code) |
+| zobaczyć, na którym jesteś miejscu | [Ranking](/pl/client/v0.2/participant/ranking) |
+| o coś zapytać organizatorów | [Pytania i ogłoszenia](/pl/client/v0.2/participant/questions) |
+| dostać swój kod na papierze | [Drukowanie kodu](/pl/client/v0.2/participant/printing) |
+
+## Jak to jest zbudowane
+
+**Aktywność** to jedne zawody albo jedne zajęcia. W środku są **serie** — w
+zawodach seria to runda, na zajęciach tydzień albo zajęcia. Każda seria zawiera
+**zadania**. Do zadania wysyłasz **zgłoszenie**, Runner je ocenia, a wynik
+wraca.
+
+Wszystko, co robisz, dzieje się wewnątrz jednej aktywności. Nawigacja po lewej
+zmienia się, gdy do jakiejś wejdziesz, a to, co w niej znajdziesz, zależy od
+tego, co włączył organizator.
+
+## AlgoJudge na Twoim urządzeniu
+
+**AlgoJudge da się zainstalować.** Jeżeli przeglądarka to proponuje —
+*Zainstaluj* na komputerze, *Dodaj do ekranu głównego* w menu udostępniania na
+telefonie — dostajesz ikonę, która otwiera aplikację we własnym oknie, bez kart
+i bez paska adresu. To ta sama instalacja pod tym samym adresem; zmienia się
+tylko okno wokół niej.
+
+**Na ikonie jest napis AlgoJudge, a nie nazwa Twojej uczelni ani zawodów.**
+Nazwa instalacji, jej logo i kolory przychodzą z Servera dopiero wtedy, gdy
+strona zaczyna się już rysować, więc w chwili zapisywania skrótu przeglądarka
+nie zna jeszcze żadnego z nich. Tytuł karty idzie za instalacją; skrót nie może.
+Jeżeli przeglądarka pozwala poprawić nazwę przy dodawaniu, to jest miejsce, w
+którym odróżnisz dwie instalacje.
+
+**Logowanie przez uczelnię dzieje się w zainstalowanym oknie.** Zainstalowana
+aplikacja obejmuje cały adres, więc wyjście do dostawcy tożsamości i powrót
+zostają w tym oknie, zamiast otwierać przeglądarkę obok. Zobacz
+[Logowanie](/pl/client/v0.2/participant/signing-in).
+
+**Otwiera się bez sieci i sama mówi, co się dzieje.** Aplikacja trzyma swoją
+kopię na urządzeniu, więc okno otworzy się i w pociągu, i w piwnicy: zobaczysz
+własny ekran AlgoJudge *To urządzenie jest offline*, a nie stronę błędu
+przeglądarki. Nic, co wymaga Servera, nie zadziała do powrotu połączenia — ani
+treść zadania, ani wysłanie zgłoszenia, ani ranking — a ekran czeka i sam wraca
+do aplikacji, gdy połączenie wróci.
+
+Ten ekran ma jeszcze dwie postacie i rozpoznasz je po treści. *Trwa przerwa
+techniczna* znaczy, że ktoś pracuje nad instalacją, a *Server nie odpowiada* —
+że nie da się jej stąd osiągnąć. W żadnym z tych trzech przypadków nic z tego,
+co już wysłałeś, nie przepada.
+
+**Aplikacja się nie starzeje.** Przy każdym otwarciu z działającym połączeniem
+bierze z instalacji bieżącą wersję; kopia na urządzeniu odpowiada tylko wtedy,
+gdy sieci nie ma.
+
+**Jeżeli i tej kopii nie ma** — pierwsze wejście zrobione bez sieci albo
+przeglądarka, która wyczyściła dane — pod adresem odpowie mała strona z napisem
+*Brak połączenia*, po polsku i po angielsku naraz, bo nic na niej nie wie, który
+język wybrałeś.
+
+**Gdy okno jest zamknięte, nic do Ciebie nie dociera.** Zainstalowana aplikacja
+nie wysyła powiadomień systemowych. Werdykt pojawia się na otwartym ekranie i
+czeka na Ciebie, gdy wrócisz.
+
+## Dwie rzeczy, które warto wiedzieć przed startem
+
+**Zadania otwierają się o określonej godzinie, a nie wtedy, gdy odświeżysz.**
+Ekran sam się aktualizuje, gdy runda się otwiera, zostaje wstrzymana albo się
+kończy. Nie musisz przeładowywać strony.
+
+**Każdy z trzech rodzajów zadań wymaga czego innego.** Jeden przyjmuje program,
+drugi przyjmuje program i wysyła go do zewnętrznego archiwum, a trzeci przyjmuje
+pliki z odpowiedziami, bez programu. Od tego, na które zadanie patrzysz, zależy,
+co pokaże formularz wysyłki. Zobacz
+[Wysyłanie rozwiązania](/pl/client/v0.2/participant/submitting).

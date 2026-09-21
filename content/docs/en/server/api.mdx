@@ -227,22 +227,23 @@ can still be reopened.
 ## The generated reference
 
 [REST reference](/en/server/rest) is built from the `openapi.json` of a pinned
-Server release — `v0.1.0` — fetched from that tag and checked against a recorded
+Server release — `v0.2.0` — fetched from that tag and checked against a recorded
 SHA-256, never from a local build, which would document whatever happened to be
 on the machine that ran it.
 
-One page per tag rather than one per operation: that document declares **162
-paths and 199 operations over 44 tags**, and a page per operation would bury the
+One page per tag rather than one per operation: that document declares **171
+paths and 209 operations over 45 tags**, and a page per operation would bury the
 eight a reader actually wants.
 
 Its own `info.version` reads `1.0`. That is the framework's default for a
 document nobody versioned; the Server release this reference describes is the
 one named above.
 
-**So it lags the prose pages between releases.** Endpoints added after `v0.1.0`
-— the printout routes among them — are described in the pages of this section
-and are not in the generated reference, because the reference follows a tag
-rather than a branch. It catches up when the next release is tagged.
+**It follows a tag rather than a branch**, so between releases it describes the
+last one while the prose pages of this section describe what is being built.
+Each released version keeps its own copy of the reference under its own address,
+generated from that release's document: `/en/server/v0.1/rest` still answers
+with the surface `v0.1.0` served, including the addresses this one renamed.
 
 The interactive playground is switched off. Turning it on later is a CORS
 decision, not a framework one.

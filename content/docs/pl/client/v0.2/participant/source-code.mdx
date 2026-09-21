@@ -1,0 +1,70 @@
+---
+title: Kod źródłowy
+description: Jak obejrzeć to, co wysłałeś, skopiować to, pobrać i wysłać poprawioną wersję.
+source: en/client/v0.2/participant/source-code.mdx
+sourceSha256: 2ec5ec89c727b2e9b70b29a6b1a2514542522410925f411a0c8fca3c1d32ec64
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**Kod źródłowy** na ekranie zgłoszenia otwiera to, co naprawdę wysłałeś — w oknie
+nad ekranem, na którym byłeś. Nie ma własnego adresu: nie ma czego skopiować ani
+dodać do zakładek, a zamknięcie odkłada Cię z powrotem.
+
+**Nie Ty decydujesz o tym, czy możesz go przeczytać — nawet jeżeli to Ty go
+wysłałeś.** Przycisk **Kod źródłowy** znika z ekranu zgłoszenia z dwóch powodów:
+
+- **Aktywność nie udostępnia Ci plików zgłoszenia.** To osoba prowadząca
+  decyduje, które z nich może czytać uczestnik.
+- **Runda zabrała swoje treści** — jest wstrzymana z ukrytymi treściami zadań
+  albo zakończyła się w aktywności, która zamyka rundy po zakończeniu. Kod,
+  który napisałeś do treści, już niedostępnej, znika razem z nią i razem z nią
+  wraca.
+
+W obu przypadkach przycisku po prostu nie ma i ekran nie mówi, który z tych
+dwóch powodów zadziałał. Samo zgłoszenie zostaje na miejscu: nadal jest w
+**Moich zgłoszeniach**, z werdyktem, punktacją i wynikami testów.
+
+To pełny edytor, tylko do odczytu, dopóki sam tego nie zmienisz, z kolorowaniem
+składni Twojego języka. Zgłoszenie z kilkoma plikami dostaje zakładkę na plik;
+zgłoszenie z jednym pokazuje jego nazwę nad edytorem.
+
+## Kopiuj i Pobierz
+
+**Kopiuj** kopiuje do schowka plik, który masz na ekranie. **Pobierz** zapisuje
+go pod jego własną nazwą. Oba działają na tym, co jest aktualnie wyświetlone —
+łącznie z niezapisanymi zmianami, jeżeli zacząłeś edytować.
+
+## Drukuj
+
+Tam, gdzie aktywność ma włączony moduł wydruków, obok pozostałych przycisków
+stoi **Drukuj**. Prosi on osobę przy drukarce o wydruk otwartej zakładki i
+wysyła to, co widać na ekranie — razem ze zmianami, których jeszcze nie
+wysłałeś.
+
+To kopia z jednej chwili, a nie odnośnik do zgłoszenia: na papierze wyjdzie to,
+co czytałeś. Zobacz [Drukowanie kodu](/pl/client/v0.2/participant/printing).
+
+Żądanie wskazujące zgłoszenie z rundy, która zabrała swoje treści, zostanie
+odrzucone. Runda, która nie pokazuje Ci Twojego kodu, nie wydrukuje go także na
+papierze.
+
+## Edytuj i wyślij ponownie
+
+**Edytuj i wyślij ponownie** odblokowuje edytor. Przycisk zmienia się wtedy w
+**Wyślij jako nowe zgłoszenie**.
+
+<Callout type="warn" title="Oryginał nigdy nie jest nadpisywany">
+*Wysłanie tworzy nowe zgłoszenie; to pozostaje bez zmian.* Zgłoszenie, na które
+patrzysz, zostaje dokładnie takie, jakie było ocenione — ten sam kod, ten sam
+werdykt, te same punkty. To, co wyślesz, staje się **nowym** zgłoszeniem i
+lądujesz na jego ekranie.
+</Callout>
+
+Nowe zgłoszenie ma tę samą deklarację co oryginał — ten sam typ zadania i ten sam
+język — więc jest oceniane jako to, czym jest, a nie jako to, co zrobiłaby z
+niego wartość domyślna.
+
+Pod każdym innym względem to zwykłe zgłoszenie: zużywa Twój limit, pojawia się w
+**Moich zgłoszeniach** i zostaje odrzucone, jeżeli runda przestała już
+przyjmować.

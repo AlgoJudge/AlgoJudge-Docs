@@ -1,0 +1,269 @@
+---
+title: Every setting in `.env`
+description: The whole of an installation's configuration in one table, what each key defaults to, and the two that have no default at all.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+One file configures an installation: `.env`, beside `compose.yaml`. **No Compose
+file is edited for any supported arrangement.**
+
+The pages around this one explain the settings in the order somebody meets them.
+This one is the reference: every key, in one place, so that a value you find in
+somebody's `.env` can be looked up.
+
+<Callout type="warn" title="Two keys have no default and the stack will not start without them">
+`AJ_ADMIN_TOKEN` and `POSTGRES_PASSWORD`. Compose refuses to start rather than
+substituting an empty string, which is deliberate: an administrator token that
+quietly defaulted to nothing would leave `/admin` closed and the
+administrator's password unreachable.
+</Callout>
+
+## What runs, and from where
+
+| Key | Default | |
+|---|---|---|
+| `COMPOSE_PROFILES` | `edge,app,data,runner` | which services run. See [the four arrangements](/en/install/v0.2). `external-runner` is an addition to any of them rather than an arrangement of its own, and it is left out because it needs an account at an external judging system. **`runner` starts `runner-1` and `runner-2`, and that is the whole fleet** |
+| `COMPOSE_PROJECT_NAME` | `algojudge` | what this installation is called. Compose puts it in front of every container, network and volume — `algojudge_pgdata`, `algojudge_runner-cache` — and each Runner is handed its scratch and its cache by that full name. **Two installations on one host that both leave this empty share all of it**, the Runners' scratch included |
+| `TZ` | `Europe/Warsaw` | anchors the [scheduled work](/en/install/v0.2/schedule) to the operator's clock, and nothing else: the containers log in UTC, which is what makes two machines' logs comparable |
+| `REGISTRY` | `ghcr.io/algojudge` | where the images are pulled from |
+| `SERVER_TAG` | `0.2` | the **minor line** this stack is written for, and no `v`. A release tagged `v0.2.1` publishes the image tags `0.2.1`, `0.2`, `0` and `latest`, so `0.2` takes every later patch on the next [update](/en/install/v0.2/update) and nothing else. **Not the moving major `0`**: below 1.0 a minor may change what the one before it did — 0.2 is not compatible with 0.1 — so `0` would carry an installation across a break without asking. `latest` is not offered at all, for the same reason in a stronger form: an installation must not change version because somebody pulled. This checkout is the 0.2 line, and a stack for 0.3 arrives as a new AlgoJudge-Ops release with whatever its upgrade needs |
+| `CLIENT_TAG` | `0.2` | |
+| `RUNNER_TAG` | `0.2` | the Runner **and** its four `lang-*` images, which are built and released together with it |
+| `EXTERNAL_RUNNER_TAG` | `0.2` | its own repository, so its own tag |
+| `POSTGRES_TAG` | `18` | the major is pinned on purpose — 18 moved the data directory |
+| `NGINX_TAG` | `1.30-alpine` | nginx's stable line. Even minors are stable, odd ones mainline. **Judge a base tag by when it was last built, not by whether it pulls** |
+| `LOG_MAX_SIZE` | `20m` | each container's log, bounded by the stack itself rather than by your daemon. `docker compose logs` can only show what is kept, so raise these before a long contest you expect to diagnose afterward |
+| `LOG_MAX_FILES` | `5` | Docker's `local` driver, which compresses what it rotates. **A collector that tails `*-json.log` off the host filesystem cannot read that**, and putting `json-file` back in `compose.yaml` is the answer if you run one |
+
+## The database
+
+| Key | Default | |
+|---|---|---|
+| `POSTGRES_DB` | `algojudge` | |
+| `POSTGRES_USER` | `algojudge` | |
+| `POSTGRES_PASSWORD` | **required** | |
+| `MIGRATE_ON_START` | `true` | becomes the Server's `AJ_Database__MigrateOnStart`, which is `false` on its own. Ops turns it on because [it backs up first](/en/install/v0.2/backup) |
+
+## The network
+
+| Key | Default | |
+|---|---|---|
+| `HTTP_PORT` | `80` | what the bundled nginx publishes |
+| `HTTPS_PORT` | `443` | |
+| `SERVER_PORT` | `8080` | published on loopback only |
+| `CLIENT_PORT` | `8082` | published on loopback only |
+| `API_BASE_URL` | `/` | the Server's address as a **browser** reaches it. `/` when one origin serves both. Two origins must be the **same site** — one registrable domain, one scheme — or nobody can sign in. See [Your own reverse proxy](/en/install/v0.2/reverse-proxy) |
+| `APP_BASE_URL` | empty | its mirror image: where a browser reaches the **application**. Empty is right on one origin. On two, leaving it empty ends a federated sign-in at a bare `/activities`, resolved against the API's origin |
+| `TRUSTED_PROXY_NETWORKS` | `172.28.0.0/24` | whose word to take for a visitor's address, as a **network** rather than an address: `172.28.0.5/24` is refused at startup, by name, with the address it should have been. **Emptying the line empties the list** — the default stands in for a missing line, not for a blank one |
+| `TRUSTED_PROXY_PROXIES` | empty | single addresses rather than networks, and **the one place `none` belongs**. For a Server with nothing in front of it at all, write `none` here and leave `TRUSTED_PROXY_NETWORKS` empty, and it stops reading `X-Forwarded-For`. `none` in the networks line is read there as a CIDR block and refused; `none` here beside a network is refused too, because the Server takes it only as the whole of what it has been told to trust |
+| `EDGE_SUBNET` | `172.28.0.0/24` | the Compose network the bundled nginx sits on |
+| `SERVER_STOP_GRACE` | `40s` | long enough for the Server to answer the claims it is holding open. Raise it beside `AJ_Poll__WaitSeconds` if you raise that |
+| `SERVER_LOG` | `Warning` | **not `Information`**: at that level the Server logs every SQL statement, measured at 91–98% of everything a judging stack writes — over a gigabyte for a three-thousand-submission contest, on the database's own disk |
+
+**`EDGE_SUBNET` and `TRUSTED_PROXY_NETWORKS` must agree.** The default pair does.
+Changing one without the other means the Server stops believing the proxy in
+front of it, and every visitor is recorded as arriving from that proxy.
+
+**One of the two trusted-proxy keys has to name something.** With both empty the
+Server refuses to start: trusting every sender of `X-Forwarded-For` lets a
+visitor state their own address, and trusting nobody records the proxy instead
+of the person.
+
+## Storage and the operator surface
+
+| Key | Default | |
+|---|---|---|
+| `STORAGE_KIND` | `postgres` | `postgres`, `filesystem` or `s3`. **Only `postgres` makes the database dump the whole of the installation's state** |
+| `STORAGE_PATH` | `/var/lib/algojudge/objects` | `filesystem` only, in a volume of its own. Back it up in step with the database |
+| `STORAGE_ENDPOINT` | empty | `s3` only, and all four below are required together |
+| `STORAGE_BUCKET` | empty | |
+| `STORAGE_ACCESS_KEY` | empty | |
+| `STORAGE_SECRET_KEY` | empty | |
+| `AJ_ADMIN_TOKEN` | **required** | becomes `AJ_Admin__Token`. Set it before the first start |
+
+## More of the Server
+
+Settings an installation rarely has a reason to move. Each one ships empty or
+commented out, which is the image's own default, and the value in the middle
+column is what that default is. The Server reads a good deal more than any of
+this; [Server configuration](/en/server/configuration) is the whole of it.
+
+| Key | Default | |
+|---|---|---|
+| `MAINTENANCE_FORCE_AFTER` | `300` | how many seconds `draining` waits for a Runner to finish before closing anyway. **Raise it past `AJ_External__PendingTimeoutSeconds` — 900 by default — before a window that restarts the external Runner**, or the drain gives up on work the archive was still about to answer. See [Maintenance mode](/en/install/v0.2/maintenance) |
+| `MAX_REQUEST_BYTES` | `134217728` | 128 MiB, which is the package ceiling. **nginx has a limit of its own**, `client_max_body_size` in `nginx/algojudge.conf`, and raising one without the other rejects at the lower of the two |
+| `RETENTION_SESSION_ORIGIN_DAYS` | `30` | how long an address is kept beside a session |
+| `RETENTION_SUBMISSION_ORIGIN_DAYS` | `365` | and beside a submission |
+| `EVENTS_SEND_TIMEOUT` | `5` | how many seconds the Server waits to hand an event to a connected browser |
+| `FILES_COLLECT_AT_HOUR_UTC` | `6` | the hour, UTC, at which files nothing refers to are collected |
+| `STORAGE_MIGRATION_START_HOUR_UTC` | `2` | the hour, UTC, a [storage migration](/en/install/v0.2/storage) may begin. It also waits for the evaluation queue to empty and every round to close |
+| `STORAGE_MIGRATION_BUDGET_MINUTES` | `30` | how long one run works before it stops and continues in the next window. The boundary costs nothing: what has moved is recorded on the files themselves, so the next run picks up where this one stopped |
+| `STORAGE_MIGRATION_GRACE_MINUTES` | `60` | how long a file's old copy is kept after its row points at the new store, so a reader that resolved that row a moment ago still finds the bytes |
+| `STORAGE_SPOOL_PATH` | a directory under the system temporary directory | where an upload rests while its length becomes known. In a container the default is inside the image's own layer; point it at a volume if packages are large |
+| `DATA_PROTECTION_KIND` | `database` | what protects the key ring that mints session cookies |
+| `UVA_EXPLORER_ORIGIN` | the hosted problem picker | where the problem explorer is served from, for the UVa integration |
+
+## The Runner
+
+| Key | Default | |
+|---|---|---|
+| `RUNNER_NAME_PREFIX` | `runner` | what each of them registers as: this with `-1` and `-2` after it. **A second host running Runners needs a different prefix**, or the panel shows two rows called the same thing |
+| `RUNNER_1_CPUSET`, `RUNNER_2_CPUSET` | empty | which processors each Runner may use. **Both are empty, which is every processor the host has.** A shipped pair would be an installation that starts on no smaller machine: a cpuset naming a processor the host does not have is refused by the daemon at create — `Requested CPUs are not available` — and `up -d --wait` then stops with half the stack running. `preflight.sh` reads each list against the host and refuses first. The division worth making is **one Runner per group of cores, and one lane per core in the group** — `RUNNER_TESTS_AT_ONCE` below says how many lanes. A processor apiece is the floor the Runner refuses below; a core apiece is what a lane wants, and the difference was measured at 196 ms of processor time a test against 318 ms, enough to put correct solutions over their limit. The Runner reads the topology at start and warns, once per lane that got a thread rather than a core. Each set is cut into lanes in the order it is written, so read the machine rather than copying an example: `thread_siblings_list` says `0-1` on one host and `0,8` on another. See [What the host needs](/en/install/v0.2/requirements) |
+| `RUNNER_TESTS_AT_ONCE` | `2` | how many of **one submission's** tests each Runner judges at the same time, one lane each. It buys latency on a single submission rather than throughput: the participant waits for the slowest test instead of for the sum of them. **A Runner given more lanes than its cpuset has processors refuses to start**, naming both, and `restart: unless-stopped` turns that into a loop — a time limit is processor time, and two judged runs sharing a processor spend more of it for the same work, so correct solutions come back too slow with nothing in the verdict saying why. With an empty cpuset the floor is the host's own processor count, which `preflight.sh` checks. A lane also costs memory: two of them on 256 MiB problems is about 670 MiB per Runner before inputs, four about 1.3 GiB. `.env.example` ships `2`; the image's own default is `1` |
+| `RUNNER_PROBLEM_TYPES` | `standard-io@1,output-only@1` | what this Runner offers to evaluate. A value that names nothing — a stray comma — is refused at startup |
+| `RUNNER_TAGS` | empty | pools. **Read at the first registration only**; naming one takes the Runner out of the general queue |
+| `RUNNER_STOP_GRACE` | `30s` | how long Docker waits before killing a Runner. On `SIGTERM` it hands its job back so another takes it at once; **shortening this below what those calls take turns a stop into a kill**, and a killed Runner leaves its job to the lease. See [Update and rollback](/en/install/v0.2/update) |
+| `RUNNER_LOG` | `info` | becomes `RUST_LOG` |
+| `DOCKER_GID` | `999` | the group that owns the daemon's socket. `0` on Docker Desktop. Not load-bearing — the service runs as root — but `preflight.sh` warns when it is wrong |
+| `SERVER_URL` | `http://server:8080` | only for a host with no `server` container; `/api/v1` is appended |
+
+The reference division, on eight processors that are four cores of two threads —
+two Runners, two lanes each, a core to a lane:
+
+```ini
+RUNNER_1_CPUSET=0,1,2,3
+RUNNER_2_CPUSET=4,5,6,7
+RUNNER_TESTS_AT_ONCE=2
+```
+
+Those pairs are cores only where cpu0's partner is cpu1. `lscpu -p=CPU,CORE`
+names them all, and where the partner is cpu8, `RUNNER_1_CPUSET=0,8,1,9` is the
+two lanes of a core each.
+
+## Where the Runners keep their bytes
+
+Nothing configures this, which is the point of it. Each Runner is given Docker
+volumes and there is no host path to name, create or permission:
+
+| Volume | |
+|---|---|
+| `algojudge_runner-cache` | every package the Runners have downloaded, unpacked and built the checker of, **shared between them** under a lock, bounded by the Runner at 10 GiB |
+| `algojudge_runner-N-work` | one Runner's scratch, a submission at a time, **never shared**. An expired lease may be re-issued while the first Runner is still working, so one between two would be one Runner deleting the other's work |
+
+The cache is worth keeping. `docker compose down -v` removes it with everything
+else, and the next submission of every package downloads and builds again —
+minutes of a participant's time rather than data loss.
+
+<Callout type="warn" title="A host that runs Runners needs Docker Engine 26 or Podman 5">
+A judge's container mounts a **subdirectory** of the shared cache volume, which
+is a `subpath` mount and arrived in Engine 26 / API 1.45 (April 2024). **There
+is no arrangement for an older daemon.** On one the Runner refuses to judge
+rather than judging against an empty directory, and `scripts/preflight.sh` says
+so before anything starts: *update the daemon.*
+</Callout>
+
+## More of the Runner
+
+Empty is the image's own default for every one of these, and the Runner reads an
+empty value as an absent one — so a line left commented out changes nothing.
+
+<Callout type="warn" title="Any value at all turns the measurement override on, false included">
+`RUNNER_ALLOW_UNMEASURED` and `RUNNER_ALLOW_CGROUP_V1` are **one switch under
+two names**, the second being the older one. The Runner asks whether the
+variable is set, not what it says, so `RUNNER_ALLOW_UNMEASURED=false` reads as
+*allow*. Leaving it empty or commented out is the only way to keep it off.
+
+What it turns on is **starting**, not judging. A Runner that cannot read
+processor time from a cgroup registers, answers the protocol and then fails
+every job it claims with an infrastructure error, while looking in the manager
+panel exactly like a Runner that works. It says so only in its own log, at
+`ERROR`, on every start. [What the host needs](/en/install/v0.2/requirements) has the
+whole of it.
+</Callout>
+
+| Key | Default | |
+|---|---|---|
+| `RUNNER_CACHE_MAX_BYTES` | `10737418240` | 10 GiB, what the shared package cache may hold before the Runners evict by age. Plain bytes only |
+| `RUNNER_LEASE_SECONDS` | `600` | how long a lease on a claimed job is asked for |
+| `RUNNER_HEARTBEAT_SECONDS` | `60` | how often a Runner says it is alive |
+| `RUNNER_POLL_MIN_SECONDS` | `1` | the wait between asks of the Server, at its shortest |
+| `RUNNER_POLL_MAX_SECONDS` | `30` | and at its longest, once nothing has come back for a while |
+| `RUNNER_POLL_WAIT_SECONDS` | `25` | how long the Server may hold a claim open. It must stay under the Server's ceiling of 300 — a Runner asking for more refuses to start rather than being clamped to it — and under `SERVER_STOP_GRACE` |
+| `RUNNER_KEY_PATH` | inside the identity volume | where a Runner keeps the key it registered with, which is where it belongs |
+| `RUNNER_CGROUP_ROOT` | found by the image | the cgroup the Runner measures under |
+| `RUNNER_ALLOW_UNMEASURED` | unset | start on a host this Runner cannot measure on — and only start. See the warning above |
+| `RUNNER_ALLOW_CGROUP_V1` | unset | the older name for the row above, still read |
+
+## The external Runner
+
+Only read when `external-runner` is in `COMPOSE_PROFILES`. See [An external
+judge](/en/install/v0.2/external-runner).
+
+| Key | Default | |
+|---|---|---|
+| `EXTERNAL_JUDGE_USERNAME` | **required with the profile** | the account at the archive. Every forwarded submission is made under it and stays on it |
+| `EXTERNAL_JUDGE_PASSWORD` | **required with the profile** | refused by `preflight.sh`, not by `compose.yaml`: Compose interpolates the whole file before it applies profiles, so a required marker here would break every arrangement that does not run this service |
+| `EXTERNAL_JUDGE` | `uva` | which archive. One process serves one judge; a second is a second service. An unrecognized name is refused at startup rather than defaulted |
+| `EXTERNAL_RUNNER_NAME` | `external-runner-1` | a whole name, not a prefix: this is one Runner, with its own identity and its own approval |
+| `EXTERNAL_PROBLEM_TYPES` | empty | empty declares the archive's own type. A typo here is silence, not an error |
+| `EXTERNAL_RUNNER_TAGS` | empty | pools, read at the first registration only |
+| `EXTERNAL_RUNNER_LOG` | `info` | becomes `RUST_LOG` |
+| `EXTERNAL_RUNNER_STOP_GRACE` | `60s` | twice the sandboxing Runner's, because it hands its whole pending pool back in a single call and that call may be against a Server that is remote, busy or behind a proxy. A stop that does not fit is a kill, which hands nothing back and leaves every held job to sit out its lease |
+
+What this Runner costs the archive, and what it costs our own Server. The gap
+between two submissions is the politeness setting; the pool is a ceiling rather
+than a rate.
+
+| Key | Default | |
+|---|---|---|
+| `EXTERNAL_SUBMIT_MIN_INTERVAL` | `1` | seconds between two submissions to the archive |
+| `EXTERNAL_MAX_PENDING` | `100` | how many forwarded submissions may be outstanding at once |
+| `EXTERNAL_PENDING_TIMEOUT` | `900` | when one of them is given up on |
+| `EXTERNAL_POLL_MIN_SECONDS` | `20` | how often the archive is asked for a verdict. **20 is also the floor the image refuses below** |
+| `EXTERNAL_POLL_MAX_SECONDS` | `60` | and how far the asking slows to |
+| `EXTERNAL_POLL_ESCALATE_AFTER` | `120` | after how many seconds it slows |
+| `EXTERNAL_LONG_POLL` | off | the archive's live stream, which wakes this Runner instead of it asking |
+| `EXTERNAL_JUDGE_BASE_URL` | the judge's own | where the archive is, for a judge that needs it named rather than found |
+| `EXTERNAL_JUDGE_API_BASE_URL` | the judge's own | and its API |
+| `EXTERNAL_JUDGE_USER_ID` | resolved from the username | this account's numeric id at the archive |
+| `EXTERNAL_CACHE_MAX_BYTES` | `268435456` | 256 MiB, this Runner's own cache |
+| `EXTERNAL_LEASE_SECONDS` | `1200` | how long a lease on a claimed job is asked for — twice the sandboxing Runner's, because an archive answers in its own time |
+| `EXTERNAL_SERVER_POLL_MIN_SECONDS` | `1` | the three intervals against **our** Server, not the archive's |
+| `EXTERNAL_SERVER_POLL_MAX_SECONDS` | `30` | |
+| `EXTERNAL_SERVER_POLL_WAIT_SECONDS` | `25` | |
+
+**Polling more gently is safe.** The leases are held on a timer of their own — a
+quarter of the lease the Server granted — so asking somebody else's archive less
+often does not hold the leases less often.
+
+## Backups
+
+Covered in full on [Backup](/en/install/v0.2/backup); this is the key list.
+
+| Key | Default | |
+|---|---|---|
+| `BACKUP_DIR` | `./backups` | |
+| `BACKUP_PRESET` | `standard` | `minimal`, `standard` or `extended` |
+| `BACKUP_KEEP_DAILY` | from the preset | overrides one part of it |
+| `BACKUP_KEEP_WEEKLY` | from the preset | |
+| `BACKUP_KEEP_MONTHLY` | from the preset | |
+| `BACKUP_MIN_KEEP` | `2` | never dropped, whatever the size budget says |
+| `BACKUP_MAX_TOTAL_GB` | written by `preflight.sh` | 25% of the filesystem, never more than 50% |
+| `BACKUP_FREE_SPACE_RESERVE_GB` | `10` | the margin left free after a dump |
+| `BACKUP_VERIFY_FULL` | `false` | read every block back. Costs a full decompression pass on every backup |
+
+## Garbage collection
+
+| Key | Default | |
+|---|---|---|
+| `GC_TMP_RETENTION_DAYS` | `7` | how old a scratch directory nobody claimed must be before it is collected, in each Runner's scratch volume |
+| `GC_PRUNE_IMAGES` | `true` | prune this project's images. Only this project's |
+
+## What is not in `.env`
+
+Some settings are written into `compose.yaml` because an installation has no
+reason to change them: the environment the Server runs as, the default storage
+id, where pre-configuration is mounted, the Runner's own work path inside its
+container, and the four language images, which are built from `REGISTRY` and
+`RUNNER_TAG`.
+
+**Two Server settings are lists, and a list cannot be a key here at all.**
+`Cors:AllowedOrigins` and `Problems:ReservedSlugPrefixes` bind one index at a
+time — `__0`, `__1` — and a single empty entry is a list holding an empty string
+rather than an empty list. They go in a `compose.override.yaml`, which [Your own
+reverse proxy](/en/install/v0.2/reverse-proxy) shows.
+
+The Server reads a good deal more than the keys above — the whole of it is on
+[Server configuration](/en/server/configuration). Ops sets what an installation
+needs and leaves the rest at the Server's own defaults.

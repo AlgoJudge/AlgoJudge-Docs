@@ -1,0 +1,220 @@
+---
+title: Permissions and grants
+description: How rights are written, how they resolve, and the three rules that make the model safe.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+import { Mermaid } from "@/components/mermaid";
+
+## The form
+
+A permission is a string:
+
+```
+resource:operation[:qualifier]
+```
+
+`submission:read:all`, `activity:enroll`, `problem:read:own`. The qualifier is
+part of the operation rather than a separate ownership test — *own* and *all* are
+two different permissions, not one permission evaluated against a predicate.
+
+A **grant** holds a set of them and is scoped to exactly one of two things:
+
+- the **whole installation**, where it applies in every activity;
+- **one activity**, where it also *is* the membership. See
+  [Enrollment](/en/client/v0.2/manager/enrollment).
+
+The same string means the same thing at either scope. What changes is how far it
+reaches.
+
+## How they resolve
+
+In this order:
+
+1. **An activity grant carrying the override flag is the whole answer inside its
+   activity.** Nothing else applies there — not even `system:administrator`.
+2. Otherwise `system:administrator`, held in any system contribution, bypasses
+   every permission check.
+3. Otherwise the effective set is the **union**: every system contribution, plus
+   the activity grant when one activity is being asked about.
+
+<Mermaid chart={`
+flowchart TD
+    q(["May this person do X?"])
+    q --> scope{"Is the question<br/>about one activity?"}
+    scope -->|no| adm
+    scope -->|yes| ovr{"Does their grant there<br/>carry the override flag?"}
+    ovr -->|yes| whole["That grant is the whole answer.<br/>Nothing else applies there, not even system:administrator"]
+    ovr -->|no| adm{"Does any system contribution<br/>carry system:administrator?"}
+    adm -->|yes| bypass["Allowed: it bypasses every permission check.<br/>Membership is not a permission, so submitting<br/>still needs a grant in the activity"]
+    adm -->|no| union["The union of every system contribution,<br/>plus the activity grant when one activity is in question"]
+`} />
+
+**Rule 2 bypasses permissions, and membership is not one.** Submitting needs an
+active grant in the activity itself, so an administrator who holds only a system
+grant is refused there like anybody else — and an activity grant is what being
+enrolled means.
+
+<Callout type="warn" title="There is no subtraction anywhere in the model">
+System scope is a union of contributions and is purely additive. An activity
+grant either overrides it wholesale or adds to it. There is no way to write *a
+manager, minus this one thing* as a subtraction — the way to say it is a smaller
+set, or the override.
+</Callout>
+
+### System scope is several rows
+
+At system scope a person holds one contribution per source: **one assigned by
+hand, plus one per linked identity provider**. The list marks a managed
+contribution with the provider it came from.
+
+A managed contribution is **rewritten from that provider's mapping at every
+sign-in and cannot be edited by hand**. An edit would last until that person next
+signed in, and a change that silently reverts is worse than a refusal. Change the
+provider's mapping instead — see [External logins](/en/client/v0.2/manager/logins).
+
+### The override flag
+
+On an activity grant, *this grant is the whole answer inside the activity*. It is
+how "a manager everywhere, except in this contest, where I compete" is said.
+
+Two things about it are worth knowing before you set one:
+
+- **Setting it on somebody who holds system permissions demotes them there.** The
+  dialog warns you at the moment of the act, because the first sign of it
+  otherwise is a manager who has quietly lost a screen.
+- **It can strand its holder.** Inside that activity they are whatever the grant
+  says — typically a participant, holding no `grant:update` — so clearing it
+  needs another manager of that activity, or an administrator.
+
+An administrator's rights still cannot be trimmed from below: only an
+administrator may have set the flag on an administrator's grant.
+
+## Three rules the Server enforces, and you cannot turn off
+
+**Nobody may grant a permission they do not themselves hold.** Without it the
+model is decorative — anybody who could edit a grant could write
+`system:administrator` into it. The editor offers only what you hold, and the
+Server refuses the rest whatever the screen did.
+
+Inside an activity, "what you hold" means **what you hold in that activity**,
+which is not the same set as your rights across the installation.
+
+**`system:administrator` is unreachable through a claim mapping.** A mapping
+decides what an external directory's group is worth here, and a directory must
+never be able to mint an administrator. Both halves are guarded: a mapping rule
+cannot name a role that carries it, a role that is already mapped cannot have
+it added, and a role that carries it anyway is left out entirely when the
+mapping is used.
+
+The same rule applies to mapping as to granting: nobody may map onto a permission
+they do not themselves hold.
+
+**The installation cannot be left without an administrator.** Revoking the only
+active system grant that carries `system:administrator`, rewriting it so it no
+longer carries the key, and putting that row back to *invited* are one act in
+three spellings, and the Server refuses all three. Grant the key to somebody
+else first; the moment a second active system grant carries it, the first is an
+ordinary row again.
+
+## Roles
+
+A role is a named set of permissions, and **a grant links them** — as many as it
+is given. Editing a role changes what everybody holding it may do, at once,
+including people enrolled long before the edit.
+
+<Callout type="warn" title="An edit reaches everybody holding the role">
+This is the whole reason a role is worth being careful with, and the screen says
+so: the role editor shows how many grants the change would reach before you save
+it. If you meant to change one person, change their grant instead — a grant may
+carry permissions of its own beside its roles.
+</Callout>
+
+A role belongs either to the **installation** or to **one activity**. An
+activity's role can only be granted inside that activity, and is written by
+whoever runs it; the installation's roles are an administrator's. That is what
+lets you correct what your own participants may do without touching what every
+participant in the installation may do.
+
+**You cannot put into a role a permission you do not hold yourself.** The rule
+that has always governed handing out a grant governs writing the thing a grant
+links, for the same reason. It is applied to what you **add**: taking a
+permission out of a role is never refused.
+
+The **Roles** area lists them, and marks the ones that ship as built-in; those
+cannot be deleted, because removing one would leave a fresh installation nothing
+to grant from. Neither can a role somebody still holds — the refusal says how
+many — nor one an activity enrolls into, and that refusal names the activities.
+
+The administrator's own role is **fixed**: it cannot be edited at all. An empty
+permission set there would take the installation away from everybody linked to
+it in a single save, so who administers is changed by granting and revoking the
+role rather than by rewriting it. A role that is how the installation's last
+administrator holds `system:administrator` is defended the same way a last grant
+is.
+
+Where a provider's rules name a role, the row says so. Editing a role reaches
+everybody holding it at once — people whose grant a provider rewrites at sign-in
+included — so the providers on the row are the rest of who a change is about to
+reach.
+
+### The three that ship
+
+**`participant`** — eight permissions, and this is exactly what an ordinary
+participant holds:
+
+```
+activity:read
+submission:read:own
+submission:create
+result:read:own
+question:read:own
+question:create
+ranking:read
+printout:request
+```
+
+**`manager`** — everything a participant has, plus what is needed to run an
+activity: updating and archiving it, enrolling people, the problem library
+(`read:own`, `create`, `update`, `share`, `archive`, `attach`), everybody's
+submissions and their source, rejudging, canceling and excluding, everybody's
+results and logs, every question with answering and publishing, announcements,
+the printout queue, reading and lifting a ranking freeze, temporary accounts,
+reading and updating grants, and reading and writing **that activity's** roles.
+Writing the installation's roles is an administrator's, and the manager role
+does not carry it.
+
+Deliberately **not** in it: `activity:create`, `activity:delete`,
+`problem:read:all`, `problem:delete`, `problem:import:external`, the `user:`
+keys that create and edit accounts, `runner:*`, `instance:update`,
+`provider:manage`, `role:manage` and `trial:run`. A manager runs an activity; they do not run
+the installation.
+
+`user:read:all` **is** in it, so that a manager can name a person in the
+enrollment and grant pickers. The Users area still asks for it across the
+installation, so holding it here opens no list of accounts.
+
+**`admin`** — one entry, `system:administrator`. One, because it bypasses the
+rest: an administrator with a list of individual permissions is an administrator
+who can be quietly trimmed, and that is the surprise the model is built to
+avoid.
+
+## Where grants are edited
+
+Two screens, one table behind them.
+
+- The **Grants** area lists every grant in the installation, filterable by scope
+  and by activity, and is where a system-scope grant is made.
+- An activity's **Participants** tab is the same rows filtered to that activity,
+  and is where enrollment happens.
+
+A grant is also what decides whether somebody is **staff**: the Server computes
+that on every write from what the grant carries — its roles and its own entries
+together, anything beyond the participant eight with `trial:run` excepted — and
+staff are absent from the participant count and from the ranking.
+
+**A role edit can change that too.** Adding a staff permission to a role a
+course enrolls into makes everybody holding it staff, and takes them out of the
+ranking. The Server recomputes the flag on every linked grant when a role is
+saved, so the board and the count never disagree with the permissions.

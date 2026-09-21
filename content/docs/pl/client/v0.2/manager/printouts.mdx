@@ -1,0 +1,118 @@
+---
+title: Wydruki
+description: Kolejka kodu, który ktoś poprosił wydrukować, i co znika po potwierdzeniu.
+source: en/client/v0.2/manager/printouts.mdx
+sourceSha256: dc47e50583a723d9ce1b79d216e3bb0430b582ae44adb1fc5e75b7f26b89f02b
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Na zawodach na miejscu uczestnik czasem potrzebuje swojego kodu **na papierze** —
+żeby przeczytać go z dala od ekranu, poszukać błędu długopisem albo pokazać go
+sędziemu. **Wydruki** to kolejka, z której pracuje ktoś stojący przy drukarce.
+
+Obszar zobaczy każdy, kto ma `printout:manage` gdziekolwiek. Moduł **włącza się
+osobno dla każdej aktywności** i domyślnie jest wyłączony: inaczej aktywność, w
+której nikt nie stoi przy drukarce, dawałaby uczestnikom przycisk prowadzący do
+kolejki, której nikt nie obsługuje. Przełącznik nazywa się **Wydruki** i stoi w
+karcie Moduły w ustawieniach aktywności.
+
+## Jedyne zadanie, które da się powierzyć osobno
+
+Nadanie, które niesie tylko `printout:manage`, otwiera ten obszar i zamyka
+wszystkie pozostałe. Po to jest to uprawnienie: osoba przy drukarce musi czytać
+cudzy kod, ale z panelu nie potrzebuje już niczego — ani listy zgłoszeń, ani
+kont, ani ustawień aktywności.
+
+<Callout type="warn" title="To uprawnienie wyprowadza z rankingu">
+Kto ma `printout:manage`, jest prowadzącym — bo czytanie cudzego kodu właśnie
+tym jest. Gdy klucz trafi do nadania w aktywności, całe nadanie liczy się jako
+systemowe, a takie nie wchodzi ani do liczby uczestników, ani do rankingu.
+
+Ochotnik, który sam startuje w tych zawodach, musi więc dostać ten klucz w
+aktywności, w której nie startuje — albo pogodzić się z tym, że znika z tamtej
+tabeli wyników.
+</Callout>
+
+## Praca z kolejką
+
+Lista jest ułożona **od najstarszej prośby** i nie da się tego zmienić. Kolejkę
+obsługuje się od początku: pierwszy jest ten, kto czeka najdłużej.
+
+W wierszu widać, kto poprosił i w jakiej grupie startuje, nazwę i slug
+aktywności, nazwę pliku (a pod nią tytuł, jeżeli został podany), godzinę prośby
+i stan. Nad listą stoją dwa filtry — aktywność i stan — oba zapisane w adresie,
+więc lista, nad którą pracujesz, jest linkiem. **Stan przyjmuje kilka wartości
+naraz**, więc *Czeka* i *Przy drukarce* razem to wszystko, z czym nikt jeszcze
+nie skończył.
+
+**Filtr aktywności powstaje z uprawnienia do wydruków**, a nie z ogólnej listy
+aktywności w panelu. Kto ma `printout:manage` w dwóch salach i nic poza tym,
+zobaczy dokładnie te dwie.
+
+| Stan | Co znaczy |
+|---|---|
+| **Oczekuje** | prośba złożona, nikt jej nie otworzył |
+| **Przy drukarce** | ktoś otworzył wydruk i jeszcze nie powiedział, co się stało |
+| **Wydrukowany** | potwierdzony, kodu już nie ma |
+| **Odrzucony** | zamknięty bez drukowania, kodu już nie ma |
+
+## Najpierw drukuj, potem powiedz, co się stało
+
+**Drukuj** otwiera wydruk w nowej karcie i tym samym oznacza wiersz jako Twój.
+Karta układa stronę, sama otwiera okno drukowania i zamyka się, gdy to okno
+zniknie — jedno kliknięcie zamiast trzech.
+
+W pierwszej karcie pojawia się pytanie **Czy wydrukowano?** — *Wydrukowany*,
+*Odrzuć* albo zamknięcie okna. Zamknięcie jest bezpieczne: wiersz nadal należy do
+Ciebie, **Drukuj** otworzy wydruk ponownie i nic nie zostaje usunięte, dopóki nie
+odpowiesz. Zacięta drukarka kosztuje jedno dodatkowe kliknięcie w ten sam wiersz.
+
+<Callout type="warn" title="Potwierdzenia nie da się cofnąć">
+Którąkolwiek z dwóch odpowiedzi wybierzesz, serwer przestaje udostępniać kod i
+usuwa go ze swojego magazynu. Zostaje zapis samej prośby — kto poprosił, kiedy, o
+co, kto ją zamknął i suma SHA-256 tego, co zostało wydrukowane — a wydruk
+otwarty ponownie mówi, że kodu już nie ma.
+
+Po to jest suma kontrolna w stopce: kartkę znalezioną na biurku wciąż można
+dopasować do wiersza w kolejce, choć samego tekstu już nie ma.
+</Callout>
+
+## Dwie osoby, jedna drukarka
+
+Wiersz zajęty przez kogoś innego pokazuje **U: ⟨imię⟩**, a przycisk mówi
+**Przejmij** zamiast **Drukuj**. Przejmowanie jest dozwolone i tak ma być:
+jesteście w tej samej sali i widzicie się nawzajem, a wiersz zablokowany przez
+kogoś, kto odszedł od stanowiska, to kartka, której nikt nie wydrukuje.
+
+**Oddaj** zwalnia wiersz, który zająłeś, bez zamykania prośby. Lista odświeża się
+też sama, gdy pracują na niej inni, więc otwarta kolejka się nie starzeje.
+
+## Sam wydruk
+
+Jedna strona A4, całkowicie poza interfejsem aplikacji — bez nawigacji, bez
+panelu bocznego, bez niczego, co wyszłoby na papier z boku strony.
+
+U góry: kto poprosił i w jakiej grupie startuje; data i godzina **w strefie
+czasowej aktywności, wypisanej obok**, żeby papier pokazywał to samo co zegar w
+sali, a nie to co laptop osoby obsługującej — to jedyne miejsce w produkcie,
+które nie używa twojego własnego zegara, bo kartkę zanosi się do sali i nie ma
+ona czytelnika, względem którego miałaby być lokalna. Dalej nazwa aktywności; nazwa pliku, zadanie — gdy
+prośba przyszła ze zgłoszenia — i tytuł, jeżeli został podany. Niżej listing,
+zawijany, a nie obcinany, z numeracją wierszy, która nie zaznacza się przy
+kopiowaniu. W stopce SHA-256.
+
+Kolorowania składni nie ma. Kolor na czarno-białej drukarce laserowej to szara
+papka.
+
+## Czym wydruk nie jest
+
+Każdy wydruk to **wklejony tekst** — taki, jaki był w chwili prośby, zapisany
+jako osobny plik. Prośba wysłana z podglądu kodu zgłoszenia niesie identyfikator
+tego zgłoszenia, dzięki czemu strona nazywa zadanie, ale drukuje otwartą
+zakładkę, a nie „zgłoszenie”: zgłoszenie może być archiwum, a podgląd kodu ma
+zakładki.
+
+Nie da się więc wydrukować całego zgłoszenia i nic tutaj nie sięga do plików,
+które zgłoszenie już ma. Dzięki temu usunięcie opisane wyżej jest całkowite:
+znikają bajty, które istniały wyłącznie na potrzeby tego wydruku.

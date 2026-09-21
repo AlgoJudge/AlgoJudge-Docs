@@ -1,0 +1,104 @@
+---
+title: Zarządzanie
+description: Trzynaście obszarów i to, dlaczego widzisz tylko niektóre z nich.
+source: en/client/v0.2/manager/index.mdx
+sourceSha256: d4213e9cea34d71e64d7bd61400d2a631e2d0f905141b78d598ab7638d821ef7
+---
+
+Panel jest pod adresem `/manager`. Jego ekran startowy wymienia to, co możesz
+otworzyć, i nic poza tym: *wszystko, czym możesz tu zarządzać — czego nie
+możesz, tego nie ma na liście*.
+
+Nie jest to ozdoba: nawigacja, ekran startowy i kontrola dostępu przy każdym
+adresie czytają tę samą tabelę, więc kafelek nie zaproponuje ci ekranu, który
+potem odpowie 403, a ekran, do którego masz dostęp, nie zniknie z menu.
+
+## Trzynaście obszarów
+
+Obszar otworzy ci **którekolwiek jedno** z uprawnień w ostatniej kolumnie.
+
+| Obszar | Do czego służy | Wpuszcza którekolwiek z nich |
+|---|---|---|
+| [Użytkownicy](/pl/client/v0.2/manager/enrollment) | Konta, hurtowe tworzenie loginów tymczasowych, blokowanie i notatki. | `user:read:all` |
+| [Nadania](/pl/client/v0.2/manager/permissions) | Kto co może — w systemie i w każdej aktywności. | `grant:read:all` |
+| [Role](/pl/client/v0.2/manager/permissions) | Zestawy, które wiąże nadanie. Zmiana jednej dociera do wszystkich, którzy ją mają. | `role:read`, `role:manage:activity`, `grant:update` |
+| [Zadania](/pl/client/v0.2/manager/problems) | Biblioteka: treści, załączniki, paczki i wersje. | `problem:read:own`, `problem:read:all` |
+| [Aktywności](/pl/client/v0.2/manager/activities) | Zawody i kursy: serie, podpięcia zadań, terminy i zapisy. | `activity:create`, `activity:update`, `activity:archive` |
+| [Zgłoszenia](/pl/client/v0.2/manager/submissions) | Wszystkie zgłoszenia, ich kod, próby oceny i ponowna ocena. | `submission:read:all` |
+| [Pytania i ogłoszenia](/pl/client/v0.2/manager/questions) | Odpowiadanie, publikowanie odpowiedzi dla wszystkich, ogłoszenia. | `question:read:all`, `question:answer` |
+| [Wydruki](/pl/client/v0.2/manager/printouts) | Kolejka kodu, który ktoś poprosił wydrukować. | `printout:manage` |
+| [Runnery](/pl/client/v0.2/manager/runners) | Maszyny, które oceniają: zatwierdzanie, tagi i ich raporty. | `runner:read` |
+| [Instancja](/pl/client/v0.2/manager/instance) | Jak nazywa się ta instalacja, jaki znak pokazuje i jakie dokumenty publikuje. | `instance:update` |
+| [Logowania zewnętrzne](/pl/client/v0.2/manager/logins) | Dostawcy tożsamości, uprawnienia nadawane przez ich claimy i konta zgłoszone do usunięcia. | `provider:manage` |
+| [Platformy LTI](/pl/client/v0.2/manager/logins) | Platformy kursowe, które mogą otwierać aktywności swoim studentom. | `provider:manage` |
+| [Zasoby zewnętrzne](/pl/client/v0.2/manager/external-content) | Skąd ta instalacja może pobierać dokumenty i czy w ogóle może. | `instance:update` |
+
+Jeśli nie masz żadnego z nich, panel nie ma dla ciebie nic: nie pojawi się ani
+wpis w nawigacji, ani ekran startowy.
+
+## Co znaczy tutaj „masz uprawnienie”
+
+Obszar zobaczysz, gdy masz jego uprawnienie **gdziekolwiek** — wystarczy w
+jednej aktywności. Kto prowadzi jeden kurs, i tak potrzebuje panelu, w którym
+ten kurs się znajduje.
+
+**Jedynym wyjątkiem są Użytkownicy** — ten obszar pyta o swoje uprawnienie na
+poziomie całej instalacji. Jego uprawnienie, `user:read:all`, jest w dostarczanej
+roli `manager`, żeby wyszukiwarki przy zapisach i uprawnieniach miały kogo
+proponować; liczone jak pozostałe, kafelek pokazałby się każdemu prowadzącemu, a
+lista za nim odmówiłaby.
+
+Same ekrany są surowsze. Wewnątrz aktywności możesz nadać to, co masz *w tej
+aktywności*, a to nie jest ten sam zestaw co twoje prawa w całej instalacji.
+Zobacz [Uprawnienia i nadania](/pl/client/v0.2/manager/permissions).
+
+## Gdzie kończy się rola prowadzącego
+
+Sześć z trzynastu obszarów dotyczy instalacji, a nie pojedynczej aktywności:
+Użytkownicy, Runnery, Instancja, Logowania zewnętrzne, Platformy LTI i Zasoby
+zewnętrzne. Razem potrzebują czterech uprawnień — `user:read:all`,
+`runner:read`, `instance:update` i `provider:manage`. **Trzech z tych czterech
+nie ma w dostarczanej roli `manager`**, a `user:read:all` jest w niej tylko po
+to, żeby prowadzący mógł wskazać osobę — sam obszar Użytkownicy pyta o nie na
+poziomie instalacji. Prowadzenie aktywności to co innego niż prowadzenie
+instalacji, w której ta aktywność działa.
+
+**Role leżą po obu stronach tej granicy.** Pisanie własnych ról aktywności to
+`role:manage:activity` — uprawnienie z nadania na tę aktywność, które niesie
+dostarczana rola `manager`; dzięki niemu prowadzący poprawia uprawnienia
+własnych uczestników. Pisanie ról instalacji to `role:manage`, uprawnienie
+systemowe i administratorskie: rolę wspólną dla instalacji widać z każdej
+aktywności, więc jej zmiana sięga całej instalacji.
+
+**Wydruki to obszar pomyślany tak, by dawać go osobno.** Nadanie, które niesie
+tylko `printout:manage`, otwiera właśnie jego i zamyka wszystkie pozostałe — tak
+powierza się to jedno zadanie komuś, kto stoi przy drukarce. Cenę opisuje strona
+tego obszaru: klucz czyni z tej osoby prowadzącego w danej aktywności, a
+prowadzący nie wchodzą do jej rankingu.
+
+## Aktualizacje i ich wyłączanie
+
+Każdy ekran panelu ma u góry te same dwie kontrolki: przycisk z napisem
+**Aktualizacje włączone** albo **Aktualizacje wyłączone**, oraz **Odśwież**.
+
+Zostawiony w spokoju panel sam się aktualizuje: nadchodzące pytanie, ocenione
+zgłoszenie, ktoś, kto się zapisał, nowy Runner — wszystko to trafia na listę,
+którą właśnie czytasz, bez żadnego Twojego ruchu. Wyłączenie aktualizacji
+zatrzymuje to dla **całego panelu** — każdego ekranu, aż do ponownego włączenia —
+więc lista, którą przeglądasz, stoi. Pojawia się wtedy pomarańczowe **Czekają
+zmiany**: mówi, czego dotyczą, i celowo nie mówi ilu, bo jedno ponowne ocenienie
+to kilka wiadomości o jednym zgłoszeniu.
+
+Ponowne włączenie wczytuje wszystko na nowo. Tak samo **Odśwież**, bez włączania
+aktualizacji. A gdy otwarte jest okno dialogowe, panel stoi sam z siebie,
+niezależnie od przełącznika.
+
+<Callout type="warn" title="To nie jest wstrzymanie i wznowienie rundy">
+Wstrzymanie rundy to inna kontrolka, na ekranie samej aktywności, i ono zatrzymuje
+zawody: runda nie przyjmuje zgłoszeń, a jej zegar stoi. Ten przełącznik nie zmienia
+niczego, co widzi ktokolwiek inny — dotyczy Twojego ekranu, nie zawodów.
+</Callout>
+
+A jest jeszcze trzeci czytelnik. Instalacji AlgoJudge, kopii zapasowych,
+aktualizacji i odzyskiwania po awarii nie robi się z tego panelu w ogóle — to
+[Instalacja i utrzymanie](/pl/install).

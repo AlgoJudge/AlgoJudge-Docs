@@ -1,0 +1,18 @@
+{
+  "title": "Domain model",
+  "description": "Every concept the Server stores, defined from the model that stores it.",
+  "pages": [
+    "index",
+    "activity",
+    "series",
+    "problem",
+    "assignment",
+    "submission",
+    "evaluation",
+    "group",
+    "grant",
+    "user",
+    "runner",
+    "file"
+  ]
+}

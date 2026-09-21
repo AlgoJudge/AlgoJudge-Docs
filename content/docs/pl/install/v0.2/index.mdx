@@ -1,0 +1,170 @@
+---
+title: Czym jest instalacja
+description: Siedem usług, cztery układy i jeden plik Compose, który wybiera między nimi.
+source: en/install/v0.2/index.mdx
+sourceSha256: ffbdf2d978de5ea380d4287b7a108bf7d0db87e890c5e60922ed5ce70de1fe86
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+Instalacja AlgoJudge to stos Docker Compose. Dostarczamy go jako osobne
+repozytorium, `AlgoJudge-Ops`: klonujesz je, konfigurujesz przez plik `.env`
+i uruchamiasz.
+
+**To repozytorium nie zawiera kodu aplikacji i niczego nie buduje.** Każdy obraz
+pobieramy z GHCR po tagu i właśnie dlatego aktualizacja sprowadza się do `docker
+compose pull`, a wycofanie do wskazania digestu. Pliki Compose, które budują ze
+źródeł, leżą w repozytoriach produktowych i są tam oznaczone jako deweloperskie;
+to co innego.
+
+<Callout type="info" title="Instalacja prosi o tag `0.2`">
+Osiem obrazów jest opublikowanych i publicznych: `docker compose pull` nie
+wymaga logowania do rejestru, z żadnej maszyny. W `.env.example` stoi `0.2` —
+**linia minor, dla której napisano ten stos**. Bierze z niej każdą kolejną
+poprawkę i nic poza tym. **Nie ruchoma wersja główna `0`**: poniżej 1.0 wersja
+minor może zmienić to, co robiła poprzednia, więc `0` przeprowadziłby instalację
+przez taką zmianę, nie pytając o zgodę. [Aktualizacja
+i wycofanie](/pl/install/v0.2/update) mówi, jak przypiąć konkretną wersję.
+</Callout>
+
+## Usługi
+
+Siedem usług pod siedmioma nazwami profili. Server i Client mają po dwie, dzięki
+czemu można podnieść jedną połowę bez drugiej; oba Runnery dzielą jeden profil.
+
+| Usługa | Profile | Czym jest |
+|---|---|---|
+| `postgres` | `data` | PostgreSQL 18. **Bez portu na hoście, w żadnym układzie** |
+| `server` | `app`, `server` | API pod `/api/v1`, publikowane na `127.0.0.1:8080` |
+| `client` | `app`, `client` | aplikacja w przeglądarce, publikowana na `127.0.0.1:8082` |
+| `nginx` | `edge` | TLS, jeden origin dla obu połówek, porty 80 i 443 |
+| `runner-1`, `runner-2` | `runner` | jeden obraz, dwie tożsamości i **cała flota**. Każdy ocenia jedno zgłoszenie naraz, w kontenerach siostrzanych, a kilka jego testów równocześnie |
+| `external-runner` | `external-runner` | zamiast oceniać, przekazuje je do zewnętrznego archiwum. **Nie ma go w domyślnym zestawie** — patrz [Zewnętrzny sędzia](/pl/install/v0.2/external-runner) |
+
+**Do maszyny dopasowuje się tory, a nie Runnery.** Runner ocenia równocześnie
+tyle testów jednego zgłoszenia, ile mówi `RUNNER_TESTS_AT_ONCE` — każdy na
+własnym torze — a jeden tor to praca za jeden rdzeń, więc poszerzenie Runnera
+wymaga od maszyny tyle samo, co dołożenie kolejnego. Więcej torów niż rdzeni
+fizycznych nie przyspiesza oceniania, a psuje jego rzetelność — i dlatego host,
+któremu zostaje zapas mocy, podnosi `RUNNER_TESTS_AT_ONCE`, zamiast dokładać
+trzeci Runner. Tabelę znajdziesz w [Czego wymaga host](/pl/install/v0.2/requirements).
+
+Niosą je trzy sieci Compose, żeby baza nie była osiągalna z krawędzi, a ruch
+oceniania dał się oddzielić od HTTP:
+
+<Mermaid chart={`
+flowchart LR
+    subgraph edge["edge — jedyna sieć z portem publikowanym na zewnątrz"]
+        nginx["nginx"]
+        client["client"]
+    end
+    subgraph backend["backend"]
+        postgres["postgres"]
+    end
+    subgraph runnernet["runner"]
+        r["runner-1, runner-2"]
+        ext["external-runner"]
+    end
+    server["server"]
+    nginx --> server
+    nginx --> client
+    server --> postgres
+    r --> server
+    ext --> server
+    style edge fill:none
+    style backend fill:none
+    style runnernet fill:none
+`} />
+
+Server jako jedyny stoi we wszystkich trzech. PostgreSQL siedzi wyłącznie
+w `backend` i w żadnym układzie nie ma portu na hoście. **Port do sieci publikuje
+tylko nginx**; dwie publikacje na pętli zwrotnej wymienione wyżej są po to, żeby
+dało się użyć `curl` i podstawić własne proxy.
+
+Sieć `edge` ma jawnie zapisaną podsieć, domyślnie `172.28.0.0/24`. To nie
+kwestia porządku: Server odmawia startu, dopóki nie wskażesz mu, czyim słowom
+o adresie odwiedzającego ma wierzyć, a podsieci wylosowanej przez Dockera nie
+dałoby się nazwać.
+
+## Cztery układy
+
+Wybierasz je przez `COMPOSE_PROFILES` w `.env`. Żaden nie wymaga edycji pliku
+Compose.
+
+| | `COMPOSE_PROFILES` | |
+|---|---|---|
+| **T1** | `edge,app,data,runner` | jeden host, cały produkt. Domyślny |
+| **T2** | `edge,app,data`, a `runner` gdzie indziej | Runnery na własnych maszynach |
+| **T3** | `app,data` | [własne reverse proxy](/pl/install/v0.2/reverse-proxy) z przodu |
+| — | `client,server,data` | po jednej połowie, do debugowania i etapowych aktualizacji |
+
+**`external-runner` to dodatek do każdego z nich, a nie kolejny układ.** Dopisz
+go obok `runner` albo daj mu osobną maszynę; nie ma go w zestawie domyślnym, bo
+loguje się do zewnętrznego archiwum na tamtejsze konto — [Zewnętrzny
+sędzia](/pl/install/v0.2/external-runner) mówi, czego wymaga i czego za Ciebie nie
+zrobi.
+
+## Runner może działać na zupełnie innej maszynie
+
+Każdy host z Runnerem klonuje to samo repozytorium, przełącza je na wydanie,
+na którym działa host aplikacji, i uruchamia `COMPOSE_PROFILES=runner` z dwiema
+wartościami w swoim `.env`:
+
+```ini
+SERVER_URL=https://twoja.domena
+RUNNER_NAME_PREFIX=lab-a       # inny na każdym hoście
+```
+
+**Taki host potrzebuje Dockera Engine 26 lub nowszego** (albo Podmana 5)
+i miejsca tam, gdzie Docker trzyma wolumeny: pamięć podręczna i katalogi robocze
+Runnerów leżą na maszynie, która ocenia, a nie na hoście aplikacji. Na starszym
+silniku Runner odmawia oceniania i nie ma układu, który by to obchodził — patrz
+[Gdzie Runnery trzymają swoje bajty](/pl/install/v0.2/configuration#where-the-runners-keep-their-bytes).
+
+Przedrostek nazywa każdy Runner na hoście — `lab-a-1` i `lab-a-2` — i **musi się
+różnić między hostami**, inaczej Runnery z dwóch maszyn pojawią się w panelu pod
+tymi samymi nazwami.
+
+**Każde połączenie nawiązuje sam Runner.** Nie potrzebuje portu przychodzącego
+i pracuje zza domowego routera, bez własnego adresu. W `compose.yaml` celowo nie
+ma `depends_on` na Server: na hoście z samym Runnerem nie ma usługi Server, na
+której można by polegać — Runner sam ponawia próby połączenia.
+
+Każdy Runner rejestruje się osobno i każdy wymaga osobnego zatwierdzenia, więc
+host z dwoma Runnerami to dwa zatwierdzenia.
+
+<Callout type="warn" title="Dla instalacji publicznej zalecany jest układ T2">
+Dostęp do gniazda Dockera daje na hoście uprawnienia roota, a Runner potrzebuje
+tego gniazda, żeby uruchamiać kontenery zadań. W T1 na tym samym hoście stoi
+baza, więc kto wyrwie się z kontenera zadania, ląduje na maszynie ze wszystkimi
+zgłoszeniami i wszystkimi hashami haseł. Na hoście z samym Runnerem w najgorszym
+razie dostaje maszynę, na której nic nie ma.
+</Callout>
+
+## Co działa obok stosu, a nie w nim
+
+Instalacja potrzebuje dostawcy OIDC i **żadne z dwóch wspieranych wdrożeń
+tożsamości nie jest usługą w `compose.yaml`**. Działa obok tego stosu, pod
+własną nazwą hosta. [Tożsamość](/pl/install/v0.2/identity) to rozdział o wyborze
+i rejestracji dostawcy.
+
+## Dokąd dalej
+
+| | |
+|---|---|
+| [Czego wymaga host](/pl/install/v0.2/requirements) | Docker, cgroup v2, dysk, logi |
+| [Pierwsza instalacja](/pl/install/v0.2/first-install) | od pustego katalogu do werdyktu |
+| [Prekonfiguracja](/pl/install/v0.2/preconfiguration) | jak postawić instalację bez klikania w panelu |
+| [Tożsamość](/pl/install/v0.2/identity) | Keycloak albo Authentik i jak zarejestrować dostawcę |
+| [Podłączenie platformy kursowej](/pl/install/v0.2/lti) | LTI 1.3 i ustawienie przeglądarki, od którego wszystko zależy |
+| [Gdzie trafiają pliki](/pl/install/v0.2/storage) | trzy magazyny i przenoszenie plików między nimi |
+| [Przerwa techniczna](/pl/install/v0.2/maintenance) | jak wyłączyć instalację z ruchu, nie zatrzymując jej |
+| [Kopie zapasowe](/pl/install/v0.2/backup) | co obejmuje zrzut i co ze sobą niesie |
+| [Odtwarzanie](/pl/install/v0.2/restore) | jak wgrać kopię z powrotem |
+| [Aktualizacja i wycofanie](/pl/install/v0.2/update) | i czego wycofanie nie cofa |
+| [Praca rutynowa i harmonogram](/pl/install/v0.2/schedule) | sprzątanie, cron i to, czego nikt nie mówi |
+| [Własne reverse proxy](/pl/install/v0.2/reverse-proxy) | pięć reguł |
+| [Zewnętrzny sędzia](/pl/install/v0.2/external-runner) | przekazywanie zadań do zewnętrznego archiwum |
+| [Wszystkie ustawienia w `.env`](/pl/install/v0.2/configuration) | całość w jednej tabeli |
+| [Kiedy coś nie działa](/pl/install/v0.2/troubleshooting) | awarie, które wyglądają na inne problemy |
